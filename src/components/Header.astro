@@ -1,0 +1,48 @@
+<nav id="nav" aria-label="主导航" class="backdrop nav-bg fixed top-0 z-9 h-12.5 w-full">Color</nav>
+
+<style>
+	.nav-bg {
+		background-image: var(--nav-bg);
+		box-shadow: 0.1rem 0.1rem 0.2rem var(--grey-9-a1);
+		text-shadow: 0 0 0.0625rem var(--grey-9-a1);
+		color: var(--text-color);
+	}
+
+	#nav {
+		transition: transform 0.4s ease;
+	}
+</style>
+
+<script>
+	document.addEventListener("DOMContentLoaded", () => {
+		const navbar = document.getElementById("nav")
+		if (!navbar) return
+
+		let lastScrollY = window.scrollY
+		let ticking = false // 节流
+
+		// 实际更新样式的函数
+		const updateNavbar = () => {
+			const currentScrollY = window.scrollY
+			if (currentScrollY > lastScrollY && currentScrollY > 0) {
+				navbar.style.transform = "translateY(-100%)"
+			} else {
+				navbar.style.transform = ""
+			}
+			lastScrollY = currentScrollY
+			ticking = false
+		}
+
+		// 滚动事件监听（使用 passive 提高滚动性能）
+		window.addEventListener(
+			"scroll",
+			() => {
+				if (!ticking) {
+					window.requestAnimationFrame(updateNavbar)
+					ticking = true
+				}
+			},
+			{ passive: true },
+		)
+	})
+</script>

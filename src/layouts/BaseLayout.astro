@@ -1,3 +1,11 @@
+---
+import "@/styles/global.css" // tailwind覆盖所有
+interface Props {
+	title: string
+}
+
+const { title } = Astro.props
+---
 <!doctype html>
 <html lang="zh-cmn">
 	<head>
@@ -9,7 +17,7 @@
 		<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 		<link rel="manifest" href="/site.webmanifest" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Ks的博客</title>
+		<title>{title || "YiLin博客"}</title>
 	</head>
 	<body>
 		<slot />

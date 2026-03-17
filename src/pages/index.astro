@@ -1,7 +1,13 @@
 ---
-import Layout from "../layouts/Layout.astro"
+import BaseLayout from "@/layouts/BaseLayout.astro"
+import Header from "@/components/Header.astro"
 ---
 
-<Layout>
-	<h1>首页</h1>
-</Layout>
+<BaseLayout title="首页">
+	<Header />
+	<div class="h-[1000px]"></div>
+</BaseLayout>
+
+<script>
+
+</script>

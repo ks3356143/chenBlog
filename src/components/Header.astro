@@ -2,14 +2,20 @@
 import { Image } from "astro:assets"
 import ThemeIcon from "./oneSize/ThemeIcon.astro"
 import logo from "@/assets/logo.png"
+import HomeSvg from "@/assets/home.svg"
 ---
 
 <nav id="nav" aria-label="主导航" class="backdrop nav-bg fixed top-0 z-9 h-18 w-full">
 	<div class="mx-auto flex h-18 items-center overflow-visible! px-4">
 		<a href="/" class="btn-plain h-13 px-5">
-			
-			YiLin
+			<Image src={logo} alt="logo" width="35" class="mr-2" />
+			亦林
 		</a>
+		<a href="/" class="btn-plain h-10 px-4">
+			<HomeSvg />
+			<div class="pl-1">主页</div>
+		</a>
+		<div class="flex"></div>
 		<ThemeIcon />
 	</div>
 </nav>

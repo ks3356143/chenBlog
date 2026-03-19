@@ -1,4 +1,18 @@
-<nav id="nav" aria-label="主导航" class="backdrop nav-bg fixed top-0 z-9 h-12.5 w-full">Color</nav>
+---
+import { Image } from "astro:assets"
+import ThemeIcon from "./oneSize/ThemeIcon.astro"
+import logo from "@/assets/logo.png"
+---
+
+<nav id="nav" aria-label="主导航" class="backdrop nav-bg fixed top-0 z-9 h-18 w-full">
+	<div class="mx-auto flex h-18 items-center overflow-visible! px-4">
+		<a href="/" class="btn-plain h-13 px-5">
+			
+			YiLin
+		</a>
+		<ThemeIcon />
+	</div>
+</nav>
 
 <style>
 	.nav-bg {
@@ -14,35 +28,28 @@
 </style>
 
 <script>
-	document.addEventListener("DOMContentLoaded", () => {
-		const navbar = document.getElementById("nav")
+	const navbar = document.getElementById("nav")
+	let lastScrollY = window.scrollY
+	let ticking = false // 节流
+	const updateNavbar = () => {
 		if (!navbar) return
-
-		let lastScrollY = window.scrollY
-		let ticking = false // 节流
-
-		// 实际更新样式的函数
-		const updateNavbar = () => {
-			const currentScrollY = window.scrollY
-			if (currentScrollY > lastScrollY && currentScrollY > 0) {
-				navbar.style.transform = "translateY(-100%)"
-			} else {
-				navbar.style.transform = ""
-			}
-			lastScrollY = currentScrollY
-			ticking = false
+		const currentScrollY = window.scrollY
+		if (currentScrollY > lastScrollY && currentScrollY > 0) {
+			navbar.style.transform = "translateY(-100%)"
+		} else {
+			navbar.style.transform = ""
 		}
-
-		// 滚动事件监听（使用 passive 提高滚动性能）
-		window.addEventListener(
-			"scroll",
-			() => {
-				if (!ticking) {
-					window.requestAnimationFrame(updateNavbar)
-					ticking = true
-				}
-			},
-			{ passive: true },
-		)
-	})
+		lastScrollY = currentScrollY
+		ticking = false
+	}
+	window.addEventListener(
+		"scroll",
+		() => {
+			if (!ticking) {
+				window.requestAnimationFrame(updateNavbar)
+				ticking = true
+			}
+		},
+		{ passive: true },
+	)
 </script>

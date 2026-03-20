@@ -7,36 +7,44 @@ import Archive from "@/assets/archive.svg"
 import Chat from "@/assets/chat.svg"
 import Xiangce from "@/assets/xiangce.svg"
 import About from "@/assets/about.svg"
+import Search from "@/components/uiverse/Search.astro"
 ---
 
 <nav id="nav" aria-label="主导航" class="backdrop nav-bg fixed top-0 z-9 h-18 w-full">
-	<div class="mx-auto flex h-18 items-center overflow-visible! px-4">
-		<a href="/" class="btn-plain h-13 px-5">
-			<Image src={logo} alt="logo" width="35" class="mr-2" />
-			亦林
-		</a>
-		<a href="/" class="btn-plain h-10 px-4">
-			<HomeSvg />
-			<div class="pl-1">主页</div>
-		</a>
-		<a href="/" class="btn-plain h-10 px-4">
-			<Archive />
-			<div class="pl-1">归档</div>
-		</a>
-		<a href="/" class="btn-plain h-10 px-4">
-			<Chat />
-			<div class="pl-1">留言</div>
-		</a>
-		<a href="/" class="btn-plain h-10 px-4">
-			<Xiangce />
-			<div class="pl-1">相册</div>
-		</a>
-		<a href="/" class="btn-plain h-10 px-4">
-			<About />
-			<div class="pl-1">关于</div>
-		</a>
-		<div class="flex"></div>
-		<ThemeIcon />
+	<div class="mx-auto flex h-18 items-center justify-between overflow-visible! px-4 xl:w-[92vw]">
+		<div class="flex h-full w-full items-center justify-between lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto]">
+			<a href="/" class="btn-plain h-13 px-5">
+				<Image src={logo} alt="logo" width="35" class="mr-2" />
+				亦林
+			</a>
+			<div class="col-start-2 hidden items-center justify-center space-x-1 lg:flex">
+				<a href="/" class="btn-plain h-10 px-4">
+					<div class="hidden xl:block"><HomeSvg /></div>
+					<div class="pl-1">主页</div>
+				</a>
+				<a href="/" class="btn-plain h-10 px-4">
+					<div class="hidden xl:block"><Archive /></div>
+					<div class="pl-1">归档</div>
+				</a>
+				<a href="/" class="btn-plain h-10 px-4">
+					<div class="hidden xl:block"><Chat /></div>
+					<div class="pl-1">留言</div>
+				</a>
+				<a href="/" class="btn-plain h-10 px-4">
+					<div class="hidden xl:block"><Xiangce /></div>
+					<div class="pl-1">相册</div>
+				</a>
+				<a href="/" class="btn-plain h-10 px-4">
+					<div class="hidden xl:block"><About /></div>
+					<div class="pl-1">关于</div>
+				</a>
+			</div>
+
+			<div class="flex space-x-1">
+				<div><Search /></div>
+				<ThemeIcon />
+			</div>
+		</div>
 	</div>
 </nav>
 

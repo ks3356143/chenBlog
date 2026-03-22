@@ -2,7 +2,7 @@
 
 ---
 
-<button id="themeToggle" class="cursor-pointer btn-plain p-2">
+<button id="themeToggle" class="btn-plain cursor-pointer p-2">
 	<svg width="24px" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 		<path
 			class="sun"
@@ -23,7 +23,7 @@
 		background: none;
 	}
 	.sun {
-		fill: black;
+		fill: currentColor;
 	}
 	.moon {
 		fill: transparent;
@@ -32,7 +32,7 @@
 		fill: transparent;
 	}
 	:global([data-theme="dark"]) .moon {
-		fill: white;
+		fill: currentColor;
 	}
 </style>
 

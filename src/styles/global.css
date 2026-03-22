@@ -8,7 +8,6 @@
     --grey-2: oklch(.975 0 0);
     --grey-3: oklch(.952 .004 240);
     --grey-4: oklch(.845 0 0);
-    --grey-4-5: oklch(.757 0 0);
     --grey-5: oklch(.597 0 0);
     --grey-6: oklch(.522 0 0);
     --grey-7: oklch(.321 0 0);
@@ -24,18 +23,24 @@
     --grey-9-a5: oklch(0 0 0 / .5);
     --grey-9-a6: oklch(0 0 0 / .6);
     --grey-2-a0: oklch(.975 0 0 / 0);
+
     /* 主题 */
+    --primary: #00BA99;
     --plain-bg: oklch(.9 .05 175);
+    --btn-plain-bg-hover: #def4ed;
 
     /* 二级设置 */
     --text-color: var(--grey-7);
-    --nav-bg: linear-gradient(-225deg, oklch(.972 .038 169.1 / .72) 0%, oklch(.946 .06 338.1 / .72) 100%);
+    --nav-bg: linear-gradient(-225deg, oklch(.972 .038 169.1 / .66) 0%, oklch(.946 .06 338.1 / .66) 100%);
 }
 
 :root[data-theme="dark"] {
     /* 主题 */
+    --primary: #0DCAA9;
     --plain-bg: oklch(.4 .08 175);
+    --btn-plain-bg-hover: #19342d;
+
     /* 二级设置 */
-    --text-color: var(--grey-4-5);
-    --nav-bg: linear-gradient(-225deg, oklch(.321 .006 174.8) 0, oklch(.313 .011 347.9) 100%);
+    --text-color: var(--grey-4);
+    --nav-bg: linear-gradient(-225deg, oklch(.321 .006 174.8 / .66) 0, oklch(.313 .011 347.9 / .66) 100%);
 }

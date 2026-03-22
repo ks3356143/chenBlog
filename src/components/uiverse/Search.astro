@@ -57,6 +57,13 @@
 		margin-left: auto; /* 关键：右对齐 */
 		transform-origin: right center; /* 关键：从右侧开始缩放 */
 	}
+	@media screen and (max-width: 768px) {
+		.form {
+			--width-of-input: 120px;
+			--width-expanded: 160px; /* 新增：展开后的宽度 */
+			--height-of-input: 30px;
+		}
+	}
 	/* 聚焦时向左扩展 */
 	.form:focus-within {
 		width: var(--width-expanded);

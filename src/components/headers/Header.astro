@@ -1,6 +1,6 @@
 ---
 import { Image } from "astro:assets"
-import ThemeIcon from "./oneSize/ThemeIcon.astro"
+import ThemeIcon from "@/components/oneSize/ThemeIcon.astro"
 import logo from "@/assets/logo.png"
 import HomeSvg from "@/assets/home.svg"
 import Archive from "@/assets/archive.svg"
@@ -9,11 +9,14 @@ import Xiangce from "@/assets/xiangce.svg"
 import About from "@/assets/about.svg"
 import Search from "@/components/uiverse/Search.astro"
 import Menu from "@/assets/menu.svg"
+import MobileMenu from "@/components/headers/MobileMenu.astro"
 ---
 
 <nav id="nav" aria-label="主导航" class="backdrop nav-bg fixed top-0 z-9 h-18 w-full">
 	<div class="mx-auto flex h-18 items-center justify-between overflow-visible! px-4 xl:w-[92vw]">
-		<div class="flex h-full w-full items-center justify-between lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto]">
+		<div
+			class="relative flex h-full w-full items-center justify-between lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto]"
+		>
 			<a href="/" class="btn-plain h-13 px-5">
 				<Image src={logo} alt="logo" width="35" class="mr-2" loading="eager" />
 				<div class="hidden sm:block">亦林</div>
@@ -41,17 +44,18 @@ import Menu from "@/assets/menu.svg"
 				</a>
 			</div>
 
-			<div class="flex space-x-1 items-center justify-center">
+			<div class="flex items-center justify-center space-x-1">
 				<Search />
 				<div class="flex items-center justify-center space-x-1">
 					<ThemeIcon />
-					<div class="lg:hidden">
+					<div id="nav-menu-panel" class="lg:hidden">
 						<div class="btn-plain cursor-pointer p-2">
 							<Menu />
 						</div>
 					</div>
 				</div>
 			</div>
+			<MobileMenu />
 		</div>
 	</div>
 </nav>

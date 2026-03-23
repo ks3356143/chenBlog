@@ -4,43 +4,46 @@
 :root {
     /* 基础主题色 */
     --grey-0: oklch(1 0 0);
-    --grey-1: oklch(.995 0 0);
-    --grey-2: oklch(.975 0 0);
-    --grey-3: oklch(.952 .004 240);
-    --grey-4: oklch(.845 0 0);
-    --grey-5: oklch(.597 0 0);
-    --grey-6: oklch(.522 0 0);
-    --grey-7: oklch(.321 0 0);
-    --grey-8: oklch(.252 0 0);
+    --grey-1: oklch(0.995 0 0);
+    --grey-2: oklch(0.975 0 0);
+    --grey-3: oklch(0.952 0.004 240);
+    --grey-4: oklch(0.845 0 0);
+    --grey-5: oklch(0.597 0 0);
+    --grey-6: oklch(0.522 0 0);
+    --grey-7: oklch(0.321 0 0);
+    --grey-8: oklch(0.252 0 0);
     --grey-9: oklch(0 0 0);
-    --grey-1-a0: oklch(.995 0 0 / 0);
-    --grey-1-a7: oklch(.995 0 0 / .7);
-    --grey-1-a5: oklch(.995 0 0 / .5);
-    --grey-1-a3: oklch(.995 0 0 / .3);
-    --grey-9-a1: oklch(0 0 0 / .1);
-    --grey-9-a15: oklch(0 0 0 / .15);
-    --grey-9-a2: oklch(0 0 0 / .2);
-    --grey-9-a5: oklch(0 0 0 / .5);
-    --grey-9-a6: oklch(0 0 0 / .6);
-    --grey-2-a0: oklch(.975 0 0 / 0);
+    --grey-1-a0: oklch(0.995 0 0 / 0);
+    --grey-1-a7: oklch(0.995 0 0 / 0.7);
+    --grey-1-a5: oklch(0.995 0 0 / 0.5);
+    --grey-1-a3: oklch(0.995 0 0 / 0.3);
+    --grey-9-a1: oklch(0 0 0 / 0.1);
+    --grey-9-a15: oklch(0 0 0 / 0.15);
+    --grey-9-a2: oklch(0 0 0 / 0.2);
+    --grey-9-a5: oklch(0 0 0 / 0.5);
+    --grey-9-a6: oklch(0 0 0 / 0.6);
+    --grey-2-a0: oklch(0.975 0 0 / 0);
+    --shodow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
 
     /* 主题 */
-    --primary: #00BA99;
-    --plain-bg: oklch(.9 .05 175);
+    --primary: #00ba99;
+    --plain-bg: oklch(0.9 0.05 175);
     --btn-plain-bg-hover: #def4ed;
-
+    --selection-bg: #c0e9d6;
+    --panel-bg: #fffffff2;
     /* 二级设置 */
     --text-color: var(--grey-7);
-    --nav-bg: linear-gradient(-225deg, oklch(.972 .038 169.1 / .66) 0%, oklch(.946 .06 338.1 / .66) 100%);
+    --nav-bg: linear-gradient(-225deg, oklch(0.972 0.038 169.1 / 0.66) 0%, oklch(0.946 0.06 338.1 / 0.66) 100%);
 }
 
 :root[data-theme="dark"] {
     /* 主题 */
-    --primary: #0DCAA9;
-    --plain-bg: oklch(.4 .08 175);
+    --primary: #0dcaa9;
+    --plain-bg: oklch(0.4 0.08 175);
     --btn-plain-bg-hover: #19342d;
-
+    --selection-bg: #0a553d;
+    --panel-bg: #171717f2;
     /* 二级设置 */
     --text-color: var(--grey-4);
-    --nav-bg: linear-gradient(-225deg, oklch(.321 .006 174.8 / .66) 0, oklch(.313 .011 347.9 / .66) 100%);
+    --nav-bg: linear-gradient(-225deg, oklch(0.321 0.006 174.8 / 0.66) 0, oklch(0.313 0.011 347.9 / 0.66) 100%);
 }

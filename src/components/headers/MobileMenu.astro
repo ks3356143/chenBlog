@@ -1,0 +1,97 @@
+---
+import { Icon } from "astro-icon/components"
+// svg图标导入
+import HomeSvg from "@/assets/home.svg"
+import Archive from "@/assets/archive.svg"
+import Chat from "@/assets/chat.svg"
+import Xiangce from "@/assets/xiangce.svg"
+import About from "@/assets/about.svg"
+---
+
+<div
+	id="dropdown-content"
+	class="dropdown-content absolute right-4 max-h-[80vh] overflow-y-auto px-2 py-2 transition-all"
+>
+	<a class="dropdown-item btn-plain flex h-10" href="/">
+		<div class="flex items-center justify-center space-x-2">
+			<Icon name="home" />
+			<span>主页</span>
+		</div>
+		<Icon name="arrow-right" />
+	</a>
+	<a class="dropdown-item btn-plain h-10" href="/">
+		<div class="flex items-center justify-center space-x-2">
+			<Icon name="archive" />
+			<span>归档</span>
+		</div>
+		<Icon name="arrow-right" />
+	</a>
+	<a class="dropdown-item btn-plain h-10" href="/">
+		<div class="flex items-center justify-center space-x-2">
+			<Icon name="chat" />
+			<span>留言</span>
+		</div>
+		<Icon name="arrow-right" />
+	</a>
+	<a class="dropdown-item btn-plain h-10" href="/">
+		<div class="flex items-center justify-center space-x-2">
+			<Icon name="xiangce" />
+			<span>相册</span>
+		</div>
+		<Icon name="arrow-right" />
+	</a>
+	<a class="dropdown-item btn-plain h-10" href="/">
+		<div class="flex items-center justify-center space-x-2">
+			<Icon name="about" />
+			<span>关于</span>
+		</div>
+		<Icon name="arrow-right" />
+	</a>
+</div>
+
+<style>
+	@reference "../../styles/global.css";
+
+	.dropdown-content {
+		top: calc(var(--spacing) * 21);
+		border: 1px solid var(--panel-border-color);
+		overflow: hidden;
+		box-shadow: var(--shodow-md);
+		overflow-y: auto;
+
+		/* 默认隐藏 */
+		opacity: 0;
+		visibility: hidden;
+		transform: translateY();
+		@apply translate-y-[-8px];
+	}
+	html[data-theme="dark"] .dropdown-content {
+		background-color: #171717f2;
+	}
+	.dropdown-content.open {
+		@apply visible translate-y-0 opacity-100;
+	}
+
+	.dropdown-content::selection {
+		background-color: var(--selection-bg);
+	}
+
+	.dropdown-item {
+		@apply min-w-[8rem] justify-between p-2;
+	}
+</style>
+
+<script>
+	const menuIcon = document.querySelector("#nav-menu-panel")
+	const dropdownContent = document.querySelector("#dropdown-content")
+	// 点击按钮事件
+	menuIcon?.addEventListener("click", () => {
+		dropdownContent?.classList.toggle("open")
+	})
+	// 点击其他地方消失
+	document.addEventListener("click", e => {
+		if (!menuIcon?.contains(e.target as Node) && !dropdownContent?.contains(e.target as Node)) {
+			dropdownContent?.classList.remove("open")
+		}
+	})
+</script>

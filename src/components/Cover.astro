@@ -1,0 +1,8 @@
+---
+import FirstImage from "@/assets/covers/1.jpg"
+import { Image } from "astro:assets"
+---
+
+<div class="h-[50vh] w-full overflow-hidden">
+	<Image src={FirstImage} alt="顶部图片" loading="eager" layout="constrained" fit="cover" position="center" />
+</div>

@@ -1,7 +1,6 @@
 ---
-// 该组件识别图片类型（本地、非本地），响应式和性能优化
-// 样式：固定为w-full、h-full、object-cover，包裹relative容器，用于叠加特效
 import { Image, Picture } from "astro:assets"
 import * as path from "node:path"
 import type { ImageMetadata } from "astro"
+import type { ImageFormat, ResponsiveImageLayout } from "@/types/config"
 ---

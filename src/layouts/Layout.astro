@@ -2,10 +2,49 @@
 import BaseLayout from "./BaseLayout.astro"
 import Header from "@/components/headers/Header.astro"
 import Cover from "@/components/Cover.astro"
+import Waves from "@/components/headers/Waves.astro"
+// 左边栏
+import MeCard from "@/components/card/meCard.astro"
 ---
 
 <BaseLayout title="YiLin">
 	<Header />
-	<Cover />
-	<div class="h-[1000px]"></div>
+	<div class="relative z-10 w-full overflow-hidden opacity-100 transition duration-700">
+		<Cover />
+		<Waves />
+	</div>
+	<!-- 主内容：绝对定位 -->
+	<div class="pointer-events-none absolute top-40 h-[1000px] w-full bg-(--page-bg)">
+		<div class="xl:[92vw] pointer-events-auto relative z-20 mx-auto w-full max-w-(--page-width) top-[30vh]">
+			<div
+				class="right-0 left-0 mx-auto grid w-full grid-cols-1 grid-rows-[auto_1fr_auto] gap-4 px-2 transition duration-700 md:grid-cols-[17.5rem_1fr] md:px-4 lg:grid-rows-[auto] xl:grid-cols-[17.5rem_1fr_17.5rem]"
+			>
+				<!-- 左边栏 -->
+				<div id="left-sidebar-wrapper" class="contents" style="contain:layout style paint;">
+					<div
+						id="left-sidebar"
+						class="mb-4 hidden w-full flex-col pt-0 md:col-span-1 md:col-start-1 md:row-start-1 md:row-end-3 md:block md:max-w-70"
+					>
+						<MeCard />
+					</div>
+				</div>
+				<!-- 中间栏 -->
+				<div
+					id="center-content"
+					class="col-span-1 min-w-0 overflow-hidden md:col-span-1 md:col-start-2 xl:col-span-1 xl:col-start-2 xl:col-end-3"
+				>
+					中间内容
+				</div>
+				<!-- 右边栏 -->
+				<div id="right-sidebar-wrapper" class="contents">
+					<div
+						id="right-sidebar"
+						class="mb-4 hidden w-full flex-col pt-0 xl:col-span-1 xl:col-start-3 xl:row-start-1 xl:row-end-3 xl:block xl:max-w-70"
+					>
+						右侧内容
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 </BaseLayout>

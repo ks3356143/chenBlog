@@ -1,6 +1,127 @@
 ---
+// 该组件给图片做默认值封装，以及外层套div行为
 import { Image, Picture } from "astro:assets"
 import * as path from "node:path"
 import type { ImageMetadata } from "astro"
 import type { ImageFormat, ResponsiveImageLayout } from "@/types/config"
+import { getImageFormat, getFallbackFormat, getImageQuality, shouldAddNoReferrer } from "@/utils/image-utils"
+import { url } from "@/utils/url-utils"
+
+interface Props {
+	id?: string // 给外壳div设置id属性
+	src: string // 图片地址，支持外部、public、src图片
+	class?: string // 给img元素设置样式
+	alt?: string
+	position?: string
+	basePath?: string
+	loading?: "lazy" | "eager"
+	fetchpriority?: "high" | "low" | "auto"
+	// 响应式图片属性
+	layout?: ResponsiveImageLayout
+	usePicture?: boolean
+	formats?: ImageFormat[]
+	widths?: number[]
+	sizes?: string
+	quality?: number
+}
+
+// 设置部分默认值
+const {
+	id,
+	src,
+	alt,
+	position = "center", // 默认设置img图片居中
+	basePath = "/", // 默认配置图片路径/根开头
+	loading = "lazy", // 默认lazy懒加载图片
+	layout = "constrained", // 默认响应式为最大图片宽度
+	usePicture = true, // 默认使用Picture
+	fetchpriority = "auto",
+	formats = getImageFormat(),
+	widths,
+	sizes,
+	quality = getImageQuality(),
+} = Astro.props
+
+const fallbackFormats = getFallbackFormat()
+const className = Astro.props.class
+
+const isLocal = !(src.startsWith("http") || src.startsWith("https") || src.startsWith("/") || src.startsWith("data:"))
+
+const isPublic = src.startsWith("/")
+
+// 核心代码：根据src动态导入图片
+let img: ImageMetadata | null = null
+if (isLocal) {
+	const files = import.meta.glob<ImageMetadata>("../../**/*.{png,jpg,jpeg,webp,avif,gif}", { import: "default" })
+	let normalizedPath = path.normalize(path.join("../../", basePath, src)).replace(/\\/g, "/")
+	console.log(normalizedPath);
+	const file = files[normalizedPath]
+	if (!file) {
+		console.error(`\n[ERROR] 图片没有找到：${normalizedPath.replace("../../", "src/")}`)
+	} else {
+		img = await file()
+	}
+}
+
+// 设置默认的img元素样式
+const imageClass = "w-full h-full object-cover"
+const imageStyle = `object-position:${position}`
+
+// 检查是否需要添加 referrerpolicy（仅对非本地图片）
+const fullSrc = isPublic ? url(src) : src
+const referrerPolicy = !isLocal && shouldAddNoReferrer(fullSrc) ? "no-referrer" : undefined
+
+// 构建响应式图片属性
+const responsiveProps = {
+	...(layout && { layout }),
+	...(widths && { widths }),
+	...(sizes && { sizes }),
+	...(quality && { quality }),
+}
 ---
+
+<div id={id} class:list={[className, "relative overflow-hidden"]}>
+	<!-- 一个绝对定位的蒙层 -->
+	<div class="pointer-events-none absolute inset-0 transition dark:bg-black/10"></div>
+	{
+		isLocal && img && usePicture && (
+			<Picture
+				src={img}
+				alt={alt || "图片"}
+				class={imageClass}
+				style={imageStyle}
+				loading={loading}
+				fetchpriority={fetchpriority}
+				formats={formats}
+				fallbackFormat={fallbackFormats}
+				{...responsiveProps}
+			/>
+		)
+	}
+	{
+		isLocal && img && !usePicture && (
+			<Image
+				src={img}
+				alt={alt || ""}
+				class={imageClass}
+				style={imageStyle}
+				loading={loading}
+				fetchpriority={fetchpriority}
+				{...responsiveProps}
+			/>
+		)
+	}
+	{
+		!isLocal && (
+			<img
+				src={isPublic ? url(src) : src}
+				alt={alt || ""}
+				class={imageClass}
+				style={imageStyle}
+				loading={loading}
+				fetchpriority={fetchpriority}
+				referrerpolicy={referrerPolicy}
+			/>
+		)
+	}
+</div>

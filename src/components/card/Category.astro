@@ -1,0 +1,23 @@
+---
+import { getCategoryList } from "@/utils/content-utils"
+
+const categories = await getCategoryList()
+---
+
+<div data-is-collapsed="true" class="card-base pb-4">
+	<div class="card-title">分类</div>
+	<div id="category" class="overflow-hidden px-4">
+		{
+			categories.map(category => (
+				<a href={category.url} aria-label={`posts in ${category.name}`}>
+					<button class="btn-right">
+						<div class="flex items-center justify-between relative mr-2">
+							<div>{category.name}</div>
+							<div>{category.count}</div>
+						</div>
+					</button>
+				</a>
+			))
+		}
+	</div>
+</div>

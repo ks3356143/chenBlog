@@ -1,0 +1,29 @@
+/* 用于首页哪些card展示 */
+@reference "../global.css";
+
+.card-base {
+    @apply border border-(--line-divider) bg-(--card-bg) shadow-xs transition-all duration-300;
+}
+
+/* 主题按钮样式 */
+.btn-regular {
+    @apply flex items-center justify-center bg-(--btn-regular-bg) text-(--btn-content) transition-all duration-150 hover:bg-(--btn-regular-bg-hover) active:scale-90 active:bg-(--btn-regular-bg-active) dark:text-white/75;
+}
+
+.btn-regular svg {
+    @apply text-2xl;
+}
+
+/* 首页卡片-标题块样式 */
+.card-title {
+    @apply relative mt-4 mb-2 ml-8 flex items-center text-lg font-bold text-neutral-900 transition before:w-1 dark:text-neutral-100;
+}
+
+.card-title::before {
+    @apply absolute left-[-16px] h-4 w-1 bg-(--primary);
+}
+
+/* 右移动按钮-hover时文字右移动一点，其实就是hover实现padding-left效果 */
+.btn-right {
+    @apply h-10 w-full bg-none pl-2 transition-all hover:bg-(--btn-plain-bg-hover) hover:pl-3 hover:text-(--primary) active:bg-(--btn-plain-bg-active) dark:text-neutral-300 dark:hover:text-(--primary);
+}

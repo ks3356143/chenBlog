@@ -1,5 +1,22 @@
 ---
 // 左边栏展示头像、名字、hello以及QQ、微信等内容
+import { Icon } from "astro-icon/components"
+import ImageWrapper from "@/components/commons/ImageWrapper.astro"
 ---
 
-<div class="card-base p-3"></div>
+<div class="card-base p-3">
+	<a aria-label="Go to About" href="/about/">
+		<ImageWrapper src="assets/touxiang.jpeg" />
+	</a>
+	<div class="px-2">
+		<div class="mb-1 text-center text-xl font-bold transition dark:text-neutral-50">犟哟</div>
+		<div class="mx-auto mb-2 h-1 w-8 bg-(--primary) transition"></div>
+		<div class="mb-2.5 text-center text-neutral-400 transition">Hello, I'm Juyial.</div>
+		<div class="mb-1 flex flex-wrap justify-center gap-2">
+			<a href="/" aria-label="QQ" class="btn-regular h-10 w-10"><Icon name="qq" /></a>
+			<a href="/" aria-label="Wechat" class="btn-regular h-10 w-10"><Icon name="wechat" /></a>
+			<a href="/" aria-label="Github" class="btn-regular h-10 w-10"><Icon name="github" /></a>
+			<a href="/" aria-label="RSS" class="btn-regular h-10 w-10"><Icon name="rss" /></a>
+		</div>
+	</div>
+</div>

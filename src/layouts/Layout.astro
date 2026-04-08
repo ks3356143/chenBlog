@@ -5,6 +5,7 @@ import Cover from "@/components/Cover.astro"
 import Waves from "@/components/headers/Waves.astro"
 // 左边栏
 import MeCard from "@/components/card/meCard.astro"
+import Category from "@/components/card/Category.astro"
 ---
 
 <BaseLayout title="YiLin">
@@ -15,7 +16,7 @@ import MeCard from "@/components/card/meCard.astro"
 	</div>
 	<!-- 主内容：绝对定位 -->
 	<div class="pointer-events-none absolute top-40 h-[1000px] w-full bg-(--page-bg)">
-		<div class="xl:[92vw] pointer-events-auto relative z-20 mx-auto w-full max-w-(--page-width) top-[30vh]">
+		<div class="xl:[92vw] pointer-events-auto relative top-[30vh] z-20 mx-auto w-full max-w-(--page-width)">
 			<div
 				class="right-0 left-0 mx-auto grid w-full grid-cols-1 grid-rows-[auto_1fr_auto] gap-4 px-2 transition duration-700 md:grid-cols-[17.5rem_1fr] md:px-4 lg:grid-rows-[auto] xl:grid-cols-[17.5rem_1fr_17.5rem]"
 			>
@@ -25,7 +26,10 @@ import MeCard from "@/components/card/meCard.astro"
 						id="left-sidebar"
 						class="mb-4 hidden w-full flex-col pt-0 md:col-span-1 md:col-start-1 md:row-start-1 md:row-end-3 md:block md:max-w-70"
 					>
-						<MeCard />
+						<div id="left-sidebar-sticky" class="flex flex-col w-full mt-0 gap-4 sticky top-4">
+							<MeCard />
+							<Category />
+						</div>
 					</div>
 				</div>
 				<!-- 中间栏 -->

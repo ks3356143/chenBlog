@@ -7,3 +7,10 @@ function joinUrl(...parts: string[]): string {
 export function url(path: string) {
     return joinUrl("", import.meta.env.BASE_URL, path)
 }
+
+// 工具函数 - 构建分类url
+export function getCategoryUrl(category: string | null): string {
+    if (!category || category.trim() === "" || category.trim().toLowerCase() === "暂未分类".toLowerCase())
+        return url("/archive/?uncategorized=true")
+    return url(`/archive/?category=${encodeURIComponent(category.trim())}`)
+}

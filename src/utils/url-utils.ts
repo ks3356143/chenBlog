@@ -14,3 +14,9 @@ export function getCategoryUrl(category: string | null): string {
         return url("/archive/?uncategorized=true")
     return url(`/archive/?category=${encodeURIComponent(category.trim())}`)
 }
+
+// 工具函数 - 获取分类url
+export function getTagUrl(tag: string): string {
+    if (!tag) return url("/archive/")
+    return url(`/archive/?tag=${encodeURIComponent(tag.trim())}`)
+}

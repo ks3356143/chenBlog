@@ -25,6 +25,7 @@
     --grey-2-a0: oklch(0.975 0 0 / 0);
     --shodow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
     --page-width: 100rem;
+    --deep-text: #19251f;
 
     /* 主题 */
     --primary: #00ba99;

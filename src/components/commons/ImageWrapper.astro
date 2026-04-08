@@ -54,7 +54,6 @@ let img: ImageMetadata | null = null
 if (isLocal) {
 	const files = import.meta.glob<ImageMetadata>("../../**/*.{png,jpg,jpeg,webp,avif,gif}", { import: "default" })
 	let normalizedPath = path.normalize(path.join("../../", basePath, src)).replace(/\\/g, "/")
-	console.log(normalizedPath);
 	const file = files[normalizedPath]
 	if (!file) {
 		console.error(`\n[ERROR] 图片没有找到：${normalizedPath.replace("../../", "src/")}`)

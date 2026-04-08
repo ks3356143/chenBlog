@@ -6,6 +6,10 @@ import Waves from "@/components/headers/Waves.astro"
 // 左边栏
 import MeCard from "@/components/card/meCard.astro"
 import Category from "@/components/card/Category.astro"
+import Gonggao from "@/components/card/Gonggao.astro"
+import Tags from "@/components/card/Tags.astro"
+// 右边栏
+import SiteStatus from "@/components/card/SiteStatus.astro"
 ---
 
 <BaseLayout title="YiLin">
@@ -26,9 +30,11 @@ import Category from "@/components/card/Category.astro"
 						id="left-sidebar"
 						class="mb-4 hidden w-full flex-col pt-0 md:col-span-1 md:col-start-1 md:row-start-1 md:row-end-3 md:block md:max-w-70"
 					>
-						<div id="left-sidebar-sticky" class="flex flex-col w-full mt-0 gap-4 sticky top-4">
+						<div id="left-sidebar-sticky" class="sticky top-4 mt-0 flex w-full flex-col gap-4">
 							<MeCard />
+							<Gonggao />
 							<Category />
+							<Tags />
 						</div>
 					</div>
 				</div>
@@ -45,7 +51,9 @@ import Category from "@/components/card/Category.astro"
 						id="right-sidebar"
 						class="mb-4 hidden w-full flex-col pt-0 xl:col-span-1 xl:col-start-3 xl:row-start-1 xl:row-end-3 xl:block xl:max-w-70"
 					>
-						右侧内容
+						<div class="mb-4 flex w-full flex-col gap-4">
+							<SiteStatus />
+						</div>
 					</div>
 				</div>
 			</div>

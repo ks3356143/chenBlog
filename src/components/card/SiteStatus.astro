@@ -1,0 +1,96 @@
+---
+import { siteConfig } from "@/config/siteConfig"
+import { getCategoryList, getSortedPosts, getTagList } from "@/utils/content-utils"
+
+interface Props {
+	class?: string
+	style?: string
+}
+
+const { class: className, style } = Astro.props
+
+// 从站点配置获取开始时间
+const siteStartDate = siteConfig.siteStartDate || "2026-01-01"
+
+// 获取所有文章
+const posts = await getSortedPosts()
+const categories = await getCategoryList()
+const tags = await getTagList()
+
+// 计算总字数
+let totalWords = 0
+for (const post of posts) {
+	if (post.body) {
+		// 移除代码块和内联代码后计算字数
+		let text = post.body
+			.replace(/```[\s\S]*?```/g, "") // 移除代码块
+			.replace(/`[^`]*`/g, "") // 移除内联代码
+			.replace(/\s+/g, " ") // 合并空白
+			.trim()
+
+		// 分别计算中文字符和英文字符
+		const chineseChars = text.match(/[\u4e00-\u9fa5]/g) || []
+		const englishChars = text.match(/[a-zA-Z]/g) || []
+
+		totalWords += chineseChars.length + englishChars.length
+	}
+}
+
+// 格式化数字（添加千位分隔符）
+function formatNumber(num: number): string {
+	return num.toLocaleString()
+}
+
+// 获取最新文章日期（用于客户端计算）
+const latestPost = posts.reduce((latest, post) => {
+	if (!latest) return post
+	return post.data.published > latest.data.published ? post : latest
+}, posts[0])
+
+const lastPostDate = latestPost ? latestPost.data.published.toISOString() : null
+
+const stats = [
+	{
+		icon: "material-symbols:article-outline",
+		label: "文章",
+		value: posts.length,
+	},
+	{
+		icon: "material-symbols:folder-outline",
+		label: "分类",
+		value: categories.length,
+	},
+	{
+		icon: "material-symbols:label-outline",
+		label: "标签",
+		value: tags.length,
+	},
+	{
+		icon: "material-symbols:text-ad-outline-rounded",
+		label: "总字数",
+		value: totalWords,
+		formatted: true,
+	},
+	{
+		icon: "material-symbols:calendar-clock-outline",
+		label: "运行时长",
+		value: 0, // 将由客户端更新
+		suffix: "天",
+		dynamic: true,
+		id: "running-days",
+	},
+	{
+		icon: "mingcute:heartbeat-line",
+		label: "最后活动",
+		value: 0, // 将由客户端更新
+		suffix: "天前",
+		dynamic: true,
+		id: "last-update",
+	},
+]
+---
+
+<div class="card-base">
+	<div class="card-title">站点统计</div>
+	<div></div>
+</div>

@@ -1,23 +1,56 @@
 ---
 import { getCategoryList } from "@/utils/content-utils"
+import { Icon } from "astro-icon/components"
 
 const categories = await getCategoryList()
+
+// 声明折叠高度
+const collapsedHeight = "7.5rem"
+let isCollapsed = true
 ---
 
-<div data-is-collapsed="true" class="card-base pb-4">
+<div class="card-base pb-4">
 	<div class="card-title">分类</div>
-	<div id="category" class="overflow-hidden px-4">
+	<div id="category" data-is-collapsed="true" class="collapsed overflow-hidden px-4">
 		{
 			categories.map(category => (
 				<a href={category.url} aria-label={`posts in ${category.name}`}>
 					<button class="btn-right">
-						<div class="flex items-center justify-between relative mr-2">
-							<div>{category.name}</div>
-							<div>{category.count}</div>
+						<div class="relative mr-2 flex items-center justify-between">
+							<div class="overflow-hidden text-left text-ellipsis whitespace-nowrap">{category.name}</div>
+							<div class="counter-tag">{category.count}</div>
 						</div>
 					</button>
 				</a>
 			))
 		}
 	</div>
+	{
+		isCollapsed && (
+			<div id="expand-btn" class="-mb-2 px-4">
+				<button class="btn-plain h-9 w-full text-(--primary)" title="更多" aria-label="更多">
+					<div class="flex items-center justify-center gap-2">
+						<Icon name="more" />
+						<span>更多</span>
+					</div>
+				</button>
+			</div>
+		)
+	}
 </div>
+
+<style define:vars={{ collapsedHeight }}>
+	.collapsed {
+		height: var(--collapsedHeight);
+	}
+</style>
+
+<script>
+	// 实现点击更多时取消内容
+	const CategoryExpandBtn = document.querySelector("#expand-btn")
+	const CategoryWrapper = document.querySelector("#category")
+	CategoryExpandBtn?.addEventListener("click", () => {
+		CategoryWrapper?.classList.remove("collapsed")
+		CategoryExpandBtn.classList.add("hidden")
+	})
+</script>

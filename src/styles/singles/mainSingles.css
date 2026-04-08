@@ -24,6 +24,12 @@
 }
 
 /* 右移动按钮-hover时文字右移动一点，其实就是hover实现padding-left效果 */
+/* 注意h-10,则为40px */
 .btn-right {
     @apply h-10 w-full bg-none pl-2 transition-all hover:bg-(--btn-plain-bg-hover) hover:pl-3 hover:text-(--primary) active:bg-(--btn-plain-bg-active) dark:text-neutral-300 dark:hover:text-(--primary);
+}
+
+/* 分类数字tag */
+.counter-tag {
+    @apply transition px-2 h-7 ml-4 min-w-8 text-sm font-bold text-(--btn-content) dark:text-(--deep-text) dark:bg-(--primary) bg-(--btn-plain-bg-hover) flex items-center justify-center
 }

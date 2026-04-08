@@ -2,11 +2,13 @@
 // 左边栏展示头像、名字、hello以及QQ、微信等内容
 import { Icon } from "astro-icon/components"
 import ImageWrapper from "@/components/commons/ImageWrapper.astro"
+
+const isDev = import.meta.env.DEV
 ---
 
 <div class="card-base p-3">
 	<a aria-label="Go to About" href="/about/">
-		<ImageWrapper src="assets/touxiang.jpeg" />
+		<ImageWrapper src={ isDev ? "assets/touxiangDev.png": "assets/touxiang.jpeg" } loading="eager" />
 	</a>
 	<div class="px-2">
 		<div class="mb-1 text-center text-xl font-bold transition dark:text-neutral-50">犟哟</div>

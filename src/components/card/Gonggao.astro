@@ -1,0 +1,11 @@
+---
+// 本组件为公告卡片，公告内容为config里面配置
+import { siteConfig } from "@/config/siteConfig"
+
+const announcementText = siteConfig.announcement.text
+---
+
+<div class="card-base">
+	<div class="card-title">公告</div>
+	<div id="announcement" class="px-4 overflow-hidden mb-3 text-neutral-600 dark:text-neutral-300 leading-relaxed">{announcementText}</div>
+</div>

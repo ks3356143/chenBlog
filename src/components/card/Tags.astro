@@ -1,0 +1,20 @@
+---
+import ButtonTag from "@/components/commons/ButtonTag.astro"
+import { getTagList } from "@/utils/content-utils"
+import { getTagUrl } from "@/utils/url-utils"
+
+const tags = await getTagList()
+---
+
+<div class="card-base pb-4">
+	<div class="card-title">标签</div>
+	<div id="cardTags" class="collapsed flex flex-wrap gap-2 px-4 py-2">
+		{
+			tags.map(t => (
+				<ButtonTag href={getTagUrl(t.name)} label={`View all posts with the ${t.name.trim()} tag`}>
+					{t.name.trim()}
+				</ButtonTag>
+			))
+		}
+	</div>
+</div>

@@ -1,6 +1,6 @@
 ---
 title: 草稿示例-开发技巧
-published: 1970-01-01
+published: 2025-01-02
 tags: [Markdown, 博客, 演示]
 category: 开发技巧
 draft: true

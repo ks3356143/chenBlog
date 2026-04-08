@@ -15,6 +15,11 @@
     "tailwindcss": "^4.2.2"
   },
   "devDependencies": {
+    "@iconify-json/fa-solid": "^1.2.2",
+    "@iconify-json/fa6-solid": "^1.2.4",
+    "@iconify-json/fa7-solid": "^1.2.4",
+    "@iconify-json/material-symbols": "^1.2.65",
+    "@iconify-json/mingcute": "^1.2.7",
     "prettier": "^3.8.1",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-tailwindcss": "^0.7.2"

@@ -1,13 +1,7 @@
 ---
 import { siteConfig } from "@/config/siteConfig"
 import { getCategoryList, getSortedPosts, getTagList } from "@/utils/content-utils"
-
-interface Props {
-	class?: string
-	style?: string
-}
-
-const { class: className, style } = Astro.props
+import { Icon } from "astro-icon/components"
 
 // 从站点配置获取开始时间
 const siteStartDate = siteConfig.siteStartDate || "2026-01-01"
@@ -46,9 +40,9 @@ const latestPost = posts.reduce((latest, post) => {
 	if (!latest) return post
 	return post.data.published > latest.data.published ? post : latest
 }, posts[0])
-
 const lastPostDate = latestPost ? latestPost.data.published.toISOString() : null
 
+const todayText = "今日"
 const stats = [
 	{
 		icon: "material-symbols:article-outline",
@@ -90,7 +84,79 @@ const stats = [
 ]
 ---
 
-<div class="card-base">
+<div class="card-base pb-4">
 	<div class="card-title">站点统计</div>
-	<div></div>
+	<div class="overflow-hidden px-4">
+		<div class="flex flex-col gap-2">
+			{
+				stats.map(stat => (
+					<div class="flex items-center justify-between px-3 py-1.5">
+						<div class="flex items-center gap-2.5">
+							<div class="text-xl text-(--primary)">
+								<Icon name={stat.icon} />
+							</div>
+							<span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">{stat.label}</span>
+						</div>
+						<div class="flex items-center">
+							<span
+								class="text-base font-bold text-neutral-900 dark:text-neutral-100"
+								data-stat-id={stat.id}
+							>
+								{stat.formatted ? formatNumber(stat.value) : stat.value}
+							</span>
+							{stat.suffix && (
+								<span class="ml-1 text-sm text-neutral-500 dark:text-neutral-400">{stat.suffix}</span>
+							)}
+						</div>
+					</div>
+				))
+			}
+		</div>
+	</div>
 </div>
+
+<script is:inline define:vars={{ siteStartDate, lastPostDate, todayText }}>
+	function updateDynamicStats() {
+		const today = new Date()
+
+		// 更新运行天数
+		const startDate = new Date(siteStartDate)
+		const diffTime = Math.abs(today.getTime() - startDate.getTime())
+		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+		const runningDaysElements = document.querySelectorAll('[data-stat-id="running-days"]')
+		runningDaysElements.forEach(element => {
+			element.textContent = diffDays.toString()
+		})
+
+		// 更新最后活动时间
+		if (lastPostDate) {
+			const lastPost = new Date(lastPostDate)
+			const timeSinceLastPost = Math.abs(today.getTime() - lastPost.getTime())
+			const daysSinceLastUpdate = Math.floor(timeSinceLastPost / (1000 * 60 * 60 * 24))
+
+			const lastUpdateElements = document.querySelectorAll('[data-stat-id="last-update"]')
+			lastUpdateElements.forEach(element => {
+				if (daysSinceLastUpdate === 0) {
+					element.textContent = todayText
+					if (element.nextElementSibling) {
+						element.nextElementSibling.style.display = "none"
+					}
+				} else {
+					element.textContent = daysSinceLastUpdate.toString()
+					if (element.nextElementSibling) {
+						element.nextElementSibling.style.display = ""
+					}
+				}
+			})
+		}
+	}
+
+	// 页面加载时更新
+	updateDynamicStats()
+
+	// 页面切换时重新更新
+	document.addEventListener("swup:contentReplaced", () => {
+		setTimeout(updateDynamicStats, 100)
+	})
+</script>

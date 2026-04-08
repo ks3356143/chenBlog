@@ -60,6 +60,17 @@ import Calender from "@/components/card/Calender.astro"
 						</div>
 					</div>
 				</div>
+				<!-- 移动端：将左右卡片放下面 -->
+				<div id="mobile-bottom-sidebar" class="col-span-1 mt-4 block md:hidden">
+					<div id="bottom-sidebar" class="flex w-full flex-col pt-0"></div>
+					<div class="flex w-full flex-col gap-4">
+						<MeCard />
+						<Gonggao />
+						<Category />
+						<Tags />
+						<SiteStatus />
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>

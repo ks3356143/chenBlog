@@ -1,12 +1,242 @@
 ---
-import ImageWrapper from "./commons/ImageWrapper.astro"
+import { getBackgroundImages } from "@/utils/layout-utils"
+import ImageWrapper from "@/components/commons/ImageWrapper.astro"
+import { backgroundWallpaper } from "@/config/backgroundWallPaper"
+import { getImageQuality } from "@/utils/image-utils"
+
+// 获取所有背景图-images数组、isMultiple布尔值
+const backgroundImages = getBackgroundImages()
+const configQuality = getImageQuality()
+const backgroundInterval = Math.max(backgroundWallpaper.carousel?.interval ?? 5000, 3000)
+
+// kb样式
+const kenBurnsStyle = `
+  @keyframes bannerKenBurns {
+    0% {
+      transform: scale(1);
+    }
+    100% {
+      transform: scale(1.1);
+    }
+  }
+  .banner-kb {
+    animation: bannerKenBurns ${backgroundInterval + 1500}ms ease-in-out forwards;
+  }
+`
 ---
 
-<ImageWrapper
-	class="h-[60vh] w-full overflow-hidden"
-	src="assets/covers/1.jpg"
-	alt="顶部图片"
-	loading="eager"
-	layout="constrained"
-	position="center"
-/>
+<div id="wallpaper-wrapper">
+	<div
+		id="banner-images-container"
+		data-count={backgroundImages.images.length}
+		data-carousel-enable={backgroundWallpaper.carousel?.enable ?? true}
+		data-carousel-interval={backgroundInterval}
+		class="relative h-full w-full"
+	>
+		<!-- 默认渲染第一张，其他放入template给客户端切换：未使用样式banner-image-slot -->
+		{
+			backgroundImages.images.length > 0 && (
+				<div class="banner-image-slot absolute inset-0">
+					<ImageWrapper
+						id="banner"
+						alt="background paper of the blog"
+						class="h-full object-cover"
+						src={backgroundImages.images[0]}
+						position={backgroundWallpaper.position}
+						widths={[1280, 1920, 2560]}
+						sizes="100vw"
+						loading="eager"
+						fetchpriority="high"
+						quality={configQuality}
+					/>
+				</div>
+			)
+		}
+		<!-- 未使用样式：banner-tpl -->
+		{
+			backgroundImages.images.slice(1).map(src => (
+				<template class="banner-tpl">
+					<ImageWrapper
+						id="banner"
+						alt="background paper of the blog"
+						class="h-full object-cover"
+						src={src}
+						position={backgroundWallpaper.position}
+						widths={[1280, 1920, 2560]}
+						sizes="100vw"
+						loading="eager"
+						fetchpriority="high"
+						quality={configQuality}
+					/>
+				</template>
+			))
+		}
+	</div>
+
+	<!-- 轮播ken Burns样式，放在body中不受Swup head替换影响 -->
+	<Fragment set:html={`<style>${kenBurnsStyle}</style>`} />
+</div>
+
+<!-- 随机图片脚本，利用template元素content属性渲染 -->
+<script is:inline data-swup-ignore-script>
+	;(function randomizeBannerImage() {
+		const container = document.querySelector("#banner-images-container")
+		if (!container) return
+		const count = parseInt(container.dataset.count || "0", 10)
+		if (count <= 1) return
+		// 保存 SSR 初始第一张图的 HTML，供后续轮播收集完整帧序列使用
+		if (typeof window.__bannerInitialFrameHtml === "undefined") {
+			window.__bannerInitialFrameHtml = {}
+		}
+		function rememberInitialFrame(slotClass) {
+			var slot = container.querySelector("." + slotClass)
+			if (!slot) return
+			if (!window.__bannerInitialFrameHtml[slotClass]) {
+				window.__bannerInitialFrameHtml[slotClass] = slot.innerHTML
+			}
+		}
+		rememberInitialFrame("banner-image-slot")
+		// F5刷新重置，Swup切换保留
+		if (typeof window.__bannerRandomIndex === "undefined") {
+			window.__bannerRandomIndex = count > 1 ? Math.floor(Math.random() * count) : 0
+		}
+		// 从template替换默认图片（index 0 = 已渲染的默认图，>0 = template）
+		function applyRandom(slotClass, tplClass, randomIndex) {
+			if (randomIndex === 0) return
+			const slot = container.querySelector("." + slotClass)
+			const templates = container.querySelectorAll("." + tplClass)
+			if (!slot || !templates.length) return
+			const tpl = templates[randomIndex - 1]
+			if (!tpl) return
+			slot.innerHTML = ""
+			slot.appendChild(tpl.content.cloneNode(true))
+		}
+		applyRandom("banner-image-slot", "banner-tpl", window.__bannerRandomIndex)
+	})()
+</script>
+
+<!-- 横幅图片轮播脚本 -->
+<script is:inline data-swup-ignore-script>
+	;(function initBannerCarousel() {
+		const container = document.getElementById("banner-images-container")
+		if (!container) return
+
+		const count = parseInt(container.dataset.count || "0", 10)
+		if (count <= 1) return
+
+		const interval = parseInt(container.dataset.carouselInterval || "8000", 10)
+		const defaultEnabled = container.dataset.carouselEnable === "true"
+		const FADE_MS = 1500
+
+		// 收集所有帧内容
+		if (!window.__bannerCarouselFrames) window.__bannerCarouselFrames = {}
+
+		function collectFrames(slotClass, tplClass) {
+			if (window.__bannerCarouselFrames[slotClass]) return
+			const frames = []
+			const initialFrame = window.__bannerInitialFrameHtml && window.__bannerInitialFrameHtml[slotClass]
+			const slot = container.querySelector("." + slotClass)
+			if (initialFrame) {
+				frames.push(initialFrame)
+			} else if (slot) {
+				frames.push(slot.innerHTML)
+			}
+			const tpls = container.querySelectorAll("." + tplClass)
+			for (let i = 0; i < tpls.length; i++) {
+				frames.push(tpls[i].innerHTML)
+			}
+			window.__bannerCarouselFrames[slotClass] = frames
+		}
+		collectFrames("banner-image-slot", "banner-tpl")
+		if (typeof window.__bannerCarouselIndex === "undefined") {
+			window.__bannerCarouselIndex = window.__bannerRandomIndex ? window.__bannerRandomIndex : 0
+		}
+		// 给首张图启动kenburns
+		function applyInitialKB(slotClass) {
+			const slot = container.querySelector("." + slotClass)
+			if (!slot) return
+			// 移除可能残留的旧class，重新触发动画
+			slot.classList.remove("banner-kb")
+			void slot.offsetWidth // 强制回流
+			slot.classList.add("banner-kb")
+		}
+		function crossfade(slotClass, totalCount) {
+			if (totalCount <= 1) return
+			const frames = window.__bannerCarouselFrames[slotClass] // 取出帧
+			if (!frames || frames.length === 0) return
+
+			const oldSlot = container.querySelector("." + slotClass)
+			if (!oldSlot) return
+			// 计算下一个index
+			const currentIndex = window.__bannerCarouselIndex || 0
+			const nextIndex = (currentIndex + 1) % frames.length
+			window.__bannerCarouselIndex = nextIndex
+			// 新层：叠在旧的上方
+			const newSlot = document.createElement("div")
+			// 复制基础class，去掉banner-kb避免继承旧动画状态
+			const baseClass = oldSlot.className.replace(/\bbanner-kb\b/g, "").trim()
+			newSlot.className = baseClass
+			newSlot.style.opacity = "0"
+			newSlot.style.transition = "opacity " + FADE_MS + "ms ease-in-out"
+			newSlot.innerHTML = frames[nextIndex]
+			oldSlot.parentNode.insertBefore(newSlot, oldSlot.nextSibling)
+			// 双requestAF
+			requestAnimationFrame(function () {
+				requestAnimationFrame(function () {
+					newSlot.style.opacity = "1"
+					newSlot.classList.add("banner-kb")
+				})
+			})
+			// 淡入淡出后移除旧层，清理transition（避免影响后续动画）
+			setTimeout(function () {
+				if (oldSlot.parentNode) oldSlot.parentNode.removeChild(oldSlot)
+				newSlot.style.transition = ""
+			}, FADE_MS + 50)
+		}
+
+		let timerId = null
+
+		function startCarousel() {
+			stopCarousel()
+			if (!defaultEnabled) return
+			// 首长图立即KB缩放
+			applyInitialKB("banner-image-slot")
+			timerId = setInterval(function () {
+				if (!defaultEnabled) {
+					stopCarousel()
+					return
+				}
+				crossfade("banner-image-slot", count)
+			}, interval)
+		}
+
+		function stopCarousel() {
+			if (timerId !== null) {
+				clearInterval(timerId)
+				timerId = null
+			}
+		}
+
+		window.addEventListener("bannerCarouselChange", function (e) {
+			e.detail && e.detail.enabled ? startCarousel() : stopCarousel()
+		})
+
+		window.addEventListener("wallpaperModeChange", function (e) {
+			if (e.detail && e.detail.mode === "banner") {
+				if (isCarouselEnabled()) startCarousel()
+			} else {
+				stopCarousel()
+			}
+		})
+		startCarousel()
+	})()
+</script>
+
+<style is:global>
+	@reference "../styles/global.css";
+	@layer components {
+		#wallpaper-wrapper {
+			height: 65vh;
+		}
+	}
+</style>

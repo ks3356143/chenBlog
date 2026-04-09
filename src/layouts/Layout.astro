@@ -11,6 +11,12 @@ import Tags from "@/components/card/Tags.astro"
 // 右边栏
 import SiteStatus from "@/components/card/SiteStatus.astro"
 import Calender from "@/components/card/Calender.astro"
+import { siteConfig } from "@/config/siteConfig"
+// 中间栏
+import CategoryBar from "@/components/layout/CategoryBar.astro"
+
+// 中间部分-分类导航栏是否显示根据配置】
+const showCategoryBar = !!siteConfig.categoryBar
 ---
 
 <BaseLayout title="YiLin">
@@ -44,7 +50,14 @@ import Calender from "@/components/card/Calender.astro"
 					id="center-content"
 					class="col-span-1 min-w-0 overflow-hidden md:col-span-1 md:col-start-2 xl:col-span-1 xl:col-start-2 xl:col-end-3"
 				>
-					中间内容
+					<!-- 分类导航栏：始终渲染 -->
+					{
+						showCategoryBar && (
+							<div id="category-bar-wrapper">
+								<CategoryBar />
+							</div>
+						)
+					}
 				</div>
 				<!-- 右边栏 -->
 				<div id="right-sidebar-wrapper" class="contents">

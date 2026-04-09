@@ -1,0 +1,151 @@
+---
+import { getCategoryList, getSortedPostsList } from "@/utils/content-utils"
+import { Icon } from "astro-icon/components"
+import { url } from "@/utils/url-utils"
+
+const categories = await getCategoryList()
+const totalPosts = (await getSortedPostsList()).length
+const homeUrl = url("/")
+const archiveUrl = url("/archive/")
+---
+
+<div id="category-bar" data-home-path={homeUrl} data-archive-path={archiveUrl} class="card-base category-bar p-3">
+	<div class="flex items-center gap-2">
+		<a
+			href={homeUrl}
+			class="btn-regular-reverse flex h-7 shrink-0 items-center justify-center px-2 py-1 text-sm transition-colors duration-150 ease-out"
+			aria-label="首页"
+			data-category-name="__home__"
+		>
+			<Icon name="material-symbols:home" class="text-lg" />
+		</a>
+		<a
+			href={archiveUrl}
+			class="btn-inner-blank flex h-7 shrink-0 items-center justify-center px-3 py-1 text-sm whitespace-nowrap transition-colors duration-150 ease-out"
+			data-category-name="__archive__"
+		>
+			归档
+			<span class="ml-1 text-xs opacity-60">{totalPosts}</span>
+		</a>
+		<div class="category-divider shrink-0"></div>
+		<div class="relative min-w-0 flex-1">
+			<div class="scroll-fade scroll-fade-left" aria-hidden="true"></div>
+			<div class="category-scroll flex gap-2 overflow-x-auto">
+				{
+					categories.map(cat => (
+						<a
+							href={cat.url}
+							class="btn-inner-blank flex h-7 items-center justify-center px-3 py-1 text-sm whitespace-nowrap transition-colors duration-150 ease-out"
+							data-category-name={cat.name}
+						>
+							{cat.name}
+							<span class="ml-1 text-xs opacity-60">{cat.count}</span>
+						</a>
+					))
+				}
+			</div>
+			<div class="scroll-fade scroll-fade-right" aria-hidden="true"></div>
+		</div>
+	</div>
+</div>
+
+<style>
+	.category-bar {
+		/* 和slot内容间隔 */
+		margin-bottom: 1rem;
+	}
+
+	.category-divider {
+		width: 1px;
+		align-self: stretch;
+		background-color: var(--line-divider);
+	}
+
+	.scroll-fade {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 2.5rem;
+		pointer-events: none;
+		opacity: 0;
+		transition: opacity 300ms ease-in-out;
+		z-index: 1;
+	}
+
+	/* 通过JS控制添加移除data-visible */
+	.scroll-fade[data-visible] {
+		opacity: 1;
+	}
+
+	.scroll-fade-left {
+		left: 0;
+		background: linear-gradient(to left, transparent, var(--card-bg));
+	}
+
+	.scroll-fade-right {
+		right: 0;
+		background: linear-gradient(to right, transparent, var(--card-bg));
+	}
+
+	/* 去掉滚动条展示，但是具有滚动条 */
+	.category-scroll {
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+		scroll-behavior: smooth;
+	}
+
+	.category-scroll::-webkit-scrollbar {
+		display: none;
+	}
+</style>
+
+<script>
+	// 初始化滚动特性-横线滚动/左右背景透明渐变
+	function initScrollFeatures() {
+		const bar = document.getElementById("category-bar")
+		if (!bar) return
+		const scroll = bar.querySelector<HTMLElement>(".category-scroll")
+		if (!scroll) return
+		// 鼠标横线滚动
+		scroll.addEventListener(
+			"wheel",
+			e => {
+				if (scroll.scrollWidth <= scroll.clientWidth) return // 如果比元素口小，则不用横线滚动
+				e.preventDefault()
+				scroll.scrollLeft += e.deltaY
+			},
+			{ passive: false },
+		)
+		// 滚动时更新左右的透明渐变
+		scroll.addEventListener("scroll", updateScrollHint)
+		window.addEventListener("resize", updateScrollHint)
+		updateScrollHint()
+	}
+	function updateScrollHint() {
+		const bar = document.getElementById("category-bar")
+		if (!bar) return
+		const scroll = bar.querySelector<HTMLElement>(".category-scroll")
+		const fadeLeft = bar.querySelector<HTMLElement>(".scroll-fade-left")
+		const fadeRight = bar.querySelector<HTMLElement>(".scroll-fade-right")
+		if (!scroll || !fadeLeft || !fadeRight) return
+
+		// 判断是否有横向滚动需求
+		const hasOverflow = scroll.scrollWidth > scroll.clientWidth + 1
+		// 判断滚动条是否在最左侧/最右侧
+		const isStart = scroll.scrollLeft <= 1
+		const isEnd = scroll.scrollLeft + scroll.clientWidth >= scroll.scrollWidth - 1
+
+		if (hasOverflow && !isStart) {
+			fadeLeft.setAttribute("data-visible", "")
+		} else {
+			fadeLeft.removeAttribute("data-visible")
+		}
+
+		if (hasOverflow && !isEnd) {
+			fadeRight.setAttribute("data-visible", "")
+		} else {
+			fadeRight.removeAttribute("data-visible")
+		}
+	}
+	initScrollFeatures()
+</script>

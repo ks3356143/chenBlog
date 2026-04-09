@@ -98,3 +98,18 @@ export async function getSortedPosts() {
 
     return sorted
 }
+export type PostForList = {
+    id: string
+    data: CollectionEntry<"posts">["data"]
+}
+export async function getSortedPostsList(): Promise<PostForList[]> {
+    const sortedFullPosts = await getRawSortedPosts()
+
+    // delete post.body
+    const sortedPostsList = sortedFullPosts.map((post) => ({
+        id: post.id,
+        data: post.data,
+    }))
+
+    return sortedPostsList
+}

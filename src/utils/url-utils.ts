@@ -4,6 +4,7 @@ function joinUrl(...parts: string[]): string {
     return joined.replace(/\/+/g, "/") // 将多个//变为单个/
 }
 
+/** 该工具添加BASE_URL */
 export function url(path: string) {
     return joinUrl("", import.meta.env.BASE_URL, path)
 }

@@ -1,4 +1,4 @@
-import { backgroundWallpaper } from "@/config/backgroundWallPaper"
+import { backgroundWallpaper } from "@/config/backgroundWallpaper"
 
 // 将单个值或数组统一为数组
 const toArray = (src: string | string[] | undefined): string[] => {

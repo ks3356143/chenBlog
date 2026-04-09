@@ -108,3 +108,24 @@
         transition: transform 0.5s ease-out !important;
     }
 }
+
+/* banner-title文字样式 */
+.banner-dim-overlay {
+    /* 横幅背景暗层透明度 */
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.banner-title {
+    /* 主标题字体 */
+    font-size: 2.8rem !important; /* 增大字体大小 */
+    line-height: 1.1 !important;
+    margin-bottom: 0.5rem !important;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8) !important; /* 增强阴影 */
+}
+
+.banner-subtitle {
+    /* 副标题字体 */
+    font-size: 1rem !important;
+    line-height: 1.3 !important;
+    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7) !important;
+}

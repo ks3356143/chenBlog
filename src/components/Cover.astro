@@ -3,6 +3,7 @@ import { getBackgroundImages } from "@/utils/layout-utils"
 import ImageWrapper from "@/components/commons/ImageWrapper.astro"
 import { backgroundWallpaper } from "@/config/backgroundWallPaper"
 import { getImageQuality } from "@/utils/image-utils"
+import TypeMechine from "@/components/features/TypeMechine.astro"
 
 // 获取所有背景图-images数组、isMultiple布尔值
 const backgroundImages = getBackgroundImages()
@@ -23,6 +24,21 @@ const kenBurnsStyle = `
     animation: bannerKenBurns ${backgroundInterval + 1500}ms ease-in-out forwards;
   }
 `
+
+// 横幅文字是否允许
+const enableHomeText = backgroundWallpaper.homeText.enable
+
+// 随机取副标题
+// 随机选择副标题（当打字机关闭且为数组时）
+const getRandomSubtitle = () => {
+	const subtitle = backgroundWallpaper.homeText?.subtitle
+	if (Array.isArray(subtitle)) {
+		const randomIndex = Math.floor(Math.random() * subtitle.length)
+		return subtitle[randomIndex]
+	}
+	return subtitle
+}
+const randomSubtitle = getRandomSubtitle()
 ---
 
 <div id="wallpaper-wrapper">
@@ -75,6 +91,51 @@ const kenBurnsStyle = `
 
 	<!-- 轮播ken Burns样式，放在body中不受Swup head替换影响 -->
 	<Fragment set:html={`<style>${kenBurnsStyle}</style>`} />
+
+	<!-- 主页横幅文字 -->
+	<div id="banner-dim-container" class="pointer-events-none absolute inset-0 z-0">
+		<div class="banner-dim-overlay absolute inset-0"></div>
+	</div>
+
+	<div id="banner-overlay-container" class="pointer-events-none absolute inset-0 z-20">
+		{
+			enableHomeText && (
+				<div class={`banner-home-text-overlay absolute inset-0 z-20 flex items-center justify-center`}>
+					<div class="mb-0 w-4/5 text-center lg:w-3/4">
+						<div class="flex flex-col">
+							{backgroundWallpaper.homeText?.title && (
+								<div
+									class="banner-title mb-2 leading-tight font-bold text-white lg:mb-4"
+									style={{ fontSize: backgroundWallpaper.homeText.titleSize || "3rem" }}
+								>
+									{backgroundWallpaper.homeText.title}
+								</div>
+							)}
+							{backgroundWallpaper.homeText?.subtitle && (
+								<div
+									id="banner-subtitle"
+									class="banner-subtitle leading-snug text-white/90"
+									style={{ fontSize: backgroundWallpaper.homeText.subtitleSize || "1.5rem" }}
+									data-subtitles={JSON.stringify(backgroundWallpaper.homeText.subtitle)}
+								>
+									{backgroundWallpaper.homeText.typewriter?.enable ? (
+										<TypeMechine
+											text={backgroundWallpaper.homeText.subtitle}
+											speed={backgroundWallpaper.homeText.typewriter.speed}
+											deleteSpeed={backgroundWallpaper.homeText.typewriter.deleteSpeed}
+											pauseTime={backgroundWallpaper.homeText.typewriter.pauseTime}
+										/>
+									) : (
+										randomSubtitle
+									)}
+								</div>
+							)}
+						</div>
+					</div>
+				</div>
+			)
+		}
+	</div>
 </div>
 
 <!-- 随机图片脚本，利用template元素content属性渲染 -->

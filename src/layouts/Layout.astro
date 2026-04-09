@@ -17,9 +17,15 @@ import CategoryBar from "@/components/layout/CategoryBar.astro"
 
 // 中间部分-分类导航栏是否显示根据配置】
 const showCategoryBar = !!siteConfig.categoryBar
+
+interface Props {
+	title?: string
+}
+
+const { title } = Astro.props
 ---
 
-<BaseLayout title="YiLin">
+<BaseLayout title={title ?? "YILIn"}>
 	<Header />
 	<div class="relative z-10 w-full overflow-hidden opacity-100 transition duration-700">
 		<Cover />
@@ -58,6 +64,15 @@ const showCategoryBar = !!siteConfig.categoryBar
 							</div>
 						)
 					}
+					<!-- 主内容区域slot区域->此时暂未集成swup后续集成 -->
+					<main id="swup-container" class="transition-main">
+						<!-- 每个页面均设置隐藏title，用于SEO -->
+						<h1 class="sr-only">{title}</h1>
+						<!-- TODO:网格布局的页面展示 -->
+						<div id="content-wrapper" class="transition-leaving">
+							<slot />
+						</div>
+					</main>
 				</div>
 				<!-- 右边栏 -->
 				<div id="right-sidebar-wrapper" class="contents">

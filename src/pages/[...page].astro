@@ -1,0 +1,24 @@
+---
+import type { GetStaticPaths } from "astro"
+import Layout from "@/layouts/Layout.astro"
+import { siteConfig } from "@/config/siteConfig"
+import { getSortedPosts } from "@/utils/content-utils"
+
+export const getStaticPaths = (async ({ paginate }) => {
+	const allBlogPosts = await getSortedPosts()
+	// 使用配置中的文章数量
+	const pageSize = siteConfig.perPagePosts
+	return paginate(allBlogPosts, { pageSize })
+}) satisfies GetStaticPaths
+
+const { page } = Astro.props
+// 总文章数量 - 用于渲染计时
+const len = page.data.length
+
+---
+
+<Layout>
+	<h1>首页</h1>
+</Layout>
+
+<script></script>

@@ -3,7 +3,7 @@ title: 草稿示例-生活心得
 published: 2025-01-02
 tags: [Markdown, 博客, 演示]
 category: 生活心得
-draft: true
+draft: false
 ---
 
 # 这篇文章是草稿

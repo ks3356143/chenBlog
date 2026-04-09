@@ -20,5 +20,7 @@ export const siteConfig = {
         text: "欢迎来到我的博客，在这里可以一起进步，一起学习！2026年起航！",
     },
     // 中间部分分类导航
-	categoryBar: true,
+    categoryBar: true,
+    // 配置分页每页文章数量
+    perPagePosts: 10,
 }

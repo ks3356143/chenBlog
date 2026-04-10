@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
 :root {
@@ -27,6 +28,7 @@
     --page-width: 100rem;
     --deep-text: #19251f;
     --title-active: #3a9371;
+    --hue: 175;
 
     /* 主题 */
     --primary: #00ba99;
@@ -42,6 +44,8 @@
     --btn-content: #008760;
     --btn-regular-bg-hover: #c0e9d6;
     --btn-regular-bg-active: #9cdfc1;
+    --btn-card-bg-hover: #fcf7f8;
+    --btn-card-bg-active: #cbe5dd;
 
     /* 二级设置 */
     --text-color: var(--grey-7);
@@ -63,6 +67,8 @@
     --btn-content: #6cc29e;
     --btn-regular-bg-hover: #2d493d;
     --btn-regular-bg-active: #37584a;
+    --btn-card-bg-hover: #1d332d;
+    --btn-card-bg-active: #264139;
 
     /* 二级设置 */
     --text-color: var(--grey-4);

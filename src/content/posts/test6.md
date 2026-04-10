@@ -86,31 +86,6 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 export const sidebarLayoutConfig: SidebarLayoutConfig = {
   enable: true,
   position: "both", // 双侧边栏
-}
-export const sidebarLayoutConfig: SidebarLayoutConfig = {
-  enable: true,
-  position: "both", // 双侧边栏
-}
-export const sidebarLayoutConfig: SidebarLayoutConfig = {
-  enable: true,
-  position: "both", // 双侧边栏
-}
-export const sidebarLayoutConfig: SidebarLayoutConfig = {
-  enable: true,
-  position: "both", // 双侧边栏
-}
-export const sidebarLayoutConfig: SidebarLayoutConfig = {
-  enable: true,
-  position: "both", // 双侧边栏
-}
-export const sidebarLayoutConfig: SidebarLayoutConfig = {
-  enable: true,
-  position: "both", // 双侧边栏
-}
-export const sidebarLayoutConfig: SidebarLayoutConfig = {
-  enable: true,
-  position: "both", // 双侧边栏
-}
 ```
 
 ---

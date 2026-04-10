@@ -11,15 +11,21 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
     "astro": "^6.1.5",
+    "astro-expressive-code": "^0.41.7",
     "astro-icon": "^1.1.5",
     "tailwindcss": "^4.2.2"
   },
   "devDependencies": {
+    "@expressive-code/plugin-collapsible-sections": "^0.41.7",
+    "@expressive-code/plugin-line-numbers": "^0.41.7",
     "@iconify-json/fa-solid": "^1.2.2",
     "@iconify-json/fa6-solid": "^1.2.4",
     "@iconify-json/fa7-solid": "^1.2.4",
     "@iconify-json/material-symbols": "^1.2.65",
     "@iconify-json/mingcute": "^1.2.7",
+    "@tailwindcss/typography": "^0.5.19",
+    "expressive-code-collapsible": "^0.1.0",
+    "expressive-code-language-badge": "^1.1.0",
     "mdast-util-to-string": "^4.0.0",
     "prettier": "^3.8.1",
     "prettier-plugin-astro": "^0.14.1",

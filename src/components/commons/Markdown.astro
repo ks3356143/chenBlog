@@ -1,0 +1,11 @@
+---
+interface Props {
+	class: string
+}
+const className = Astro.props.class
+---
+
+<!-- 注意custom-markdown样式在单独文件定义 -->
+<div data-pagefind-body class={`prose dark:prose-invert propse-base max-w-none! custom-markdown ${className}`}>
+	<slot />
+</div>

@@ -4,6 +4,7 @@ import Layout from "@/layouts/Layout.astro"
 import { siteConfig } from "@/config/siteConfig"
 import { getSortedPosts } from "@/utils/content-utils"
 import PostPage from "@/components/layout/PostPage.astro"
+import Pagination from "@/components/commons/Pagination.astro"
 
 export const getStaticPaths = (async ({ paginate }) => {
 	const allBlogPosts = await getSortedPosts()
@@ -19,6 +20,8 @@ const len = page.data.length
 
 <Layout>
 	<PostPage page={page} />
+	<!-- 分页组件 -->
+	{page.total > page.size && <Pagination class="mx-auto" page={page} />}
 </Layout>
 
 <script></script>

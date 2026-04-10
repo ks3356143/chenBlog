@@ -14,6 +14,7 @@ import Calender from "@/components/card/Calender.astro"
 import { siteConfig } from "@/config/siteConfig"
 // 中间栏
 import CategoryBar from "@/components/layout/CategoryBar.astro"
+import Footer from "@/components/layout/Footer.astro"
 
 // 中间部分-分类导航栏是否显示根据配置】
 const showCategoryBar = !!siteConfig.categoryBar
@@ -99,6 +100,8 @@ const { title } = Astro.props
 						<SiteStatus />
 					</div>
 				</div>
+				<!-- Footer -->
+				<Footer />
 			</div>
 		</div>
 	</div>

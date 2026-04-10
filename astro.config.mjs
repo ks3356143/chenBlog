@@ -38,9 +38,9 @@ export default defineConfig({
         expressiveCode({
             themes: ["one-light", "one-dark-pro"],
             useDarkModeMediaQuery: false,
-            customizeTheme:(theme)=>{
-                if (theme.name === "one-light") theme.name ="light"
-                if (theme.name === "one-dark-pro") theme.name ="dark"
+            customizeTheme: (theme) => {
+                if (theme.name === "one-light") theme.name = "light"
+                if (theme.name === "one-dark-pro") theme.name = "dark"
                 return theme
             },
             themeCssSelector: (theme) => {

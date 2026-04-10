@@ -2,6 +2,7 @@
 title: 草稿示例-生活心得
 published: 2025-01-02
 tags: [Markdown, 博客, 演示]
+image: assets/postImages/chen4.webp
 category: 生活心得
 draft: false
 ---

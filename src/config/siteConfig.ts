@@ -23,4 +23,11 @@ export const siteConfig = {
     categoryBar: true,
     // 配置分页每页文章数量
     perPagePosts: 10,
+    // 文章列表布局配置
+    postListLayout: {
+        // 文章简介显示行数，设置0为不截断
+        descriptionLines: 2,
+    },
+    // 文章封面图回退路径设置
+    fallbackPath: "assets/postImages/loadingfalse.png",
 }

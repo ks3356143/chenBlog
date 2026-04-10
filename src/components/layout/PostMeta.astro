@@ -1,0 +1,48 @@
+---
+import { Icon } from "astro-icon/components"
+import { formatDateTimeToYYYYMMDDHHmm } from "@/utils/date-utils"
+import { getCategoryUrl } from "@/utils/url-utils"
+
+const COMPDES = "该组件是展示卡片里面的时间、归属分类信息"
+
+interface Props {
+	published: Date
+	category?: string
+}
+
+const { published, category } = Astro.props
+---
+
+<div
+	class="post-meta-root post-meta mb-4 flex flex-wrap items-center gap-4 gap-x-4 gap-y-2 text-neutral-500 dark:text-neutral-400"
+>
+	<div class="flex items-center">
+		<div class="meta-icon-regular meta-icon">
+			<Icon name="material-symbols:calendar-today-outline-rounded" class="text-xl" />
+		</div>
+		<span class="text-50 text-sm font-medium">{formatDateTimeToYYYYMMDDHHmm(published, "date")}</span>
+	</div>
+	<div class="flex items-center">
+		<div class="meta-icon-regular meta-icon">
+			<Icon name="material-symbols:book-2-outline-rounded" class="text-xl" />
+		</div>
+		<a
+			href={getCategoryUrl(category || "")}
+			class="btn-plain text-50 text-sm font-medium! whitespace-nowrap p-1.5"
+			aria-label={`View all posts in the ${category} category`}
+		>
+			{category}
+		</a>
+	</div>
+</div>
+
+<style>
+	.meta-icon {
+		margin-right: 0.5rem;
+		height: 2rem;
+		width: 2rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+</style>

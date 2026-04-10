@@ -1,0 +1,41 @@
+---
+import type { CollectionEntry } from "astro:content"
+import PostCard from "@/components/layout/PostCard.astro"
+import { url } from "@/utils/url-utils"
+const COMPDES = "该文件主要用于渲染分页文章"
+
+const { page } = Astro.props // 传入的分页后的文章
+
+// 定义文章类型
+type PostEntry = CollectionEntry<"posts">
+
+// 容器布局基本设置
+const baseClass = `flex flex-col gap-4 md:gap-4 list-mode`
+---
+
+<div
+	id="post-list-container"
+	data-default-layout="list"
+	class:list={["mb-4 transition-all duration-500 ease-in-out", baseClass]}
+>
+	{
+		page.data.map((entry: PostEntry, index: number) => (
+			<PostCard
+				entry={entry}
+				loading={index < 2 ? "eager" : "lazy"}
+				url={url(`/posts/${entry.id}`)}
+				title={entry.data.title}
+				published={entry.data.published}
+				updated={entry.data.updated}
+				tags={entry.data.tags}
+				category={entry.data.category}
+				image={entry.data.image}
+				description={entry.data.description}
+				draft={entry.data.draft}
+				pinned={entry.data.pinned}
+				password={!!entry.data.password}
+				class:list="post-card-item"
+			/>
+		))
+	}
+</div>

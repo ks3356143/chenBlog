@@ -2,6 +2,7 @@
 title: 草稿示例-开发技巧
 published: 2025-01-02
 tags: [Markdown, 博客, 演示]
+image: assets/postImages/chen3.webp
 category: 开发技巧
 draft: false
 ---

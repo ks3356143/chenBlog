@@ -19,6 +19,11 @@
     @apply border-(--primary) bg-(--primary) text-white hover:opacity-80;
 }
 
+/* 元数据Icon-regular样式，和btn-regular相同，取出hover效果、active效果 */
+.meta-icon-regular {
+    @apply flex items-center justify-center bg-(--btn-regular-bg) text-(--btn-content) transition-all duration-150 dark:text-white/75;
+}
+
 /* 空心按钮-即边框灰色，背景白色或黑色，hover时边框出现颜色 */
 .btn-inner-blank {
     background: transparent;
@@ -50,4 +55,9 @@
 /* 分类数字tag */
 .counter-tag {
     @apply ml-4 flex h-7 min-w-8 items-center justify-center bg-(--btn-plain-bg-hover) px-2 text-sm font-bold text-(--btn-content) transition dark:bg-(--primary) dark:text-(--deep-text);
+}
+
+/* a元素主题样式-前面带竖线 */
+.link-primary {
+    @apply flex items-center justify-start before:absolute before:left-[18px] before:hidden before:h-5 before:w-1 before:bg-(--primary) hover:text-(--primary) active:text-(--title-active) md:before:block dark:hover:text-(--primary) dark:active:text-(--title-active);
 }

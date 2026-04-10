@@ -2,6 +2,7 @@
 title: 草稿示例
 published: 2025-01-02
 tags: [Markdown, 博客, 演示]
+image: assets/postImages/chen2.webp
 category: 文章示例
 draft: false
 ---

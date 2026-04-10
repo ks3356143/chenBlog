@@ -1,5 +1,5 @@
 ---
-title: 草稿示例
+title: 草稿示例-无首图
 published: 2025-01-02
 tags: [Markdown, 博客, 演示]
 category: 使用技巧

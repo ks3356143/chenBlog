@@ -38,11 +38,14 @@ export default defineConfig({
         expressiveCode({
             themes: ["one-light", "one-dark-pro"],
             useDarkModeMediaQuery: false,
+            customizeTheme:(theme)=>{
+                if (theme.name === "one-light") theme.name ="light"
+                if (theme.name === "one-dark-pro") theme.name ="dark"
+                return theme
+            },
             themeCssSelector: (theme) => {
-                // 根据主题的原始名称，返回对应的 CSS 选择器
                 if (theme.name === "one-light") return '[data-theme="light"]'
                 if (theme.name === "one-dark-pro") return '[data-theme="dark"]'
-                // 其他主题返回默认选择器
                 return `[data-theme="${theme.name}"]`
             },
             plugins: [

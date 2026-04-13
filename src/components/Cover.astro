@@ -4,6 +4,22 @@ import ImageWrapper from "@/components/commons/ImageWrapper.astro"
 import { backgroundWallpaper } from "@/config/backgroundWallpaper"
 import { getImageQuality } from "@/utils/image-utils"
 import TypeMechine from "@/components/features/TypeMechine.astro"
+import { Icon } from "astro-icon/components"
+import { formatDateTimeToYYYYMMDDHHmm } from "@/utils/date-utils"
+
+interface Props {
+	isPostPage?: boolean
+	bannerPostMeta?: {
+		title: string
+		published: Date
+		updated?: Date
+		words?: number
+		minutes?: number
+	}
+}
+
+// 如果是postPage-文章详情则不展示打字机
+const { bannerPostMeta, isPostPage = false } = Astro.props
 
 // 获取所有背景图-images数组、isMultiple布尔值
 const backgroundImages = getBackgroundImages()
@@ -28,7 +44,6 @@ const kenBurnsStyle = `
 // 横幅文字是否允许
 const enableHomeText = backgroundWallpaper.homeText.enable
 
-// 随机取副标题
 // 随机选择副标题（当打字机关闭且为数组时）
 const getRandomSubtitle = () => {
 	const subtitle = backgroundWallpaper.homeText?.subtitle
@@ -96,11 +111,12 @@ const randomSubtitle = getRandomSubtitle()
 	<div id="banner-dim-container" class="pointer-events-none absolute inset-0 z-0">
 		<div class="banner-dim-overlay absolute inset-0"></div>
 	</div>
-
 	<div id="banner-overlay-container" class="pointer-events-none absolute inset-0 z-20">
 		{
 			enableHomeText && (
-				<div class={`banner-home-text-overlay absolute inset-0 z-20 flex items-center justify-center`}>
+				<div
+					class={`banner-home-text-overlay absolute inset-0 z-20 flex items-center justify-center ${isPostPage ? "hidden" : ""}`}
+				>
 					<div class="mb-0 w-4/5 text-center lg:w-3/4">
 						<div class="flex flex-col">
 							{backgroundWallpaper.homeText?.title && (
@@ -136,6 +152,46 @@ const randomSubtitle = getRandomSubtitle()
 			)
 		}
 	</div>
+
+	<!-- 文章详情页面因此横幅文字，使用文章详情页面横幅文字和metadata -->
+	{
+		isPostPage && bannerPostMeta && (
+			<div class="banner-post-meta-overlay pointer-events-none absolute inset-0 z-20 hidden items-center justify-center lg:flex">
+				<div class="mb-0 w-4/5 text-center lg:w-3/4">
+					<div class="flex flex-col items-center gap-3">
+						<div class="banner-title leading-tight font-bold text-white">{bannerPostMeta.title}</div>
+						<div class="banner-post-meta-list flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-white/90 md:text-base">
+							<span class="inline-flex items-center gap-1.5">
+								<Icon name="material-symbols:calendar-month-outline-rounded" class="text-[1.05em]" />
+								<span>发布于 {formatDateTimeToYYYYMMDDHHmm(bannerPostMeta.published, "date")}</span>
+							</span>
+							{bannerPostMeta.updated &&
+								bannerPostMeta.updated.getTime() !== bannerPostMeta.published.getTime() && (
+									<span class="inline-flex items-center gap-1.5">
+										<Icon name="material-symbols:update-rounded" class="text-[1.05em]" />
+										<span>
+											更新于 {formatDateTimeToYYYYMMDDHHmm(bannerPostMeta.updated, "date")}
+										</span>
+									</span>
+								)}
+							{typeof bannerPostMeta.words === "number" && (
+								<span class="inline-flex items-center gap-1.5">
+									<Icon name="material-symbols:ink-pen-outline-rounded" class="text-[1.05em]" />
+									<span>{bannerPostMeta.words} 字</span>
+								</span>
+							)}
+							{typeof bannerPostMeta.minutes === "number" && (
+								<span class="inline-flex items-center gap-1.5">
+									<Icon name="material-symbols:schedule-outline-rounded" class="text-[1.05em]" />
+									<span>{bannerPostMeta.minutes} 分钟 · 阅读时长</span>
+								</span>
+							)}
+						</div>
+					</div>
+				</div>
+			</div>
+		)
+	}
 </div>
 
 <!-- 随机图片脚本，利用template元素content属性渲染 -->

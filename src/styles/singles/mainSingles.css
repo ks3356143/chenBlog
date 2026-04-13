@@ -57,9 +57,14 @@
     @apply ml-4 flex h-7 min-w-8 items-center justify-center bg-(--btn-plain-bg-hover) px-2 text-sm font-bold text-(--btn-content) transition dark:bg-(--primary) dark:text-(--deep-text);
 }
 
-/* a元素主题样式-前面带竖线 */
+/* 文章列表-a元素主题样式-前面带竖线 */
 .link-primary {
     @apply flex items-center justify-start before:absolute before:left-[18px] before:hidden before:h-5 before:w-1 before:bg-(--primary) hover:text-(--primary) active:text-(--title-active) md:before:block dark:hover:text-(--primary) dark:active:text-(--title-active);
+}
+
+/* 文章详情-文章标题，前面带竖线 */
+.post-title-primary {
+    @apply mb-3 block w-full text-3xl font-bold text-black/90 transition before:absolute before:top-3 before:-left-4.5 before:h-5 before:rounded-md before:bg-(--primary) md:text-[2.25rem]/[2.75rem] md:before:w-1 dark:text-white/90;
 }
 
 /* 分页组件按钮-包含禁用 */

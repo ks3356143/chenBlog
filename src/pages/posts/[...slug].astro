@@ -4,6 +4,10 @@ import { render } from "astro:content"
 import { getSortedPosts } from "@/utils/content-utils"
 import Layout from "@/layouts/Layout.astro"
 import Markdown from "@/components/commons/Markdown.astro"
+import KatexManager from "@/components/features/KatexManager.astro"
+import { Icon } from "astro-icon/components"
+import PostMeta from "@/components/layout/PostMeta.astro"
+import CoverImage from "@/components/commons/CoverImage.astro"
 
 const DES = "文章详情页面"
 
@@ -24,13 +28,86 @@ const { post } = Astro.props
 
 // 获取标题、内容
 const { Content, headings } = await render(post)
+
+// 获取插件解析内容
+const { remarkPluginFrontmatter } = await render(post)
+
+// 判断是否有Cover图
+const hasImage = post.data.image ? true : false
+
+// bannerPostMeta用于在文章页面替换打字机文字变为封面文字
+const bannerPostMeta = {
+	title: post.data.title,
+	published: post.data.published,
+	updated: post.data.updated,
+	words: remarkPluginFrontmatter.words,
+	minutes: remarkPluginFrontmatter.minutes,
+}
 ---
 
-<Layout title={post.data.title}>
+<Layout title={post.data.title} bannerPostMeta={bannerPostMeta} postSlug={post.id}>
+	<!-- KaTeX加载css - 仅在文章页面 -->
+	<KatexManager slot="head" />
 	<div class="relative mb-4 flex w-full overflow-hidden">
 		<!-- 文章详情页面 -->
 		<div id="post-container" class="card-base relative z-10 w-full px-6 pt-6 md:px-9">
-			<!-- 待编辑：阅读事件头部东西 -->
+			<!-- 头部添加阅读事件和字数 -->
+			<div class="onload-animation mb-3 flex flex-row gap-5 text-black/50 transition dark:text-white/50">
+				<div class="flex flex-row items-center">
+					<div
+						class="mr-2 flex h-6 w-6 items-center justify-center rounded-md bg-black/10 text-black/50 transition dark:bg-white/20 dark:text-white/50"
+					>
+						<Icon name="material-symbols:notes-rounded" />
+					</div>
+					<div class="text-sm">
+						{remarkPluginFrontmatter.words} 字
+					</div>
+				</div>
+				<div class="flex flex-row items-center">
+					<div
+						class="mr-2 flex h-6 w-6 items-center justify-center rounded-md bg-black/5 text-black/50 transition dark:bg-white/10 dark:text-white/50"
+					>
+						<Icon name="material-symbols:schedule-outline-rounded" />
+					</div>
+					<div class="text-sm">
+						{remarkPluginFrontmatter.minutes} 分钟
+					</div>
+				</div>
+			</div>
+
+			<!-- 文章标题 -->
+			<div class="onload-animation relative">
+				<div class="post-title-primary">
+					{post.data.title}
+				</div>
+			</div>
+
+			<!-- 文章元数据展示 -->
+			<div class="onload-animation">
+				<PostMeta
+					className="mb-5"
+					published={post.data.published}
+					updated={post.data.updated}
+					tags={post.data.tags}
+					category={post.data.category || undefined}
+					id={post.id}
+					hideUpdateDate={false}
+				/>
+			</div>
+
+			<!-- 文章封面：可无 -->
+			{
+				hasImage && (
+					<div style="margin-top:1rem;">
+						<CoverImage
+							id="post-cover"
+							src={post.data.image}
+							class="banner-container onload-animation mb-8 rounded-xl"
+							preview={false}
+						/>
+					</div>
+				)
+			}
 
 			<!-- Markdown渲染 -->
 			<Markdown class="markdown-content onload-animation mb-6">

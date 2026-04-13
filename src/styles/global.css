@@ -29,6 +29,9 @@
     --deep-text: #19251f;
     --title-active: #3a9371;
     --hue: 175;
+    /* 重复利用变量 */
+    --inline-code-bg: var(--btn-regular-bg);
+    --inline-code-color: var(--btn-content);
 
     /* 主题 */
     --primary: #00ba99;

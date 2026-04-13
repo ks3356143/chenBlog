@@ -1,3 +1,7 @@
+const isDev = import.meta.env.DEV
+
+// 注意文章封面的相对路径：是以/src为基准的
+
 export const siteConfig = {
     // 站点开始事件
     siteStartDate: "2026-01-01",
@@ -30,4 +34,10 @@ export const siteConfig = {
     },
     // 文章封面图回退路径设置
     fallbackPath: "assets/postImages/loadingfalse.png",
+    // 主题：'github' | 'obsidian' | 'vitepress'，每个主题风格和语法不同，可根据喜好选择
+    rehypeCallouts: {
+        theme: "github",
+    },
+    // siteUrl
+    site_url: isDev ? "http://localhost:4321" : "https://chenblog.netlify.app",
 }

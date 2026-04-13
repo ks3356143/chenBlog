@@ -16,20 +16,32 @@ import { siteConfig } from "@/config/siteConfig"
 import CategoryBar from "@/components/layout/CategoryBar.astro"
 import Footer from "@/components/layout/Footer.astro"
 
-// 中间部分-分类导航栏是否显示根据配置】
+// 中间部分-分类导航栏是否显示根据配置
 const showCategoryBar = !!siteConfig.categoryBar
 
 interface Props {
 	title?: string
+	postSlug?: string
+	bannerPostMeta?: {
+		title: string
+		published: Date
+		updated?: Date
+		words?: number
+		minutes?: number
+	}
 }
 
-const { title } = Astro.props
+const { title, bannerPostMeta, postSlug } = Astro.props
+
+// 检查是否在文章详情页
+const isPostPage = !!postSlug
 ---
 
 <BaseLayout title={title ?? "YILIn"}>
+	<slot slot="head" name="head" />
 	<Header />
 	<div class="relative z-10 w-full overflow-hidden opacity-100 transition duration-700">
-		<Cover />
+		<Cover bannerPostMeta={bannerPostMeta} isPostPage={isPostPage} />
 		<Waves />
 	</div>
 	<!-- 主内容：绝对定位 -->

@@ -1,0 +1,27 @@
+---
+import type { MarkdownHeading } from "astro"
+import SiteStatus from "@/components/card/SiteStatus.astro"
+import Calender from "@/components/card/Calender.astro"
+import SiderBarToc from "../card/SiderBarToc.astro"
+
+const DES = "右边栏，文章详情显示TOC，其他时候显示日历"
+
+interface Props {
+	isPostPage?: boolean
+	headings?: MarkdownHeading[]
+	class?: string
+}
+
+const { isPostPage = false, headings } = Astro.props
+const className = Astro.props.class
+---
+
+<!-- 非sticky卡片 -->
+<div class:list={["mb-4 flex w-full flex-col gap-4", className]}>
+	<!-- 站点统计 -->
+	<SiteStatus />
+</div>
+
+<!-- sticky卡片 -->
+<!-- 日历文章/或TOC -->
+{isPostPage ? <SiderBarToc headings={headings}  /> : <Calender />}

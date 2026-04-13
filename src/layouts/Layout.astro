@@ -1,4 +1,5 @@
 ---
+import type { MarkdownHeading } from "astro"
 import BaseLayout from "./BaseLayout.astro"
 import Header from "@/components/headers/Header.astro"
 import Cover from "@/components/Cover.astro"
@@ -9,12 +10,15 @@ import Category from "@/components/card/Category.astro"
 import Gonggao from "@/components/card/Gonggao.astro"
 import Tags from "@/components/card/Tags.astro"
 // 右边栏
+import RightSideBar from "@/components/layout/RightSideBar.astro"
 import SiteStatus from "@/components/card/SiteStatus.astro"
-import Calender from "@/components/card/Calender.astro"
+
 import { siteConfig } from "@/config/siteConfig"
 // 中间栏
 import CategoryBar from "@/components/layout/CategoryBar.astro"
 import Footer from "@/components/layout/Footer.astro"
+// 浮动栏
+import FloatingControls from "@/components/controls/FloatingControls.astro"
 
 // 中间部分-分类导航栏是否显示根据配置
 const showCategoryBar = !!siteConfig.categoryBar
@@ -22,6 +26,7 @@ const showCategoryBar = !!siteConfig.categoryBar
 interface Props {
 	title?: string
 	postSlug?: string
+	headings?: MarkdownHeading[]
 	bannerPostMeta?: {
 		title: string
 		published: Date
@@ -31,7 +36,7 @@ interface Props {
 	}
 }
 
-const { title, bannerPostMeta, postSlug } = Astro.props
+const { title, bannerPostMeta, postSlug, headings } = Astro.props
 
 // 检查是否在文章详情页
 const isPostPage = !!postSlug
@@ -93,12 +98,7 @@ const isPostPage = !!postSlug
 						id="right-sidebar"
 						class="mb-4 hidden w-full flex-col pt-0 xl:col-span-1 xl:col-start-3 xl:row-start-1 xl:row-end-3 xl:block xl:max-w-70"
 					>
-						<div class="mb-4 flex w-full flex-col gap-4">
-							<!-- 站点统计 -->
-							<SiteStatus />
-							<!-- 日历文章 -->
-							<Calender />
-						</div>
+						<RightSideBar isPostPage={isPostPage} headings={headings} />
 					</div>
 				</div>
 				<!-- 移动端：将左右卡片放下面 -->
@@ -117,4 +117,7 @@ const isPostPage = !!postSlug
 			</div>
 		</div>
 	</div>
+
+	<!-- 浮动片区 -->
+	<FloatingControls headings={headings} />
 </BaseLayout>

@@ -1,6 +1,7 @@
 declare global {
     interface Window {
         swup: any
+        floatingTOCListenersInitialized?: boolean;
     }
 }
 

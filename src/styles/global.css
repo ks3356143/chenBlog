@@ -29,6 +29,14 @@
     --deep-text: #19251f;
     --title-active: #3a9371;
     --hue: 175;
+    
+    /* TOC相关变量 */
+    --toc-badge-bg: oklch(0.9 0.045 var(--hue));
+    --toc-btn-hover: oklch(0.92 0.015 var(--hue));
+    --toc-btn-active: oklch(0.9 0.015 var(--hue));
+    --toc-width: calc((100vw - var(--page-width)) / 2 - 1rem);
+    --toc-item-active: oklch(0.7 0.13 var(--hue));
+
     /* 重复利用变量 */
     --inline-code-bg: var(--btn-regular-bg);
     --inline-code-color: var(--btn-content);
@@ -72,6 +80,14 @@
     --btn-regular-bg-active: #37584a;
     --btn-card-bg-hover: #1d332d;
     --btn-card-bg-active: #264139;
+    --content-meta: rgba(255, 255, 255, 0.6);
+    --line-color: rgba(255, 255, 255, 0.1);
+
+    /* TOC相关变量 - 暗色主题 */
+    --toc-badge-bg: var(--btn-regular-bg);
+    --toc-btn-hover: oklch(0.28 0.04 var(--hue));
+    --toc-btn-active: oklch(0.32 0.05 var(--hue));
+    --toc-item-active: oklch(0.35 0.07 var(--hue));
 
     /* 二级设置 */
     --text-color: var(--grey-4);

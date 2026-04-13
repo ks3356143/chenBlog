@@ -45,7 +45,7 @@ const bannerPostMeta = {
 }
 ---
 
-<Layout title={post.data.title} bannerPostMeta={bannerPostMeta} postSlug={post.id}>
+<Layout title={post.data.title} bannerPostMeta={bannerPostMeta} postSlug={post.id} headings={headings}>
 	<!-- KaTeX加载css - 仅在文章页面 -->
 	<KatexManager slot="head" />
 	<div class="relative mb-4 flex w-full overflow-hidden">

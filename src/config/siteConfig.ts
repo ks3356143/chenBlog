@@ -39,7 +39,7 @@ export const siteConfig = {
         theme: "github",
     },
     // siteUrl
-    site_url: isDev ? "http://localhost:4321" : "https://chenblog.netlify.app",
+    site_url: isDev ? "http://localhost:4321" : "http://47.108.230.220",
     // 页面配置
     pages: {
         guestbook: true, // 留言板页面开关

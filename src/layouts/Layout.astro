@@ -23,17 +23,20 @@ import FloatingControls from "@/components/controls/FloatingControls.astro"
 // 中间部分-分类导航栏是否显示根据配置
 const showCategoryBar = !!siteConfig.categoryBar
 
-interface Props {
-	title?: string
-	postSlug?: string
-	headings?: MarkdownHeading[]
-	bannerPostMeta?: {
-		title: string
-		published: Date
-		updated?: Date
-		words?: number
-		minutes?: number
-	}
+// SEO类型
+import type { PageSEO } from "@/components/SEO.astro"
+
+interface Props extends PageSEO {
+    title?: string
+    postSlug?: string
+    headings?: MarkdownHeading[]
+    bannerPostMeta?: {
+        title: string
+        published: Date
+        updated?: Date
+        words?: number
+        minutes?: number
+    }
 }
 
 const { title, bannerPostMeta, postSlug, headings } = Astro.props
@@ -43,81 +46,81 @@ const isPostPage = !!postSlug
 ---
 
 <BaseLayout title={title ?? "YILIn"}>
-	<slot slot="head" name="head" />
-	<Header />
-	<div class="relative z-10 w-full overflow-hidden opacity-100 transition duration-700">
-		<Cover bannerPostMeta={bannerPostMeta} isPostPage={isPostPage} />
-		<Waves />
-	</div>
-	<!-- 主内容：绝对定位 -->
-	<div class="pointer-events-none absolute top-40 w-full">
-		<div class="xl:[92vw] pointer-events-auto relative top-[30vh] z-20 mx-auto w-full max-w-(--page-width)">
-			<div
-				class="right-0 left-0 mx-auto grid w-full grid-cols-1 grid-rows-[auto_1fr_auto] gap-4 px-2 transition duration-700 md:grid-cols-[17.5rem_1fr] md:px-4 lg:grid-rows-[auto] xl:grid-cols-[17.5rem_1fr_17.5rem]"
-			>
-				<!-- 左边栏 -->
-				<div id="left-sidebar-wrapper" class="contents" style="contain:layout style paint;">
-					<div
-						id="left-sidebar"
-						class="mb-4 hidden w-full flex-col pt-0 md:col-span-1 md:col-start-1 md:row-start-1 md:row-end-3 md:block md:max-w-70"
-					>
-						<div id="left-sidebar-sticky" class="sticky top-4 mt-0 flex w-full flex-col gap-4">
-							<MeCard />
-							<Gonggao />
-							<Category />
-							<Tags />
-						</div>
-					</div>
-				</div>
-				<!-- 中间栏 -->
-				<div
-					id="center-content"
-					class="col-span-1 min-w-0 overflow-hidden md:col-span-1 md:col-start-2 xl:col-span-1 xl:col-start-2 xl:col-end-3"
-				>
-					<!-- 分类导航栏：始终渲染 -->
-					{
-						showCategoryBar && (
-							<div id="category-bar-wrapper">
-								<CategoryBar />
-							</div>
-						)
-					}
-					<!-- 主内容区域slot区域->此时暂未集成swup后续集成 -->
-					<main id="swup-container" class="transition-main">
-						<!-- 每个页面均设置隐藏title，用于SEO -->
-						<h1 class="sr-only">{title}</h1>
-						<!-- TODO:网格布局的页面展示 -->
-						<div id="content-wrapper" class="transition-leaving">
-							<slot />
-						</div>
-					</main>
-				</div>
-				<!-- 右边栏 -->
-				<div id="right-sidebar-wrapper" class="contents">
-					<div
-						id="right-sidebar"
-						class="mb-4 hidden w-full flex-col pt-0 xl:col-span-1 xl:col-start-3 xl:row-start-1 xl:row-end-3 xl:block xl:max-w-70"
-					>
-						<RightSideBar isPostPage={isPostPage} headings={headings} />
-					</div>
-				</div>
-				<!-- 移动端：将左右卡片放下面 -->
-				<div id="mobile-bottom-sidebar" class="col-span-1 mt-4 block md:hidden">
-					<div id="bottom-sidebar" class="flex w-full flex-col pt-0"></div>
-					<div class="flex w-full flex-col gap-4">
-						<MeCard />
-						<Gonggao />
-						<Category />
-						<Tags />
-						<SiteStatus />
-					</div>
-				</div>
-				<!-- Footer -->
-				<Footer />
-			</div>
-		</div>
-	</div>
+    <slot slot="head" name="head" />
+    <Header />
+    <div class="relative z-10 w-full overflow-hidden opacity-100 transition duration-700">
+        <Cover bannerPostMeta={bannerPostMeta} isPostPage={isPostPage} />
+        <Waves />
+    </div>
+    <!-- 主内容：绝对定位 -->
+    <div class="pointer-events-none absolute top-40 w-full">
+        <div class="xl:[92vw] pointer-events-auto relative top-[30vh] z-20 mx-auto w-full max-w-(--page-width)">
+            <div
+                class="right-0 left-0 mx-auto grid w-full grid-cols-1 grid-rows-[auto_1fr_auto] gap-4 px-2 transition duration-700 md:grid-cols-[17.5rem_1fr] md:px-4 lg:grid-rows-[auto] xl:grid-cols-[17.5rem_1fr_17.5rem]"
+            >
+                <!-- 左边栏 -->
+                <div id="left-sidebar-wrapper" class="contents" style="contain:layout style paint;">
+                    <div
+                        id="left-sidebar"
+                        class="mb-4 hidden w-full flex-col pt-0 md:col-span-1 md:col-start-1 md:row-start-1 md:row-end-3 md:block md:max-w-70"
+                    >
+                        <div id="left-sidebar-sticky" class="sticky top-4 mt-0 flex w-full flex-col gap-4">
+                            <MeCard />
+                            <Gonggao />
+                            <Category />
+                            <Tags />
+                        </div>
+                    </div>
+                </div>
+                <!-- 中间栏 -->
+                <div
+                    id="center-content"
+                    class="col-span-1 min-w-0 overflow-hidden md:col-span-1 md:col-start-2 xl:col-span-1 xl:col-start-2 xl:col-end-3"
+                >
+                    <!-- 分类导航栏：始终渲染 -->
+                    {
+                        showCategoryBar && (
+                            <div id="category-bar-wrapper">
+                                <CategoryBar />
+                            </div>
+                        )
+                    }
+                    <!-- 主内容区域slot区域->此时暂未集成swup后续集成 -->
+                    <main id="swup-container" class="transition-main">
+                        <!-- 每个页面均设置隐藏title，用于SEO -->
+                        <h1 class="sr-only">{title}</h1>
+                        <!-- TODO:网格布局的页面展示 -->
+                        <div id="content-wrapper" class="transition-leaving">
+                            <slot />
+                        </div>
+                    </main>
+                </div>
+                <!-- 右边栏 -->
+                <div id="right-sidebar-wrapper" class="contents">
+                    <div
+                        id="right-sidebar"
+                        class="mb-4 hidden w-full flex-col pt-0 xl:col-span-1 xl:col-start-3 xl:row-start-1 xl:row-end-3 xl:block xl:max-w-70"
+                    >
+                        <RightSideBar isPostPage={isPostPage} headings={headings} />
+                    </div>
+                </div>
+                <!-- 移动端：将左右卡片放下面 -->
+                <div id="mobile-bottom-sidebar" class="col-span-1 mt-4 block md:hidden">
+                    <div id="bottom-sidebar" class="flex w-full flex-col pt-0"></div>
+                    <div class="flex w-full flex-col gap-4">
+                        <MeCard />
+                        <Gonggao />
+                        <Category />
+                        <Tags />
+                        <SiteStatus />
+                    </div>
+                </div>
+                <!-- Footer -->
+                <Footer />
+            </div>
+        </div>
+    </div>
 
-	<!-- 浮动片区 -->
-	<FloatingControls headings={headings} />
+    <!-- 浮动片区 -->
+    <FloatingControls headings={headings} />
 </BaseLayout>

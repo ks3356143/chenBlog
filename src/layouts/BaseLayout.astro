@@ -78,3 +78,19 @@ const { title } = Astro.props
         height: 100%;
     }
 </style>
+
+<script>
+    setTimeout(() => {
+        if (document.getElementById("tcomment")) {
+            // 触发自定义事件，通知评论系统页面已完全加载
+            const pageLoadedEvent = new CustomEvent("firefly:page:loaded", {
+                detail: {
+                    path: window.location.pathname,
+                    timestamp: Date.now(),
+                },
+            })
+            document.dispatchEvent(pageLoadedEvent)
+            console.log("Layout: 触发 firefly:page:loaded 事件，路径:", window.location.pathname)
+        }
+    }, 300)
+</script>

@@ -14,11 +14,6 @@
     @apply text-2xl;
 }
 
-/* regular反色-即背景主题色填充，图标或文字白色，且仅有hover效果 */
-.btn-regular-reverse {
-    @apply border-(--primary) bg-(--primary) text-white hover:opacity-80;
-}
-
 /* 元数据Icon-regular样式，和btn-regular相同，取出hover效果、active效果 */
 .meta-icon-regular {
     @apply flex items-center justify-center bg-(--btn-regular-bg) text-(--btn-content) transition-all duration-150 dark:text-white/75;

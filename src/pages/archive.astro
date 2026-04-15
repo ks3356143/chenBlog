@@ -1,0 +1,13 @@
+---
+import Layout from "@/layouts/Layout.astro"
+import { getSortedPostsList } from "@/utils/content-utils"
+import ArchivePannel from "@/components/controls/ArchivePannel.svelte"
+
+const DES = "归档页面，根据-年份分区、根据-每个博客分行"
+
+const sortedPostList = await getSortedPostsList()
+---
+
+<Layout title="归档-Yilin">
+	<ArchivePannel sortedPosts={sortedPostList} client:only="svelte" />
+</Layout>

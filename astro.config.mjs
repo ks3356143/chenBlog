@@ -43,6 +43,8 @@ import sitemap from "@astrojs/sitemap"
 import rehypeComponents from "rehype-components"
 import { GithubCardComponent } from "./src/plugins/rehype-component-github-card.mjs"
 
+import svelte from "@astrojs/svelte"
+
 pluginFramesTexts.overrideTexts(undefined, {
     copyButtonCopied: "复制成功",
 })
@@ -114,7 +116,7 @@ export default defineConfig({
             // 覆盖样式
             styleOverrides: {
                 borderRadius: "0", // 边框圆角设置
-                codeFontSize: "1rem", // 代码块字体大小
+                codeFontSize: "var(--code-font-size)", // 代码块字体大小
                 codeFontFamily:
                     "'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
                 codeLineHeight: "1.5rem",
@@ -134,6 +136,7 @@ export default defineConfig({
             },
         }),
         sitemap(),
+        svelte(),
     ],
     markdown: {
         remarkPlugins: [

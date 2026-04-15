@@ -1,0 +1,150 @@
+---
+import { Icon } from "astro-icon/components"
+import PhotoCard from "@/components/pages/PhotoCard.astro"
+import { siteConfig } from "@/config/siteConfig"
+import { galleryConfig } from "@/config/galleryConfig"
+import Layout from "@/layouts/Layout.astro"
+import { getAlbumCover, scanAlbumPhotos } from "@/utils/gallery-utils"
+
+// 检查页面是否启用
+if (!siteConfig.pages.gallery) {
+	return Astro.redirect("/404/")
+}
+
+export function getStaticPaths() {
+	return galleryConfig.albums.map(album => ({
+		params: { album: album.id },
+	}))
+}
+
+const { album: albumId } = Astro.params
+const albumMeta = galleryConfig.albums.find(a => a.id === albumId)
+
+if (!albumMeta) {
+	return Astro.redirect("/404/")
+}
+
+const photos = scanAlbumPhotos(albumMeta.id)
+const cover = getAlbumCover(albumMeta, photos)
+const columnWidth = galleryConfig.columnWidth || 240
+---
+
+<Layout title={albumMeta.name}>
+	<!-- 相册封面横幅 -->
+	<div class="relative w-full overflow-hidden rounded-(--radius-large)">
+		{
+			cover ? (
+				<div class="relative aspect-[3/1] max-h-[360px] min-h-[200px] w-full">
+					<img src={cover} alt={albumMeta.name} class="h-full w-full object-cover" />
+					<div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+					{/* 返回按钮 */}
+					<a
+						href="/gallery/"
+						class="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-lg bg-black/30 px-3 py-1.5 text-sm text-white/90 backdrop-blur-sm transition-colors hover:bg-black/50 hover:text-white"
+					>
+						<Icon name="material-symbols:arrow-back" class="text-base" />
+						返回相册列表
+					</a>
+					{/* 封面上的信息 */}
+					<div class="absolute right-0 bottom-0 left-0 p-6">
+						<div class="mb-2 text-2xl font-bold text-white drop-shadow-lg sm:text-3xl">
+							{albumMeta.name}
+						</div>
+						{albumMeta.description && (
+							<p class="mb-2 line-clamp-2 max-w-2xl text-sm leading-relaxed text-white/75">
+								{albumMeta.description}
+							</p>
+						)}
+						<div class="flex flex-wrap items-center gap-4 text-sm text-white/80">
+							{albumMeta.date && (
+								<span class="inline-flex items-center gap-1">
+									<Icon name="material-symbols:calendar-today" class="text-sm" />
+									{albumMeta.date}
+								</span>
+							)}
+							{albumMeta.location && (
+								<span class="inline-flex items-center gap-1">
+									<Icon name="material-symbols:location-on" class="text-sm" />
+									{albumMeta.location}
+								</span>
+							)}
+							<span class="inline-flex items-center gap-1">
+								<Icon name="material-symbols:photo-library" class="text-sm" />
+								{photos.length} 张照片
+							</span>
+						</div>
+						{albumMeta.tags && albumMeta.tags.length > 0 && (
+							<div class="mt-2.5 flex flex-wrap gap-1.5">
+								{albumMeta.tags.map(tag => (
+									<span class="rounded bg-white/20 px-2 py-0.5 text-xs text-white/90 backdrop-blur-sm">
+										{tag}
+									</span>
+								))}
+							</div>
+						)}
+					</div>
+				</div>
+			) : (
+				<div class="card-base px-6 py-4">
+					<a
+						href="/gallery/"
+						class="mb-3 inline-flex items-center gap-1 text-sm text-(--primary) hover:underline"
+					>
+						<Icon name="material-symbols:arrow-back" class="text-base" />
+						返回相册列表
+					</a>
+					<div class="text-2xl font-bold text-neutral-900 sm:text-3xl dark:text-neutral-100">
+						{albumMeta.name}
+					</div>
+					<div class="mt-2 flex flex-wrap items-center gap-4 text-sm text-neutral-500 dark:text-neutral-400">
+						{albumMeta.date && (
+							<span class="inline-flex items-center gap-1">
+								<Icon name="material-symbols:calendar-today" class="text-sm" />
+								{albumMeta.date}
+							</span>
+						)}
+						{albumMeta.location && (
+							<span class="inline-flex items-center gap-1">
+								<Icon name="material-symbols:location-on" class="text-sm" />
+								{albumMeta.location}
+							</span>
+						)}
+						<span>{photos.length} 张照片</span>
+					</div>
+				</div>
+			)
+		}
+	</div>
+
+	<!-- 瀑布流照片网格-使用css的多列布局 -->
+	<div class="relative mt-4 w-full overflow-hidden rounded-(--radius-large)">
+		<div class="card-base relative z-10 w-full px-6 py-6">
+			{
+				photos.length > 0 ? (
+					<div
+						class="gallery-masonry"
+						style={`column-count: 2; column-gap: 0.75rem; --col-width: ${columnWidth}px;`}
+					>
+						{photos.map(photo => (
+							<PhotoCard src={photo} albumId={albumMeta.id} />
+						))}
+					</div>
+				) : (
+					<div class="flex flex-col items-center justify-center py-16 text-neutral-400 dark:text-neutral-500">
+						<Icon name="material-symbols:photo-library" class="mb-4 text-6xl opacity-50" />
+						<p class="text-lg">暂无相册</p>
+					</div>
+				)
+			}
+		</div>
+	</div>
+
+	<style is:global>
+		@media (min-width: 640px) {
+			.gallery-masonry {
+				column-width: var(--col-width, 240px) !important;
+				column-count: auto !important;
+			}
+		}
+	</style>
+</Layout>

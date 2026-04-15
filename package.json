@@ -10,11 +10,15 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.2",
+    "@astrojs/svelte": "^8.0.5",
+    "@fancyapps/ui": "^6.1.13",
     "@tailwindcss/vite": "^4.2.2",
     "astro": "^6.1.6",
     "astro-expressive-code": "^0.41.7",
     "astro-icon": "^1.1.5",
-    "tailwindcss": "^4.2.2"
+    "svelte": "^5.55.3",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
     "@expressive-code/plugin-collapsible-sections": "^0.41.7",

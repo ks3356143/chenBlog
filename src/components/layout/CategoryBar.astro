@@ -13,7 +13,7 @@ const archiveUrl = url("/archive/")
 	<div class="flex items-center gap-2">
 		<a
 			href={homeUrl}
-			class="btn-regular-reverse flex h-7 shrink-0 items-center justify-center px-2 py-1 text-sm transition-colors duration-150 ease-out"
+			class="category-link-home flex h-7 shrink-0 items-center justify-center px-2 py-1 text-sm transition-colors duration-150 ease-out"
 			aria-label="首页"
 			data-category-name="__home__"
 		>
@@ -21,7 +21,7 @@ const archiveUrl = url("/archive/")
 		</a>
 		<a
 			href={archiveUrl}
-			class="btn-inner-blank flex h-7 shrink-0 items-center justify-center px-3 py-1 text-sm whitespace-nowrap transition-colors duration-150 ease-out"
+			class="category-pill flex h-7 shrink-0 items-center justify-center px-3 py-1 text-sm whitespace-nowrap transition-colors duration-150 ease-out"
 			data-category-name="__archive__"
 		>
 			归档
@@ -35,7 +35,7 @@ const archiveUrl = url("/archive/")
 					categories.map(cat => (
 						<a
 							href={cat.url}
-							class="btn-inner-blank flex h-7 items-center justify-center px-3 py-1 text-sm whitespace-nowrap transition-colors duration-150 ease-out"
+							class="category-pill flex h-7 items-center justify-center px-3 py-1 text-sm whitespace-nowrap transition-colors duration-150 ease-out"
 							data-category-name={cat.name}
 						>
 							{cat.name}
@@ -54,13 +54,11 @@ const archiveUrl = url("/archive/")
 		/* 和slot内容间隔 */
 		margin-bottom: 1rem;
 	}
-
 	.category-divider {
 		width: 1px;
 		align-self: stretch;
 		background-color: var(--line-divider);
 	}
-
 	.scroll-fade {
 		position: absolute;
 		top: 0;
@@ -71,35 +69,190 @@ const archiveUrl = url("/archive/")
 		transition: opacity 300ms ease-in-out;
 		z-index: 1;
 	}
-
 	/* 通过JS控制添加移除data-visible */
 	.scroll-fade[data-visible] {
 		opacity: 1;
 	}
-
 	.scroll-fade-left {
 		left: 0;
 		background: linear-gradient(to left, transparent, var(--card-bg));
 	}
-
 	.scroll-fade-right {
 		right: 0;
 		background: linear-gradient(to right, transparent, var(--card-bg));
 	}
-
 	/* 去掉滚动条展示，但是具有滚动条 */
 	.category-scroll {
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 		scroll-behavior: smooth;
 	}
-
 	.category-scroll::-webkit-scrollbar {
 		display: none;
+	}
+	/* 分类按钮Home */
+	.category-link-home {
+		transition: all 0.3s;
+		background: transparent;
+		color: var(--btn-content);
+		border: 1.5px solid var(--line-divider);
+	}
+	.category-link-home[data-active] {
+		background: var(--primary);
+		color: #fff;
+		border-color: var(--primary);
+	}
+	.category-link-home:hover {
+		border-color: var(--primary);
+		color: var(--primary);
+		background: transparent;
+	}
+	.category-link-home[data-active]:hover {
+		background: var(--primary);
+		border-color: var(--primary);
+		color: #fff;
+		opacity: 0.8;
+	}
+	/* 其他标签 */
+	.category-pill {
+		border: 1.5px solid var(--line-divider);
+		color: var(--btn-content);
+		background: transparent;
+	}
+	.category-pill:hover {
+		border-color: var(--primary);
+		color: var(--primary);
+		background: transparent;
+	}
+	.category-pill[data-active] {
+		background: var(--primary);
+		border-color: var(--primary);
+		color: white;
+	}
+	.category-pill[data-active]:hover {
+		background: var(--primary);
+		border-color: var(--primary);
+		opacity: 0.9;
 	}
 </style>
 
 <script>
+	// tags、categories处理
+	function getCategoryBarState(bar: HTMLElement, currentUrl: URL) {
+		const pathname = currentUrl.pathname.replace(/\/$/, "")
+		const homePath = (bar.getAttribute("data-home-path") || "/").replace(/\/$/, "")
+		const archivePath = (bar.getAttribute("data-archive-path") || "/archive").replace(/\/$/, "")
+		const isHome = pathname === homePath || pathname === "" || pathname === "/"
+		const isArchive = pathname === archivePath
+		const escapedHomePath = homePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+		// 分页页面（如 /2/, /3/）也属于首页的延续
+		const isHomePagination =
+			/^\/\d+$/.test(pathname) || (homePath !== "" && new RegExp(`^${escapedHomePath}\\/\\d+$`).test(pathname))
+
+		return {
+			isHome,
+			isArchive,
+			isHomePagination,
+			activeCategory: currentUrl.searchParams.get("category") || "",
+			hasTag: currentUrl.searchParams.has("tag"),
+			hasUncategorized: currentUrl.searchParams.has("uncategorized"),
+		}
+	}
+
+	function setActiveCategory(bar: HTMLElement, currentUrl: URL) {
+		const { isHome, isArchive, isHomePagination, activeCategory, hasTag, hasUncategorized } = getCategoryBarState(
+			bar,
+			currentUrl,
+		)
+
+		// 在首页、首页分页和归档页显示
+		const wrapper = document.getElementById("category-bar-wrapper")
+		const target = (wrapper || bar) as HTMLElement
+		target.style.visibility = ""
+		if (!isHome && !isHomePagination && !isArchive) {
+			target.style.display = "none"
+			return
+		}
+		target.style.display = ""
+
+		// 移除所有按钮的 active 状态
+		const homeButton = bar.querySelector<HTMLAnchorElement>('.category-link-home[data-category-name="__home__"]')
+		const pills = bar.querySelectorAll<HTMLAnchorElement>(".category-pill")
+
+		homeButton?.removeAttribute("data-active")
+		pills.forEach(pill => pill.removeAttribute("data-active"))
+
+		if (isHome || isHomePagination) {
+			// 首页时激活首页按钮
+			homeButton?.setAttribute("data-active", "")
+			return
+		}
+
+		if (activeCategory) {
+			pills.forEach(pill => {
+				if (pill.getAttribute("data-category-name") === activeCategory) {
+					pill.setAttribute("data-active", "")
+				}
+			})
+			return
+		}
+
+		if (isArchive && !hasTag && !hasUncategorized) {
+			bar.querySelector<HTMLAnchorElement>('.category-pill[data-category-name="__archive__"]')?.setAttribute(
+				"data-active",
+				"",
+			)
+		}
+	}
+
+	function scrollActiveCategoryIntoView(bar: HTMLElement, behavior: ScrollBehavior = "smooth") {
+		const activePill = bar.querySelector<HTMLAnchorElement>(".category-pill[data-active]")
+		const scroll = bar.querySelector<HTMLElement>(".category-scroll")
+		if (!activePill || !scroll) return
+
+		const scrollLeft = activePill.offsetLeft - scroll.offsetLeft - (scroll.clientWidth - activePill.offsetWidth) / 2
+		scroll.scrollTo({ left: Math.max(0, scrollLeft), behavior })
+	}
+
+	function updateCategoryBar(currentUrl = new URL(window.location.href)) {
+		const bar = document.getElementById("category-bar")
+		if (!bar) return
+
+		setActiveCategory(bar, currentUrl)
+		scrollActiveCategoryIntoView(bar)
+	}
+
+	function initCategoryBarInteractions() {
+		const bar = document.getElementById("category-bar")
+		if (!bar || bar.dataset.clickBound === "true") return
+
+		bar.dataset.clickBound = "true"
+		bar.addEventListener("click", event => {
+			if (!(event.target instanceof Element)) return
+
+			const pill = event.target.closest<HTMLAnchorElement>(".category-pill")
+			if (!pill) return
+
+			if (
+				event.defaultPrevented ||
+				event.button !== 0 ||
+				event.metaKey ||
+				event.ctrlKey ||
+				event.shiftKey ||
+				event.altKey
+			) {
+				return
+			}
+
+			if (pill.target && pill.target !== "_self") return
+
+			const targetUrl = new URL(pill.href, window.location.href)
+			if (targetUrl.origin !== window.location.origin) return
+
+			setActiveCategory(bar, targetUrl)
+			scrollActiveCategoryIntoView(bar, "auto")
+		})
+	}
 	// 初始化滚动特性-横线滚动/左右背景透明渐变
 	function initScrollFeatures() {
 		const bar = document.getElementById("category-bar")
@@ -147,5 +300,38 @@ const archiveUrl = url("/archive/")
 			fadeRight.removeAttribute("data-visible")
 		}
 	}
+	updateCategoryBar()
+	initCategoryBarInteractions()
 	initScrollFeatures()
+	document.addEventListener("astro:page-load", () => {
+		updateCategoryBar()
+		initScrollFeatures()
+	})
+	document.addEventListener("swup:contentReplaced", () => {
+		updateCategoryBar()
+	})
+	// 在 Swup 导航时控制 CategoryBar 显示/隐藏
+	function setupSwupEarlyUpdate() {
+		if (!window.swup?.hooks) return
+		// visit:start: 仅用 visibility 隐藏，保留占位避免内容跳动
+		window.swup.hooks.on("visit:start", (visit: any) => {
+			const bar = document.getElementById("category-bar")
+			if (!bar) return
+			const targetUrl = new URL(visit.to.url, window.location.href)
+			const { isHome, isHomePagination, isArchive } = getCategoryBarState(bar, targetUrl)
+			const wrapper = document.getElementById("category-bar-wrapper")
+			const target = (wrapper || bar) as HTMLElement
+			if (!isHome && !isHomePagination && !isArchive) {
+				target.style.visibility = "hidden"
+			} else {
+				target.style.visibility = ""
+				target.style.display = ""
+			}
+		})
+	}
+	if (window.swup?.hooks) {
+		setupSwupEarlyUpdate()
+	} else {
+		document.addEventListener("swup:enable", setupSwupEarlyUpdate)
+	}
 </script>

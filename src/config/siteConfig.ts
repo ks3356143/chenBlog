@@ -40,4 +40,9 @@ export const siteConfig = {
     },
     // siteUrl
     site_url: isDev ? "http://localhost:4321" : "https://chenblog.netlify.app",
+    // 页面配置
+    pages: {
+        guestbook: true, // 留言板页面开关
+        gallery:true, // 展示内容开关
+    },
 }

@@ -1,0 +1,150 @@
+---
+import { Icon } from "astro-icon/components"
+import Layout from "@/layouts/Layout.astro"
+import { siteConfig } from "@/config/siteConfig"
+import { galleryConfig } from "@/config/galleryConfig"
+import { scanAlbumPhotos, getAlbumCover } from "@/utils/gallery-utils"
+import AlbumCard from "@/components/pages/AlbumCard.astro"
+
+// 检查页面是否启用
+if (!siteConfig.pages.gallery) {
+    return Astro.redirect("/404/")
+}
+
+const title = "相册"
+
+// 相册数据
+const albums = galleryConfig.albums.map((album) => {
+    const photos = scanAlbumPhotos(album.id)
+    const cover = getAlbumCover(album, photos)
+    return { ...album, cover, photoCount: photos.length }
+})
+// 收集所有相册标签-在配置里面定义的
+const allTags = [...new Set(albums.flatMap((a) => a.tags || []))].sort()
+---
+
+<Layout title={title}>
+    <div class="relative flex min-h-32 w-full overflow-hidden">
+        <div class="card-base relative z-10 w-full px-9 py-6">
+            <!-- 标题和描述 -->
+            <div class="mb-4">
+                <div class="mb-3 flex items-center gap-3">
+                    <div
+                        class="flex h-8 w-8 items-center justify-center rounded-lg bg-(--primary) text-white dark:text-black/70"
+                    >
+                        <Icon name="material-symbols:photo-library" class="text-[1.5rem]" />
+                    </div>
+                    <div class="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
+                        {title}
+                    </div>
+                </div>
+                <p class="mb-4 text-base leading-relaxed text-neutral-600 dark:text-neutral-400">
+                    记录生活和工作的美好瞬间!
+                </p>
+            </div>
+            <!-- 标签筛选 -->
+            {
+                albums.length > 0 && allTags.length > 0 && (
+                    <gallery-filter class="mb-6 flex flex-wrap gap-2">
+                        <button
+                            data-tag="all"
+                            class="bg-(--primary) px-3 py-1.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-(--primary) cursor-pointer"
+                        >
+                            全部
+                        </button>
+                        {allTags.map((tag) => (
+                            <button
+                                data-tag={tag}
+                                class="bg-(--btn-regular-bg) px-3 py-1.5 text-sm font-medium text-(--btn-content) transition-colors duration-200 hover:bg-(--btn-regular-bg-hover) cursor-pointer"
+                            >
+                                {tag}
+                            </button>
+                        ))}
+                    </gallery-filter>
+                )
+            }
+            <!-- 相册卡片网格 -->
+            {
+                albums.length > 0 ? (
+                    <div class="my-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {albums.map((album) => (
+                            <AlbumCard
+                                id={album.id}
+                                name={album.name}
+                                cover={album.cover}
+                                description={album.description}
+                                date={album.date}
+                                location={album.location}
+                                tags={album.tags}
+                                photoCount={album.photoCount}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <div class="flex flex-col items-center justify-center py-16 text-neutral-400 dark:text-neutral-500">
+                        <Icon name="material-symbols:photo-library" class="mb-4 text-6xl opacity-50" />
+                        <p class="text-lg">还没有配置或在Public放入相册哦!</p>
+                    </div>
+                )
+            }
+        </div>
+    </div>
+
+    <script is:inline slot="head">
+        if (!customElements.get("gallery-filter")) {
+            class GalleryFilter extends HTMLElement {
+                constructor() {
+                    super()
+                }
+
+                connectedCallback() {
+                    this.addEventListener("click", this.handleClick)
+                }
+
+                disconnectedCallback() {
+                    this.removeEventListener("click", this.handleClick)
+                }
+
+                handleClick(e) {
+                    const target = e.target
+                    const button = target.closest("button")
+                    if (!button) return
+
+                    const selectedTag = button.dataset.tag
+                    const filters = this.querySelectorAll("button")
+                    const container = this.closest(".card-base")
+                    if (!container) return
+
+                    const cards = container.querySelectorAll(".album-card")
+
+                    filters.forEach((f) => {
+                        f.classList.remove("bg-(--primary)", "text-white")
+                        f.classList.remove("hover:bg-(--primary)")
+                        f.classList.add("bg-(--btn-regular-bg)", "text-(--btn-content)")
+                        f.classList.add("hover:bg-(--btn-regular-bg-hover)")
+
+                        if (f === button) {
+                            f.classList.remove("bg-(--btn-regular-bg)", "text-(--btn-content)")
+                            f.classList.remove("hover:bg-(--btn-regular-bg-hover)")
+                            f.classList.add("bg-(--primary)", "text-white")
+                            f.classList.add("hover:bg-(--primary)")
+                        }
+                    })
+
+                    cards.forEach((card) => {
+                        const cardEl = card
+                        const tags = (cardEl.dataset.tags || "").split(",")
+                        if (selectedTag === "all" || (selectedTag && tags.includes(selectedTag))) {
+                            cardEl.style.display = ""
+                            cardEl.classList.add("animate-fade-in-up")
+                        } else {
+                            cardEl.style.display = "none"
+                            cardEl.classList.remove("animate-fade-in-up")
+                        }
+                    })
+                }
+            }
+            customElements.define("gallery-filter", GalleryFilter)
+        }
+    </script>
+</Layout>

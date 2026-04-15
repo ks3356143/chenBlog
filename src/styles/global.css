@@ -48,6 +48,7 @@
     --btn-plain-bg-hover: #def4ed;
     --btn-plain-bg-active: #f3fbf7;
     --selection-bg: #c0e9d6;
+    --codeblock-bg: oklch(0.17 0.015 var(--hue));
     --panel-bg: #ffffffd2;
     --page-bg: #e9f1ed;
     --card-bg: #fff;
@@ -58,6 +59,9 @@
     --btn-regular-bg-active: #9cdfc1;
     --btn-card-bg-hover: #fcf7f8;
     --btn-card-bg-active: #cbe5dd;
+    --line-color: rgba(0, 0, 0, 0.1);
+    --license-block-bg: rgba(0, 0, 0, 0.03);
+    --content-meta: rgba(0, 0, 0, 0.7);
 
     /* 二级设置 */
     --text-color: var(--grey-7);
@@ -71,6 +75,7 @@
     --btn-plain-bg-hover: #19342d;
     --btn-plain-bg-active: #1b2a23;
     --selection-bg: #0a553d;
+    --codeblock-bg: oklch(0.17 0.015 var(--hue));
     --panel-bg: #171717f2;
     --page-bg: #080f0c;
     --card-bg: #161f1b;
@@ -83,6 +88,8 @@
     --btn-card-bg-active: #264139;
     --content-meta: rgba(255, 255, 255, 0.6);
     --line-color: rgba(255, 255, 255, 0.1);
+    --license-block-bg: var(--codeblock-bg);
+    --content-meta: rgba(255, 255, 255, 0.6);
 
     /* TOC相关变量 - 暗色主题 */
     --toc-badge-bg: var(--btn-regular-bg);

@@ -21,3 +21,14 @@ export function getTagUrl(tag: string): string {
     if (!tag) return url("/archive/")
     return url(`/archive/?tag=${encodeURIComponent(tag.trim())}`)
 }
+
+// 工具函数：根据post.filePath移除文件扩展名（.md, .mdx, .markdown）【一般用不到，因为id没有扩展名】
+export function removeFileExtension(id: string) {
+    return id.replace(/\.(md|mdx|markdown)$/i, "")
+}
+
+// 工具函数：返回文章的url
+export function getPostUrlBySlug(slug: string): string {
+    const slugWithoutExt = removeFileExtension(slug)
+    return url(`/posts/${slugWithoutExt}/`)
+}

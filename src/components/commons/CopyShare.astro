@@ -1,0 +1,107 @@
+---
+import { Icon } from "astro-icon/components"
+import { siteConfig } from "@/config/siteConfig"
+
+const DES = "文章详情页面底部复制链接横幅"
+
+interface Props {
+	postUrl: string
+}
+
+const { postUrl } = Astro.props
+const siteUrl = siteConfig.site_url
+---
+
+<div class="onload-animation mb-6">
+	<div class="bg-(--license-block-bg) p-6">
+		<div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
+			<div class="flex flex-1 items-center gap-3">
+				<div
+					class="flex h-12 w-12 shrink-0 items-center justify-center bg-(--primary) text-2xl text-white dark:text-black/70"
+				>
+					<Icon name="material-symbols:favorite" />
+				</div>
+				<div>
+					<div class="mb-1 text-lg font-semibold text-neutral-900 dark:text-neutral-100">分享给其他人</div>
+					<div class="text-sm text-neutral-600 dark:text-neutral-400">
+						如果该文章对您有帮助，欢迎分享给其他人阅读！
+					</div>
+				</div>
+			</div>
+			<div
+				id="copy-url-btn"
+				class="btn-regular relative flex cursor-pointer items-center justify-center gap-3 px-4 py-2 hover:scale-105"
+			>
+				<Icon name="material-symbols:share" />
+				<div id="copy-url-btn-text" class="select-none">复制链接</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<style>
+	.btn-regular.disabled {
+		pointer-events: none;
+		opacity: 0.6;
+		cursor: not-allowed;
+		transform: none !important;
+	}
+
+	.btn-regular.disabled {
+		background-color: #e5e7eb;
+		color: #60aa6b !important;
+		border-color: #d1d5db;
+	}
+
+	.btn-regular.disabled {
+		background-color: rgba(6, 78, 59, 0.3);
+		color: rgba(187, 247, 208, 0.5);
+		border-color: rgba(6, 78, 59, 0.5);
+	}
+</style>
+
+<script is:inline define:vars={{ postUrl, siteUrl }}>
+	// 组装url地址，根据site
+	const currentUrl = siteUrl + postUrl
+	// 实现弹窗toast效果
+	const copyBtn = document.getElementById("copy-url-btn")
+	const textElement = document.getElementById("copy-url-btn-text")
+	// 添加一个标记变量，防止重复点击
+	let isCopying = false
+	// 实现文字变换-工具函数
+	function switchCopyTextDisplay() {
+		if (!textElement || isCopying) return
+		isCopying = true
+		// 禁用按钮
+		copyBtn.disabled = true
+		copyBtn.classList.add("disabled")
+		// 更改文字
+		textElement.textContent = "复制成功！"
+		// 2秒后恢复
+		setTimeout(() => {
+			textElement.textContent = "复制链接"
+			copyBtn.disabled = false
+			copyBtn.classList.remove("disabled")
+			isCopying = false
+		}, 2000)
+	}
+
+	// 订阅事件
+	copyBtn.addEventListener("click", async () => {
+		// 如果正在复制中，直接返回
+		if (isCopying) return
+		// 复制到粘贴板
+		try {
+			await navigator.clipboard.writeText(currentUrl)
+			switchCopyTextDisplay()
+		} catch (err) {
+			console.error("复制失败:", err)
+			// 即使失败也重置状态
+			setTimeout(() => {
+				isCopying = false
+				copyBtn.disabled = false
+				copyBtn.classList.remove("disabled")
+			}, 1000)
+		}
+	})
+</script>

@@ -41,11 +41,14 @@ interface Props extends PageSEO {
 
 const { title, bannerPostMeta, postSlug, headings } = Astro.props
 
+// SEO所需内容
+const { frontmatter } = Astro.props
+
 // 检查是否在文章详情页
 const isPostPage = !!postSlug
 ---
 
-<BaseLayout title={title ?? "YILIn"}>
+<BaseLayout title={title ?? "YILIn"} frontmatter={frontmatter}>
     <slot slot="head" name="head" />
     <Header />
     <div class="relative z-10 w-full overflow-hidden opacity-100 transition duration-700">

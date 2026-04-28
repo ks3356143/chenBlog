@@ -20,8 +20,6 @@ const {
     frontmatter, // 传入frontmatter
 } = Astro.props
 
-console.log("SEO组件：", frontmatter)
-
 function jsonLDGenerator({ type, post, url }: any) {
     if (type === "post") {
         return `<script type="application/ld+json">

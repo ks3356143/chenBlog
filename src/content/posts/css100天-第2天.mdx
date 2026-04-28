@@ -1,0 +1,309 @@
+---
+title: CSS100Day(2)-菜单按钮动画
+published: 2026-04-28
+updated: 2026-04-28
+description: "菜单按钮都见过，但是三根条动画实现，关键利用no-animation初始化时候关闭回复动画"
+image: ""
+tags: [CSS100天, css]
+category: "设计灵感"
+draft: false
+---
+
+## 设计简介
+
+今天实现一个菜单按钮，在点击时候三根条中
+
+- 第一根会下移动，并且旋转45deg
+- 第二根会隐藏
+- 第三根上移动，并旋转-45deg
+- 然后再次点击时候，三根条反向动画
+- 所以要定义两组关键帧`@keyframes`
+
+## 效果展示
+
+<div class="frame">
+    <div class="center">
+        <div class="menu-icon">
+            <div class="line-1 no-animation"></div>
+            <div class="line-2 no-animation"></div>
+            <div class="line-3 no-animation"></div>
+        </div>
+    </div>
+</div>
+<script>
+    {`const icon = document.querySelector(".menu-icon");
+  icon.addEventListener("click", () => {
+    icon.classList.toggle("active");
+    icon.querySelectorAll("div").forEach((div) => div.classList.remove("no-animation"));
+  });`}
+</script>
+<style>
+    {`/* ===== CSS 变量 ===== */
+  :root {
+    --menu-icon-line-height: 8px;
+    --menu-icon-line-space: 14px;
+    --menu-icon-line-offsetY: calc(var(--menu-icon-line-height) + var(--menu-icon-line-space));
+    --menu-icon-height: calc(var(--menu-icon-line-height) * 3 + var(--menu-icon-line-space) * 2);
+    --cubic-bezier-in: cubic-bezier(0.3, 1, 0.7, 1);
+  }
+  /* ===== 容器 ===== */
+  .frame {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    background: #3faf82;
+    box-shadow: 1px 2px 10px 1px rgba(0, 0, 0, 0.3);
+    color: #fff;
+    margin: 10px auto;
+  }
+  .center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+  }
+  /* ===== 禁用动画 ===== */
+  .no-animation {
+    animation: none !important;
+  }
+  /* ===== 菜单图标 ===== */
+  .menu-icon {
+    width: 80px;
+    height: var(--menu-icon-height);
+    cursor: pointer;
+    z-index: 50;
+  }
+  /* 三条线共用 */
+  .menu-icon .line-1,
+  .menu-icon .line-2,
+  .menu-icon .line-3 {
+    height: var(--menu-icon-line-height);
+    width: 100%;
+    background-color: #fff;
+    border-radius: 3px;
+    box-shadow: 0 2px 10px 0 rgba(0, 0, 0, 0.3);
+  }
+  .menu-icon .line-2 {
+    margin: var(--menu-icon-line-space) 0;
+  }
+  /* 默认状态：反转动画（恢复三条线） */
+  .menu-icon .line-1 {
+    animation: animate-line-1-rev 0.7s var(--cubic-bezier-in) forwards;
+  }
+  .menu-icon .line-2 {
+    animation: animate-line-2-rev 0.7s var(--cubic-bezier-in) forwards;
+  }
+  .menu-icon .line-3 {
+    animation: animate-line-3-rev 0.7s var(--cubic-bezier-in) forwards;
+  }
+  /* 激活状态：变形为 X */
+  .menu-icon.active .line-1 {
+    animation: animate-line-1 0.7s var(--cubic-bezier-in) forwards;
+  }
+  .menu-icon.active .line-2 {
+    animation: animate-line-2 0.7s var(--cubic-bezier-in) forwards;
+  }
+  .menu-icon.active .line-3 {
+    animation: animate-line-3 0.7s var(--cubic-bezier-in) forwards;
+  }
+  /* ===== 关键帧 ===== */
+  @keyframes animate-line-1 {
+    0%   { transform: translate3d(0, 0, 0) rotate(0deg); }
+    50%  { transform: translate3d(0, var(--menu-icon-line-offsetY), 0) rotate(0); }
+    100% { transform: translate3d(0, var(--menu-icon-line-offsetY), 0) rotate(45deg); }
+  }
+  @keyframes animate-line-2 {
+    0%   { scale: 1; opacity: 1; }
+    100% { scale: 0; opacity: 0; }
+  }
+  @keyframes animate-line-3 {
+    0%   { transform: translate3d(0, 0, 0) rotate(0deg); }
+    50%  { transform: translate3d(0, calc(-1 * var(--menu-icon-line-offsetY)), 0) rotate(0); }
+    100% { transform: translate3d(0, calc(-1 * var(--menu-icon-line-offsetY)), 0) rotate(-45deg); }
+  }
+  @keyframes animate-line-1-rev {
+    0%   { transform: translate3d(0, var(--menu-icon-line-offsetY), 0) rotate(45deg); }
+    50%  { transform: translate3d(0, var(--menu-icon-line-offsetY), 0) rotate(0); }
+    100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  }
+  @keyframes animate-line-2-rev {
+    0%   { scale: 0; opacity: 0; }
+    100% { scale: 1; opacity: 1; }
+  }
+  @keyframes animate-line-3-rev {
+    0%   { transform: translate3d(0, calc(-1 * var(--menu-icon-line-offsetY)), 0) rotate(-45deg); }
+    50%  { transform: translate3d(0, calc(-1 * var(--menu-icon-line-offsetY)), 0) rotate(0); }
+    100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  }`}
+</style>
+
+## 实现代码
+
+### Js部分
+
+Js很简单，仔细思考为什么需要no-animation（初始化态？）
+
+```js
+const icon = document.querySelector(".menu-icon")
+icon.addEventListener("click", (e) => {
+    icon.classList.toggle("active")
+    const childDivs = icon.querySelectorAll("div")
+    childDivs.forEach((div) => div.classList.remove("no-animation"))
+})
+```
+
+### HTML部分
+
+HTML关键定义三根条，和.no-animation
+
+```html
+<div class="frame">
+    <div class="center">
+        <div class="menu-icon">
+            <div class="line-1 no-animation"></div>
+            <div class="line-2 no-animation"></div>
+            <div class="line-3 no-animation"></div>
+        </div>
+    </div>
+</div>
+```
+
+### CSS部分
+
+1. 定义两组animation，每组三根线共6个动画分别为正向反向，初始化使用.no-animation抵消
+2. 此外还使用了css变量计算移动高度等技巧
+
+```css
+:root {
+    --menu-icon-line-height: 8px;
+    --menu-icon-line-space: 14px;
+    --menu-icon-line-offsetY: calc(var(--menu-icon-line-height) + var(--menu-icon-line-space));
+    --menu-icon-height: calc(var(--menu-icon-line-height) * 3 + var(--menu-icon-line-space) * 2);
+    --cubic-bezier-in: cubic-bezier(0.3, 1, 0.7, 1);
+}
+/* ===== 容器 ===== */
+.frame {
+    position: relative;
+    width: 400px;
+    height: 400px;
+    background: #3faf82;
+    box-shadow: 1px 2px 10px 1px rgba(0, 0, 0, 0.3);
+    color: #fff;
+    margin: 10px auto;
+}
+.center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+}
+/* ===== 禁用动画 ===== */
+.no-animation {
+    animation: none !important;
+}
+/* ===== 菜单图标 ===== */
+.menu-icon {
+    width: 80px;
+    height: var(--menu-icon-height);
+    cursor: pointer;
+    z-index: 50;
+}
+/* 三条线共用 */
+.menu-icon .line-1,
+.menu-icon .line-2,
+.menu-icon .line-3 {
+    height: var(--menu-icon-line-height);
+    width: 100%;
+    background-color: #fff;
+    border-radius: 3px;
+    box-shadow: 0 2px 10px 0 rgba(0, 0, 0, 0.3);
+}
+.menu-icon .line-2 {
+    margin: var(--menu-icon-line-space) 0;
+}
+/* 默认状态：反转动画（恢复三条线） */
+.menu-icon .line-1 {
+    animation: animate-line-1-rev 0.7s var(--cubic-bezier-in) forwards;
+}
+.menu-icon .line-2 {
+    animation: animate-line-2-rev 0.7s var(--cubic-bezier-in) forwards;
+}
+.menu-icon .line-3 {
+    animation: animate-line-3-rev 0.7s var(--cubic-bezier-in) forwards;
+}
+/* 激活状态：变形为 X */
+.menu-icon.active .line-1 {
+    animation: animate-line-1 0.7s var(--cubic-bezier-in) forwards;
+}
+.menu-icon.active .line-2 {
+    animation: animate-line-2 0.7s var(--cubic-bezier-in) forwards;
+}
+.menu-icon.active .line-3 {
+    animation: animate-line-3 0.7s var(--cubic-bezier-in) forwards;
+}
+/* ===== 关键帧 ===== */
+@keyframes animate-line-1 {
+    0% {
+        transform: translate3d(0, 0, 0) rotate(0deg);
+    }
+    50% {
+        transform: translate3d(0, var(--menu-icon-line-offsetY), 0) rotate(0);
+    }
+    100% {
+        transform: translate3d(0, var(--menu-icon-line-offsetY), 0) rotate(45deg);
+    }
+}
+@keyframes animate-line-2 {
+    0% {
+        scale: 1;
+        opacity: 1;
+    }
+    100% {
+        scale: 0;
+        opacity: 0;
+    }
+}
+@keyframes animate-line-3 {
+    0% {
+        transform: translate3d(0, 0, 0) rotate(0deg);
+    }
+    50% {
+        transform: translate3d(0, calc(-1 * var(--menu-icon-line-offsetY)), 0) rotate(0);
+    }
+    100% {
+        transform: translate3d(0, calc(-1 * var(--menu-icon-line-offsetY)), 0) rotate(-45deg);
+    }
+}
+@keyframes animate-line-1-rev {
+    0% {
+        transform: translate3d(0, var(--menu-icon-line-offsetY), 0) rotate(45deg);
+    }
+    50% {
+        transform: translate3d(0, var(--menu-icon-line-offsetY), 0) rotate(0);
+    }
+    100% {
+        transform: translate3d(0, 0, 0) rotate(0deg);
+    }
+}
+@keyframes animate-line-2-rev {
+    0% {
+        scale: 0;
+        opacity: 0;
+    }
+    100% {
+        scale: 1;
+        opacity: 1;
+    }
+}
+@keyframes animate-line-3-rev {
+    0% {
+        transform: translate3d(0, calc(-1 * var(--menu-icon-line-offsetY)), 0) rotate(-45deg);
+    }
+    50% {
+        transform: translate3d(0, calc(-1 * var(--menu-icon-line-offsetY)), 0) rotate(0);
+    }
+    100% {
+        transform: translate3d(0, 0, 0) rotate(0deg);
+    }
+}
+```

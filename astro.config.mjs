@@ -10,6 +10,8 @@ import { siteConfig } from "./src/config/siteConfig"
 
 // mermaid
 import mermaid from "astro-mermaid"
+// mdx
+import mdx from "@astrojs/mdx"
 
 // remark
 import { remarkExcerpt } from "./src/plugins/remark-excerpt.js"
@@ -137,6 +139,7 @@ export default defineConfig({
         }),
         sitemap(),
         svelte(),
+        mdx(),
     ],
     markdown: {
         remarkPlugins: [

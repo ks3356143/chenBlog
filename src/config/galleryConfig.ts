@@ -36,6 +36,14 @@ export const galleryConfig: GallaryConfig = {
             date: "2022-08-03",
             tags: ["生活", "路过"],
         },
+        {
+            id: "pujiangyintaoshan-2026",
+            name: "樱桃山，江口沉银",
+            description: "摘樱桃，吃柴火鸡，看金银博物馆",
+            location: "浦江&眉山",
+            date: "2026-04-25",
+            tags: ["生活", "巡游"],
+        },
     ],
     // 瀑布流最小列宽(px)，浏览器根据容器宽度自动计算列数，默认 240
     // 值越小列数越多，值越大列数越少

@@ -1,0 +1,427 @@
+---
+title: CSS100Day(3)-clip-path和动画实现金字塔日出日落
+published: 2026-04-29
+updated: 2026-04-29
+description: "一个训练clip-path和关键帧贝塞尔曲线的练习"
+image: ""
+tags: [CSS100天, css]
+category: "设计灵感"
+draft: false
+---
+
+## 设计简介
+
+完全使用元素实现金字塔日出日落效果
+
+- 日出日落效果，利用动画改变背景颜色对所有元素进行设置
+- 阴影元素，使用关键帧对clip-path和scaleY进行变化
+
+## 效果展示
+
+<div class="demo-container">
+        <div class="circle">
+            <div class="sky"></div>
+            <div class="sun"></div>
+            <div class="side-left"></div>
+            <div class="side-right"></div>
+            <div class="shadow"></div>
+            <div class="ground"></div>
+        </div>
+    </div>
+<style>
+    {`/* ===== CSS 变量 ===== */
+    :root {
+	--cubic-bezier: cubic-bezier(0.4, 0, 0.5, 1);
+}
+
+.demo-container {
+display: grid;
+place-content: center;
+background: #272c34;
+color: #fff;
+width: 400px;
+height: 400px;
+border-radius: 2px;
+}
+
+.circle {
+position: relative;
+border-radius: 50%;
+clip-path: circle(90px at 90px 90px);
+overflow: hidden;
+width: 180px;
+height: 180px;
+
+    .sky {
+    	background: #7ddffc;
+    	height: 124px;
+    	animation: sky-turns-black 4s var(--cubic-bezier) infinite;
+    	position: absolute;
+    	top: 0;
+    	left: 0;
+    	right: 0;
+    }
+
+    .sun {
+    	z-index: 2;
+    	position: absolute;
+    	top: 7px;
+    	left: 73px;
+    	width: 34px;
+    	height: 34px;
+    	border-radius: 50%;
+    	background: #ffef00;
+    	transform-origin: 50% 400%;
+    	animation: sun-goes-down 4s var(--cubic-bezier) infinite;
+    }
+
+    .side-left {
+    	position: absolute;
+    	background: #f4f4f4;
+    	height: 57px;
+    	width: 116px;
+    	top: 68px;
+    	left: 35px;
+    	clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    	animation: pyramide-shading 4s var(--cubic-bezier) infinite;
+    }
+
+    .side-right {
+    	position: absolute;
+    	top: 68px;
+    	left: 93px;
+    	height: 57px;
+    	width: 58px;
+    	background: #dddada;
+    	clip-path: polygon(30% 100%, 100% 100%, 0% 0%);
+    	animation: pyramide-shading 4s var(--cubic-bezier) infinite reverse;
+    }
+
+    .shadow {
+    	position: absolute;
+    	z-index: 2;
+    	top: 124px;
+    	left: -80px;
+    	height: 30px;
+    	width: 360px;
+    	background: rgba(0, 0, 0, 0.2);
+    	transform-origin: 50% 0;
+    	clip-path: polygon(115px 0%, 231px 0%, 80% 100%);
+    	animation: shadow-on-the-floor 4s var(--cubic-bezier) infinite;
+    }
+
+    .ground {
+    	position: absolute;
+    	z-index: 1;
+    	bottom: 0;
+    	left: 0;
+    	right: 0;
+    	height: 56px;
+    	background: #f0de75;
+    	animation: fading-sand 4s var(--cubic-bezier) infinite;
+    }
+
+}
+
+@keyframes sky-turns-black {
+0% {
+background: #272c34;
+}
+30% {
+background: #7ddffc;
+}
+70% {
+background: #7ddffc;
+}
+100% {
+background: #272c34;
+}
+}
+
+@keyframes sun-goes-down {
+0% {
+background: #f57209;
+transform: rotate(-70deg);
+}
+30% {
+background: #ffef00;
+transform: rotate(-28deg);
+}
+70% {
+background: #ffef00;
+}
+100% {
+background: #f57209;
+transform: rotate(70deg);
+}
+}
+
+@keyframes pyramide-shading {
+0% {
+background: #272c34;
+}
+30% {
+background: #f4f4f4;
+}
+70% {
+background: #dddada;
+}
+100% {
+background: #272c34;
+}
+}
+
+@keyframes fading-sand {
+0% {
+background: #272c34;
+}
+30% {
+background: #f0de75;
+}
+70% {
+background: #f0de75;
+}
+100% {
+background: #272c34;
+}
+}
+
+@keyframes shadow-on-the-floor {
+0% {
+transform: scaleY(0);
+clip-path: polygon(115px 0%, 231px 0%, 100% 100%);
+}
+30% {
+transform: scaleY(1);
+clip-path: polygon(115px 0%, 231px 0%, 80% 100%);
+}
+55% {
+transform: scaleY(0.4);
+}
+70% {
+transform: scaleY(1);
+}
+100% {
+transform: scaleY(0);
+clip-path: polygon(115px 0%, 231px 0%, 0% 100%);
+}
+}
+
+`}
+
+</style>
+
+## 实现代码和步骤
+
+### HTML部分
+
+HTML部分全部利用元素实现，包括天空、太阳、金字塔、金字塔右侧、阴影和地面
+
+```html
+<div class="demo-container">
+    <div class="circle">
+        <div class="sky"></div>
+        <div class="sun"></div>
+        <div class="side-left"></div>
+        <div class="side-right"></div>
+        <div class="shadow"></div>
+        <div class="ground"></div>
+    </div>
+</div>
+```
+
+### CSS部分
+
+- 首先定义一个贝塞尔曲线，在x轴0.4~0.5时候快速变化y
+
+    在中间快速变化为了实现日落日出中间状态持续效果
+
+    ```css
+    :root {
+        --cubic-bezier: cubic-bezier(0.4, 0, 0.5, 1);
+    }
+    ```
+
+- 容器.demo-container居中设置宽高
+
+    ```css
+    .demo-container {
+        display: grid;
+        place-content: center;
+        background: #272c34;
+        color: #fff;
+        width: 400px;
+        height: 400px;
+        border-radius: 2px;
+    }
+    ```
+
+- 所有元素全部绝对定位掌控位置
+
+    ```css
+    .circle {
+        position: relative;
+        border-radius: 50%;
+        clip-path: circle(90px at 90px 90px);
+        overflow: hidden;
+        width: 180px;
+        height: 180px;
+
+        .sky {
+            background: #7ddffc;
+            height: 124px;
+            animation: sky-turns-black 4s var(--cubic-bezier) infinite;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .sun {
+            z-index: 2;
+            position: absolute;
+            top: 7px;
+            left: 73px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #ffef00;
+            transform-origin: 50% 400%;
+            animation: sun-goes-down 4s var(--cubic-bezier) infinite;
+        }
+
+        .side-left {
+            position: absolute;
+            background: #f4f4f4;
+            height: 57px;
+            width: 116px;
+            top: 68px;
+            left: 35px;
+            clip-path: polygon(50% 0, 100% 100%, 0 100%);
+            animation: pyramide-shading 4s var(--cubic-bezier) infinite;
+        }
+
+        .side-right {
+            position: absolute;
+            top: 68px;
+            left: 93px;
+            height: 57px;
+            width: 58px;
+            background: #dddada;
+            clip-path: polygon(30% 100%, 100% 100%, 0% 0%);
+            animation: pyramide-shading 4s var(--cubic-bezier) infinite reverse;
+        }
+
+        .shadow {
+            position: absolute;
+            z-index: 2;
+            top: 124px;
+            left: -80px;
+            height: 30px;
+            width: 360px;
+            background: rgba(0, 0, 0, 0.2);
+            transform-origin: 50% 0;
+            clip-path: polygon(115px 0%, 231px 0%, 80% 100%);
+            animation: shadow-on-the-floor 4s var(--cubic-bezier) infinite;
+        }
+
+        .ground {
+            position: absolute;
+            z-index: 1;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: #f0de75;
+            animation: fading-sand 4s var(--cubic-bezier) infinite;
+        }
+    }
+    ```
+
+- 最后关键帧，着重看阴影的关键帧
+
+    ```css
+    @keyframes sky-turns-black {
+        0% {
+            background: #272c34;
+        }
+        30% {
+            background: #7ddffc;
+        }
+        70% {
+            background: #7ddffc;
+        }
+        100% {
+            background: #272c34;
+        }
+    }
+
+    @keyframes sun-goes-down {
+        0% {
+            background: #f57209;
+            transform: rotate(-70deg);
+        }
+        30% {
+            background: #ffef00;
+            transform: rotate(-28deg);
+        }
+        70% {
+            background: #ffef00;
+        }
+        100% {
+            background: #f57209;
+            transform: rotate(70deg);
+        }
+    }
+
+    @keyframes pyramide-shading {
+        0% {
+            background: #272c34;
+        }
+        30% {
+            background: #f4f4f4;
+        }
+        70% {
+            background: #dddada;
+        }
+        100% {
+            background: #272c34;
+        }
+    }
+
+    @keyframes fading-sand {
+        0% {
+            background: #272c34;
+        }
+        30% {
+            background: #f0de75;
+        }
+        70% {
+            background: #f0de75;
+        }
+        100% {
+            background: #272c34;
+        }
+    }
+
+    @keyframes shadow-on-the-floor {
+        0% {
+            transform: scaleY(0);
+            clip-path: polygon(115px 0%, 231px 0%, 100% 100%);
+        }
+        30% {
+            transform: scaleY(1);
+            clip-path: polygon(115px 0%, 231px 0%, 80% 100%);
+        }
+        55% {
+            transform: scaleY(0.4);
+        }
+        70% {
+            transform: scaleY(1);
+        }
+        100% {
+            transform: scaleY(0);
+            clip-path: polygon(115px 0%, 231px 0%, 0% 100%);
+        }
+    }
+    ```

@@ -12,17 +12,17 @@
     "@astrojs/mdx": "^5.0.4",
     "@astrojs/rss": "^4.0.18",
     "@astrojs/sitemap": "^3.7.2",
-    "@astrojs/svelte": "^8.0.5",
-    "@fancyapps/ui": "^6.1.13",
+    "@astrojs/svelte": "^8.1.0",
+    "@fancyapps/ui": "^6.1.14",
     "@tailwindcss/vite": "^4.2.4",
-    "astro": "^6.1.9",
+    "astro": "^6.1.10",
     "astro-expressive-code": "^0.41.7",
     "astro-icon": "^1.1.5",
     "markdown-it": "^14.1.1",
     "sanitize-html": "^2.17.3",
     "svelte": "^5.55.5",
     "tailwindcss": "^4.2.4",
-    "typescript": "^6.0.3"
+    "typescript": "^5.3.3"
   },
   "devDependencies": {
     "@expressive-code/plugin-collapsible-sections": "^0.41.7",

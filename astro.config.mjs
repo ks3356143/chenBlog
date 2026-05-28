@@ -91,9 +91,11 @@ export default defineConfig({
                 return `[data-theme="${theme.name}"]`
             },
             plugins: [
+                // @ts-ignore
                 pluginLanguageBadge(),
                 pluginCollapsibleSections(),
                 pluginLineNumbers(),
+                // @ts-ignore
                 pluginCollapsible({
                     lineThreshold: 15, // 当代码行数超过15行时显示折叠按钮
                     previewLines: 8, // 折叠时显示前8行
@@ -127,6 +129,7 @@ export default defineConfig({
                     insHue: "180deg",
                     markHue: "250deg",
                 },
+                // @ts-ignore
                 languageBadge: {
                     fontSize: "0.5rem",
                     fontWeight: "bold",

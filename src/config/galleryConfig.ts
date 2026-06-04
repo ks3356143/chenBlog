@@ -44,6 +44,14 @@ export const galleryConfig: GallaryConfig = {
             date: "2026-04-25",
             tags: ["生活", "巡游"],
         },
+        {
+            id: "zigong-daan-2026",
+            name: "灯会灿烂",
+            description: "自贡灯会、夜宵",
+            location: "自贡·大安",
+            date: "2026-05-31",
+            tags: ["生活", "川内"],
+        },
     ],
     // 瀑布流最小列宽(px)，浏览器根据容器宽度自动计算列数，默认 240
     // 值越小列数越多，值越大列数越少

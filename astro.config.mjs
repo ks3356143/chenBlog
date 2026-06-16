@@ -8,6 +8,9 @@ import icon from "astro-icon"
 // siteConfig
 import { siteConfig } from "./src/config/siteConfig"
 
+// markdown配置
+import { unified } from "@astrojs/markdown-remark"
+
 // mermaid
 import mermaid from "astro-mermaid"
 // mdx
@@ -145,56 +148,58 @@ export default defineConfig({
         mdx(),
     ],
     markdown: {
-        remarkPlugins: [
-            remarkMath,
-            remarkReadingTime,
-            remarkImageGrid,
-            remarkExcerpt,
-            remarkDirective,
-            remarkSectionize,
-            parseDirectiveNode,
-        ],
-        rehypePlugins: [
-            [rehypeKatex, { katex }],
-            [rehypeCallouts, { theme: siteConfig.rehypeCallouts.theme }],
-            rehypeSlug,
-            // @ts-ignore
-            rehypeFigure,
-            // @ts-ignore
-            [rehypeExternalLinks, { siteUrl: siteConfig.site_url }],
-            // @ts-ignore
-            [rehypeEmailProtection, { method: "base64" }], // 邮箱保护插件，支持 'base64' 或 'rot13'
-            [
-                rehypeComponents, // github卡片插件
-                {
-                    components: {
-                        github: GithubCardComponent,
-                    },
-                },
+        processor: unified({
+            remarkPlugins: [
+                remarkMath,
+                remarkReadingTime,
+                remarkImageGrid,
+                remarkExcerpt,
+                remarkDirective,
+                remarkSectionize,
+                parseDirectiveNode,
             ],
-            [
-                rehypeAutolinkHeadings,
-                {
-                    behavior: "append",
-                    properties: {
-                        className: ["anchor"],
-                    },
-                    content: {
-                        type: "element",
-                        tagName: "span",
-                        properties: {
-                            className: ["anchor-icon"],
-                            "data-pagefind-ignore": true,
+            rehypePlugins: [
+                [rehypeKatex, { katex }],
+                [rehypeCallouts, { theme: siteConfig.rehypeCallouts.theme }],
+                rehypeSlug,
+                // @ts-ignore
+                rehypeFigure,
+                // @ts-ignore
+                [rehypeExternalLinks, { siteUrl: siteConfig.site_url }],
+                // @ts-ignore
+                [rehypeEmailProtection, { method: "base64" }], // 邮箱保护插件，支持 'base64' 或 'rot13'
+                [
+                    rehypeComponents, // github卡片插件
+                    {
+                        components: {
+                            github: GithubCardComponent,
                         },
-                        children: [
-                            {
-                                type: "text",
-                                value: "#",
-                            },
-                        ],
                     },
-                },
+                ],
+                [
+                    rehypeAutolinkHeadings,
+                    {
+                        behavior: "append",
+                        properties: {
+                            className: ["anchor"],
+                        },
+                        content: {
+                            type: "element",
+                            tagName: "span",
+                            properties: {
+                                className: ["anchor-icon"],
+                                "data-pagefind-ignore": true,
+                            },
+                            children: [
+                                {
+                                    type: "text",
+                                    value: "#",
+                                },
+                            ],
+                        },
+                    },
+                ],
             ],
-        ],
+        }),
     },
 })

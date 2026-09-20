@@ -95,11 +95,13 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
 
 ## 六、部署
 
-**线上不是"传 dist"，而是服务器上 git pull + build。**
+**部署方式：本地构建 + 上传 `dist`，服务器不跑 build。**（2026-09-20 起）
 
 - 服务器：阿里云 ECS，宝塔面板 + Nginx
 - SSH：`root@47.108.230.220`，**端口 22**，仅 publickey 认证（密码登录已关闭），本地 `~/.ssh/id_rsa` 已授权 ✅
-- 服务器 node `v24.14.1` / npm `11.11.0`，仓库自带 `node_modules`
+- 服务器上虽有 node `v24.14.1` / npm `11.11.0` 和一份 `node_modules`，但**已不用于部署**：
+  那份依赖停在 Astro 6.1.6，`npm ci` 会因 peer 冲突直接失败（详见"已知坑"）。**别在服务器上 build。**
+- 服务器上的 git 仓库也不再是部署来源，会与远端脱节，属正常现象。
 
 ### 部署目标路径
 
@@ -115,33 +117,76 @@ Nginx 根目录直接指向 `dist/`，**build 完成即上线**，无需额外�
 > ⚠️ 服务器 `/www/wwwroot/` 下**还并存着其他项目的目录**。曾经发生过把博客路径认错的情况，
 > 若推错目录会直接毁掉另一个项目。动手前务必确认当前路径是 `chenBlog/dist`，不要凭记忆。
 
-### 标准部署流程
+### 标准部署流程（已验证可用）
 
 ```bash
-# 本地
-git add -A && git commit -m "..." && git push
+# ① 本地构建 + 打包
+npm run build
+tar -czf /tmp/chenblog_dist.tar.gz -C dist .
 
-# 服务器
-ssh root@47.108.230.220
-cd /www/wwwroot/chenBlog
-cp -a dist "dist_backup_$(date +%Y%m%d_%H%M%S)"   # 先备份，build 失败可回滚
-git pull
-npm ci             # package.json / lock 有变化时用 ci，干净且与 lock 精确一致
-npm run build      # 产物直接落到 dist/，即线上生效
+# ② 上传
+scp /tmp/chenblog_dist.tar.gz root@47.108.230.220:/tmp/
+
+# ③ 服务器：解压到临时目录 → 校验 → 原子替换
+ssh root@47.108.230.220 'set -e
+  cd /www/wwwroot/chenBlog
+  cp -a dist "dist_backup_$(date +%Y%m%d_%H%M%S)"   # 先备份，出问题可回滚
+  rm -rf dist.new && mkdir dist.new
+  tar -xzf /tmp/chenblog_dist.tar.gz -C dist.new
+  test -f dist.new/index.html                        # 关键文件校验，缺了就中止
+  chmod -R a+rX dist.new
+  chown -R root:root dist.new                        # 必须！见"已知坑"①
+  rm -rf dist.old && mv dist dist.old && mv dist.new dist
+  rm -f /tmp/chenblog_dist.tar.gz'
 ```
+
+先解压到 `dist.new` 再用 `mv` 原子替换，避免"解压到一半、访客看到残缺站点"的窗口期。
+`dist.old` + 时间戳备份都保留，回滚只需 `rm -rf dist && mv dist.old dist`。
 
 remote：`git@github.com:ks3356143/chenBlog.git`（本地与服务器同一个 origin，分支 `main`）
 
 **注意：该仓库是公开的**（可匿名 `git ls-remote` 读取），任何写进仓库的文件都等于发布到公网。
 
-### 已知坑
+### 验证线上的正确姿势
 
-- **服务器仓库有未提交改动**：`package.json`、`package-lock.json` 常处于 modified 状态
-  （历史 `npm install` 顺手改写出来的垃圾改动），`git pull` 会因此冲突/失败。
-  pull 前需先处理（`git stash` 或确认后 `git checkout --`）。
-  另有宝塔生成的未跟踪文件 `.htaccess` `.user.ini` `404.html` `index.html`，无害，别删。
-- **线上版本容易滞后**：2026-09-20 实测线上 dist 构建于 2026-06-22，落后本地 16 个提交，
-  其中含 `bad5d80 修复评论问题` 等修复长期未上线。改完记得真的部署。
+```bash
+# 从本机访问公网 IP（最可靠）
+curl -s -o /dev/null -w "HTTP %{http_code} %{size_download}B\n" http://47.108.230.220/
+
+# 中文文章 URL 必须 percent-encode
+curl -s -o /dev/null -w "%{http_code}\n" \
+  "http://47.108.230.220/posts/$(node -e "console.log(encodeURIComponent('css100天-第28天'))")/"
+```
+
+### 已知坑（均为 2026-09-20 部署实测踩到）
+
+① **Windows 打包的 tar 会带数字 UID（本机是 `197609`）**，解压到 Linux 后属主变成不存在的
+   `UNKNOWN:UNKNOWN`。虽然 `chmod a+rX` 后 nginx 仍读得到，但**必须 `chown -R root:root`** 归正，
+   否则后续任何按属主判断的运维操作都会出怪事。
+
+② **在服务器上 `curl http://127.0.0.1/` 测不到博客！** 该请求 Host 头是 `127.0.0.1`，会精确命中
+   `phpfpm_status.conf`（`listen 80; server_name 127.0.0.1;`），返回 404，看起来像站点挂了。
+   博客 vhost 是 `server_name 0.0.0.0` 靠默认服务器兜底。
+   → 自测要么加 `-H "Host: 47.108.230.220"`，要么直接从外部打公网 IP。
+
+③ **node 的 `execSync` 在 Windows 上走 `cmd.exe` 而非 bash**，`/dev/null` 和 curl 的 `%{http_code}`
+   都会被 cmd 吃掉，导致所有请求"失败"的假象。HTTP 测试一律用 Bash 工具直接跑 curl。
+
+④ **中文文章 URL 必须 percent-encode**，否则 nginx 返回 404。用 `encodeURIComponent` 生成。
+
+⑤ **Astro 7 与 `astro-expressive-code@0.43.1` 存在 peer 冲突**（后者只声明到 `^6`），
+   服务器上 `npm ci` 会因此失败。彻底修复需连带升级两个 **major**：
+   `expressive-code-language-badge` 1.1.0→2.0.0、`expressive-code-collapsible` 0.1.0→1.0.0
+   （二者都要求 `@expressive-code/core ^0.44.1`）。
+   → 这是**独立任务**，需逐个回归验证代码高亮/折叠/语言徽章。目前靠"本地构建"绕开，不影响上线。
+
+⑥ **服务器仓库有未提交改动**：`package.json`、`package-lock.json` 常处于 modified 状态
+   （历史 `npm install` 顺手改写出来的垃圾改动），`git pull` 会因此冲突。pull 前需先
+   `git checkout --` 丢弃。宝塔生成的未跟踪文件 `.htaccess` `.user.ini` `404.html` `index.html` 无害，别删。
+
+⑦ **线上版本极易滞后**：2026-09-20 发现线上 dist 构建于 2026-06-22，落后本地 16 个提交，
+   其中 `bad5d80 修复评论问题`（Twikoo envId 误配 localhost）在服务器上躺了近三个月才上线。
+   → **改完必须真的部署，并实际访问线上确认**，别只看到本地 build 通过就算完事。
 
 ### 面板与凭据
 

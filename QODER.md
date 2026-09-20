@@ -8,7 +8,7 @@
 个人博客，**纯静态站点**（Astro SSG），部署在阿里云 + 宝塔面板 + Nginx 上。
 
 - 线上地址：http://47.108.230.220/ （目前是 IP，**没有域名**）
-- 文章 27 篇，UI 和提交信息全部为中文
+- 文章 26 篇，UI 和提交信息全部为中文
 
 ## 二、技术栈
 
@@ -41,7 +41,7 @@ astro.config.mjs        # 所有插件和 markdown 处理链的唯一配置入�
 src/content.config.ts   # 文章 frontmatter schema（改文章字段前必看）
 src/config/siteConfig.ts    # 站点总开关：分页数、图片格式、页面开关、site_url
 src/config/                 # 另有 backgroundWallpaper / commentConfig / galleryConfig
-src/content/posts/          # 27 篇文章
+src/content/posts/          # 26 篇文章（24 .md + 2 .mdx）；images/ 是空的历史遗留目录
 src/content/spec/           # 单页内容（about 等）
 src/pages/                  # 路由：about / archive / guestbook / gallery / posts/[...slug] / [...page]
 src/pages/rss.xml.js        # RSS 已实现
@@ -98,7 +98,7 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
 **部署方式：本地构建 + 上传 `dist`，服务器不跑 build。**（2026-09-20 起）
 
 - 服务器：阿里云 ECS，宝塔面板 + Nginx
-- SSH：`root@47.108.230.220`，**端口 22**，仅 publickey 认证（密码登录已关闭），本地 `~/.ssh/id_rsa` 已授权 ✅
+- SSH：`root@47.108.230.220`，**端口 22**，仅 publickey 认证（密码登录已关闭），本机 SSH 公钥已授权到该服务器 ✅
 - 服务器上虽有 node `v24.14.1` / npm `11.11.0` 和一份 `node_modules`，但**已不用于部署**：
   那份依赖停在 Astro 6.1.6，`npm ci` 会因 peer 冲突直接失败（详见"已知坑"）。**别在服务器上 build。**
 - 服务器上的 git 仓库也不再是部署来源，会与远端脱节，属正常现象。
@@ -231,9 +231,79 @@ curl -s -o /dev/null -w "%{http_code}\n" \
 - 不引入新依赖前先问；不擅自升级大版本
 - 不确定就问，别猜
 
-## 八、README 里的待办（可能已过期）
+## 八、文章写作规范（2026-09-21 实测调研，非推测）
 
-`README.md` 写着后续计划：① 页面间动画（ClientRouter / swup）② 404 页面 ③ RSS 添加。
+### 现状
 
-其中 **③ RSS 已经实现了**（`src/pages/rss.xml.js` + `@astrojs/rss`），README 未更新。
-① ② 状态待确认。
+26 篇文章 = 24 `.md` + 2 `.mdx`（只有第2、3天用 mdx），**无草稿**，与 `dist/posts` 的 26 个路由一一对应。
+`src/content/posts/images/` 是个**空目录**，历史遗留、git 也不跟踪空目录。
+新文章用 `.md`（主流选择），只有需要嵌组件时才用 `.mdx`。
+
+### frontmatter
+
+26 篇**实际只用了 7 个字段**，schema 里另外 9 个（`pinned` `author` `sourceLink` `licenseName`
+`licenseUrl` `comment` `password` `passwordHint` `lang`）零使用：
+
+```yaml
+---
+title: CSS100Day(29)-标题
+published: 2026-09-21
+updated: 2026-09-21
+description: "列表页显示，按 2 行截断（siteConfig.descriptionLines）"
+tags: [CSS100天, css]
+category: "设计灵感"
+draft: false
+---
+```
+
+`category` 会进分类导航栏，要新增分类值前先确认。
+
+### 图片：最容易出事的地方
+
+| 写法 | 结论 |
+|---|---|
+| `![说明](/images/xxx.jpg)`，文件放 `public/images/` | ✅ **唯一正确写法**，全站只有 1 篇用对 |
+| `<img src="./xxx.svg">` | ❌ **已坏**：解析成 `/posts/<slug>/xxx.svg`，文件不存在，线上实测 404 |
+| `src="https://100dayscss.com/..."` | ⚠️ 26 处依赖他人服务器，对方开防盗链或关站会集体裂图 |
+
+**封面**：`image` 字段 26 篇**全为空**（10 处写了但值是 `""`），所以列表页封面统一是兜底图
+`assets/postImages/loadingfalse.png`。
+注意 `src/assets/covers/1,2,3.jpg` 是**站头轮播壁纸**（被 `backgroundWallpaper.ts` 引用），
+不是文章封面，别混。
+
+### ⚠️ 这些功能配置齐全但从未在生产环境用过
+
+Mermaid、KaTeX 公式、`:::` callout 提示框、`<github>` 卡片、图片网格、代码块折叠——
+26 篇文章**一个都没用到**，全部是纯 HTML + 内联 `<style>`（CSS100Day 系列的做法）。
+
+→ 这些渲染路径等于**零实战验证**。首次写用到它们的文章，必须在 `npm run dev` 里逐项确认再上线，
+别以为配置装了就能用。
+
+## 九、待办与未决（2026-09-21 会话结束时的状态）
+
+### 文章方向，等用户拍板
+
+1. **文件名 → URL 是否继续用中文**：现状 26 篇全中文 URL，分享出来是 `%E5%A4%A9` 这种。
+   建议**不动已有 26 个 URL**（会丢外链和收录），但**新的非系列文章改用 ASCII slug**。
+2. **是否开始配文章封面**：可做成"按分类自动配图"，成本低。
+3. **是否要文章脚手架**：一条命令生成带正确 frontmatter 的模板文件。
+
+### 已知缺陷（待修，修完需重新部署）
+
+- 2 处 `<img src="./heart.svg">` 线上 404：`src/content/posts/css100天-第10天.md:167` 和第6天各一处。
+  文件全项目不存在，需补图或删引用。
+- 26 处远程图片依赖 `100dayscss.com`，存在整体失效风险。
+
+### 技术债
+
+- **expressive-code 家族 peer 冲突未修**：需升 `astro-expressive-code`→0.44.2、
+  `expressive-code-language-badge` 1.1.0→**2.0.0**、`expressive-code-collapsible` 0.1.0→**1.0.0**
+  （后两个是 major，均要求 `@expressive-code/core ^0.44.1`）。
+  升级后必须逐项回归代码高亮 / 折叠 / 行号 / 语言徽章。目前靠"本地构建"绕开，不影响上线。
+
+### 运维
+
+- 宝塔面板密码曾在对话中明文出现，用户当前选择暂不修改；面板 IP 白名单未开。
+- 服务器回滚资产 `dist.old` + `dist_backup_20260920_234618`（共 52M）**保留中**，
+  确认线上稳定数日后才可删。
+- 前端计划（404 页面、页面间动画）以 `README.md` 为准，此处不复述。

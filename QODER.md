@@ -14,13 +14,18 @@
 
 | 层 | 选型 |
 |---|---|
-| 框架 | Astro 7.0.2（SSG，非 SSR） |
-| 交互组件 | Svelte 5（runes 语法） |
-| 样式 | Tailwind CSS 4（`@tailwindcss/vite`，**v4 无 tailwind.config.js**，配置写在 CSS 里） |
-| 语言 | TypeScript 6 |
-| 内容 | MDX + Content Collections |
-| 代码高亮 | astro-expressive-code（one-light / one-dark-pro，内部重命名为 `light` / `dark`） |
-| 其他 | Mermaid 图表、KaTeX 公式、Fancybox 图库、astro-icon + Iconify |
+| 框架 | Astro **7.3.3**（SSG，非 SSR） |
+| 交互组件 | Svelte 5.57.1（runes 语法）+ `@astrojs/svelte` 9.0.1 |
+| 样式 | Tailwind CSS **4.3.3**（`@tailwindcss/vite`，**v4 无 tailwind.config.js**，配置写在 CSS 里） |
+| 语言 | TypeScript **6.0.3**（⚠️ 不能升 7，见第九节） |
+| 内容 | MDX（`@astrojs/mdx` **8.0.1**）+ Content Collections |
+| Markdown 处理 | `@astrojs/markdown-remark` **7.3.1**（⚠️ 必须显式声明，见第五节）|
+| 代码高亮 | astro-expressive-code **0.44.2**（one-light / one-dark-pro，内部重命名为 `light` / `dark`） |
+| 图表 / 公式 | Mermaid **11.17.2**（⚠️ 不能升 12）、KaTeX **0.18.7** |
+| 其他 | Fancybox 图库、astro-icon 1.2.0 + Iconify |
+
+> 2026-09-21 做过一次全量依赖升级，`npm audit` 从 21 个漏洞（2 critical）降到 **0**，
+> 并通过干净 `npm ci` + 构建验证。升级中的坑与版本天花板全部记在第五、九节。
 
 **注意**：Tailwind 4 + Astro 7 + Svelte 5 都是较新的大版本，网上很多教程是旧版写法，改配置前先确认版本。
 
@@ -89,9 +94,29 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
    导致整个页面（含首页）渲染失败。Astro 6 容忍、Astro 7 报错。
    → 已于 2026-09-20 从 `src/pages/[...page].astro` 移除一处。要么写内容，要么整行删掉，别留空标签。
 
-9. 构建产物基线（2026-09-20，Astro 7.0.2）：**37 个页面 / dist 246 个文件**，构建约 6s。
+9. 构建产物基线（2026-09-21，Astro 7.3.3 全量升级后）：
+   **37 个页面 / dist 260 个文件 / 26M**，其中 `_astro/` 占 189 个，构建约 7~23s（冷缓存较慢）。
+   升级前是 246 个文件（`_astro/` 175 个），**多出的 14 个全在 `_astro/`**，是依赖升级后 chunk 拆分变化，
+   总体积未变。已验证 dist 内 **starlight / pagefind 产物为 0**（见第九节，那两个是纯 devDep 膨胀）。
    已知无害警告两条：`logo.png` 的 `INEFFECTIVE_DYNAMIC_IMPORT`（被 Header.astro 静态引入，
    同时被 CoverImage/ImageWrapper 动态引入）、以及 vite chunk 体积提示。看到它们不用管。
+
+10. **`@astrojs/markdown-remark` 必须是显式依赖**。`astro.config.mjs:12` 直接
+    `import { unified } from "@astrojs/markdown-remark"`，但 `astro@7.3.3` 与 `@astrojs/mdx@8.0.1`
+    **都只把它声明为 peerDependency（`^7.3.0`），两者的 `dependencies` 里都没有它**。
+    → 它现在存在，靠的是 npm 7+ 自动安装 peer 这个**易变机制**。而 `@astrojs/mdx@7.0.8` 时代的
+      peer 里根本没有它（只有 `markdown-satteri` 和 `astro`），那时没人拉它，npm 就当 extraneous 剪掉，
+      报 `Cannot find module '@astrojs/markdown-remark' imported from astro.config.mjs`、
+      **整个 Astro 配置加载失败、连 dev 都起不来**（2026-09-21 实际发生，非推测）。
+    → 已显式钉为 `^7.3.1`。**不要因为"反正 peer 会装上"就删掉这条声明。**
+    → 通则：`astro.config.mjs` 里 import 的每个包都必须在 `package.json` 中显式声明，
+      别依赖 hoisting 或 peer 自动安装的运气。
+
+11. **`package.json` 的 `allowScripts` 钉的是精确版本**（`esbuild@x.y.z` / `sharp@x.y.z`）。
+    这两个包升级后若忘了同步改，npm 会**静默跳过它们的 postinstall**（原生二进制装不上），
+    日志只给一条 `install-scripts ... not yet covered by allowScripts` 警告。
+    本地因为旧二进制还在所以构建照过，**全新克隆或服务器上重装才会崩**。
+    → 每次升 esbuild/sharp 都要同步更新 `allowScripts` 的版本号。
 
 ## 六、部署
 
@@ -178,19 +203,15 @@ curl -s -o /dev/null -w "%{http_code}\n" \
 
 ④ **中文文章 URL 必须 percent-encode**，否则 nginx 返回 404。用 `encodeURIComponent` 生成。
 
-⑤ **Astro 7 与 `astro-expressive-code@0.43.1` 存在 peer 冲突**（后者只声明到 `^6`），
-   服务器上 `npm ci` 会因此失败。彻底修复需连带升级两个 **major**：
-   `expressive-code-language-badge` 1.1.0→2.0.0、`expressive-code-collapsible` 0.1.0→1.0.0
-   （二者都要求 `@expressive-code/core ^0.44.1`）。
-   → 这是**独立任务**，需逐个回归验证代码高亮/折叠/语言徽章。目前靠"本地构建"绕开，不影响上线。
-
-⑥ **服务器仓库有未提交改动**：`package.json`、`package-lock.json` 常处于 modified 状态
+⑤ **服务器仓库有未提交改动**：`package.json`、`package-lock.json` 常处于 modified 状态
    （历史 `npm install` 顺手改写出来的垃圾改动），`git pull` 会因此冲突。pull 前需先
    `git checkout --` 丢弃。宝塔生成的未跟踪文件 `.htaccess` `.user.ini` `404.html` `index.html` 无害，别删。
 
-⑦ **线上版本极易滞后**：2026-09-20 发现线上 dist 构建于 2026-06-22，落后本地 16 个提交，
+⑥ **线上版本极易滞后**：2026-09-20 发现线上 dist 构建于 2026-06-22，落后本地 16 个提交，
    其中 `bad5d80 修复评论问题`（Twikoo envId 误配 localhost）在服务器上躺了近三个月才上线。
    → **改完必须真的部署，并实际访问线上确认**，别只看到本地 build 通过就算完事。
+
+> 依赖层面的坑（expressive-code peer 冲突、版本天花板、干净安装验证等）统一记在**第九节**，此处不重复。
 
 ### 面板与凭据
 
@@ -297,13 +318,54 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、`<github>` 卡片、图片网
 - 2 处 `<img src="./heart.svg">` 线上 404：`src/content/posts/css100天-第10天.md:167` 和第6天各一处。
   文件全项目不存在，需补图或删引用。
 - 26 处远程图片依赖 `100dayscss.com`，存在整体失效风险。
+- **代码块的语言徽章和行号从未渲染过**（既存问题，非 2026-09-21 升级引入——已用线上旧构建
+  0.43.1 与新构建 0.44.2 做同篇文章 A/B 对照，两边都是 0 处）。
+  `astro.config.mjs` 里 `pluginLanguageBadge()` 与 `pluginLineNumbers()` 都注册了却没产出。
+  怀疑方向：`pluginLineNumbers()` 可能需要 `defaultProps.showLineNumbers: true` 才生效
+  （现有配置只在 `overridesByLang.shellsession` 里把它设为 false，隐含假设默认开启）；
+  徽章则可能是 `styleOverrides.languageBadge` 的键名在 0.44 下已变。**待查证，别直接改。**
 
-### 技术债
+### 版本天花板（撞过墙了，别反复尝试）
 
-- **expressive-code 家族 peer 冲突未修**：需升 `astro-expressive-code`→0.44.2、
-  `expressive-code-language-badge` 1.1.0→**2.0.0**、`expressive-code-collapsible` 0.1.0→**1.0.0**
-  （后两个是 major，均要求 `@expressive-code/core ^0.44.1`）。
-  升级后必须逐项回归代码高亮 / 折叠 / 行号 / 语言徽章。目前靠"本地构建"绕开，不影响上线。
+2026-09-21 全量升级时实测，以下两个**升不上去**，原因是上游集成包的 peer 声明还没跟上：
+
+| 包 | 停在 | 最新 | 卡在哪 |
+|---|---|---|---|
+| `mermaid` | **11.17.2** | 12.0.0 | `astro-mermaid@2.1.0`（已是最新）peer 只允许 `^10.0.0 \|\| ^11.0.0` |
+| `typescript` | **6.0.3** | 7.0.2 | `@astrojs/svelte@9.0.1`（已是最新）peer 只允许 `^5.3.3 \|\| ^6.0.0` |
+
+→ 要升 mermaid 12 / TS 7，得先等 `astro-mermaid` 和 `@astrojs/svelte` 更新 peer 声明。
+  硬升的后果：`npm ci` 直接 ERESOLVE 失败（TS 7 那次已实测，删掉 node_modules 后装不回来）。
+
+### 依赖相关的坑
+
+- **增量安装不可信，只有干净 `npm ci` 才算验证过。**
+  `npm install` 遇到 peer 冲突会打一条 `npm warn ERESOLVE overriding peer dependency` 然后**静默放行**，
+  构建照样通过；但换台机器或删掉 `node_modules` 重装就 ERESOLVE 失败。
+  → **改完依赖必须 `rm -rf node_modules && npm ci && npm run build` 走一遍**，别只看增量安装成功。
+- **`expressive-code-language-badge` 有个假的 starlight peer**：1.1.0 与 2.0.0 都把
+  `@astrojs/starlight` 声明为**非 optional** peer，但该包 dist 只 `import "@expressive-code/core"`、
+  产物内零 starlight 引用（16K，README 也没提过）——纯属上游 `package.json` 写坏。
+  后果：npm 会自动装约 19 个 Starlight 包（`@astrojs/starlight` 0.42.2 等），纯 devDep 膨胀，不进网站产物。
+  → **不要用 `legacy-peer-deps` 来"解决"它**。那会全项目关闭 peer 校验，把真冲突一起掩盖掉
+    （TS 7 的不兼容正是这样被掩盖、直到干净安装才暴露）。宁可多 19 个包。
+  → 彻底解法是写个 20 行本地插件替掉它，但会有视觉回归风险，未做。
+- **prettier 全站格式不符**：`.prettierrc.json` 只有 `tabWidth: 4`、**没有 `useTabs: true`**，
+  而源码全用制表符，所以 `prettier --check` 几乎每个文件都报 warn。
+  这是既存状态（`tsconfig.json`、`src/utils/*.ts`、`src/styles/*.css` 都在列，与 astro 插件无关），
+  **不要顺手跑 `prettier --write`**——会把全站制表符改成空格，产生海量无意义 diff。
+  另：`src/styles/markdown-extend.styl` 是 Stylus，prettier 不支持、会报 parse error，属正常。
+
+### 已偿还 / 已确认无回归
+
+- ✅ **expressive-code 家族 peer 冲突已解决**：升到 0.44.2 后 `astro ^7` 被正式支持，硬冲突消失
+  （`expressive-code-language-badge`→2.0.0、`expressive-code-collapsible`→1.0.0 两个 major 也一并升完）
+- ✅ **21 个 undici 漏洞（2 critical / 13 high）→ 0**
+- ✅ **代码块功能无回归**：拿线上旧构建（0.43.1）与新构建（0.44.2）做同一篇文章 A/B 对照，
+  `ec-collapse*` 折叠类、`ec-line` 数量、复制按钮文案全部一致；108 行差异只有资源哈希、
+  Astro 7.3 更紧的压缩空白、一个 HTML 注释
+- ⚠️ A/B 对照同时暴露一个**既存缺陷**（语言徽章与行号从未渲染），已归入本节「已知缺陷」，此处不重复。
+- `npm ci` 有一条 `npm warn deprecated glob@10.5.0`（传递依赖），不阻塞构建。
 
 ### 运维
 

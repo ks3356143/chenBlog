@@ -55,7 +55,7 @@
 把落后 **16 个提交**、线上停留近三个月的博客推上了线：
 
 - 定位到线上真正的部署目标是 `/www/wwwroot/chenBlog/dist`
-  （用户最初给的 `testplantAI` 路径是**另一个项目**，差点覆盖掉它）
+  （用户最初给的路径其实属于服务器上**另一个项目**，差点覆盖掉它——动手前务必核实路径）
 - 修了 Astro 7 的构建失败：`src/pages/[...page].astro` 里一个空的 `<script></script>`
 - 上线内容含 3 篇新文章、Astro 6→7 升级、以及躺了三个月的
   `bad5d80 修复评论问题`（Twikoo envId 误配 localhost）

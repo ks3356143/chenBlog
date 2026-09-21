@@ -143,6 +143,10 @@ ssh root@47.108.230.220 'set -e
 先解压到 `dist.new` 再用 `mv` 原子替换，避免"解压到一半、访客看到残缺站点"的窗口期。
 `dist.old` + 时间戳备份都保留，回滚只需 `rm -rf dist && mv dist.old dist`。
 
+> **这套流程是唯一已验证的部署方式，优先于任何部署类技能。**
+> 已安装 `alibabacloud-ecs-code-deploy` 技能，但它走 aliyun appmanager、需要 AccessKey，
+> 与现有宝塔 + Nginx 手工配置可能冲突。**没有明确理由不要用它替换上面的流程。**
+
 remote：`git@github.com:ks3356143/chenBlog.git`（本地与服务器同一个 origin，分支 `main`）
 
 **注意：该仓库是公开的**（可匿名 `git ls-remote` 读取），任何写进仓库的文件都等于发布到公网。

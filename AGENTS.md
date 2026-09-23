@@ -414,10 +414,11 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、`<github>` 卡片、图片网
    `swup:contentReplaced`（12 个组件在听，Swup 4 **不再派发**）；Astro VT 的
    `astro:page-load` / `astro:after-swap`（若干组件在听，Swup 路线下本不触发）。
    SwupManager 统一桥接派发这三套，消费组件一行未改。
-5. **跳顶靠遮罩层藏，不靠 body 动画。** `#page-veil`（fixed 全屏、`var(--page-bg)`）在
-   `animation:out:start` 盖住、`animation:in:start` 揭幕；历史导航走 `animation:skip`，盖 80ms 再揭。
-   链接/分页/前进后退/相关文章的瞬时滚动复位全部藏在遮罩后。
-   ⚠️ **不要用 body/祖先元素的淡入淡出做这件事**——实测会让 Swup 卡死在 `is-rendering`、页面停在 opacity 0。
+5. **跳顶目前靠 `#page-veil` 遮罩藏**（fixed 全屏、`var(--page-bg)`，`animation:out:start` 盖住、
+   `animation:in:start` 揭幕；历史导航走 `animation:skip` 盖 80ms 再揭）。
+   ⚠️ **用户 2026-09-23 明确不喜欢这种"整体渐隐"观感，方案待换**（候选方向见 HANDOFF 第一节），
+   换掉前别把它当定案往里加东西。
+   ⚠️ 无论换什么方案，**不要用 body/祖先元素的淡入淡出**——实测会让 Swup 卡死在 `is-rendering`、页面停在 opacity 0。
 6. **窗口缩放动画 = 冻结 + View Transitions morph**（`effectsConfig.windowResize`）。
    断点跨越改的是 grid 轨道数量与 sidebar 的 display，CSS transition 插值不了；
    做法是拖拽期间给 `#page-shell` 冻结像素宽度，松手 180ms 后 `document.startViewTransition` 一次性

@@ -104,7 +104,6 @@
                 clearTimeout(timer)
                 timer = window.setTimeout(() => {
                     if (typeof document.startViewTransition === "function") {
-                        window.__resizeMorphs = (window.__resizeMorphs || 0) + 1
                         const vt = document.startViewTransition(() => unfreeze())
                         vt.finished.finally(() => root.removeAttribute("data-resizing"))
                     } else {

@@ -90,7 +90,8 @@ const allTags = [...new Set(albums.flatMap((a) => a.tags || []))].sort()
         </div>
     </div>
 
-    <script is:inline slot="head">
+    <!-- 不能放 slot="head"：Swup 不替换 head，导航进本页时脚本不会执行，gallery-filter 自定义元素就永不定义 -->
+    <script is:inline>
         if (!customElements.get("gallery-filter")) {
             class GalleryFilter extends HTMLElement {
                 constructor() {

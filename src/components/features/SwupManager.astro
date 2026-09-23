@@ -1,0 +1,119 @@
+<div id="page-veil"></div>
+
+<script>
+    // 注意：不能用 define:vars 传配置——那会把脚本内联进每页 HTML，swup bundle 随之重复嵌入
+    import { effectsConfig } from "@/config/effectsConfig"
+    import Swup from "swup"
+    import SwupScriptsPlugin from "@swup/scripts-plugin"
+
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
+    if (effectsConfig.pageTransition && !reduced) {
+        document.documentElement.style.setProperty("--transition-duration", `${effectsConfig.duration}ms`)
+
+        const swup = new Swup({
+            containers: ["#swup-container"],
+            animateHistoryBrowsing: true,
+            // 默认 selector 是 [class*="transition-"]，会命中全站 Tailwind transition-* 类；
+            // display:none 子树里冻住不过结束的过渡会让 visit 死锁（2026-09-23 实测），故收紧到容器自身
+            animationSelector: '[class~="swup-transition-zoom"]',
+            // 容器内的 is:inline 脚本导航后默认不执行，靠它重执行（评论/分享/推荐位）
+            plugins: [new SwupScriptsPlugin()],
+        })
+        window.swup = swup
+
+        // 遮罩：Swup 的滚动复位瞬时且整页（持久 chrome 也跟着跳），在 out 阶段盖住、
+        // 复位之后揭幕，链接/分页/前进后退/相关文章的跳顶就都藏在遮罩后面
+        const veil = document.getElementById("page-veil")
+        if (veil) {
+            const cover = () => {
+                veil.style.opacity = "1"
+            }
+            const reveal = () => {
+                veil.style.opacity = "0"
+            }
+            swup.hooks.on("animation:out:start", cover)
+            swup.hooks.on("animation:in:start", reveal)
+            // 历史导航等无动画访问：内容瞬间替换，盖一下再揭，遮住瞬时滚动恢复
+            swup.hooks.on("animation:skip", () => {
+                cover()
+                window.setTimeout(reveal, 80)
+            })
+            swup.hooks.on("visit:abort", reveal)
+            swup.hooks.on("fetch:error", reveal)
+        }
+
+        // 点当前页自身的链接（如已选中某个分类再点一次）：不走 Swup、不瞬跳，平滑滚回顶部
+        document.addEventListener(
+            "click",
+            e => {
+                const a = (e.target as Element).closest?.("a[href]")
+                if (!a) return
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+                if (a.target && a.target !== "_self") return
+                const url = new URL(a.getAttribute("href") || "", location.href)
+                if (url.origin !== location.origin || url.hash) return
+                if (url.pathname + url.search !== location.pathname + location.search) return
+                e.preventDefault()
+                e.stopPropagation()
+                window.scrollTo({ top: 0, behavior: "smooth" })
+            },
+            { capture: true },
+        )
+
+        // 桥接：仓库里 12 个组件监听 Swup 3 旧名与 Astro VT 事件名，Swup 4 均不派发，见
+        // docs/superpowers/specs/2026-09-23-page-transitions-design.md 的影响域分析
+        const fire = (name: string) => document.dispatchEvent(new CustomEvent(name))
+        swup.hooks.on("content:replace", () => fire("swup:contentReplaced"))
+        swup.hooks.on("page:view", () => {
+            fire("swup:pageView")
+            fire("astro:page-load")
+            fire("astro:after-swap")
+        })
+    }
+
+    if (effectsConfig.windowResize && !reduced) {
+        // 拖拽期间冻结布局宽度，松手后用 View Transitions 一次性 morph 到新布局。
+        // 断点跨越改的是 grid 轨道数量与 sidebar 的 display，CSS transition 插值不了，
+        // 只有"冻结 → 快照 → 应用新布局"才能让它有动画（Firefly 本体也没做这块）
+        const root = document.documentElement
+        let frozen = false
+        let timer = 0
+        const shell = () => document.getElementById("page-shell")
+        const freeze = () => {
+            const el = shell()
+            // 零尺寸视口（隐藏标签页等）下取到的宽度是 0，冻结会把布局塌缩，跳过
+            if (!el || frozen) return
+            const w = getComputedStyle(el).width
+            if (!w || w === "0px") return
+            el.style.width = w
+            frozen = true
+        }
+        const unfreeze = () => {
+            const el = shell()
+            if (el) el.style.width = ""
+            frozen = false
+        }
+        window.addEventListener(
+            "resize",
+            () => {
+                // Swup visit 飞行中不干预，避免与页面过渡打架
+                if (root.classList.contains("is-changing")) return
+                if (!frozen) freeze()
+                root.setAttribute("data-resizing", "")
+                clearTimeout(timer)
+                timer = window.setTimeout(() => {
+                    if (typeof document.startViewTransition === "function") {
+                        window.__resizeMorphs = (window.__resizeMorphs || 0) + 1
+                        const vt = document.startViewTransition(() => unfreeze())
+                        vt.finished.finally(() => root.removeAttribute("data-resizing"))
+                    } else {
+                        unfreeze()
+                        root.removeAttribute("data-resizing")
+                    }
+                }, 180)
+            },
+            { passive: true },
+        )
+    }
+</script>

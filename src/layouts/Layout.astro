@@ -57,8 +57,9 @@ const isPostPage = !!postSlug
     </div>
     <!-- 主内容：绝对定位 -->
     <div class="pointer-events-none absolute top-40 w-full">
-        <div class="xl:[92vw] pointer-events-auto relative top-[30vh] z-20 mx-auto w-full max-w-(--page-width)">
+        <div id="page-shell" class="xl:[92vw] pointer-events-auto relative top-[30vh] z-20 mx-auto w-full max-w-(--page-width)">
             <div
+                id="main-grid"
                 class="right-0 left-0 mx-auto grid w-full grid-cols-1 grid-rows-[auto_1fr_auto] gap-4 px-2 transition duration-700 md:grid-cols-[17.5rem_1fr] md:px-4 lg:grid-rows-[auto] xl:grid-cols-[17.5rem_1fr_17.5rem]"
             >
                 <!-- 左边栏 -->
@@ -89,7 +90,7 @@ const isPostPage = !!postSlug
                         )
                     }
                     <!-- 主内容区域slot区域->此时暂未集成swup后续集成 -->
-                    <main id="swup-container" class="transition-main">
+                    <main id="swup-container" class="transition-main swup-transition-zoom">
                         <!-- 每个页面均设置隐藏title，用于SEO -->
                         <h1 class="sr-only">{title}</h1>
                         <!-- TODO:网格布局的页面展示 -->

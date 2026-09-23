@@ -1,7 +1,7 @@
 # AGENTS.md — 项目长期指令
 
 > 陈俊亦的个人博客。每次对话开始时自动读取本文件作为上下文。
-> 最后更新：2026-09-22（由 `QODER.md` 改名而来，用 `git mv` 保留了历史）
+> 最后更新：2026-09-23（astro 7.3.4 / mdx 8.0.2；第九节补了依赖更新的正确命令序列）
 
 ## 📌 开始工作前先读 [`HANDOFF.md`](./HANDOFF.md)
 
@@ -22,14 +22,15 @@
 
 | 层 | 选型 |
 |---|---|
-| 框架 | Astro **7.3.3**（SSG，非 SSR） |
+| 框架 | Astro **7.3.4**（SSG，非 SSR） |
 | 交互组件 | Svelte 5.57.1（runes 语法）+ `@astrojs/svelte` 9.0.1 |
 | 样式 | Tailwind CSS **4.3.3**（`@tailwindcss/vite`，**v4 无 tailwind.config.js**，配置写在 CSS 里） |
 | 语言 | TypeScript **6.0.3**（⚠️ 不能升 7，见第九节） |
-| 内容 | MDX（`@astrojs/mdx` **8.0.1**）+ Content Collections |
+| 内容 | MDX（`@astrojs/mdx` **8.0.2**）+ Content Collections |
 | Markdown 处理 | `@astrojs/markdown-remark` **7.3.1**（⚠️ 必须显式声明，见第五节）|
 | 代码高亮 | astro-expressive-code **0.44.2**（one-light / one-dark-pro，内部重命名为 `light` / `dark`） |
 | 图表 / 公式 | Mermaid **11.17.2**（⚠️ 不能升 12）、KaTeX **0.18.7** |
+| 页面过渡 | Swup **4.10.0** + `@swup/scripts-plugin` **2.1.0**（⚠️ 四个坑见第十节） |
 | 其他 | Fancybox 图库、astro-icon 1.2.0 + Iconify |
 
 > 2026-09-21 做过一次全量依赖升级，`npm audit` 从 21 个漏洞（2 critical）降到 **0**，
@@ -102,7 +103,7 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
    导致整个页面（含首页）渲染失败。Astro 6 容忍、Astro 7 报错。
    → 已于 2026-09-20 从 `src/pages/[...page].astro` 移除一处。要么写内容，要么整行删掉，别留空标签。
 
-9. 构建产物基线（2026-09-21，Astro 7.3.3 全量升级后）：
+9. 构建产物基线（2026-09-21 Astro 7.3.3 全量升级后确立；**2026-09-23 在 7.3.4 上复验，数字完全一致**）：
    **37 个页面 / dist 260 个文件 / 26M**，其中 `_astro/` 占 189 个，构建约 7~23s（冷缓存较慢）。
    升级前是 246 个文件（`_astro/` 175 个），**多出的 14 个全在 `_astro/`**，是依赖升级后 chunk 拆分变化，
    总体积未变。已验证 dist 内 **starlight / pagefind 产物为 0**（见第九节，那两个是纯 devDep 膨胀）。
@@ -110,7 +111,7 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
    同时被 CoverImage/ImageWrapper 动态引入）、以及 vite chunk 体积提示。看到它们不用管。
 
 10. **`@astrojs/markdown-remark` 必须是显式依赖**。`astro.config.mjs:12` 直接
-    `import { unified } from "@astrojs/markdown-remark"`，但 `astro@7.3.3` 与 `@astrojs/mdx@8.0.1`
+    `import { unified } from "@astrojs/markdown-remark"`，但 `astro@7.3.4` 与 `@astrojs/mdx@8.0.2`
     **都只把它声明为 peerDependency（`^7.3.0`），两者的 `dependencies` 里都没有它**。
     → 它现在存在，靠的是 npm 7+ 自动安装 peer 这个**易变机制**。而 `@astrojs/mdx@7.0.8` 时代的
       peer 里根本没有它（只有 `markdown-satteri` 和 `astro`），那时没人拉它，npm 就当 extraneous 剪掉，
@@ -335,7 +336,7 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、`<github>` 卡片、图片网
 
 ### 版本天花板（撞过墙了，别反复尝试）
 
-2026-09-21 全量升级时实测，以下两个**升不上去**，原因是上游集成包的 peer 声明还没跟上：
+2026-09-21 全量升级时实测，**2026-09-23 复查仍未松动**：以下两个**升不上去**，原因是上游集成包的 peer 声明还没跟上：
 
 | 包 | 停在 | 最新 | 卡在哪 |
 |---|---|---|---|
@@ -350,7 +351,18 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、`<github>` 卡片、图片网
 - **增量安装不可信，只有干净 `npm ci` 才算验证过。**
   `npm install` 遇到 peer 冲突会打一条 `npm warn ERESOLVE overriding peer dependency` 然后**静默放行**，
   构建照样通过；但换台机器或删掉 `node_modules` 重装就 ERESOLVE 失败。
-  → **改完依赖必须 `rm -rf node_modules && npm ci && npm run build` 走一遍**，别只看增量安装成功。
+  → **改完依赖必须走一遍干净安装 + 构建**，别只看增量安装成功。正确序列（**只装一次**）：
+
+  ```bash
+  npm update --package-lock-only   # 只改 lockfile，不碰 node_modules
+  npm ci                           # 一次完成「清空 + 安装」，这本身就是干净验证
+  npm run build
+  ```
+
+  ⚠️ **两个已实际犯过的低效写法，别再来**：
+  ① 先 `npm update` 再 `rm -rf node_modules && npm ci` —— 把 614 个包写进磁盘又立刻删掉重装，
+     白等约 3 分钟（2026-09-23 实测）。
+  ② 在 `npm ci` 前手动 `rm -rf node_modules` —— `npm ci` 自己会清掉已有 `node_modules`，多此一举。
 - **`expressive-code-language-badge` 有个假的 starlight peer**：1.1.0 与 2.0.0 都把
   `@astrojs/starlight` 声明为**非 optional** peer，但该包 dist 只 `import "@expressive-code/core"`、
   产物内零 starlight 引用（16K，README 也没提过）——纯属上游 `package.json` 写坏。
@@ -380,4 +392,36 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、`<github>` 卡片、图片网
 - 宝塔面板密码曾在对话中明文出现，用户当前选择暂不修改；面板 IP 白名单未开。
 - 服务器回滚资产 `dist.old` + `dist_backup_20260920_234618`（共 52M）**保留中**，
   确认线上稳定数日后才可删。
-- 前端计划（404 页面、页面间动画）以 `README.md` 为准，此处不复述。
+- 前端计划：**页面间动画已于 2026-09-23 用 Swup 实现**（见第十节）；404 页面仍以 `README.md` 为准。
+
+## 十、Swup 页面过渡的坑（2026-09-23 引入，全部实测踩到）
+
+入口：`src/components/features/SwupManager.astro`（初始化 + 事件桥 + resize 动画）；
+开关：`src/config/effectsConfig.ts`；动画 CSS：`src/styles/transitions.css`；
+容器：`Layout.astro` 的 `#swup-container`（另有唯一类 `swup-transition-zoom` 供 animationSelector 用）。
+设计文档：`docs/superpowers/specs/2026-09-23-page-transitions-design.md`（含影响域分析）。
+
+1. **`animationSelector` 必须收紧，不能用默认值。** 默认 `[class*="transition-"]` 会命中全站
+   Tailwind 的 `transition-*` 类；`display:none` 子树里**冻住永不结束**的过渡（折叠代码块
+   `ec-collapse__toggle`）会被算进等待集合 → visit 死锁在 `is-changing is-animating is-rendering`，
+   之后**所有导航静默失效**（不报错、路径不变）。已设为 `[class~="swup-transition-zoom"]`。
+2. **Swup 不替换 head，也默认不执行容器内的新 script。** 页面级 `is:inline` 脚本（评论/分享/推荐位）
+   靠 `@swup/scripts-plugin` 重执行；但 **`slot="head"` 的脚本导航过去永不执行**——
+   `gallery-filter` 自定义元素曾因此从首页导航进相册时彻底失效。这类脚本必须放在容器内（body）。
+3. **别给 `<script>` 用 `define:vars` 传配置。** 那会把脚本**内联进每一页 HTML**，
+   swup bundle 曾因此重复嵌入 37 个页面（index.html 涨到 136K 的假象来源之一）。配置在脚本里 `import`。
+4. **事件名三套并存，改前先 grep。** Swup 4 原生 `swup:content:replace` 等；Swup 3 旧名
+   `swup:contentReplaced`（12 个组件在听，Swup 4 **不再派发**）；Astro VT 的
+   `astro:page-load` / `astro:after-swap`（若干组件在听，Swup 路线下本不触发）。
+   SwupManager 统一桥接派发这三套，消费组件一行未改。
+5. **跳顶靠遮罩层藏，不靠 body 动画。** `#page-veil`（fixed 全屏、`var(--page-bg)`）在
+   `animation:out:start` 盖住、`animation:in:start` 揭幕；历史导航走 `animation:skip`，盖 80ms 再揭。
+   链接/分页/前进后退/相关文章的瞬时滚动复位全部藏在遮罩后。
+   ⚠️ **不要用 body/祖先元素的淡入淡出做这件事**——实测会让 Swup 卡死在 `is-rendering`、页面停在 opacity 0。
+6. **窗口缩放动画 = 冻结 + View Transitions morph**（`effectsConfig.windowResize`）。
+   断点跨越改的是 grid 轨道数量与 sidebar 的 display，CSS transition 插值不了；
+   做法是拖拽期间给 `#page-shell` 冻结像素宽度，松手 180ms 后 `document.startViewTransition` 一次性
+   应用新布局（root 交叉淡化，缓动抄 Firefly 主题切换）。Firefly 本体**没做**这块，别去它那儿找。
+   不支持 VT 的浏览器退回瞬时重排。零尺寸视口下取宽为 0，已加防护不冻结。
+7. 同 URL 点击（如已选中的分类 pill）被 SwupManager 的 capture 监听拦截，改**平滑滚顶**、不走 visit。
+8. `prefers-reduced-motion: reduce` → 不初始化 Swup，退回整页加载、零动画（覆盖 effectsConfig）。

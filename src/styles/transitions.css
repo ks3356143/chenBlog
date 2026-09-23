@@ -1,0 +1,61 @@
+/* 页面切换 zoom 过渡：只动 transform/opacity，走合成器不触发 layout */
+html.is-animating #swup-container {
+    will-change: transform, opacity;
+}
+/* 遮罩层：Swup 的滚动复位是瞬时且整页的（持久 chrome 也跟着跳）。
+   在 out 阶段盖住、在滚动复位之后揭幕，让链接/分页/前进后退/相关文章的复位都发生在遮罩后。
+   注意：不能用 body 动画实现——实测会让 Swup 生命周期卡死在 is-rendering、页面停在 opacity 0 */
+#page-veil {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: var(--page-bg);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 140ms ease;
+}
+html.is-leaving #swup-container {
+    animation: swup-zoom-out var(--transition-duration, 250ms) ease forwards;
+}
+html.is-rendering #swup-container {
+    animation: swup-zoom-in var(--transition-duration, 250ms) ease;
+}
+@keyframes swup-zoom-out {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+}
+@keyframes swup-zoom-in {
+    from {
+        opacity: 0;
+        transform: scale(1.02);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* 窗口缩放动画：拖拽期间冻结布局宽度（见 SwupManager），松手后用 View Transitions morph 到新布局。
+   冻结期内容可能宽于视口，藏掉横向滚动条 */
+html[data-resizing] body {
+    overflow-x: hidden;
+}
+/* resize morph 的 root 视图过渡质感（缓动抄自 Firefly 主题切换，时长缩短） */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 240ms;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+    z-index: 2;
+}
+::view-transition-new(root) {
+    z-index: 1;
+}

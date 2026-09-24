@@ -1,7 +1,26 @@
+/* 横幅高度：首页 / 非首页两套变量，切页时靠 is-wallpaper-transitioning 做高矮过渡（照搬参考站） */
+:root {
+    --banner-height-home: 65vh;
+    --banner-height-non-home: max(45vh, 380px);
+}
+
+#wallpaper-wrapper {
+    height: var(--banner-height-home);
+}
+body:not(.is-home) #wallpaper-wrapper {
+    height: var(--banner-height-non-home);
+}
+/* 只在切页期间开高度过渡，平时改高度（如改壁纸模式）不带动画 */
+html.is-wallpaper-transitioning #wallpaper-wrapper {
+    transition:
+        height 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        opacity 0.4s;
+}
+
 /* 移动端横幅优化 - 小屏手机 (320px - 480px) */
 @media (max-width: 480px) {
     #wallpaper-wrapper {
-        height: 70vh; /* 保持较大高度优先显示banner */
+        --banner-height-home: 70vh; /* 保持较大高度优先显示banner */
         min-height: 450px;
         max-height: none; /* 移除最大高度限制 */
         top: 0 !important; /* 移动端从顶部开始，避免被导航栏覆盖 */
@@ -11,8 +30,8 @@
 /* 移动端横幅优化 - 大屏手机 (481px - 640px) */
 @media (min-width: 481px) and (max-width: 640px) {
     #wallpaper-wrapper {
-        height: 75vh !important;
-        min-height: 500px
+        --banner-height-home: 75vh;
+        min-height: 500px;
         max-height: none;
         top: 0 !important;
     }
@@ -21,7 +40,7 @@
 /* 移动端横幅优化 - 超大屏手机/小平板 (641px - 767px) */
 @media (min-width: 641px) and (max-width: 767px) {
     #wallpaper-wrapper {
-        height: 72vh !important;
+        --banner-height-home: 72vh;
         min-height: 520px;
         max-height: none;
         top: 0 !important;
@@ -31,7 +50,7 @@
 /* 平板设备横幅优化 (768px - 1023px) - Tailwind md 断点 */
 @media (min-width: 768px) and (max-width: 1023px) {
     #wallpaper-wrapper {
-        height: 70vh !important;
+        --banner-height-home: 70vh;
         min-height: 500px;
         top: 0 !important;
     }
@@ -55,7 +74,7 @@
 @media (max-width: 1023px) and (orientation: landscape) {
     #wallpaper-wrapper {
         top: 0 !important; /* 横屏模式从顶部开始，避免被导航栏覆盖 */
-        height: 60vh !important;
+        --banner-height-home: 60vh;
     }
 }
 
@@ -63,7 +82,7 @@
 /* 极小高度屏幕 (高度 ≤ 500px) */
 @media (max-height: 500px) {
     #wallpaper-wrapper {
-        height: 85vh !important; /* 占用更多高度确保banner显示 */
+        --banner-height-home: 85vh; /* 占用更多高度确保banner显示 */
         min-height: 350px !important;
     }
 }
@@ -71,7 +90,7 @@
 /* 小高度屏幕 (高度 501px - 600px) */
 @media (min-height: 501px) and (max-height: 600px) {
     #wallpaper-wrapper {
-        height: 80vh !important;
+        --banner-height-home: 80vh;
         min-height: 400px !important;
     }
 }
@@ -79,7 +98,7 @@
 /* 中等高度屏幕 (高度 601px - 700px) */
 @media (min-height: 601px) and (max-height: 700px) {
     #wallpaper-wrapper {
-        height: 75vh !important;
+        --banner-height-home: 75vh;
         min-height: 450px !important;
     }
 }
@@ -87,7 +106,7 @@
 /* 横屏模式特殊处理 - 优先显示banner */
 @media (orientation: landscape) and (max-height: 500px) {
     #wallpaper-wrapper {
-        height: 90vh !important; /* 横屏时占用更多高度 */
+        --banner-height-home: 90vh; /* 横屏时占用更多高度 */
         min-height: 300px !important;
     }
 }

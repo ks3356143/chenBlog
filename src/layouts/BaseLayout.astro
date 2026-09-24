@@ -24,6 +24,10 @@ interface Props extends PageSEO {
 }
 
 const { title } = Astro.props
+
+// 首页（含 /2/ 这类分页）横幅用高的一套高度变量，切页时做高矮过渡，见 layout-style.css
+const pathname = Astro.url.pathname
+const isHome = pathname === "/" || /^\/\d+\/$/.test(pathname)
 ---
 
 <!doctype html>
@@ -66,7 +70,7 @@ const { title } = Astro.props
         <!-- 插槽：katex选择性加载css -->
         <slot name="head" />
     </head>
-    <body>
+    <body class:list={{ "is-home": isHome }}>
         <slot />
         <!-- Fancybox图片查看器-管理器 -->
         <FancyboxManager />

@@ -72,14 +72,24 @@
 
         // 回顶放在 visit:start（与点击同一个任务、下一帧绘制之前），浏览器永远不会画出
         // "旧页滚到一半"的样子。之前把回顶留在淡出窗口里，横幅静止不动时就会看到整屏跳一下
-        swup.hooks.on("visit:start", () => {
+        swup.hooks.on("visit:start", visit => {
             startProgressBar()
             if (window.innerWidth >= 768) window.scrollTo({ top: 0, behavior: "instant" })
+
+            // 首页↔非首页：横幅高度在两套变量间切换，过渡类只在切页期间挂上（照搬参考站）
+            const targetPath = new URL(visit.to.url, window.location.href).pathname
+            const targetIsHome = targetPath === "/" || /^\/\d+\/$/.test(targetPath)
+            if (document.body.classList.contains("is-home") !== targetIsHome) {
+                document.documentElement.classList.add("is-wallpaper-transitioning")
+                document.body.classList.toggle("is-home", targetIsHome)
+            }
         })
 
         swup.hooks.on("visit:end", () => {
             finishProgressBar()
             window.setTimeout(() => document.documentElement.classList.remove("is-page-transitioning"), 200)
+            // 高度过渡 450ms，等它跑完再摘类，否则 transition 属性被撤掉会瞬间跳变
+            window.setTimeout(() => document.documentElement.classList.remove("is-wallpaper-transitioning"), 500)
         })
 
         // 桥接：仓库里 12 个组件监听 Swup 3 旧名与 Astro VT 事件名，Swup 4 均不派发，见

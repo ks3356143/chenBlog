@@ -1,26 +1,37 @@
-/* 页面切换：照搬 Firefly 的 120ms 滑移+淡入淡出（其 src/styles/transition.css），
-   挂在"会随滚动移动的部分"（封面块与 #page-shell，均带 .transition-main）上，
-   瞬时回顶发生在它们不可见的窗口里，因此不需要幕布、也不整页渐隐到背景色。
-   out：is-leaving 时滑到 -2rem/+2rem 并淡出；in：is-animating 摘除后从 +2rem 滑入归位。
+/* 页面切换：1:1 照搬 blog.cuteleaf.cn（Firefly 系）的过渡样式，时长/缓动/位移与其编译产物逐条对齐。
+   挂载位置同样照搬：.transition-main 只挂在 #swup-container（被 Swup 替换的那块）上，
+   封面块 / #page-shell 都不带过渡类，所以横幅图切页时纹丝不动——这正是之前"整块封面跳一下"的根因。
    ⚠️ 不要用 body/祖先的淡入淡出——实测会让 Swup 卡死在 is-rendering（AGENTS.md 第十节） */
-.transition-main,
+
+/* 主载体：#swup-container */
+.transition-main {
+    transition:
+        opacity 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        transform 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+/* 反向视差层：#content-wrapper，离场时朝反方向走，抵消主载体的位移 */
 .transition-leaving {
     transition:
-        opacity 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
-        transform 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        transform 0.12s cubic-bezier(0.55, 0.055, 0.675, 0.19),
+        opacity 0.12s cubic-bezier(0.55, 0.055, 0.675, 0.19);
 }
-/* 切页期间提升到合成层，避免移动端主线程绘制掉帧（Firefly 原注释） */
+/* 切页期间提升到合成层，避免移动端主线程绘制掉帧 */
 html.is-changing .transition-main,
 html.is-animating .transition-main,
 html.is-animating.is-leaving .transition-leaving {
     will-change: transform, opacity;
 }
+html.is-changing .transition-main {
+    transition:
+        opacity 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        transform 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
 html.is-leaving .transition-main {
     transition:
-        opacity 120ms cubic-bezier(0.55, 0.055, 0.675, 0.19),
-        transform 120ms cubic-bezier(0.55, 0.055, 0.675, 0.19);
+        opacity 0.12s cubic-bezier(0.55, 0.055, 0.675, 0.19),
+        transform 0.12s cubic-bezier(0.55, 0.055, 0.675, 0.19);
 }
-/* 入场起点：新页与复位后的页面以此为初值，is-animating 摘除后过渡回归位 */
+/* 离场终点 / 入场起点：is-animating 摘除后过渡回归位 */
 html.is-animating .transition-main {
     opacity: 0;
     transform: translateY(2rem);
@@ -28,6 +39,77 @@ html.is-animating .transition-main {
 html.is-animating.is-leaving .transition-leaving {
     opacity: 0;
     transform: translateY(-2rem);
+}
+
+/* Swup 的等待集合（animationSelector）专用载体：横幅文案层。
+   与 .transition-main 分开是刻意的——等待集合里绝不能出现 display:none 子树里冻住的过渡 */
+html.is-changing .transition-swup-fade {
+    transition: all 0.12s ease-out;
+}
+html.is-animating .transition-swup-fade {
+    opacity: 0;
+    transform: translateY(1rem);
+}
+
+/* 切页期间：内容面板 / 横幅 / 横幅文案只允许 transform 过渡，用来吸收布局位移（FLIP 的落点） */
+html.is-page-transitioning #page-shell,
+html.is-page-transitioning #wallpaper-wrapper,
+html.is-page-transitioning #banner-overlay-container .banner-home-text-overlay,
+html.is-page-transitioning #banner-overlay-container .banner-page-title-overlay,
+html.is-page-transitioning #banner-overlay-container .banner-post-meta-overlay {
+    transition: transform 0.22s linear;
+}
+html.is-page-transitioning #header-waves {
+    contain: layout style paint;
+}
+
+/* 入场动画：#content-wrapper 首次出现时淡入上移（参考站 .onload-animation） */
+@keyframes fade-in-up {
+    0% {
+        opacity: 0;
+        transform: translateY(2rem);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.onload-animation {
+    opacity: 0;
+    animation: 0.12s ease-out forwards fade-in-up;
+}
+.onload-animation:first-child {
+    animation-delay: 0s;
+}
+.onload-animation:nth-child(2) {
+    animation-delay: 30ms;
+}
+.onload-animation:nth-child(3) {
+    animation-delay: 60ms;
+}
+.onload-animation:nth-child(4) {
+    animation-delay: 90ms;
+}
+.onload-animation:nth-child(5) {
+    animation-delay: 0.12s;
+}
+
+/* 切页进度条：WAAPI 驱动，见 SwupManager.astro 的 startProgressBar / finishProgressBar */
+#progress-bar {
+    --progress-height: 3px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: var(--progress-height);
+    z-index: 9999;
+    pointer-events: none;
+    background: var(--primary);
+    box-shadow: 0 0 8px color-mix(in oklch, var(--primary) 60%, transparent);
+    transform-origin: 0;
+    transform: scaleX(0);
+    opacity: 0;
+    will-change: transform;
 }
 
 /* 窗口缩放动画：拖拽期间冻结布局宽度（见 SwupManager），松手后用 View Transitions morph 到新布局。

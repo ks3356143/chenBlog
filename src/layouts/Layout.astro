@@ -46,12 +46,15 @@ const { frontmatter } = Astro.props
 
 // 检查是否在文章详情页
 const isPostPage = !!postSlug
+// 参考站的 #swup-container 带 data-current-post-category，CategoryBar 靠它在文章页软高亮对应分类
+const postCategory = isPostPage ? String((frontmatter as { category?: unknown } | undefined)?.category ?? "") : ""
 ---
 
 <BaseLayout title={title ?? "YILIn"} frontmatter={frontmatter}>
     <slot slot="head" name="head" />
     <Header />
-    <div class="transition-main relative z-10 w-full overflow-hidden opacity-100 transition duration-700">
+    <div id="progress-bar"></div>
+    <div class="relative z-10 w-full overflow-hidden opacity-100">
         <Cover bannerPostMeta={bannerPostMeta} isPostPage={isPostPage} />
         <Waves />
     </div>
@@ -59,7 +62,7 @@ const isPostPage = !!postSlug
     <div class="pointer-events-none absolute top-40 w-full">
         <div
             id="page-shell"
-            class="transition-main xl:[92vw] pointer-events-auto relative top-[30vh] z-20 mx-auto w-full max-w-(--page-width)"
+            class="xl:[92vw] pointer-events-auto relative top-[30vh] z-20 mx-auto w-full max-w-(--page-width)"
         >
             <div
                 id="main-grid"
@@ -93,11 +96,11 @@ const isPostPage = !!postSlug
                         )
                     }
                     <!-- 主内容区域slot区域->此时暂未集成swup后续集成 -->
-                    <main id="swup-container">
+                    <main id="swup-container" class="transition-main" data-current-post-category={postCategory}>
                         <!-- 每个页面均设置隐藏title，用于SEO -->
                         <h1 class="sr-only">{title}</h1>
                         <!-- TODO:网格布局的页面展示 -->
-                        <div id="content-wrapper" class="transition-leaving">
+                        <div id="content-wrapper" class="onload-animation transition-leaving">
                             <slot />
                         </div>
                     </main>

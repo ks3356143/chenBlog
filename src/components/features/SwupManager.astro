@@ -12,14 +12,37 @@
         const swup = new Swup({
             containers: ["#swup-container"],
             animateHistoryBrowsing: true,
-            // 等待集合收紧到 .transition-main（封面块 + #page-shell）：默认 [class*="transition-"]
-            // 会命中全站 Tailwind transition-* 类，display:none 子树里冻住不过结束的过渡会让 visit
-            // 死锁（2026-09-23 实测）。out 阶段靠它们的 transitionend 计时，in 阶段无运行中动画立即放行
-            animationSelector: '[class~="transition-main"]',
+            // 等待集合照搬参考站：只认 .transition-swup-* 这类专用载体（本项目 = #banner-overlay-container）。
+            // 默认 [class*="transition-"] 会命中全站 Tailwind transition-* 类，display:none 子树里冻住
+            // 不过结束的过渡会让 visit 死锁（2026-09-23 实测）
+            animationSelector: '[class*="transition-swup-"]',
             // 容器内的 is:inline 脚本导航后默认不执行，靠它重执行（评论/分享/推荐位）
             plugins: [new SwupScriptsPlugin()],
         })
         window.swup = swup
+
+        // 切页进度条：WAAPI 驱动，数值照搬参考站的 startProgressBar / finishProgressBar
+        const progressBar = () => document.getElementById("progress-bar")
+        const startProgressBar = () => {
+            const el = progressBar()
+            if (!el) return
+            el.getAnimations().forEach(a => a.cancel())
+            el.animate([{ transform: "scaleX(0)", opacity: 1 }, { transform: "scaleX(0.95)", opacity: 1 }], {
+                duration: 8000,
+                easing: "cubic-bezier(0.1, 0.05, 0.1, 1)",
+                fill: "forwards",
+            })
+        }
+        const finishProgressBar = () => {
+            const el = progressBar()
+            if (!el) return
+            el.getAnimations().forEach(a => a.cancel())
+            el.animate([{ transform: "scaleX(1)", opacity: 1 }, { transform: "scaleX(1)", opacity: 0 }], {
+                duration: 500,
+                easing: "ease-out",
+                fill: "forwards",
+            })
+        }
 
         // 点当前页自身的链接（如已选中某个分类再点一次）：不走 Swup、不瞬跳，平滑滚回顶部
         document.addEventListener(
@@ -36,8 +59,28 @@
                 e.stopPropagation()
                 window.scrollTo({ top: 0, behavior: "smooth" })
             },
-            { capture: true },
+            { capture: true }
         )
+
+        swup.hooks.on("link:click", () => {
+            document.documentElement.style.setProperty("--content-delay", "0ms")
+            document.documentElement.classList.add("is-page-transitioning")
+            // 导航栏若因向下滚动而收起，点击后立刻放回，别让它带着隐藏态进入新页
+            const nav = document.getElementById("nav")
+            if (nav) nav.style.transform = ""
+        })
+
+        // 回顶放在 visit:start（与点击同一个任务、下一帧绘制之前），浏览器永远不会画出
+        // "旧页滚到一半"的样子。之前把回顶留在淡出窗口里，横幅静止不动时就会看到整屏跳一下
+        swup.hooks.on("visit:start", () => {
+            startProgressBar()
+            if (window.innerWidth >= 768) window.scrollTo({ top: 0, behavior: "instant" })
+        })
+
+        swup.hooks.on("visit:end", () => {
+            finishProgressBar()
+            window.setTimeout(() => document.documentElement.classList.remove("is-page-transitioning"), 200)
+        })
 
         // 桥接：仓库里 12 个组件监听 Swup 3 旧名与 Astro VT 事件名，Swup 4 均不派发，见
         // docs/superpowers/specs/2026-09-23-page-transitions-design.md 的影响域分析

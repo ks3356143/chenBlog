@@ -9,28 +9,17 @@
 
 ## 一、下次会话第一件事
 
-### 🔴 用户指定：换掉"整体渐隐"的跳转动画
+### 🔴→已实现待用户验收：过渡观感换成 Firefly 式（2026-09-24）
 
-用户 2026-09-23 上线后反馈：**不喜欢跳转时整体渐隐的观感**，要求换其他方式。
-当前实现里"渐隐"有两个来源，**先确认用户指的是哪个（或都要换）**：
-
-1. `#page-veil` 遮罩：out 阶段整屏淡到 `var(--page-bg)` 再揭（为藏瞬时滚动复位而加）。
-2. `#swup-container` 的 zoom 过渡自带 opacity 淡出/淡入（`transitions.css` 的 zoom-out/zoom-in）。
-
-候选方向（按我判断的可行性排序，动手前自行核实）：
-
-1. **整页 transform 滑动（翻页感）**：header/封面/侧栏/主栏一起 translateX/Y 滑出滑入，
-   不用透明度。滚动复位发生在旧页已滑出视口之后 → 天然遮跳顶，可删 veil。
-2. **元素级 View Transitions morph**：给各区块加 `view-transition-name`，用
-   `document.startViewTransition` 包裹 Swup 的内容替换，各区块各自 morph，无整页淡。
-   工作量最大，观感最"丝滑"。
-3. **clip-path 几何擦除**（圆形自点击处扩散 / 线性擦除）：遮的是裁剪不是透明度，不像渐隐。
-4. **纯 transform 的 container 缩放/位移**：去掉 container 的 opacity 淡出，只留 scale/translate；
-   但 chrome 跳顶遮不住，需与方向 1 组合。
-
-⚠️ 约束（AGENTS.md 第十节）：不要用 body/祖先淡入淡出（Swup 会卡死）；
-换方案时 12 个组件的事件桥接与 scripts-plugin 不动，只改视觉层。
-建议先做方向 1 与方向 2 的两个原型，dev 里给用户对比选。
+历程：09-23 上线的"整体渐隐"（veil+容器 opacity）被否 → 09-24 上午做的"幕布滑动盖板"也被否 →
+用户点名"参考 Firefly 的那种变化"。已扒 Firefly 仓库（sparse clone 只取 src，全量 clone 太慢）：
+它的过渡是 **120ms 的 CSS transition 滑移+淡入淡出**（`src/styles/transition.css`），只动内容、
+chrome 是固定壁纸所以敢在 visit:start 即时回顶；Swup 走 `@swup/astro` + `animationClass: "transition-swup-"`。
+本仓库已照搬并适配：`transition-main` 挂在封面块 + `#page-shell`（我们的 chrome 会随滚动移动，
+回顶仍留在载体 opacity 0 的窗口里），`animationSelector` 改为 `[class~="transition-main"]`，
+幕布与 veil 全部删除。dev 实测时间线：out 130ms → 隐藏窗口内回顶 → in 120ms 滑入，无死锁、console 干净。
+**下一步：让用户在手机/桌面实际看观感**；若仍不满意，Firefly 还有两样可补：WAAPI 顶部进度条
+（`swup-transitions.ts` 的 startProgressBar/finishProgressBar）与首页↔非首页的内容面板 FLIP 平移。
 
 ### 🟠 悬着的事，需要用户点头
 

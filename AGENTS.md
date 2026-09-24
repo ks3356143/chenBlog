@@ -398,13 +398,15 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、`<github>` 卡片、图片网
 
 入口：`src/components/features/SwupManager.astro`（初始化 + 事件桥 + resize 动画）；
 开关：`src/config/effectsConfig.ts`；动画 CSS：`src/styles/transitions.css`；
-容器：`Layout.astro` 的 `#swup-container`（另有唯一类 `swup-transition-zoom` 供 animationSelector 用）。
+容器：`Layout.astro` 的 `#swup-container`；过渡载体类 `transition-main` 挂在封面块与 `#page-shell` 上
+（animationSelector 与淡入淡出共用），内层 `#content-wrapper.transition-leaving` 做反向视差。
 设计文档：`docs/superpowers/specs/2026-09-23-page-transitions-design.md`（含影响域分析）。
 
 1. **`animationSelector` 必须收紧，不能用默认值。** 默认 `[class*="transition-"]` 会命中全站
    Tailwind 的 `transition-*` 类；`display:none` 子树里**冻住永不结束**的过渡（折叠代码块
    `ec-collapse__toggle`）会被算进等待集合 → visit 死锁在 `is-changing is-animating is-rendering`，
-   之后**所有导航静默失效**（不报错、路径不变）。已设为 `[class~="swup-transition-zoom"]`。
+   之后**所有导航静默失效**（不报错、路径不变）。已设为 `[class~="transition-main"]`
+   （= 封面块 + `#page-shell`，精确类名匹配，不会误中 Tailwind）。
 2. **Swup 不替换 head，也默认不执行容器内的新 script。** 页面级 `is:inline` 脚本（评论/分享/推荐位）
    靠 `@swup/scripts-plugin` 重执行；但 **`slot="head"` 的脚本导航过去永不执行**——
    `gallery-filter` 自定义元素曾因此从首页导航进相册时彻底失效。这类脚本必须放在容器内（body）。
@@ -414,11 +416,13 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、`<github>` 卡片、图片网
    `swup:contentReplaced`（12 个组件在听，Swup 4 **不再派发**）；Astro VT 的
    `astro:page-load` / `astro:after-swap`（若干组件在听，Swup 路线下本不触发）。
    SwupManager 统一桥接派发这三套，消费组件一行未改。
-5. **跳顶目前靠 `#page-veil` 遮罩藏**（fixed 全屏、`var(--page-bg)`，`animation:out:start` 盖住、
-   `animation:in:start` 揭幕；历史导航走 `animation:skip` 盖 80ms 再揭）。
-   ⚠️ **用户 2026-09-23 明确不喜欢这种"整体渐隐"观感，方案待换**（候选方向见 HANDOFF 第一节），
-   换掉前别把它当定案往里加东西。
-   ⚠️ 无论换什么方案，**不要用 body/祖先元素的淡入淡出**——实测会让 Swup 卡死在 `is-rendering`、页面停在 opacity 0。
+5. **过渡观感 = 照搬 Firefly 的 120ms 滑移+淡入淡出**（其 `src/styles/transition.css`，2026-09-24 扒仓库实测）：
+   `.transition-main`（封面块 + `#page-shell`）在 `is-leaving` 时 120ms 滑向 ±2rem 并淡出，
+   `is-animating` 摘除后从 +2rem 滑入归位；瞬时回顶放在 `animation:out:end`（此刻载体 opacity 0），
+   因此**不需要幕布/遮罩**。用户 09-23 否掉"整体渐隐"（veil）、09-24 否掉幕布滑动盖板，最终点名要 Firefly 观感。
+   ⚠️ Firefly 的 chrome 是固定壁纸/导航栏，所以它敢在 `visit:start` 即时回顶；**我们的封面/侧栏随滚动移动**，
+   回顶必须留在载体不可见的窗口里，别学它 visit:start 回顶。
+   ⚠️ 无论改什么，**不要用 body/祖先元素的淡入淡出**——实测会让 Swup 卡死在 `is-rendering`、页面停在 opacity 0。
 6. **窗口缩放动画 = 冻结 + View Transitions morph**（`effectsConfig.windowResize`）。
    断点跨越改的是 grid 轨道数量与 sidebar 的 display，CSS transition 插值不了；
    做法是拖拽期间给 `#page-shell` 冻结像素宽度，松手 180ms 后 `document.startViewTransition` 一次性

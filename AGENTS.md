@@ -398,15 +398,17 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、`<github>` 卡片、图片网
 
 入口：`src/components/features/SwupManager.astro`（初始化 + 事件桥 + resize 动画）；
 开关：`src/config/effectsConfig.ts`；动画 CSS：`src/styles/transitions.css`；
-容器：`Layout.astro` 的 `#swup-container`；过渡载体类 `transition-main` 挂在封面块与 `#page-shell` 上
-（animationSelector 与淡入淡出共用），内层 `#content-wrapper.transition-leaving` 做反向视差。
+容器：`Layout.astro` 的 `#swup-container`（带 `transition-main`）；过渡载体类 `transition-main`
+**只挂在 `#swup-container` 上**（2026-09-24 照搬参考站 blog.cuteleaf.cn 的容器结构，见条目 5），
+内层 `#content-wrapper.transition-leaving` 做反向视差。
 设计文档：`docs/superpowers/specs/2026-09-23-page-transitions-design.md`（含影响域分析）。
 
 1. **`animationSelector` 必须收紧，不能用默认值。** 默认 `[class*="transition-"]` 会命中全站
    Tailwind 的 `transition-*` 类；`display:none` 子树里**冻住永不结束**的过渡（折叠代码块
    `ec-collapse__toggle`）会被算进等待集合 → visit 死锁在 `is-changing is-animating is-rendering`，
-   之后**所有导航静默失效**（不报错、路径不变）。已设为 `[class~="transition-main"]`
-   （= 封面块 + `#page-shell`，精确类名匹配，不会误中 Tailwind）。
+   之后**所有导航静默失效**（不报错、路径不变）。已设为 `[class*="transition-swup-"]`
+   （= 参考站同款：只命中 `#banner-overlay-container` 这类带 `transition-swup-fade` 的专用载体，
+   不会误中 Tailwind 的 `transition-*`）。
 2. **Swup 不替换 head，也默认不执行容器内的新 script。** 页面级 `is:inline` 脚本（评论/分享/推荐位）
    靠 `@swup/scripts-plugin` 重执行；但 **`slot="head"` 的脚本导航过去永不执行**——
    `gallery-filter` 自定义元素曾因此从首页导航进相册时彻底失效。这类脚本必须放在容器内（body）。
@@ -419,12 +421,17 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、`<github>` 卡片、图片网
    `swup:contentReplaced`（12 个组件在听，Swup 4 **不再派发**）；Astro VT 的
    `astro:page-load` / `astro:after-swap`（若干组件在听，Swup 路线下本不触发）。
    SwupManager 统一桥接派发这三套，消费组件一行未改。
-5. **过渡观感 = 照搬 Firefly 的 120ms 滑移+淡入淡出**（其 `src/styles/transition.css`，2026-09-24 扒仓库实测）：
-   `.transition-main`（封面块 + `#page-shell`）在 `is-leaving` 时 120ms 滑向 ±2rem 并淡出，
-   `is-animating` 摘除后从 +2rem 滑入归位；瞬时回顶放在 `animation:out:end`（此刻载体 opacity 0），
-   因此**不需要幕布/遮罩**。用户 09-23 否掉"整体渐隐"（veil）、09-24 否掉幕布滑动盖板，最终点名要 Firefly 观感。
-   ⚠️ Firefly 的 chrome 是固定壁纸/导航栏，所以它敢在 `visit:start` 即时回顶；**我们的封面/侧栏随滚动移动**，
-   回顶必须留在载体不可见的窗口里，别学它 visit:start 回顶。
+5. **过渡观感 = 1:1 照搬 blog.cuteleaf.cn（Firefly 系）的编译产物**（2026-09-24 扒其 `/_astro/*.css` 与
+   `page.*.js` / `Layout.astro_*.js` 实测）。数值（120ms、±2rem、同款 cubic-bezier）三家本来就逐字节相同，
+   **真正决定"跳不跳"的是挂载位置**：参考站把 `.transition-main` 挂在 `#swup-container` 上、横幅图
+   `#wallpaper-wrapper` 不带任何过渡类；我们 09-23/09-24 两版把它挂在封面块和 `#page-shell` 上，
+   于是每次切页整块 65~90vh 横幅被 `translateY(±2rem)` 推着滑——就是用户三次否掉的"跳一下"。
+   现编排照搬：`link:click` 打 `is-page-transitioning`；`visit:start` 起 WAAPI 进度条
+   （`#progress-bar`，scaleX 0→0.95 / 8s）并**即时回顶（仅 ≥768px）**；`visit:end` 收进度条、
+   200ms 后摘 `is-page-transitioning`。
+   ⚠️ **回顶放 `visit:start` 现在是对的**（推翻 09-24 的旧结论）：前提是 chrome（封面/侧栏/分类栏）
+   都在 Swup 容器外、不随页替换也不参与过渡，回顶与点击同任务、下一帧绘制前完成，浏览器永远画不出
+   "旧页滚到一半"。若将来把任何会随滚动移动的 chrome 挂回过渡类，这条立刻失效。
    ⚠️ 无论改什么，**不要用 body/祖先元素的淡入淡出**——实测会让 Swup 卡死在 `is-rendering`、页面停在 opacity 0。
 6. **窗口缩放动画 = 冻结 + View Transitions morph**（`effectsConfig.windowResize`）。
    断点跨越改的是 grid 轨道数量与 sidebar 的 display，CSS transition 插值不了；

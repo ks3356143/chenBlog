@@ -3,31 +3,35 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-09-24 晚，收尾：Firefly 式过渡 + 两处移动端修复均已上线**
+> 最后更新：**2026-09-24 夜收尾：过渡/分类栏/归档/横幅高矮/品牌标识 6 笔一次部署上线，待用户验收**
 
 ---
 
 ## 一、下次会话第一件事
 
-### 🔴→已实现待用户验收：过渡观感换成 Firefly 式（2026-09-24）
+### 🔴→已上线待用户验收（2026-09-24 夜，6 笔一次部署）
 
-历程：09-23 上线的"整体渐隐"（veil+容器 opacity）被否 → 09-24 上午做的"幕布滑动盖板"也被否 →
-用户点名"参考 Firefly 的那种变化"。已扒 Firefly 仓库（sparse clone 只取 src，全量 clone 太慢）：
-它的过渡是 **120ms 的 CSS transition 滑移+淡入淡出**（`src/styles/transition.css`），只动内容、
-chrome 是固定壁纸所以敢在 visit:start 即时回顶；Swup 走 `@swup/astro` + `animationClass: "transition-swup-"`。
-本仓库已照搬并适配：`transition-main` 挂在封面块 + `#page-shell`（我们的 chrome 会随滚动移动，
-回顶仍留在载体 opacity 0 的窗口里），`animationSelector` 改为 `[class~="transition-main"]`，
-幕布与 veil 全部删除。dev 实测时间线：out 130ms → 隐藏窗口内回顶 → in 120ms 滑入，无死锁、console 干净。
-**下一步：等用户在手机上验收 Firefly 式观感**（2026-09-24 晚已部署）；若仍不满意，Firefly 还有两样可补：
-WAAPI 顶部进度条（`swup-transitions.ts` 的 startProgressBar/finishProgressBar）与首页↔非首页的内容面板 FLIP 平移。
+用户点名「完全按照 blog.cuteleaf.cn 的跳转页面动画整」。扒其编译产物（`/_astro/*.css` + 各 chunk js）后
+1:1 照搬，**根因是挂载位置不是数值**：我们此前把 `.transition-main` 挂在封面块+#page-shell 上，
+每次切页整块横幅被 `translateY(±2rem)` 推着滑＝用户说的"跳一下"；参考站挂在 `#swup-container` 上、横幅纹丝不动。
+本次上线内容：① 挂载位置修正 + 参考站编排（进度条、`visit:start` ≥768px 即时回顶、`is-page-transitioning`）；
+② CategoryBar 对齐（文章页不再隐藏、`data-soft-active` 软高亮、"更多"pill）+ 新建 `/categories/` 页；
+③ 归档时间线改 SSR（去掉 `client:only` 水合空窗）；④ 首页↔非首页横幅高矮 450ms 过渡；
+⑤ 品牌标识重设计（双木成林 SVG mark + 亦林，删白底 logo.png）。细节在 AGENTS 第五节 12、第十节 5/9。
+
+**待验收（用户真机/浏览器）**：
+1. 移动端**退出归档页还抖不抖**——已按"水合空窗"这条最可能成因修（归档 SSR），**未复测**；
+   若还抖，问清是"时间线先空白再出现"还是"整页错位"，两种成因不同。
+2. 新过渡观感（桌面回顶在点击同帧、移动端不回顶）。
+3. 首页↔其他页的横幅高矮过渡；非首页横幅变矮是设计如此。
+4. 新 mark 亮暗两态、移动端文字不挤导航（360px 已测零溢出）。
+   ⚠️ 本会话的 in-app 浏览器 surface 隐藏，**隐藏页里 CSS 过渡不推进、Swup 会假死**，别在那儿测时序（对照实验证明参考站同样卡）。
 
 ### 🟠 悬着的事，需要用户点头
 
-1. **推送远端**：本地领先 `origin/main` **12 个提交**。按铁律「推送前先问」，未推。
-   09-23、09-24 多次问过，均未获答。
-2. **3 个 Astro Audit a11y 提示未修**（dev toolbar，生产无）：空 `<h1 class="sr-only">`
-   （`Layout.astro:94` 首页 title 为空）、分页禁用态 `<a href="#">`（`Pagination.astro:60`）、
-   一条偶发 h3（首页复现不出，疑似 hydration 前瞬时态）。
+1. **推送远端**：本地领先 `origin/main` **19 个提交**。按铁律「推送前先问」，未推；多次问过未获答。
+2. **3 个 Astro Audit a11y 提示未修**（dev toolbar，生产无）：空 `<h1 class="sr-only">`、
+   分页禁用态 `<a href="#">`、一条偶发 h3。
 
 ### 🟡 AGENTS.md 第九节的存量待办
 
@@ -38,77 +42,39 @@ WAAPI 顶部进度条（`swup-transitions.ts` 的 startProgressBar/finishProgres
 
 ---
 
-## 二、本次会话（2026-09-23）做了什么
+## 二、历次会话做了什么
 
-### 依赖 patch 升级（已上线）
+### 2026-09-24 夜：过渡 1:1 照搬参考站 + 一批对齐（已上线，6 笔）
 
-`npm update` 4 个 patch：astro 7.3.4、@astrojs/mdx 8.0.2、prettier 3.9.9、material-symbols 1.2.93。
-干净 `npm ci` + 构建验证，audit 0 漏洞，产物与基线逐项一致（37 页 / 260→261 文件 / 26M）。
-mermaid 11.17.2 / typescript 6.0.3 天花板复查仍未松动。
-**教训已固化**：`npm update` 后又 `rm -rf node_modules && npm ci` 是装两遍（白等 3 分钟），
-正确序列 `npm update --package-lock-only && npm ci`，已写进 AGENTS.md 第九节与记忆
-`record-mistakes-as-memory.md`。
+用户三次否掉自创过渡后点名 cuteleaf；扒其编译产物发现**数值本就逐字节相同，差在挂载位置**，
+于是 `.transition-main` 移到 `#swup-container`，编排（进度条 / `visit:start` 回顶 / `is-page-transitioning`）、
+CategoryBar（不隐藏 + 软高亮 + 更多 pill）、`/categories/` 页、归档 SSR、横幅高矮过渡、品牌标识全部照搬或对齐。
+提交 `4a97845 ffda5c0 da68cd4 a512fc5 902b56e b713fbf`，用户当次授权部署，已按第六节流程上线
+（线上核对：mark 的 `stroke="var(--primary)"`、`--banner-height-non-home` 在 CSS bundle、logo.png 引用 0）。
+教训入记忆 `page-transition-copy-cuteleaf.md` 与 `measure-visual-bugs-programmatically.md`（隐藏标签页测不了时序）。
 
-### Swup 页面过渡 + 窗口缩放 morph（已上线）
+### 更早（2026-09-23 ~ 09-24 晚，均已上线，细节在 AGENTS 第十节）
 
-用户指定参考 Firefly；对比后选 Swup（仓库 12 处 `swup:*` 接线、`#swup-container`、
-`window.swup.navigate` 全是 Swup 形状；原生 VT 需改 ~10 个文件并伪造 `window.swup`）。
-新增 `swup@4.10.0` + `@swup/scripts-plugin@2.1.0`；新文件 `effectsConfig.ts` /
-`SwupManager.astro` / `transitions.css` / 设计文档 `docs/superpowers/specs/2026-09-23-*.md`。
-**四个实测踩到的坑全部记在 AGENTS.md 第十节**（animationSelector 死锁、head 脚本不执行、
-define:vars 内联、三套事件名），此处不复述。
-
-浏览器实测通过：客户端导航（window 标记法）、评论/分享/推荐位/gallery 自定义元素导航后复活、
-前进后退、同 URL 平滑滚顶、reduced-motion 整页降级、console 零报错。
-
-### 部署（2026-09-23 夜，用户当次授权）
-
-走 AGENTS.md 第六节流程：本地 build → tar → scp → `dist.new` 校验 → `mv` 原子替换。
-**未做时间戳备份**（服务器已有 `dist.old` + `dist_backup_20260920_234618`，避免堆满磁盘；
-`dist.old` 即回滚资产）。线上已从"升级前产物"变为"Swup 版"。
-
-### 收尾（2026-09-24 凌晨）
-
-删掉 SwupManager 里我留的验证用调试计数器 `window.__resizeMorphs`；
-AGENTS.md 第十节第 5 条标记「veil 整体渐隐用户不喜欢、方案待换」；
-用户反馈与明天任务记入本文件第一节。既有组件里的 console.log（Twikoo/github-card）非本次引入，未动。
-
-### 手机滑动重影修复 + 归档时间线标题加宽（2026-09-24 白天，已上线）
-
-用户手机反馈：滑动重影、首页卡片数据与右箭头"重叠"、首进正常但 Swup 返回后才出现。
-**根因（程序化取证）**：resize morph 不区分宽高，手机地址栏收起/展开**只改高度**也触发 resize
-→ 滚动中反复 `startViewTransition` 整页快照交叉淡化 → 重影 + 旧快照（old(root) 在上层）与已滚动页面叠印。
-**修复**：`SwupManager.astro` resize 监听宽度不变直接 return（桌面拖窗行为不变）。
-**顺带**：归档/分类时间线移动端标题 `pr-8`→`pr-0 md:pr-8`、圆点列 15%→8%、标题列 70%→77%
-（`ArchivePannel.svelte`，表头行同步），标题可用宽度 +52.6px，圆点仍对齐；桌面列比例未动。
-坑已写进 AGENTS.md 第十节第 6 条。提交 `8f96606`，**用户当次授权部署**，已按第六节流程上线并
-用 chunk md5 指纹核对（Svelte 时间线是客户端渲染，静态 HTML 里没有行，别去 grep HTML）。
-
-### 过渡观感三轮迭代 + 移动端两处布局修复（2026-09-24 下午~晚，已上线）
-
-过渡：整页平移方案推演时发现**文档级滚动下平移整页藏不住瞬时回顶**（页面几千像素高，移一屏仍在
-视口里）→ 改幕布滑动盖板 → 用户仍否 → 点名 Firefly → 扒仓库确认其过渡是 120ms transition 滑移+淡入淡出，
-照搬并适配（`transition-main` 挂封面块+#page-shell），幕布/veil 删除。提交 `13341f5`。
-移动端布局：① PostCard 的 scoped 样式在不渲染卡片的入口页 head 里缺失（Swup 不换 head）→
-"归档整页刷新后 Swup 回首页卡片重叠 64px"；布局 CSS 移入 `global.css`、每实例变量内联。
-② 我收窄时间线圆点列的副作用：text-2xl 年份溢出压圆点、日期换行点不齐；列宽改 18/7/75 + 年份移动端 text-xl。
-提交 `44e739a`。**教训已入 AGENTS.md 第十节第 2 条**（scoped style 的入口页依赖）。
+- 09-23：依赖 patch 升级（audit 21→0）+ Swup 页面过渡首版 + 窗口缩放 morph；四个坑入第十节 1-4。
+- 09-24 白天：手机滑动重影修复（resize 只在宽度变化时 morph，第十节 6）+ 归档时间线移动端列宽。
+- 09-24 下午~晚：过渡观感三轮迭代（veil 否 → 幕布否 → Firefly 式 120ms 滑移）+ PostCard scoped 样式
+  移入 global.css（Swup 不换 head 的入口页依赖，第十节 2）+ 时间线年份列宽回修。
 
 ---
 
-## 三、当前状态快照（2026-09-24 晚收尾时实测）
+## 三、当前状态快照（2026-09-24 夜收尾时实测）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `44e739a` 移动端两处布局修复（其前 `13341f5` Firefly 式过渡、`8f96606` 重影修复） |
-| 与远端 | **ahead 12**，全部未推送（推送前先问；多次问过未获答） |
-| 本地构建 | 退出码 0，37 页，dist **261** 个文件 |
+| 本地 HEAD | `b713fbf` 品牌标识重设计（其前 `902b56e` 横幅高矮、`da68cd4` 归档 SSR、`ffda5c0` 分类栏+/categories/、`4a97845` 过渡挂载修正） |
+| 与远端 | **ahead 19**，全部未推送（推送前先问；多次问过未获答） |
+| 本地构建 | 退出码 0，**38 页**（新增 /categories/），`INEFFECTIVE_DYNAMIC_IMPORT` 警告随 logo.png 删除消失 |
 | `npm audit` | **0 vulnerabilities** |
-| 线上站点 | 2026-09-24 晚已上：Firefly 式 120ms 过渡 + PostCard 全局样式 + 时间线列宽（chunk md5 核对一致） |
-| 服务器回滚资产 | `dist.old` 与多个 `dist_backup_20260924_*` = 当日各版本；`dist_backup_20260920_234618` = pre-Swup 版。**均保留中** |
-| dev server | 后台运行中（任务 `b5wk43iua`），下次可直接用 |
-| 我的浏览器 surface | 尺寸时有时无；**观感验收交给用户手机**，布局类 bug 用定宽 iframe 程序化测量 |
-| 临时文件 | 本地与服务器 `/tmp` 已清（含 `/tmp/firefly-sparse`、tar 包） |
+| 线上站点 | 2026-09-24 夜已上全部 6 笔（mark/文字/横幅变量线上核对通过） |
+| 服务器回滚资产 | `dist.old` + 多个 `dist_backup_20260924_*`（含本次）+ `dist_backup_20260920_234618`。**均保留中** |
+| dev server | 后台运行中（任务 `bdruviub9`），下次可直接用 |
+| 我的浏览器 surface | 本会话后半程**隐藏**：rAF/transitionend 停摆、Swup 假死，时序类验证一律改事件戳+对照实验，或交给用户肉眼 |
+| 临时文件 | 本地与服务器 `/tmp` 已清（tar 包、参考站扒下来的 css/js、截图） |
 
 ---
 

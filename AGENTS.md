@@ -1,7 +1,7 @@
 # AGENTS.md — 项目长期指令
 
 > 陈俊亦的个人博客。每次对话开始时自动读取本文件作为上下文。
-> 最后更新：2026-09-23（astro 7.3.4 / mdx 8.0.2；第九节补了依赖更新的正确命令序列）
+> 最后更新：2026-09-24（过渡/分类栏/归档/横幅高矮/品牌标识全部照搬参考站上线；第十节补 9、第五节补 12）
 
 ## 📌 开始工作前先读 [`HANDOFF.md`](./HANDOFF.md)
 
@@ -126,6 +126,12 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
     日志只给一条 `install-scripts ... not yet covered by allowScripts` 警告。
     本地因为旧二进制还在所以构建照过，**全新克隆或服务器上重装才会崩**。
     → 每次升 esbuild/sharp 都要同步更新 `allowScripts` 的版本号。
+
+12. **品牌标识 = 内联 SVG「双木成林」mark + "亦林" 文字**（`src/components/headers/Header.astro`，2026-09-24 重设计）。
+    mark 是两棵高低错落的圆头描边小树加一条地平线，`stroke: var(--primary)`（亮 `#00ba99` / 暗 `#0dcaa9` 自动换）；
+    文字走导航正文色、semibold、字距略开，**移动端也显示**（旧版 `<640px` 隐藏）。
+    旧的 `src/assets/logo.png`（亮绿字标、**带白底**）已删——它叠在半透明导航上会露出一块白框，暗色下更突兀。
+    → 改 mark 时保持 ≤8 笔、24px 仍可辨；**别换回位图**（位图带底色就会重蹈白框覆辙）。
 
 ## 六、部署
 
@@ -445,3 +451,10 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、`<github>` 卡片、图片网
    已修：宽度不变直接 `return`。别把这个 morph 当成"任何 resize 都跑"。
 7. 同 URL 点击（如已选中的分类 pill）被 SwupManager 的 capture 监听拦截，改**平滑滚顶**、不走 visit。
 8. `prefers-reduced-motion: reduce` → 不初始化 Swup，退回整页加载、零动画（覆盖 effectsConfig）。
+9. **首页↔非首页的横幅高矮过渡**（2026-09-24，照搬参考站 `is-wallpaper-transitioning` 机制）：
+   `--banner-height-home` / `--banner-height-non-home: max(45vh, 380px)` 两套变量，
+   各断点媒体查询**只给 home 那套赋值**（`layout-style.css`），`#wallpaper-wrapper` 的 height 消费变量；
+   `body.is-home` 由 SSR 判定（`/` 与 `/2/` 这类分页算首页），切页时 `visit:start` 按目标 URL 翻转它并挂
+   `html.is-wallpaper-transitioning`（给 `#wallpaper-wrapper` 开 `height .45s` 过渡），`visit:end` 后 **500ms** 才摘
+   （过渡 450ms，早摘会把 transition 属性撤掉、高度瞬间跳变）。
+   ⚠️ 非首页横幅比首页矮是**设计如此**（参考站同款），别当 bug 把两套变量改回同值。

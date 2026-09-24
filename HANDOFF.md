@@ -3,7 +3,7 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-09-24 午后，手机重影修复已上线**
+> 最后更新：**2026-09-24 晚，收尾：Firefly 式过渡 + 两处移动端修复均已上线**
 
 ---
 
@@ -18,13 +18,13 @@ chrome 是固定壁纸所以敢在 visit:start 即时回顶；Swup 走 `@swup/as
 本仓库已照搬并适配：`transition-main` 挂在封面块 + `#page-shell`（我们的 chrome 会随滚动移动，
 回顶仍留在载体 opacity 0 的窗口里），`animationSelector` 改为 `[class~="transition-main"]`，
 幕布与 veil 全部删除。dev 实测时间线：out 130ms → 隐藏窗口内回顶 → in 120ms 滑入，无死锁、console 干净。
-**下一步：让用户在手机/桌面实际看观感**；若仍不满意，Firefly 还有两样可补：WAAPI 顶部进度条
-（`swup-transitions.ts` 的 startProgressBar/finishProgressBar）与首页↔非首页的内容面板 FLIP 平移。
+**下一步：等用户在手机上验收 Firefly 式观感**（2026-09-24 晚已部署）；若仍不满意，Firefly 还有两样可补：
+WAAPI 顶部进度条（`swup-transitions.ts` 的 startProgressBar/finishProgressBar）与首页↔非首页的内容面板 FLIP 平移。
 
 ### 🟠 悬着的事，需要用户点头
 
-1. **推送远端**：本地领先 `origin/main` **9 个提交**（含 2026-09-24 的重影修复提交）。按铁律「推送前先问」，未推。
-   2026-09-23 与 09-24 各问过，均未获答。
+1. **推送远端**：本地领先 `origin/main` **12 个提交**。按铁律「推送前先问」，未推。
+   09-23、09-24 多次问过，均未获答。
 2. **3 个 Astro Audit a11y 提示未修**（dev toolbar，生产无）：空 `<h1 class="sr-only">`
    （`Layout.astro:94` 首页 title 为空）、分页禁用态 `<a href="#">`（`Pagination.astro:60`）、
    一条偶发 h3（首页复现不出，疑似 hydration 前瞬时态）。
@@ -84,21 +84,31 @@ AGENTS.md 第十节第 5 条标记「veil 整体渐隐用户不喜欢、方案�
 坑已写进 AGENTS.md 第十节第 6 条。提交 `8f96606`，**用户当次授权部署**，已按第六节流程上线并
 用 chunk md5 指纹核对（Svelte 时间线是客户端渲染，静态 HTML 里没有行，别去 grep HTML）。
 
+### 过渡观感三轮迭代 + 移动端两处布局修复（2026-09-24 下午~晚，已上线）
+
+过渡：整页平移方案推演时发现**文档级滚动下平移整页藏不住瞬时回顶**（页面几千像素高，移一屏仍在
+视口里）→ 改幕布滑动盖板 → 用户仍否 → 点名 Firefly → 扒仓库确认其过渡是 120ms transition 滑移+淡入淡出，
+照搬并适配（`transition-main` 挂封面块+#page-shell），幕布/veil 删除。提交 `13341f5`。
+移动端布局：① PostCard 的 scoped 样式在不渲染卡片的入口页 head 里缺失（Swup 不换 head）→
+"归档整页刷新后 Swup 回首页卡片重叠 64px"；布局 CSS 移入 `global.css`、每实例变量内联。
+② 我收窄时间线圆点列的副作用：text-2xl 年份溢出压圆点、日期换行点不齐；列宽改 18/7/75 + 年份移动端 text-xl。
+提交 `44e739a`。**教训已入 AGENTS.md 第十节第 2 条**（scoped style 的入口页依赖）。
+
 ---
 
-## 三、当前状态快照（2026-09-24 午后部署后实测）
+## 三、当前状态快照（2026-09-24 晚收尾时实测）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `8f96606` 重影修复 + 归档标题加宽（其前 `be89c6c` 收尾、`ea04f8b` Swup 过渡） |
-| 与远端 | **ahead 9**，全部未推送（推送前先问；09-23、09-24 问过未获答） |
-| 本地构建 | 退出码 0，37 页，dist **261** 个文件 / 26M |
+| 本地 HEAD | `44e739a` 移动端两处布局修复（其前 `13341f5` Firefly 式过渡、`8f96606` 重影修复） |
+| 与远端 | **ahead 12**，全部未推送（推送前先问；多次问过未获答） |
+| 本地构建 | 退出码 0，37 页，dist **261** 个文件 |
 | `npm audit` | **0 vulnerabilities** |
-| 线上站点 | **2026-09-24 午后已上重影修复 + 标题加宽**（chunk md5 核对一致）；veil 整体渐隐仍在、待换（第一节 🔴） |
-| 服务器回滚资产 | `dist.old` 与 `dist_backup_20260924_*` = 含重影 bug 的 Swup 版；`dist_backup_20260920_234618` = pre-Swup 版。**均保留中** |
-| dev server | 后台运行中（任务 `b5wk43iua`），可直接用 |
-| 我的浏览器 surface | 尺寸时有时无（本会话一度 506×718 可用、截图偶发不可用）；**观感验证仍交给用户** |
-| 临时文件 | 本会话 `/tmp/chenblog_dist.tar.gz` 本地与服务器均已清 |
+| 线上站点 | 2026-09-24 晚已上：Firefly 式 120ms 过渡 + PostCard 全局样式 + 时间线列宽（chunk md5 核对一致） |
+| 服务器回滚资产 | `dist.old` 与多个 `dist_backup_20260924_*` = 当日各版本；`dist_backup_20260920_234618` = pre-Swup 版。**均保留中** |
+| dev server | 后台运行中（任务 `b5wk43iua`），下次可直接用 |
+| 我的浏览器 surface | 尺寸时有时无；**观感验收交给用户手机**，布局类 bug 用定宽 iframe 程序化测量 |
+| 临时文件 | 本地与服务器 `/tmp` 已清（含 `/tmp/firefly-sparse`、tar 包） |
 
 ---
 

@@ -7,6 +7,7 @@ const categories = await getCategoryList()
 const totalPosts = (await getSortedPostsList()).length
 const homeUrl = url("/")
 const archiveUrl = url("/archive/")
+const categoriesUrl = url("/categories/")
 ---
 
 <div id="category-bar" data-home-path={homeUrl} data-archive-path={archiveUrl} class="card-base category-bar p-3">
@@ -46,6 +47,16 @@ const archiveUrl = url("/archive/")
 			</div>
 			<div class="scroll-fade scroll-fade-right" aria-hidden="true"></div>
 		</div>
+		<div class="category-divider more-divider shrink-0" aria-hidden="true"></div>
+		<a
+			href={categoriesUrl}
+			class="category-pill flex h-7 shrink-0 items-center justify-center gap-1 px-3 py-1 text-sm whitespace-nowrap transition-colors duration-150 ease-out"
+			data-category-name="__categories__"
+			aria-label="更多"
+		>
+			<span>更多</span>
+			<Icon name="fa7-solid:chevron-right" class="text-xs" />
+		</a>
 	</div>
 </div>
 
@@ -58,6 +69,14 @@ const archiveUrl = url("/archive/")
 		width: 1px;
 		align-self: stretch;
 		background-color: var(--line-divider);
+	}
+	/* 更多前的分隔线：只在横向溢出时出现（参考站 more-divider 的 data-visible 逻辑） */
+	.more-divider {
+		opacity: 0;
+		transition: opacity 300ms ease-in-out;
+	}
+	.more-divider[data-visible] {
+		opacity: 1;
 	}
 	.scroll-fade {
 		position: absolute;
@@ -134,6 +153,16 @@ const archiveUrl = url("/archive/")
 		border-color: var(--primary);
 		opacity: 0.9;
 	}
+	/* 文章页：文章所属分类的软高亮，数值照搬参考站 */
+	.category-pill[data-soft-active] {
+		background: color-mix(in srgb, var(--primary) 18%, transparent);
+		color: color-mix(in srgb, var(--primary) 90%, var(--btn-content));
+		font-weight: 600;
+	}
+	.category-pill[data-soft-active]:hover {
+		background: color-mix(in srgb, var(--primary) 25%, transparent);
+		color: var(--primary);
+	}
 </style>
 
 <script>
@@ -144,6 +173,7 @@ const archiveUrl = url("/archive/")
 		const archivePath = (bar.getAttribute("data-archive-path") || "/archive").replace(/\/$/, "")
 		const isHome = pathname === homePath || pathname === "" || pathname === "/"
 		const isArchive = pathname === archivePath
+		const isCategories = pathname === "/categories"
 		const escapedHomePath = homePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 		// 分页页面（如 /2/, /3/）也属于首页的延续
 		const isHomePagination =
@@ -152,6 +182,7 @@ const archiveUrl = url("/archive/")
 		return {
 			isHome,
 			isArchive,
+			isCategories,
 			isHomePagination,
 			activeCategory: currentUrl.searchParams.get("category") || "",
 			hasTag: currentUrl.searchParams.has("tag"),
@@ -160,31 +191,32 @@ const archiveUrl = url("/archive/")
 	}
 
 	function setActiveCategory(bar: HTMLElement, currentUrl: URL) {
-		const { isHome, isArchive, isHomePagination, activeCategory, hasTag, hasUncategorized } = getCategoryBarState(
-			bar,
-			currentUrl,
-		)
-
-		// 在首页、首页分页和归档页显示
-		const wrapper = document.getElementById("category-bar-wrapper")
-		const target = (wrapper || bar) as HTMLElement
-		target.style.visibility = ""
-		if (!isHome && !isHomePagination && !isArchive) {
-			target.style.display = "none"
-			return
-		}
-		target.style.display = ""
+		const { isHome, isArchive, isCategories, isHomePagination, activeCategory, hasTag, hasUncategorized } =
+			getCategoryBarState(bar, currentUrl)
+		const postCategory = (bar.getAttribute("data-current-post-category") || "").trim()
 
 		// 移除所有按钮的 active 状态
 		const homeButton = bar.querySelector<HTMLAnchorElement>('.category-link-home[data-category-name="__home__"]')
 		const pills = bar.querySelectorAll<HTMLAnchorElement>(".category-pill")
 
 		homeButton?.removeAttribute("data-active")
-		pills.forEach(pill => pill.removeAttribute("data-active"))
+		pills.forEach(pill => {
+			pill.removeAttribute("data-active")
+			pill.removeAttribute("data-soft-active")
+		})
 
 		if (isHome || isHomePagination) {
 			// 首页时激活首页按钮
 			homeButton?.setAttribute("data-active", "")
+			return
+		}
+
+		if (isCategories) {
+			// 分类总览页激活"更多"按钮（照搬参考站 h() 的判断顺序）
+			bar.querySelector<HTMLAnchorElement>('.category-pill[data-category-name="__categories__"]')?.setAttribute(
+				"data-active",
+				"",
+			)
 			return
 		}
 
@@ -202,6 +234,16 @@ const archiveUrl = url("/archive/")
 				"data-active",
 				"",
 			)
+			return
+		}
+
+		// 文章页不隐藏分类栏，只给文章所属分类打软高亮（照搬参考站的 data-soft-active）
+		if (postCategory) {
+			pills.forEach(pill => {
+				if (pill.getAttribute("data-category-name") === postCategory) {
+					pill.setAttribute("data-soft-active", "")
+				}
+			})
 		}
 	}
 
@@ -217,6 +259,12 @@ const archiveUrl = url("/archive/")
 	function updateCategoryBar(currentUrl = new URL(window.location.href)) {
 		const bar = document.getElementById("category-bar")
 		if (!bar) return
+
+		// 分类栏在 Swup 容器外、不会随页替换，文章分类要从新容器上同步过来（参考站同款做法）
+		const container = document.getElementById("swup-container")
+		if (container) {
+			bar.setAttribute("data-current-post-category", container.getAttribute("data-current-post-category") || "")
+		}
 
 		setActiveCategory(bar, currentUrl)
 		scrollActiveCategoryIntoView(bar)
@@ -280,6 +328,7 @@ const archiveUrl = url("/archive/")
 		const scroll = bar.querySelector<HTMLElement>(".category-scroll")
 		const fadeLeft = bar.querySelector<HTMLElement>(".scroll-fade-left")
 		const fadeRight = bar.querySelector<HTMLElement>(".scroll-fade-right")
+		const moreDivider = bar.querySelector<HTMLElement>(".more-divider")
 		if (!scroll || !fadeLeft || !fadeRight) return
 
 		// 判断是否有横向滚动需求
@@ -287,6 +336,15 @@ const archiveUrl = url("/archive/")
 		// 判断滚动条是否在最左侧/最右侧
 		const isStart = scroll.scrollLeft <= 1
 		const isEnd = scroll.scrollLeft + scroll.clientWidth >= scroll.scrollWidth - 1
+
+		// 溢出时才显示"更多"前的分隔线（参考站 l() 同款）
+		if (moreDivider) {
+			if (hasOverflow) {
+				moreDivider.setAttribute("data-visible", "")
+			} else {
+				moreDivider.removeAttribute("data-visible")
+			}
+		}
 
 		if (hasOverflow && !isStart) {
 			fadeLeft.setAttribute("data-visible", "")
@@ -310,23 +368,13 @@ const archiveUrl = url("/archive/")
 	document.addEventListener("swup:contentReplaced", () => {
 		updateCategoryBar()
 	})
-	// 在 Swup 导航时控制 CategoryBar 显示/隐藏
+	// 在 Swup 导航时同步分类栏的高亮（参考站：visit:start 只刷高亮，不做显隐）
 	function setupSwupEarlyUpdate() {
 		if (!window.swup?.hooks) return
-		// visit:start: 仅用 visibility 隐藏，保留占位避免内容跳动
 		window.swup.hooks.on("visit:start", (visit: any) => {
 			const bar = document.getElementById("category-bar")
 			if (!bar) return
-			const targetUrl = new URL(visit.to.url, window.location.href)
-			const { isHome, isHomePagination, isArchive } = getCategoryBarState(bar, targetUrl)
-			const wrapper = document.getElementById("category-bar-wrapper")
-			const target = (wrapper || bar) as HTMLElement
-			if (!isHome && !isHomePagination && !isArchive) {
-				target.style.visibility = "hidden"
-			} else {
-				target.style.visibility = ""
-				target.style.display = ""
-			}
+			setActiveCategory(bar, new URL(visit.to.url, window.location.href))
 		})
 	}
 	if (window.swup?.hooks) {

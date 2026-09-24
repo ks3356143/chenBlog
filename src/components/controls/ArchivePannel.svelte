@@ -157,13 +157,13 @@
                 <div class="w-[15%] md:w-[10%] transition text-2xl font-bold text-right text-75">
                     {group.year}
                 </div>
-                <div class="w-[15%] md:w-[10%]">
+                <div class="w-[8%] md:w-[10%]">
                     <div
                         class="h-3 w-3 bg-none rounded-full outline-3 outline-(--primary) mx-auto
                   -outline-offset-2 z-50"
                     ></div>
                 </div>
-                <div class="w-[70%] md:w-[80%] transition text-left text-50">
+                <div class="w-[77%] md:w-[80%] transition text-left text-50">
                     {group.posts.length} 篇文章
                 </div>
             </div>
@@ -180,7 +180,7 @@
                             {formatDate(post.data.published)}
                         </div>
                         <!-- 点和线 -->
-                        <div class="w-[15%] md:w-[10%] relative dash-line h-full flex items-center">
+                        <div class="w-[8%] md:w-[10%] relative dash-line h-full flex items-center">
                             <div
                                 class="transition-all mx-auto w-1 h-1 rounded group-hover:h-5
                        bg-[oklch(0.5_0.05_var(--hue))] group-hover:bg-(--primary)! outline z-50
@@ -191,9 +191,9 @@
                         </div>
                         <!-- 标题 -->
                         <div
-                            class="w-[70%] md:max-w-[65%] md:w-[65%] text-left font-bold
+                            class="w-[77%] md:max-w-[65%] md:w-[65%] text-left font-bold
                      group-hover:translate-x-1 transition-all group-hover:text-(--primary)!
-                     text-75 pr-8 whitespace-nowrap text-ellipsis overflow-hidden"
+                     text-75 pr-0 md:pr-8 whitespace-nowrap text-ellipsis overflow-hidden"
                         >
                             {post.data.title}
                         </div>

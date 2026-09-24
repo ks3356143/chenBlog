@@ -79,6 +79,10 @@
         const root = document.documentElement
         let frozen = false
         let timer = 0
+        // 只认宽度变化：morph 只为跨断点（grid 轨道数 / sidebar display 改变）而存在。
+        // 手机地址栏收起/展开只改高度却会触发 resize，若照旧 freeze+startViewTransition，
+        // 滚动中会反复整页快照交叉淡化 → 重影、旧快照与新页面叠印（2026-09-24 手机实测）
+        let lastWidth = window.innerWidth
         const shell = () => document.getElementById("page-shell")
         const freeze = () => {
             const el = shell()
@@ -97,6 +101,9 @@
         window.addEventListener(
             "resize",
             () => {
+                const w = window.innerWidth
+                if (w === lastWidth) return
+                lastWidth = w
                 // Swup visit 飞行中不干预，避免与页面过渡打架
                 if (root.classList.contains("is-changing")) return
                 if (!frozen) freeze()

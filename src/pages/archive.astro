@@ -6,8 +6,19 @@ import ArchivePannel from "@/components/controls/ArchivePannel.svelte"
 const DES = "归档页面，根据-年份分区、根据-每个博客分行"
 
 const sortedPostList = await getSortedPostsList()
+
+// 筛选条件在服务端解析，归档时间线随 HTML 一起输出，避免客户端水合前的空白
+const searchParams = Astro.url.searchParams
+const tagFilters = searchParams.getAll("tag")
+const categoryFilters = searchParams.getAll("category")
+const uncategorizedFilter = searchParams.has("uncategorized")
 ---
 
 <Layout title="归档-Yilin">
-	<ArchivePannel sortedPosts={sortedPostList} client:only="svelte" />
+	<ArchivePannel
+		sortedPosts={sortedPostList}
+		tags={tagFilters}
+		categories={categoryFilters}
+		uncategorized={uncategorizedFilter}
+	/>
 </Layout>

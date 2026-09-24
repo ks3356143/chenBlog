@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { onMount } from "svelte"
     import { getPostUrlBySlug } from "@/utils/url-utils"
 
     interface Post {
@@ -22,25 +21,15 @@
         values: string[]
     }
 
+    // 筛选条件由 archive.astro 从 Astro.url 解析后传入，组件本身不碰 window，保持可服务端渲染
     export let tags: string[] = []
     export let categories: string[] = []
+    export let uncategorized: boolean = false
     export let sortedPosts: Post[] = []
-
-    let groups: Group[] = []
-    let activeFilters: ActiveFilter[] = []
-    let primaryFilter: ActiveFilter | null = null
-    let secondaryFilters: ActiveFilter[] = []
-    let filteredPostCount = 0
-
-    // 判断是否有查询参数tags、categories
-    const params = new URLSearchParams(window.location.search)
-    tags = params.has("tag") ? params.getAll("tag") : []
-    categories = params.has("category") ? params.getAll("category") : []
-    const uncategorized = params.get("uncategorized")
 
     function formatDate(date: Date) {
         const month = (date.getMonth() + 1).toString().padStart(2, "0")
-        const day = date.getDate().toString().padStart(2, "0")
+        const day = date.getDate().toString()
         return `${month}-${day}`
     }
 
@@ -61,71 +50,70 @@
         return filters.map((filter) => `${filter.label}: ${formatFilterValues(filter)}`).join("  ·  ")
     }
 
-    onMount(async () => {
-        let filteredPosts: Post[] = sortedPosts
-        const currentFilters: ActiveFilter[] = []
+    const currentFilters: ActiveFilter[] = []
 
-        if (categories.length > 0) {
-            currentFilters.push({ label: "分类", values: categories })
-        }
+    if (categories.length > 0) {
+        currentFilters.push({ label: "分类", values: categories })
+    }
 
-        if (uncategorized) {
-            currentFilters.push({
-                label: "分类",
-                values: ["未分类"],
-            })
-        }
+    if (uncategorized) {
+        currentFilters.push({
+            label: "分类",
+            values: ["未分类"],
+        })
+    }
 
-        if (tags.length > 0) {
-            currentFilters.push({ label: "标签", values: tags })
-        }
+    if (tags.length > 0) {
+        currentFilters.push({ label: "标签", values: tags })
+    }
 
-        activeFilters = currentFilters
-        primaryFilter = resolvePrimaryFilter(activeFilters)
-        secondaryFilters = primaryFilter ? activeFilters.filter((filter) => filter !== primaryFilter) : []
+    const activeFilters: ActiveFilter[] = currentFilters
+    const primaryFilter: ActiveFilter | null = resolvePrimaryFilter(activeFilters)
+    const secondaryFilters: ActiveFilter[] = primaryFilter
+        ? activeFilters.filter((filter) => filter !== primaryFilter)
+        : []
 
-        if (tags.length > 0) {
-            filteredPosts = filteredPosts.filter(
-                (post) => Array.isArray(post.data.tags) && post.data.tags.some((tag) => tags.includes(tag)),
-            )
-        }
+    let filteredPosts: Post[] = sortedPosts
 
-        if (categories.length > 0) {
-            filteredPosts = filteredPosts.filter(
-                (post) => post.data.category && categories.includes(post.data.category),
-            )
-        }
-
-        if (uncategorized) {
-            filteredPosts = filteredPosts.filter((post) => !post.data.category)
-        }
-
-        // 按发布时间倒序排序，确保不受置顶影响
-        filteredPosts = filteredPosts.slice().sort((a, b) => b.data.published.getTime() - a.data.published.getTime())
-
-        filteredPostCount = filteredPosts.length
-
-        const grouped = filteredPosts.reduce(
-            (acc, post) => {
-                const year = post.data.published.getFullYear()
-                if (!acc[year]) {
-                    acc[year] = []
-                }
-                acc[year].push(post)
-                return acc
-            },
-            {} as Record<number, Post[]>,
+    if (tags.length > 0) {
+        filteredPosts = filteredPosts.filter(
+            (post) => Array.isArray(post.data.tags) && post.data.tags.some((tag) => tags.includes(tag)),
         )
+    }
 
-        const groupedPostsArray = Object.keys(grouped).map((yearStr) => ({
+    if (categories.length > 0) {
+        filteredPosts = filteredPosts.filter(
+            (post) => post.data.category && categories.includes(post.data.category),
+        )
+    }
+
+    if (uncategorized) {
+        filteredPosts = filteredPosts.filter((post) => !post.data.category)
+    }
+
+    // 按发布时间倒序排序，确保不受置顶影响
+    filteredPosts = filteredPosts.slice().sort((a, b) => b.data.published.getTime() - a.data.published.getTime())
+
+    const filteredPostCount: number = filteredPosts.length
+
+    const grouped = filteredPosts.reduce(
+        (acc, post) => {
+            const year = post.data.published.getFullYear()
+            if (!acc[year]) {
+                acc[year] = []
+            }
+            acc[year].push(post)
+            return acc
+        },
+        {} as Record<number, Post[]>,
+    )
+
+    const groups: Group[] = Object.keys(grouped)
+        .map((yearStr) => ({
             year: Number.parseInt(yearStr, 10),
             posts: grouped[Number.parseInt(yearStr, 10)],
         }))
-
-        groupedPostsArray.sort((a, b) => b.year - a.year)
-
-        groups = groupedPostsArray
-    })
+        .sort((a, b) => b.year - a.year)
 </script>
 
 <div class="card-base px-8 py-6">

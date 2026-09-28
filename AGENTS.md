@@ -1,7 +1,8 @@
 # AGENTS.md — 项目长期指令
 
 > 陈俊亦的个人博客。每次对话开始时自动读取本文件作为上下文。
-> 最后更新：2026-09-24（过渡/分类栏/归档/横幅高矮/品牌标识全部照搬参考站上线；第十节补 9、第五节补 12）
+> 最后更新：2026-09-28（新增第一节"参考源"；两条假缺陷证伪；修掉全站唯一真 404 + Astro Audit 全部提示；
+> 第五节补 13/14 并更正 4、9）
 
 ## 📌 开始工作前先读 [`HANDOFF.md`](./HANDOFF.md)
 
@@ -17,6 +18,26 @@
 
 - 线上地址：http://47.108.230.220/ （目前是 IP，**没有域名**）
 - 文章 26 篇，UI 和提交信息全部为中文
+
+### 参考源（用户说"参考"时，默认指这两个）
+
+本项目基于 **Firefly** 模板裁剪，所以效果对标一律看这一对：
+
+| 用途 | 地址 |
+|---|---|
+| **线上参考站**（看效果、扒编译产物） | https://firefly.cuteleaf.cn/ —— 文章页样例 https://firefly.cuteleaf.cn/posts/firefly/ |
+| **模板源码仓库**（读实现、查组件结构） | https://github.com/CuteLeaf/Firefly |
+
+用法约定：
+
+1. 先扒**参考实现**再动手，不要凭想象自创。参考站是 Astro 产物，直接 `curl` 它的
+   `/_astro/*.css` 与 `page.*.js` / `Layout.astro_*.js` 等 chunk 看真实数值与挂载位置；
+   源码仓库用 sparse / `--filter=blob:none` 浅克隆只取所需目录
+   （本机直连 GitHub API 与 jsDelivr 常不通，见记忆 `github-network-workarounds`）。
+2. 参考里没有的功能要明说"参考站没做"，再决定是否按业界标准做法自行实现
+   （例如窗口缩放 morph 就是 Firefly 本体没有的，见第十节 6）。
+3. 参考站自身也是 Astro + Swup + Tailwind，对比时**只看它编译后的产物**，别被别的技术栈的教程带偏。
+4. 页面过渡这一项已有更细的"1:1 照搬"结论与踩坑，统一见第十节 5。
 
 ## 二、技术栈
 
@@ -88,7 +109,11 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
 
 3. **代码块默认折叠**：超过 15 行自动折叠，预览前 8 行。长代码看起来"消失"了是这个原因。
 
-4. **主题切换用 `data-theme="light|dark"` 属性**，不是 Tailwind 默认的 `dark:` class 策略。写暗色样式时注意。
+4. **主题切换用 `data-theme="light|dark"` 属性**（写在 `<html>` 上），不是媒体查询。
+   `src/styles/global.css:3` 已把 Tailwind 的 dark 变体重映射：
+   `@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));`
+   → **`dark:` 前缀是有效的**，它跟的是 `data-theme` 而非 `prefers-color-scheme`，放心用。
+   （2026-09-28 实测确认；此前本条写作"`dark:` 无效"是错的，害得每次都要重新查。）
 
 5. **文章 frontmatter schema** 定义在 `src/content.config.ts`，字段包括：
    `title` `published` `updated` `draft` `description` `image` `tags` `category` `lang` `pinned` `author` `sourceLink` `licenseName` `licenseUrl` `comment` `password` `passwordHint`
@@ -103,12 +128,11 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
    导致整个页面（含首页）渲染失败。Astro 6 容忍、Astro 7 报错。
    → 已于 2026-09-20 从 `src/pages/[...page].astro` 移除一处。要么写内容，要么整行删掉，别留空标签。
 
-9. 构建产物基线（2026-09-21 Astro 7.3.3 全量升级后确立；**2026-09-23 在 7.3.4 上复验，数字完全一致**）：
-   **37 个页面 / dist 260 个文件 / 26M**，其中 `_astro/` 占 189 个，构建约 7~23s（冷缓存较慢）。
-   升级前是 246 个文件（`_astro/` 175 个），**多出的 14 个全在 `_astro/`**，是依赖升级后 chunk 拆分变化，
-   总体积未变。已验证 dist 内 **starlight / pagefind 产物为 0**（见第九节，那两个是纯 devDep 膨胀）。
-   已知无害警告两条：`logo.png` 的 `INEFFECTIVE_DYNAMIC_IMPORT`（被 Header.astro 静态引入，
-   同时被 CoverImage/ImageWrapper 动态引入）、以及 vite chunk 体积提示。看到它们不用管。
+9. 构建产物基线（**2026-09-28 实测**：新增 `/categories/` 后）：
+   **38 个页面 / dist 259 个文件 / 26M**，其中 `_astro/` 占 187 个，热缓存构建约 5~10s（冷缓存 20s+）。
+   （09-21/09-23 的旧基线是 37 页 / 260 文件 / `_astro` 189；品牌标识重设计删掉 `logo.png` 少 1 个文件。）
+   已验证 dist 内 **starlight / pagefind 产物为 0**（见第九节，那两个是纯 devDep 膨胀）。
+   已知无害警告：vite chunk 体积提示。看到不用管（`logo.png` 的 `INEFFECTIVE_DYNAMIC_IMPORT` 已随文件删除消失）。
 
 10. **`@astrojs/markdown-remark` 必须是显式依赖**。`astro.config.mjs:12` 直接
     `import { unified } from "@astrojs/markdown-remark"`，但 `astro@7.3.4` 与 `@astrojs/mdx@8.0.2`
@@ -132,6 +156,20 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
     文字走导航正文色、semibold、字距略开，**移动端也显示**（旧版 `<640px` 隐藏）。
     旧的 `src/assets/logo.png`（亮绿字标、**带白底**）已删——它叠在半透明导航上会露出一块白框，暗色下更突兀。
     → 改 mark 时保持 ≤8 笔、24px 仍可辨；**别换回位图**（位图带底色就会重蹈白框覆辙）。
+
+13. **每页恰好一个 `<h1>`，且不能为空**（2026-09-28 立的规矩，Astro Audit 三条提示的根因）。
+    `Layout.astro` 在 `#swup-container` 里注入 `<h1 class="sr-only">{title ?? "YILIn"}</h1>`：
+    - 页面**不传 `title` 也不会空**（兜底 `YILIn`，和 `<title>` 一致）——之前首页与 `/2/`、`/3/` 是空 h1。
+    - 正文自带可见 h1 的页面（目前只有 `/about/`，其标题写在 `content/spec/about.md` 里）
+      必须传 **`contentHasH1`**：`<Layout title="关于我" contentHasH1>`，否则两个 h1 重复。
+    - 组件里的区块标题一律用 **`h2`**（悬浮目录 `FloatingToc`、评论区 `comment/index.astro`、
+      相册卡 `AlbumCard`）；`h1` 正下方直接出现 `h3` 是层级跳变。
+    → 新增页面：给 `Layout` 传 `title`；新增区块标题从 `h2` 起，别用 `h3`。
+    → 验证方式：`node` 解析 dist 各页 `<h[1-6]>` 序列，核「h1 数=1 / 无空标题 / 无跳级」。
+
+14. **禁用态的分页箭头不要写 `href="#"`**（`Pagination.astro`）：直接 `href={page.url.prev}`，
+    值为 `undefined` 时 Astro 会省略属性，配合已有的 `aria-disabled` + `tabindex="-1"`。
+    `href="#"` 会被 a11y 审计判定为"跳到页面顶部的假链接"。
 
 ## 六、部署
 
@@ -302,9 +340,10 @@ draft: false
 
 | 写法 | 结论 |
 |---|---|
-| `![说明](/images/xxx.jpg)`，文件放 `public/images/` | ✅ **唯一正确写法**，全站只有 1 篇用对 |
-| `<img src="./xxx.svg">` | ❌ **已坏**：解析成 `/posts/<slug>/xxx.svg`，文件不存在，线上实测 404 |
-| `src="https://100dayscss.com/..."` | ⚠️ 26 处依赖他人服务器，对方开防盗链或关站会集体裂图 |
+| `![说明](/images/xxx.jpg)`，文件放 `public/images/` | ✅ **唯一正确写法**，全站只有 1 篇用对（第6天:26） |
+| `<img src="./xxx.svg">` **写在正文里** | ❌ 真坏：解析成 `/posts/<slug>/xxx.svg`，文件不存在就 404 |
+| `<img src="./xxx.svg">` **写在 ` ``` ` 围栏里** | ✅ **无害**：只是示例代码文本，浏览器不发请求（见第九节"heart.svg 误判"） |
+| `src="https://100dayscss.com/..."` | ⚠️ 依赖他人服务器，对方开防盗链或关站会集体裂图。2026-09-28 实测 12 个真实请求的资源全部 200 |
 
 **封面**：`image` 字段 26 篇**全为空**（10 处写了但值是 `""`），所以列表页封面统一是兜底图
 `assets/postImages/loadingfalse.png`。
@@ -319,7 +358,7 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、`<github>` 卡片、图片网
 → 这些渲染路径等于**零实战验证**。首次写用到它们的文章，必须在 `npm run dev` 里逐项确认再上线，
 别以为配置装了就能用。
 
-## 九、待办与未决（2026-09-21 会话结束时的状态）
+## 九、待办与未决（最近一次更新：2026-09-28）
 
 ### 文章方向，等用户拍板
 
@@ -328,17 +367,27 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、`<github>` 卡片、图片网
 2. **是否开始配文章封面**：可做成"按分类自动配图"，成本低。
 3. **是否要文章脚手架**：一条命令生成带正确 frontmatter 的模板文件。
 
-### 已知缺陷（待修，修完需重新部署）
+### 缺陷现状（2026-09-28 全站实测后）
 
-- 2 处 `<img src="./heart.svg">` 线上 404：`src/content/posts/css100天-第10天.md:167` 和第6天各一处。
-  文件全项目不存在，需补图或删引用。
-- 26 处远程图片依赖 `100dayscss.com`，存在整体失效风险。
-- **代码块的语言徽章和行号从未渲染过**（既存问题，非 2026-09-21 升级引入——已用线上旧构建
-  0.43.1 与新构建 0.44.2 做同篇文章 A/B 对照，两边都是 0 处）。
-  `astro.config.mjs` 里 `pluginLanguageBadge()` 与 `pluginLineNumbers()` 都注册了却没产出。
-  怀疑方向：`pluginLineNumbers()` 可能需要 `defaultProps.showLineNumbers: true` 才生效
-  （现有配置只在 `overridesByLang.shellsession` 里把它设为 false，隐含假设默认开启）；
-  徽章则可能是 `styleOverrides.languageBadge` 的键名在 0.44 下已变。**待查证，别直接改。**
+**已知缺陷：无未修项。** 2026-09-28 用「解析真实元素 + 逐路径核 dist」扫全站 38 页：
+本地引用 106 个 **0 缺失**、远程 57 个 URL 全部 200（100dayscss 12 个 / 本站绝对链接 39 个 / astro.build 1 个 / GitHub 5 个）；
+标题层级审计 **38 页 0 问题**。修的内容见 [`HANDOFF.md`](./HANDOFF.md) 第二节，此处不重复；
+本节只留**长期有用的排查方法**。
+
+- **两条"已知缺陷"当初是误判，别再当真**（2026-09-28 证伪）：
+  ① ~~"2 处 `<img src="./heart.svg">` 线上 404"~~ —— 那两处引用都在 ` ``` ` 围栏内，是示例代码文本，
+     页面上没有 `<img>` 元素、不发请求。grep HTML 能搜到是因为 expressive-code 把整段代码塞进了
+     复制按钮的 `data-code="..."` 属性。
+  ② ~~"代码块的语言徽章和行号从未渲染过"~~ —— **两者一直正常渲染**。徽章是
+     `[data-language]::before`（`content: attr(data-language)`）——伪元素**不在 HTML 文本里**，
+     按标签去 grep 必然搜不到；行号是 `div.gutter > div.ln`（第10天那页实测 124 个），
+     之前用 `ec-line-numbers` 这种不存在的类名去查，自然"零产出"。
+  → **通则：查渲染缺陷要按产物实际结构验证，别用"搜 HTML 字符串"和臆想的类名当证据。**
+  → `<img>` 是 void element，解析器不会把它挂成 `<pre>` 的后代，所以"跳过 pre 子树"的 HTML 解析法也会漏判；
+     正确做法是**按源码 ` ``` ` 围栏逐行判定**（围栏内=示例文本，围栏外=真实元素），再核 `dist` 里文件在不在。
+- **远程图片依赖 `100dayscss.com`**：实测 12 个 distinct 资源 / 13 处真实请求（另有大量写在围栏内的示例引用，不发请求）。
+  对方关站或开防盗链会集体裂图，属**外部风险**，不是当前缺陷。
+
 
 ### 版本天花板（撞过墙了，别反复尝试）
 

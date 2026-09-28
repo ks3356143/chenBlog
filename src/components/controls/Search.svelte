@@ -11,7 +11,6 @@
 	let loading = $state(false);
 	let devNotice = $state(false);
 	let mobileOpen = $state(false);
-	let desktopFocused = $state(false);
 	/** @type {HTMLInputElement | null} */
 	let desktopInput = $state(null);
 	/** @type {HTMLInputElement | null} */
@@ -24,8 +23,10 @@
 
 	const RESULT_LIMIT = 12;
 
-	// 桌面：有焦点或有词就出结果层；移动：点按钮才出
-	const panelShown = $derived(mobileOpen || (desktopFocused && query.trim().length > 0));
+	// 只要有关键词就显示结果层（桌面端），移动端由按钮控制。
+	// 不依赖 focus 事件翻状态：焦点事件在某些环境（未聚焦的 iframe、iOS Safari）不触发，
+	// 会出现"输入了但结果层永远不出"。
+	const panelShown = $derived(mobileOpen || query.trim().length > 0);
 
 	async function ensureIndex() {
 		if (pf || devNotice) return pf;
@@ -90,7 +91,9 @@
 
 	function closeAll() {
 		mobileOpen = false;
-		desktopFocused = false;
+		// 结果层由 query 驱动，所以关闭要清词（参考站 closeSearchPanel 同样清 keywordDesktop）
+		query = "";
+		results = [];
 		loading = false;
 	}
 
@@ -143,18 +146,15 @@
 		</svg>
 		<input
 			bind:this={desktopInput}
-			type="search"
+			type="text"
+			inputmode="search"
 			placeholder="搜索"
 			aria-label="站内搜索"
 			autocomplete="off"
 			class="h-full w-40 border-0 bg-transparent pl-8 text-base font-bold outline-none transition-all duration-200
 			       placeholder:text-30 focus:w-60 active:w-60"
 			bind:value={query}
-			onfocus={() => {
-				desktopFocused = true;
-				ensureIndex();
-			}}
-			onblur={() => setTimeout(() => (desktopFocused = false), 120)}
+			onfocus={ensureIndex}
 			onkeydown={onKeydown}
 		/>
 	</div>
@@ -201,7 +201,8 @@
 					</svg>
 					<input
 						bind:this={mobileInput}
-						type="search"
+						type="text"
+						inputmode="search"
 						placeholder="搜索"
 						aria-label="站内搜索"
 						autocomplete="off"
@@ -279,9 +280,5 @@
 		background: none;
 		color: var(--primary);
 		font-weight: 700;
-	}
-
-	:global(.search-panel input::-webkit-search-cancel-button) {
-		display: none;
 	}
 </style>

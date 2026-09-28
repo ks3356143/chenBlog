@@ -69,3 +69,23 @@
 .btn-card.disabled {
     @apply pointer-events-none text-black/10 dark:text-white/10;
 }
+
+/* ===== 系列手风琴（/series/ 页 + 文章页 SeriesNav）=====
+   布局类必须放全局样式表：Swup 只换容器不换 head，组件 scoped 样式在"首进的那类页面"里不存在，
+   从 /archive/ 软导航进文章页就会丢样式（同 AGENTS 十-2 的 PostCard 事故）。 */
+.series-acc-header[aria-expanded="true"] .acc-arrow,
+.series-nav-toggle[aria-expanded="true"] .details-arrow {
+    @apply rotate-180;
+}
+.series-acc-content,
+.series-nav-content {
+    @apply opacity-0;
+}
+.series-acc-content[data-open="true"],
+.series-nav-content[data-open="true"] {
+    @apply opacity-100;
+}
+/* 展开后头部与列表相连，收起动画走完才恢复圆角 */
+.series-nav.is-expanded .series-nav-toggle {
+    @apply rounded-b-none;
+}

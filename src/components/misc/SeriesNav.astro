@@ -1,0 +1,127 @@
+---
+import { Icon } from "astro-icon/components"
+import type { PostForList } from "@/utils/content-utils"
+import { getPostUrlBySlug } from "@/utils/url-utils"
+
+interface Props {
+	seriesName: string
+	posts: PostForList[]
+	currentPostId?: string
+}
+
+const { seriesName, posts, currentPostId } = Astro.props
+---
+
+{
+	posts.length > 0 && (
+		<div class="series-nav my-3 overflow-hidden rounded-xl border border-(--primary)/25" data-pagefind-ignore>
+			<button
+				type="button"
+				aria-expanded="false"
+				class="series-nav-toggle group flex w-full cursor-pointer select-none items-center gap-2 rounded-lg bg-(--btn-plain-bg-hover) px-3 py-1.5 text-left"
+			>
+				<Icon
+					name="material-symbols:format-list-bulleted"
+					aria-hidden="true"
+					class="shrink-0 text-lg text-(--primary)"
+				/>
+				<span class="font-bold text-base text-black/80 transition group-hover:text-(--primary) dark:text-white/80">
+					属于系列：{seriesName}
+				</span>
+				<span class="ml-auto shrink-0 rounded-full bg-(--btn-regular-bg) px-2 py-0.5 text-xs text-(--btn-content) transition">
+					{posts.length}
+				</span>
+				<Icon
+					name="material-symbols:keyboard-arrow-down-rounded"
+					aria-hidden="true"
+					class="details-arrow shrink-0 text-[1.25rem] text-(--primary) transition-transform duration-300"
+				/>
+			</button>
+
+			<div class="series-nav-content max-h-0 overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out">
+				<ol class="mt-1 flex flex-col">
+					{
+						posts.map((post, idx) => {
+							const part = `第 ${idx + 1} 篇`
+							const isCurrent = !!currentPostId && post.id === currentPostId
+							const rowClass = [
+								"group flex items-center gap-3 rounded-lg px-3 py-1.5 transition-all",
+								!isCurrent && "hover:bg-black/5 active:scale-[0.98] dark:hover:bg-white/5",
+								idx < posts.length - 1 && "border-b border-dashed border-(--line-divider)",
+							]
+							return isCurrent ? (
+								<li class:list={rowClass}>
+									<span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-(--btn-regular-bg) text-sm font-bold text-(--primary) transition">
+										{idx + 1}
+									</span>
+									<span class="min-w-0 flex-1 truncate font-bold text-sm text-black/75 transition group-hover:text-(--primary) dark:text-white/75">
+										{post.data.title}
+									</span>
+									<span
+										aria-current="page"
+										title={part}
+										class="ml-auto shrink-0 rounded-sm bg-(--btn-regular-bg) px-1.5 py-0.5 text-xs text-(--primary)"
+									>
+										本篇
+									</span>
+								</li>
+							) : (
+								<li>
+									<a
+										href={getPostUrlBySlug(post.id)}
+										title={part}
+										aria-label={part}
+										class:list={rowClass}
+									>
+										<span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-(--btn-regular-bg) text-sm font-bold text-(--primary) transition">
+											{idx + 1}
+										</span>
+										<span class="min-w-0 flex-1 truncate font-bold text-sm text-black/75 transition group-hover:text-(--primary) dark:text-white/75">
+											{post.data.title}
+										</span>
+										<Icon
+											name="material-symbols:chevron-right-rounded"
+											aria-hidden="true"
+											class="shrink-0 text-xl text-black/15 transition group-hover:translate-x-0.5 group-hover:text-(--primary) dark:text-white/15"
+										/>
+									</a>
+								</li>
+							)
+						})
+					}
+				</ol>
+			</div>
+		</div>
+	)
+}
+
+<script is:inline>
+	function onSeriesNavToggle(e) {
+		var btn = e.target && e.target.closest ? e.target.closest(".series-nav-toggle") : null;
+		if (!btn) return;
+		var box = btn.closest(".series-nav");
+		var content = box ? box.querySelector(".series-nav-content") : null;
+		if (!content) return;
+
+		var isOpen = btn.getAttribute("aria-expanded") === "true";
+		var next = !isOpen;
+		btn.setAttribute("aria-expanded", String(next));
+		content.setAttribute("data-open", String(next));
+		content.style.maxHeight = next ? content.scrollHeight + "px" : "0px";
+
+		if (next) {
+			box.classList.add("is-expanded");
+		} else {
+			// 收起动画走完再恢复圆角（与 max-height 过渡时长一致）
+			setTimeout(function () {
+				if (box && btn.getAttribute("aria-expanded") !== "true") box.classList.remove("is-expanded");
+			}, 300);
+		}
+	}
+
+	// 事件委托 + 幂等标志：Swup 换内容不换 head，重跑内联脚本时不能重复注册
+	if (!window.__seriesNavInit) {
+		window.__seriesNavInit = true;
+		document.addEventListener("click", onSeriesNavToggle);
+	}
+</script>

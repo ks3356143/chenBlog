@@ -114,6 +114,60 @@ export async function getSortedPostsList(): Promise<PostForList[]> {
     return sortedPostsList
 }
 
+// 系列内排序：按 seriesOrder 升序，未设置者排最后；再按发布日期降序、标题兜底
+// 判空必须用 !== undefined，否则序号 0 会被当成「未设置」排到最后
+function sortBySeriesOrder(a: PostForList, b: PostForList): number {
+    const ao = a.data.seriesOrder
+    const bo = b.data.seriesOrder
+    if (ao !== undefined && bo !== undefined) {
+        if (ao !== bo) return ao - bo
+    } else if (ao === undefined && bo !== undefined) {
+        return 1
+    } else if (ao !== undefined && bo === undefined) {
+        return -1
+    }
+    return b.data.published.getTime() - a.data.published.getTime() || a.data.title.localeCompare(b.data.title)
+}
+
+// 4.获取当前文章所属系列的全部文章（按系列序号排序）；未设 series 返回 null
+export async function getSeriesPosts(
+    currentPost: CollectionEntry<"posts">,
+): Promise<{ seriesName: string; posts: PostForList[]; currentIndex: number } | null> {
+    const seriesName = currentPost.data.series.trim()
+    if (!seriesName) return null
+
+    const allPosts = await getSortedPostsList()
+    const posts = allPosts.filter((p) => p.data.series.trim() === seriesName)
+    posts.sort(sortBySeriesOrder)
+
+    const currentIndex = posts.findIndex((p) => p.id === currentPost.id)
+    return { seriesName, posts, currentIndex }
+}
+
+export type Series = { name: string; count: number; posts: PostForList[] }
+
+// 5.获取全站所有系列（按 series 分组，组内按序号排序，组间按篇数降序）；供 /series/ 页使用
+export async function getSeriesList(): Promise<Series[]> {
+    const allPosts = await getSortedPostsList()
+
+    const groupMap = new Map<string, PostForList[]>()
+    for (const post of allPosts) {
+        const name = post.data.series.trim()
+        if (!name) continue
+        if (!groupMap.has(name)) groupMap.set(name, [])
+        groupMap.get(name)?.push(post)
+    }
+
+    const seriesList: Series[] = []
+    for (const [name, posts] of groupMap) {
+        posts.sort(sortBySeriesOrder)
+        seriesList.push({ name, count: posts.length, posts })
+    }
+
+    seriesList.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+    return seriesList
+}
+
 /**
  * 对标题进行分词，支持中英文混合
  * 使用 Intl.Segmenter 对中文分词，英文按空格分词
@@ -143,7 +197,7 @@ function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
 }
 
 /**
- * 4.获取相关文章推荐
+ * 6.获取相关文章推荐
  * 评分公式: totalScore = tagMatchScore + titleSimilarityScore + timeFreshnessScore + categoryBonus
  * - tagMatchScore (0-100): 标签 Jaccard 相似度 × 100
  * - titleSimilarityScore (0-100): 标题分词 Jaccard 相似度 × 100

@@ -1,8 +1,8 @@
 # AGENTS.md — 项目长期指令
 
 > 陈俊亦的个人博客。每次对话开始时自动读取本文件作为上下文。
-> 最后更新：2026-09-28（新增第一节"参考源"；两条假缺陷证伪；修掉全站唯一真 404 + Astro Audit 全部提示；
-> 第五节补 13/14 并更正 4、9）
+> 最后更新：2026-09-28（晚：新增 /series/ + /tags/ + 顶部「文章」下拉、frontmatter 加 series/seriesOrder，
+> 第五节补 16、17，改 5、9；早前：新增第一节"参考源"、两条假缺陷证伪、修掉全站唯一真 404 与全部 Audit 提示）
 
 ## 📌 开始工作前先读 [`HANDOFF.md`](./HANDOFF.md)
 
@@ -10,6 +10,8 @@
 
 用户会定期删除会话记录，所以对话上下文不可依赖。新会话接手时：
 先看 `HANDOFF.md` 第一节知道**从哪继续**，再看本文件查**规则与坑位**。
+用户说「**参考**」时，基准固定是这两个（详见第一节「参考源」）：
+https://firefly.cuteleaf.cn/ 与 https://github.com/CuteLeaf/Firefly 。
 每次会话结束前必须更新 `HANDOFF.md`（见第七节收尾铁律）。
 
 ## 一、这是什么项目
@@ -75,10 +77,11 @@ npm run preview   # 预览构建产物
 astro.config.mjs        # 所有插件和 markdown 处理链的唯一配置入口
 src/content.config.ts   # 文章 frontmatter schema（改文章字段前必看）
 src/config/siteConfig.ts    # 站点总开关：分页数、图片格式、页面开关、site_url
+src/config/navBarConfig.ts  # 顶部菜单项（含「文章」子菜单）——改菜单只改这里
 src/config/                 # 另有 backgroundWallpaper / commentConfig / galleryConfig
 src/content/posts/          # 26 篇文章（24 .md + 2 .mdx）；images/ 是空的历史遗留目录
 src/content/spec/           # 单页内容（about 等）
-src/pages/                  # 路由：about / archive / guestbook / gallery / posts/[...slug] / [...page]
+src/pages/                  # 路由：about / archive / categories / tags / series / guestbook / gallery / posts/[...slug] / [...page]
 src/pages/rss.xml.js        # RSS 已实现
 src/layouts/                # BaseLayout.astro + Layout.astro
 src/plugins/                # 8 个自研 remark/rehype 插件（见下）
@@ -116,8 +119,10 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
    （2026-09-28 实测确认；此前本条写作"`dark:` 无效"是错的，害得每次都要重新查。）
 
 5. **文章 frontmatter schema** 定义在 `src/content.config.ts`，字段包括：
-   `title` `published` `updated` `draft` `description` `image` `tags` `category` `lang` `pinned` `author` `sourceLink` `licenseName` `licenseUrl` `comment` `password` `passwordHint`
+   `title` `published` `updated` `draft` `description` `image` `tags` `category` `series` `seriesOrder` `lang` `pinned` `author` `sourceLink` `licenseName` `licenseUrl` `comment` `password` `passwordHint`
    新增字段必须改 schema，否则构建报错。支持 `password` 加密文章。
+   `series`（空=不归入任何系列）+ `seriesOrder`（系列内序号，可为 0）驱动 `/series/` 页与文章页系列导航盒，
+   见第十六项；**写完文章要顺手写这两个**，否则该篇不进系列。
 
 6. **图片统一输出 webp，质量 80**（未开 avif）。
 
@@ -128,9 +133,9 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
    导致整个页面（含首页）渲染失败。Astro 6 容忍、Astro 7 报错。
    → 已于 2026-09-20 从 `src/pages/[...page].astro` 移除一处。要么写内容，要么整行删掉，别留空标签。
 
-9. 构建产物基线（**2026-09-28 实测**：新增 `/categories/` 后）：
-   **38 个页面 / dist 259 个文件 / 26M**，其中 `_astro/` 占 187 个，热缓存构建约 5~10s（冷缓存 20s+）。
-   （09-21/09-23 的旧基线是 37 页 / 260 文件 / `_astro` 189；品牌标识重设计删掉 `logo.png` 少 1 个文件。）
+9. 构建产物基线（**2026-09-28 实测**：新增 `/series/`、`/tags/` 后）：
+   **40 个页面 / dist 261 个文件 / 27M**，其中 `_astro/` 占 187 个，热缓存构建约 3.6~7s（冷缓存 20s+）。
+   （历史：09-21/09-23 是 37 页 / 260 文件；09-24 删 `logo.png` 并加 `/categories/` → 38 页 / 259 文件。）
    已验证 dist 内 **starlight / pagefind 产物为 0**（见第九节，那两个是纯 devDep 膨胀）。
    已知无害警告：vite chunk 体积提示。看到不用管（`logo.png` 的 `INEFFECTIVE_DYNAMIC_IMPORT` 已随文件删除消失）。
 
@@ -175,6 +180,32 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
     产物是 `<a href="#" data-encoded-email="Base64..." onclick="...atob...this.href='mailto:'+解码值">`，
     点击时才还原成 `mailto:`。所以 `/about/` 里搜到 `href="#"` + 一串 base64 **属正常**，
     别当 a11y 死链去"修"（第十节那条说的是分页，两者不同）。
+
+16. **顶部菜单是配置驱动的，改菜单只改 `src/config/navBarConfig.ts`**（2026-09-28 起，照 Firefly）。
+    `Header.astro` 与 `MobileMenu.astro` 都从 `navBarLinks` 渲染，带 `children` 的项（现在是「文章」→
+    归档/分类/标签/系列）桌面渲染成 `.dropdown-container` 下拉、移动端渲染成 `.mobile-dropdown` 子菜单。
+    **别再往两个组件里硬写 `<a>`**——那样桌面和移动会不同步。图标名可以是 `src/icons/` 下的本地图标
+    （`home` `archive` `chat` `xiangce` `about` `arrow-right`）或 Iconify 全名（`material-symbols:layers` 等）。
+    - 桌面下拉的展开由 CSS 三种情形触发：hover、`:focus-within`、`:has(.dropdown-trigger[aria-expanded="true"])`
+      （第三种是**触屏没有 hover 才加的 click 切换，Firefly 自己没有**，别当成照搬）。
+    - 手风琴类交互（下拉、`/series/` 系列卡片、文章页 SeriesNav）一律**事件委托 + `window.__xxxInit` 幂等标志**，
+      因为 `@swup/scripts-plugin` 会重跑容器内脚本（第十节 2）。Header 在容器外，它的脚本只跑一次，无需幂等标志。
+    - **只在部分页面渲染的组件，布局类 CSS 必须放全局样式表**（现已放在
+      `src/styles/singles/mainSingles.css` 的 `.series-acc-*` / `.series-nav-*`）；
+      Header 系组件每页都渲染，所以 `DropdownMenu.astro` 的 scoped `<style>` 是安全的。
+    - 验证手段：定宽 iframe（1440 / 375）读 `getComputedStyle` + `getBoundingClientRect`，
+      并临时注入 `transition:none!important` 取稳定态——隐藏标签页里过渡不推进，直接读会读到 0（误判为坏了）。
+
+17. **系列（`/series/`）与标签（`/tags/`）页**（2026-09-28 加，照 Firefly）：
+    - 聚合逻辑在 `src/utils/content-utils.ts`：`getSeriesList()`（组内按 `seriesOrder` 升序，
+      组间按篇数降序）、`getSeriesPosts(post)`（返回 `{seriesName, posts, currentIndex}`，
+      该篇没写 `series` 时返回 `null`）。**序号判空必须用 `!== undefined`**，否则 `seriesOrder: 0` 会被排到最后。
+    - `/series/` 是**单页手风琴**，Firefly 没有 `/series/<slug>/` 详情页，我们也没做；
+      `/tags/` 是标签总览 + Top 10 排行，点具体标签仍跳 `/archive/?tag=xx`（沿用 `getTagUrl()`，归档页没改）。
+    - 现有 26 篇：25 篇 `series: "CSS100Day"`（`seriesOrder` = 天数，第 2~28 天，缺 1 和 11），
+      1 篇 `series: "CodePen"` 序号 1。系列名跟标题前缀 `CSS100Day(N)-` 保持一致，**与 tag 的 `CSS100天` 是两套写法**，
+      改的时候别混。
+    - 新页面记得给 `Layout` 传 `title`（`系列-Yilin` / `标签-Yilin`），区块标题从 `h2` 起（见第十三项）。
 
 ## 六、部署
 
@@ -324,8 +355,7 @@ curl -s -o /dev/null -w "%{http_code}\n" \
 
 ### frontmatter
 
-26 篇**实际只用了 7 个字段**，schema 里另外 9 个（`pinned` `author` `sourceLink` `licenseName`
-`licenseUrl` `comment` `password` `passwordHint` `lang`）零使用：
+文章的 frontmatter 写法（新增字段必须先改 `src/content.config.ts` 的 schema，见第五节 5）：
 
 ```yaml
 ---
@@ -335,11 +365,16 @@ updated: 2026-09-21
 description: "列表页显示，按 2 行截断（siteConfig.descriptionLines）"
 tags: [CSS100天, css]
 category: "设计灵感"
+series: "CSS100Day"
+seriesOrder: 29
 draft: false
 ---
 ```
 
-`category` 会进分类导航栏，要新增分类值前先确认。
+26 篇实测**只出现了 10 个字段名**：上例那 9 个（`title` `published` `updated` `description` `tags` `category`
+`series` `seriesOrder` `draft`）人人都有，`image` 只有 10 篇写了、且值全是 `""`（所以封面全走兜底图）。
+schema 里其余 8 个（`pinned` `author` `sourceLink` `licenseName` `licenseUrl` `comment` `password` `lang`）零使用。
+`category` 会进分类导航栏，要新增分类值前先确认；`series` 决定文章是否出现在 `/series/`（见第五节 17）。
 
 ### 图片：最容易出事的地方
 

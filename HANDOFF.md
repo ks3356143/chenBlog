@@ -28,7 +28,7 @@
 
 ### 🟠 悬着的事，需要用户点头
 
-1. **部署上面那批** + **推送远端**（本地领先 `origin/main` 27 个提交；铁律：推送前先问）。
+1. **部署上面那批** + **推送远端**（本地领先 `origin/main` 29 个提交；铁律：推送前先问）。
 2. **about 页对外邮箱**：已统一到 `314298729@qq.com`；若 `xiaye@msn.com` 才是收件地址，显示文本也要一起换。
 3. **`storybook` 技能搬不进仓库**：`E:\works\skills\storybook` 在本机不存在（E 盘没有 `works` 目录；
    C/D/E 盘按目录名与 `SKILL.md` 内容全搜过，也没有任何 storybook 技能）。它已作为插件技能注册
@@ -111,7 +111,7 @@ CategoryBar（不隐藏 + 软高亮 + 更多 pill）、`/categories/` 页、归�
 |---|---|
 | 本地 HEAD | 本次功能 4 笔：`0ea14c3` 文章页接入 SeriesNav、`2c51e26` 导航配置化+下拉、`9b5ec12` /series/ + /tags/ + SeriesNav、`39c9ae1` schema + 26 篇 frontmatter（其前是白天 4 笔体检与文档提交，末为 `1e1b365`） |
 | 工作区 | 只剩 AGENTS/HANDOFF 文档改动（收尾提交） |
-| 与远端 | **ahead 28**，全部未推送（推送前先问） |
+| 与远端 | **ahead 29**，全部未推送（推送前先问） |
 | 本地构建 | 退出码 0，**40 页 / dist 261 文件 / `_astro` 187 / 27M**，热缓存 3.6~7s；引用扫描 **0 缺失**、标题审计 **0 问题** |
 | `npm audit` | **0 vulnerabilities** |
 | 线上站点 | 停在 09-28 白天那版（5 处体检修复）；**下拉 / /series/ / /tags/ / SeriesNav 均未上线** |

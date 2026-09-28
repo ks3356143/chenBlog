@@ -56,7 +56,7 @@ const getPageUrl = (p: number) => {
 	<div class="flex flex-row justify-center gap-3" role="navigation" aria-label="文章列表">
 		<!-- 前进 -->
 		<a
-			href={page.url.prev || "#"}
+			href={page.url.prev}
 			aria-label="上一页"
 			aria-disabled={page.url.prev === undefined ? "true" : false}
 			tabindex={page.url.prev === undefined ? "-1" : "0"}
@@ -96,7 +96,7 @@ const getPageUrl = (p: number) => {
 		</div>
 		<!-- 后退 -->
 		<a
-			href={page.url.next || "#"}
+			href={page.url.next}
 			aria-label="下一页"
 			aria-disabled={page.url.next === undefined ? "true" : false}
 			tabindex={page.url.next === undefined ? "-1" : "0"}

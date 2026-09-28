@@ -28,6 +28,8 @@ import type { PageSEO } from "@/components/SEO.astro"
 
 interface Props extends PageSEO {
     title?: string
+    // 正文自带可见 h1 时置 true，避免与下面的隐藏 h1 重复
+    contentHasH1?: boolean
     postSlug?: string
     headings?: MarkdownHeading[]
     bannerPostMeta?: {
@@ -39,7 +41,7 @@ interface Props extends PageSEO {
     }
 }
 
-const { title, bannerPostMeta, postSlug, headings } = Astro.props
+const { title, contentHasH1, bannerPostMeta, postSlug, headings } = Astro.props
 
 // SEO所需内容
 const { frontmatter } = Astro.props
@@ -98,7 +100,11 @@ const postCategory = isPostPage ? String((frontmatter as { category?: unknown } 
                     <!-- 主内容区域slot区域->此时暂未集成swup后续集成 -->
                     <main id="swup-container" class="transition-main" data-current-post-category={postCategory}>
                         <!-- 每个页面均设置隐藏title，用于SEO -->
-                        <h1 class="sr-only">{title}</h1>
+                        {
+                            !contentHasH1 && (
+                                <h1 class="sr-only">{title ?? "YILIn"}</h1>
+                            )
+                        }
                         <!-- TODO:网格布局的页面展示 -->
                         <div id="content-wrapper" class="onload-animation transition-leaving">
                             <slot />

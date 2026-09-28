@@ -209,6 +209,9 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
     - **只在部分页面渲染的组件，布局类 CSS 必须放全局样式表**（现已放在
       `src/styles/singles/mainSingles.css` 的 `.series-acc-*` / `.series-nav-*`）；
       Header 系组件每页都渲染，所以 `DropdownMenu.astro` 的 scoped `<style>` 是安全的。
+    - ⚠️ **别在 `.astro` 的三元分支里写 `class:list=[..., cond && "x"]`**：本项目实测这样渲染出来是
+      `class=""`（顶级菜单项的 `dropdown-item btn-plain h-10` 全丢，移动端菜单直接错乱）。
+      分支里的元素用普通 `class="…"` 字符串；要确认就看产物 HTML 的 class 值，别只看源码。
     - 验证手段：定宽 iframe（1440 / 375）读 `getComputedStyle` + `getBoundingClientRect`，
       并临时注入 `transition:none!important` 取稳定态——隐藏标签页里过渡不推进，直接读会读到 0（误判为坏了）。
     - **本站面板是直角**。Firefly 的圆角走 `--radius-large`，我们裁剪主题时**没把这个变量带过来**

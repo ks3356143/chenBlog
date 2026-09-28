@@ -1,11 +1,12 @@
 ---
 import type { GetStaticPaths } from "astro"
 import { render } from "astro:content"
-import { getSortedPosts, getRelatedPosts } from "@/utils/content-utils"
+import { getSortedPosts, getRelatedPosts, getSeriesPosts } from "@/utils/content-utils"
 import Layout from "@/layouts/Layout.astro"
 import Markdown from "@/components/commons/Markdown.astro"
 import KatexManager from "@/components/features/KatexManager.astro"
 import RecommendedPost from "@/components/layout/subcomps/RecommendedPost.astro"
+import SeriesNav from "@/components/misc/SeriesNav.astro"
 import { Icon } from "astro-icon/components"
 import PostMeta from "@/components/layout/PostMeta.astro"
 import CoverImage from "@/components/commons/CoverImage.astro"
@@ -51,6 +52,9 @@ const bannerPostMeta = {
 
 // 获取相关文章和推荐文章
 const relatedPosts = await getRelatedPosts(post, 5)
+
+// 所属系列（未设 series 时为 null，不渲染系列导航盒）
+const seriesData = await getSeriesPosts(post)
 ---
 
 <Layout title={post.data.title} bannerPostMeta={bannerPostMeta} postSlug={post.id} headings={headings} frontmatter={remarkPluginFrontmatter}>
@@ -102,6 +106,13 @@ const relatedPosts = await getRelatedPosts(post, 5)
                     hideUpdateDate={false}
                 />
             </div>
+
+            <!-- 所属系列导航盒 -->
+            {
+                seriesData && (
+                    <SeriesNav seriesName={seriesData.seriesName} posts={seriesData.posts} currentPostId={post.id} />
+                )
+            }
 
             <!-- 文章封面：可无 -->
             {

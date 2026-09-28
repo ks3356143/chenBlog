@@ -1,6 +1,6 @@
 ---
 import ThemeIcon from "@/components/oneSize/ThemeIcon.astro"
-import Search from "@/components/uiverse/Search.astro"
+import Search from "@/components/controls/Search.svelte"
 import Menu from "@/assets/menu.svg"
 import MobileMenu from "@/components/headers/MobileMenu.astro"
 import DropdownMenu from "@/components/headers/DropdownMenu.astro"
@@ -39,7 +39,7 @@ import { navBarLinks } from "@/config/navBarConfig"
 			</div>
 
 			<div class="flex items-center justify-center space-x-1">
-				<Search />
+				<Search client:load />
 				<div class="flex items-center justify-center space-x-1">
 					<ThemeIcon />
 					<div id="nav-menu-panel" class="lg:hidden">

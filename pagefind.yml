@@ -1,0 +1,13 @@
+# Pagefind 静态索引配置（在 astro build 之后由 `npm run build` 自动执行）
+# 输出目录：dist/pagefind/，随 dist 一起部署，无需服务器改动
+
+# 这些选择器的内容不进索引
+exclude_selectors:
+  # 公式由 KaTeX 渲染成一堆 span，进索引只会产生乱码命中
+  - "span.katex"
+  - "span.katex-display"
+  # 显式标记过不参与搜索的元素（锚点图标、系列导航盒等）
+  - "[data-pagefind-ignore]"
+  # 搜索面板自身，否则搜"搜索"能搜到搜索结果区
+  - ".search-panel"
+  - "#search-panel"

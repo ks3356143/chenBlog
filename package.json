@@ -4,8 +4,9 @@
   "version": "0.1.1",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && pagefind --site dist",
     "preview": "astro preview",
+    "icons": "node scripts/generate-icons.mjs",
     "astro": "astro"
   },
   "dependencies": {
@@ -41,6 +42,7 @@
     "katex": "^0.18.7",
     "mdast-util-to-string": "^4.0.0",
     "mermaid": "^11.17.2",
+    "pagefind": "^1.5.2",
     "prettier": "^3.8.4",
     "prettier-plugin-astro": "^1.0.1",
     "prettier-plugin-tailwindcss": "^0.8.0",
@@ -53,11 +55,11 @@
     "remark-directive": "^4.0.0",
     "remark-math": "^6.0.0",
     "remark-sectionize": "^2.1.0",
+    "sharp": "^0.35.5",
     "stylus": "^0.64.0",
     "typescript": "^6.0.3"
   },
   "allowScripts": {
-    "sharp@0.35.4": true,
     "esbuild@0.28.2": true
   }
 }

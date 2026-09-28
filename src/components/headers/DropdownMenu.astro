@@ -71,11 +71,11 @@ const hasChildren = children.length > 0
 		@apply pointer-events-none absolute top-full left-0 z-50 pt-2;
 	}
 
-	/* 面板外观与移动端菜单同族；--panel-bg 本身随 data-theme 切换，无需再写暗色覆盖 */
+	/* 面板外观与移动端菜单同族；--panel-bg 本身随 data-theme 切换，无需再写暗色覆盖。
+	   全站面板都是直角（参考站的圆角变量在我们这里没有定义），所以这里不加 border-radius。 */
 	.dropdown-panel {
 		min-width: calc(var(--spacing) * 48);
 		border: 1px solid var(--line-divider);
-		border-radius: 0.75rem;
 		background-color: var(--panel-bg);
 		box-shadow: var(--shodow-md);
 		@apply flex flex-col px-2 py-2;
@@ -108,7 +108,7 @@ const hasChildren = children.length > 0
 	}
 
 	.dropdown-item {
-		@apply flex items-center gap-3 rounded-lg px-3 py-2 font-medium whitespace-nowrap transition-colors duration-150;
+		@apply flex items-center gap-3 px-3 py-2 font-medium whitespace-nowrap transition-colors duration-150;
 		color: color-mix(in oklab, var(--color-black, #000) 75%, transparent);
 	}
 
@@ -126,12 +126,22 @@ const hasChildren = children.length > 0
 	// 桌面「文章」下拉的键盘与点击交互。Header 在 Swup 容器外、不随切页重建，故只注册一次。
 	const dropdowns = document.querySelectorAll<HTMLElement>("[data-dropdown]")
 
+	// 收起要把焦点也移走：面板显隐挂了 :focus-within，点完子项跳页后若焦点还留在里面，
+	// 鼠标移出也不会再隐藏
+	const close = (dropdown: HTMLElement) => {
+		dropdown.querySelector("[data-dropdown-trigger]")?.setAttribute("aria-expanded", "false")
+		if (dropdown.contains(document.activeElement)) (document.activeElement as HTMLElement)?.blur()
+	}
+
 	for (const dropdown of dropdowns) {
 		const trigger = dropdown.querySelector<HTMLElement>("[data-dropdown-trigger]")
 		const items = Array.from(dropdown.querySelectorAll<HTMLElement>("[data-dropdown-item]"))
 		if (!trigger) continue
 
-		const setOpen = (open: boolean) => trigger.setAttribute("aria-expanded", String(open))
+		const setOpen = (open: boolean) => {
+			trigger.setAttribute("aria-expanded", String(open))
+			if (!open && dropdown.contains(document.activeElement)) (document.activeElement as HTMLElement).blur()
+		}
 		const isOpen = () => trigger.getAttribute("aria-expanded") === "true"
 
 		trigger.addEventListener("click", () => setOpen(!isOpen()))
@@ -150,6 +160,9 @@ const hasChildren = children.length > 0
 		})
 
 		items.forEach((item, index) => {
+			// 点子项要收起，否则跳完页 aria-expanded 还是 true，面板一直挂着
+			item.addEventListener("click", () => setOpen(false))
+
 			item.addEventListener("keydown", e => {
 				if (e.key === "ArrowDown") {
 					e.preventDefault()
@@ -168,8 +181,12 @@ const hasChildren = children.length > 0
 	// 点击其它地方收起
 	document.addEventListener("click", e => {
 		for (const dropdown of dropdowns) {
-			if (dropdown.contains(e.target as Node)) continue
-			dropdown.querySelector("[data-dropdown-trigger]")?.setAttribute("aria-expanded", "false")
+			if (!dropdown.contains(e.target as Node)) close(dropdown)
 		}
+	})
+
+	// 兜底：Swup 换完内容后一律收起（键盘 Enter 触发跳转等路径不走上面的 click）
+	document.addEventListener("swup:contentReplaced", () => {
+		for (const dropdown of dropdowns) close(dropdown)
 	})
 </script>

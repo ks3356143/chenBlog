@@ -171,6 +171,11 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
     值为 `undefined` 时 Astro 会省略属性，配合已有的 `aria-disabled` + `tabindex="-1"`。
     `href="#"` 会被 a11y 审计判定为"跳到页面顶部的假链接"。
 
+15. **邮箱链接在 HTML 里长这样是设计使然，不是缺陷**（`rehype-email-protection`，第五节顶部插件列表里那个）：
+    产物是 `<a href="#" data-encoded-email="Base64..." onclick="...atob...this.href='mailto:'+解码值">`，
+    点击时才还原成 `mailto:`。所以 `/about/` 里搜到 `href="#"` + 一串 base64 **属正常**，
+    别当 a11y 死链去"修"（第十节那条说的是分页，两者不同）。
+
 ## 六、部署
 
 **部署方式：本地构建 + 上传 `dist`，服务器不跑 build。**（2026-09-20 起）

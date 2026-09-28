@@ -49,8 +49,8 @@
 		}
 	}
 
-	async function runSearch() {
-		const q = query.trim();
+	/** @param {string} q */
+	async function runSearch(q) {
 		if (!q) {
 			results = [];
 			loading = false;
@@ -73,9 +73,9 @@
 	}
 
 	$effect(() => {
-		query;
+		const q = query.trim();
 		clearTimeout(timer);
-		timer = setTimeout(runSearch, 300);
+		timer = setTimeout(() => runSearch(q), 300);
 		return () => clearTimeout(timer);
 	});
 

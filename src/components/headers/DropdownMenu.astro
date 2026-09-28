@@ -1,0 +1,175 @@
+---
+import { Icon } from "astro-icon/components"
+import type { NavBarLink } from "@/config/navBarConfig"
+
+interface Props {
+	link: NavBarLink
+}
+
+const { link } = Astro.props
+const children = link.children ?? []
+const hasChildren = children.length > 0
+---
+
+{
+	hasChildren ? (
+		<div class="dropdown-container" data-dropdown>
+			<button
+				type="button"
+				class="dropdown-trigger btn-plain relative h-10 pr-8 pl-4"
+				aria-expanded="false"
+				aria-haspopup="true"
+				data-dropdown-trigger
+			>
+				<div class="flex items-center">
+					<div class="hidden xl:block">
+						{link.icon && <Icon name={link.icon} />}
+					</div>
+					<div class="pl-1">{link.name}</div>
+				</div>
+				<Icon
+					name="material-symbols:keyboard-arrow-down-rounded"
+					aria-hidden="true"
+					class="dropdown-arrow absolute top-1/2 right-2.5 -translate-y-1/2 text-[1.2rem] transition-transform duration-200"
+				/>
+			</button>
+
+			<div class="dropdown-menu" data-dropdown-menu>
+				<div class="dropdown-panel">
+					{
+						children.map(child => (
+							<a
+								href={child.url}
+								aria-label={child.name}
+								class="dropdown-item focus-ring-inset"
+								data-dropdown-item
+							>
+								{child.icon && <Icon name={child.icon} class="shrink-0 text-[1.25rem]" />}
+								<span>{child.name}</span>
+							</a>
+						))
+					}
+				</div>
+			</div>
+		</div>
+	) : (
+		<a href={link.url} class="btn-plain h-10 px-4" aria-label={link.name}>
+			<div class="hidden xl:block">{link.icon && <Icon name={link.icon} />}</div>
+			<div class="pl-1">{link.name}</div>
+		</a>
+	)
+}
+
+<style>
+	@reference "../../styles/global.css";
+
+	.dropdown-container {
+		@apply relative;
+	}
+
+	.dropdown-menu {
+		@apply pointer-events-none absolute top-full left-0 z-50 pt-2;
+	}
+
+	/* 面板外观与移动端菜单同族；--panel-bg 本身随 data-theme 切换，无需再写暗色覆盖 */
+	.dropdown-panel {
+		min-width: calc(var(--spacing) * 48);
+		border: 1px solid var(--line-divider);
+		border-radius: 0.75rem;
+		background-color: var(--panel-bg);
+		box-shadow: var(--shodow-md);
+		@apply flex flex-col px-2 py-2;
+		opacity: 0;
+		@apply -translate-y-2;
+		transition:
+			opacity 0.2s cubic-bezier(0, 0, 0.2, 1),
+			translate 0.2s cubic-bezier(0, 0, 0.2, 1),
+			background-color 0.15s,
+			border-color 0.15s;
+	}
+
+	/* hover、键盘聚焦、以及点击展开（触屏设备没有 hover）三种情形都要能看见 */
+	.dropdown-container:hover .dropdown-menu,
+	.dropdown-container:focus-within .dropdown-menu,
+	.dropdown-container:has(.dropdown-trigger[aria-expanded="true"]) .dropdown-menu {
+		@apply pointer-events-auto;
+	}
+
+	.dropdown-container:hover .dropdown-panel,
+	.dropdown-container:focus-within .dropdown-panel,
+	.dropdown-container:has(.dropdown-trigger[aria-expanded="true"]) .dropdown-panel {
+		@apply translate-y-0 opacity-100;
+	}
+
+	.dropdown-container:hover .dropdown-arrow,
+	.dropdown-container:focus-within .dropdown-arrow,
+	.dropdown-container:has(.dropdown-trigger[aria-expanded="true"]) .dropdown-arrow {
+		@apply rotate-180;
+	}
+
+	.dropdown-item {
+		@apply flex items-center gap-3 rounded-lg px-3 py-2 font-medium whitespace-nowrap transition-colors duration-150;
+		color: color-mix(in oklab, var(--color-black, #000) 75%, transparent);
+	}
+
+	.dropdown-item:hover {
+		background-color: var(--btn-plain-bg-hover);
+		color: var(--primary);
+	}
+
+	html[data-theme="dark"] .dropdown-item {
+		color: color-mix(in oklab, var(--color-white, #fff) 75%, transparent);
+	}
+</style>
+
+<script>
+	// 桌面「文章」下拉的键盘与点击交互。Header 在 Swup 容器外、不随切页重建，故只注册一次。
+	const dropdowns = document.querySelectorAll<HTMLElement>("[data-dropdown]")
+
+	for (const dropdown of dropdowns) {
+		const trigger = dropdown.querySelector<HTMLElement>("[data-dropdown-trigger]")
+		const items = Array.from(dropdown.querySelectorAll<HTMLElement>("[data-dropdown-item]"))
+		if (!trigger) continue
+
+		const setOpen = (open: boolean) => trigger.setAttribute("aria-expanded", String(open))
+		const isOpen = () => trigger.getAttribute("aria-expanded") === "true"
+
+		trigger.addEventListener("click", () => setOpen(!isOpen()))
+
+		trigger.addEventListener("keydown", e => {
+			if (e.key === "Enter" || e.key === " ") {
+				e.preventDefault()
+				setOpen(!isOpen())
+			} else if (e.key === "ArrowDown") {
+				e.preventDefault()
+				setOpen(true)
+				items[0]?.focus()
+			} else if (e.key === "Escape") {
+				setOpen(false)
+			}
+		})
+
+		items.forEach((item, index) => {
+			item.addEventListener("keydown", e => {
+				if (e.key === "ArrowDown") {
+					e.preventDefault()
+					items[(index + 1) % items.length]?.focus()
+				} else if (e.key === "ArrowUp") {
+					e.preventDefault()
+					items[(index - 1 + items.length) % items.length]?.focus()
+				} else if (e.key === "Escape") {
+					setOpen(false)
+					trigger.focus()
+				}
+			})
+		})
+	}
+
+	// 点击其它地方收起
+	document.addEventListener("click", e => {
+		for (const dropdown of dropdowns) {
+			if (dropdown.contains(e.target as Node)) continue
+			dropdown.querySelector("[data-dropdown-trigger]")?.setAttribute("aria-expanded", "false")
+		}
+	})
+</script>

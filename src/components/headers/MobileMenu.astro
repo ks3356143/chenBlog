@@ -1,46 +1,64 @@
 ---
 import { Icon } from "astro-icon/components"
+import { navBarLinks } from "@/config/navBarConfig"
+
+const lastTopLevel = navBarLinks.length - 1
 ---
 
 <div
 	id="dropdown-content"
 	class="dropdown-content absolute right-4 max-h-[80vh] overflow-y-auto px-2 py-2 transition-all"
 >
-	<a class="dropdown-item btn-plain flex h-10" href="/" aria-label="home page">
-		<div class="flex items-center justify-center space-x-2">
-			<Icon name="home" />
-			<span>主页</span>
-		</div>
-		<Icon name="arrow-right" />
-	</a>
-	<a class="dropdown-item btn-plain h-10" href="/archive/" aria-label="archive page">
-		<div class="flex items-center justify-center space-x-2">
-			<Icon name="archive" />
-			<span>归档</span>
-		</div>
-		<Icon name="arrow-right" />
-	</a>
-	<a class="dropdown-item btn-plain h-10" href="/guestbook/" aria-label="message lived">
-		<div class="flex items-center justify-center space-x-2">
-			<Icon name="chat" />
-			<span>留言</span>
-		</div>
-		<Icon name="arrow-right" />
-	</a>
-	<a class="dropdown-item btn-plain h-10" href="/gallery/" aria-label="image lived">
-		<div class="flex items-center justify-center space-x-2">
-			<Icon name="xiangce" />
-			<span>相册</span>
-		</div>
-		<Icon name="arrow-right" />
-	</a>
-	<a class="dropdown-item btn-plain h-10" href="/about/" aria-label="about page">
-		<div class="flex items-center justify-center space-x-2">
-			<Icon name="about" />
-			<span>关于</span>
-		</div>
-		<Icon name="arrow-right" />
-	</a>
+	{
+		navBarLinks.map((link, i) =>
+			link.children && link.children.length > 0 ? (
+				<div class="mobile-dropdown" data-mobile-dropdown data-expanded="false">
+					<button
+						type="button"
+						class="dropdown-item btn-plain h-10 w-full cursor-pointer select-none"
+						data-mobile-dropdown-trigger
+						aria-expanded="false"
+						id={`mobile-submenu-trigger-${i}`}
+						aria-controls={`mobile-submenu-${i}`}
+					>
+						<div class="flex items-center justify-center space-x-2">
+							{link.icon && <Icon name={link.icon} />}
+							<span>{link.name}</span>
+						</div>
+						<Icon name="arrow-right" class="mobile-dropdown-arrow transition-transform duration-200" />
+					</button>
+					<div id={`mobile-submenu-${i}`} class="mobile-submenu" aria-labelledby={`mobile-submenu-trigger-${i}`}>
+						{
+							link.children.map(child => (
+								<a
+									class="dropdown-item submenu-item btn-plain h-10"
+									href={child.url}
+									aria-label={`${child.name} page`}
+								>
+									<div class="flex items-center justify-center space-x-2">
+										{child.icon && <Icon name={child.icon} />}
+										<span>{child.name}</span>
+									</div>
+								</a>
+							))
+						}
+					</div>
+				</div>
+			) : (
+				<a
+					class:list=["dropdown-item", "btn-plain", "h-10", i === lastTopLevel && "mb-0"]
+					href={link.url}
+					aria-label={`${link.name} page`}
+				>
+					<div class="flex items-center justify-center space-x-2">
+						{link.icon && <Icon name={link.icon} />}
+						<span>{link.name}</span>
+					</div>
+					<Icon name="arrow-right" />
+				</a>
+			),
+		)
+	}
 </div>
 
 <style>
@@ -74,6 +92,29 @@ import { Icon } from "astro-icon/components"
 	.dropdown-item {
 		@apply min-w-[8rem] justify-between p-2;
 	}
+
+	/* 移动端「文章」子菜单：收起时高度为 0，展开时给足高度并旋转箭头（数值照参考站 60vh） */
+	.mobile-submenu {
+		max-height: 0;
+		overflow: hidden;
+		transition:
+			max-height 0.25s ease-out,
+			margin-top 0.25s ease-out;
+	}
+
+	.mobile-dropdown[data-expanded="true"] .mobile-submenu {
+		max-height: 60vh;
+		@apply mt-1;
+	}
+
+	.mobile-dropdown[data-expanded="true"] .mobile-dropdown-arrow {
+		@apply rotate-180;
+	}
+
+	/* 子项缩进，体现层级 */
+	.submenu-item {
+		@apply ml-3 min-w-0 text-sm font-medium;
+	}
 </style>
 
 <script>
@@ -89,4 +130,15 @@ import { Icon } from "astro-icon/components"
 			dropdownContent?.classList.remove("open")
 		}
 	})
+
+	// 子菜单展开/收起（Header 在 Swup 容器外，本脚本只跑一次即可）
+	for (const box of document.querySelectorAll<HTMLElement>("[data-mobile-dropdown]")) {
+		const trigger = box.querySelector<HTMLElement>("[data-mobile-dropdown-trigger]")
+		if (!trigger) continue
+		trigger.addEventListener("click", () => {
+			const open = box.getAttribute("data-expanded") === "true"
+			box.setAttribute("data-expanded", String(!open))
+			trigger.setAttribute("aria-expanded", String(!open))
+		})
+	}
 </script>

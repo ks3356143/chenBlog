@@ -3,46 +3,37 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-09-28 深夜（第二轮）：Pagefind 搜索 + 双木成林站点图标全套已做完并 preview 实测，待部署**
+> 最后更新：**2026-09-28 深夜：搜索（Pagefind，参考站形态）+ 双木成林图标全套已部署上线并公网实测通过**
 
 ---
 
 ## 一、下次会话第一件事
 
-### 🔴 待部署：站内搜索 + 新站点图标（2026-09-28 深夜做完）
+### ✅ 2026-09-28 深夜：站内搜索 + 站点图标 —— 已推送并部署，公网实测通过
 
-本地已提交、`npm run build`（含索引）与 `npm run preview` 实测通过，**线上还没有**：
-1. **搜索**：形态第二轮已改成参考站同款——桌面（`lg+`）是导航栏里一条**点一下变宽**的内联输入框
-   （`w-40` → `:focus` 时 `w-60`，底条 `bg-black/4`→`/6`、暗色 `white/5`→`white/10`），
-   移动端才是按钮点开毛玻璃面板（面板内自带输入框）。全部直角。
-   `npm run preview` 实测：移动端真实点击开面板 480×126、`blur(20px) saturate(1.5)`、
-   暗色 `rgba(23,23,23,.6)`、`borderRadius 0px`、含 inset 高光、无横向溢出；输 `svg` 出 12 条 / 19 处高亮、
-   href 正确；`tick()` 后自动聚焦生效、点面板外自动关闭、Esc 可关。
-   ⚠️ **桌面端 `:focus` 那条我在这台机器上测不到**：测试用的 iframe 拿不到文档焦点，
-   `:focus` 永不匹配（`focus-within` 却匹配，因为只看 activeElement），所以 `focus:w-60` 只验证了
-   "规则确实产出并被页面引用"（`.focus\:w-60:focus{width:calc(var(--spacing)*60)}` 在
-   `dist/_astro/Layout.*.css` 里）。**变宽效果要你自己在真浏览器里看一眼。**
-2. **图标**：`public/favicon.svg` 换成绿底白色**两棵树**的双木成林 mark，`npm run icons` 重生成
-   16/32/96 PNG、ICO(16/32/48)、apple-touch 180、manifest 192/512；`site.webmanifest` 的
-   `MyWebSite/MySite` 占位名改成「亦林 YILIn / 亦林」。
-   ⚠️ 部署后你那边标签页图标大概率还是旧的——**浏览器缓存极强**，先 Ctrl+Shift+R 或开无痕再看。
-→ 用户点头就走第六节标准流程部署（`dist/pagefind/` 会随包一起上传，服务器不用改）。
-   规则细节在 AGENTS 第五节 18、19 与第三节命令说明。
+线上实测（http://47.108.230.220/）：1440 下只有内联搜索框（160px、放大镜 18px）、按钮容器 `display:none`；
+420 下只有搜索按钮（40×40、图标 **24px**，与主题切换/汉堡的 24px 一致）；
+`/pagefind/pagefind.js` 200，线上直接 `search('svg')` 返回 12 条、首条 `CSS100Day(10)-SVG旋转动画`；
+`favicon.svg / favicon-32x32.png / favicon.ico / apple-touch-icon.png / site.webmanifest` 全 200，
+manifest 名已是「亦林 YILIn」。
+⚠️ **标签页图标可能仍显示旧的** —— 浏览器对 favicon 缓存极强，验收前先 Ctrl+Shift+R 或开无痕。
+⚠️ **桌面 `:focus` 变宽（w-40→w-60）我在这台机器上测不到**（测试 iframe 拿不到文档焦点，`:focus` 永不匹配），
+只验证了规则确实产出并被引用 —— **这一条要用户肉眼确认**。
 
 ### ✅ 已完成（不用再管）
 
-- **2026-09-28 夜**：「文章」下拉 + `/series/` + `/tags/` + SeriesNav 已部署并公网实测；
-  第一轮验收反馈的两条（圆角、跳页后不收起）也已修完上线。
+- **2026-09-28 夜**：「文章」下拉 + `/series/` + `/tags/` + SeriesNav 已上线；两轮验收反馈
+  （圆角→直角、跳页后不收起、搜索控件重复/图标尺寸）都已修完上线。
 - **2026-09-28 白天**：全站体检 5 处修复已上线验收。
 - **2026-09-24 夜**：过渡/分类栏/归档/横幅/品牌标识 6 笔，验收通过。
-- **storybook 技能**：`E:\works\skills\storybook` 在本机不存在（E 盘没有 `works` 目录，C/D/E 全盘搜过），
+- **storybook 技能**：`E:\works\skills\storybook` 在本机不存在（E 盘没有 `works`，C/D/E 全盘搜过），
   已作为插件技能注册（`qoder-guide:storybook`）可直接用 —— **这条别再查了**。
 
 ### 🟠 悬着的事，需要用户点头
 
-1. **部署上面那批** + **推送远端**（本地领先 `origin/main`，铁律：推送前先问）。
-2. **about 页对外邮箱**：已统一到 `314298729@qq.com`；若 `xiaye@msn.com` 才是收件地址，显示文本也要一起换。
-3. **服务器回滚资产越攒越多**（`dist.old` + 8 个时间戳备份）：确认稳定后可清，但**必须用户明确说**才删。
+1. **about 页对外邮箱**：已统一到 `314298729@qq.com`；若 `xiaye@msn.com` 才是收件地址，显示文本也要一起换。
+2. **服务器回滚资产越攒越多**（`dist.old` + 9 个时间戳备份）：确认稳定后可清，但**必须用户明确说**才删。
+3. **推送前先问这条仍生效**：当前 ahead 0，本地与远端一致。
 
 ### 🟡 AGENTS.md 第九节的存量待办
 
@@ -141,17 +132,18 @@ CategoryBar（不隐藏 + 软高亮 + 更多 pill）、`/categories/` 页、归�
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 本轮 5 笔未推：文档收尾笔、`b9c9805` lockfile、`3bd0240` 双木成林图标全套、`6de53c0` Pagefind 搜索、`cd1aa56` 下拉/移动菜单可靠收起 |
+| 本地 HEAD | `3b0ca54` 搜索控件重复/图标尺寸修复（其前 `802ab1d`、`ffff265` 搜索改参考站形态、`860787a`、`b9c9805`、`3bd0240` 图标全套、`6de53c0` Pagefind 搜索、`cd1aa56` 下拉可靠收起） |
 | 工作区 | 干净（改动全部已提交） |
-| 与远端 | **ahead 5**，未推送（推送前先问；上一批 `1c5e502..9ed0c32` 已推过） |
-| 本地构建 | `npm run build` = astro build + 索引，退出码 0：**40 页 / dist 307 文件 / 28M**（`_astro` 187、`pagefind` 42 / 759K），约 5~7s + 0.2s；`npm run preview` 实测搜索可用 |
+| 与远端 | **ahead 0**（`4135ff2..802ab1d`、`802ab1d..3b0ca54` 均已推） |
+| 本地构建 | `npm run build` = astro build + 索引，退出码 0：**40 页 / dist 307 文件 / 28M**（`_astro` 187、`pagefind` 42 / 759K），约 5s + 0.2s |
 | `npm audit` | **0 vulnerabilities**（必须 `npm audit --registry=https://registry.npmjs.org`；默认 npmmirror 源不实现 audit 接口，会报 `NOT_IMPLEMENTED`） |
-| 线上站点 | 停在 09-28 夜 14:43 那版（下拉/系列/标签已在公网）；**本轮的搜索、新图标、下拉二次修复均未上线** |
-| 服务器回滚资产 | `dist.old` + 8 个时间戳备份（最新 `dist_backup_20260928_144355`）。**均保留中**，需用户明确同意才删 |
-| dev server | 后台运行中（任务 `b91ngmhhy`，端口 4321）；本轮另起过 preview `:4322` 已关 |
+| 线上站点 | **已上到最新**（09-28 16:13 原子替换）：下拉/系列/标签/SeriesNav + Pagefind 搜索 + 新图标，公网逐项实测通过 |
+| 服务器回滚资产 | `dist.old` + 9 个时间戳备份（最新 `dist_backup_20260928_161324`）。**均保留中**，需用户明确同意才删 |
+| dev server | 后台运行中（任务 `b91ngmhhy`，端口 4321）；preview `:4322` 用完已关 |
 | 本机网络提示 | `curl https://github.com/...` 返回 `HTTP 000` 是 Windows schannel 吊销检查失败（`CRYPT_E_NO_REVOCATION_CHECK`），**不是站点问题** |
+| 测试环境限制 | 定宽 iframe 里 `:focus` 永不匹配（文档拿不到焦点，`:focus-within` 却看 activeElement）→ 焦点驱动的效果只能让用户肉眼验；改用真实点击（`click` 工具）可验交互 |
 | 既存小坑（本次未动） | `MobileMenu.astro` 里 `transform: translateY()` 是空参数的非法声明（历史遗留）。圆角变量 `--radius-large`、`--panel-border-color` 未定义已查清并写进 AGENTS 五-16 |
-| 临时文件 | 本地与服务器 `/tmp` 已清（preview 日志、扫描脚本、sparse clone 的 Firefly 仓库、参考站与线上 HTML） |
+| 临时文件 | 本地与服务器 `/tmp` 已清（打包 tar、preview 日志、扫描脚本、sparse clone 的 Firefly 仓库、参考站与线上 HTML） |
 | dev server | 后台运行中（任务 `b91ngmhhy`，端口 4321），下次可直接用 |
 | 本机网络提示 | `curl https://github.com/...` 返回 `HTTP 000` 是 Windows schannel 吊销检查失败（`CRYPT_E_NO_REVOCATION_CHECK`），**不是站点问题** |
 | 既存小坑（本次未动） | `MobileMenu.astro` 里 `transform: translateY()` 是空参数的非法声明（历史遗留）。圆角变量 `--radius-large`、`--panel-border-color` 未定义这事已查清并写进 AGENTS 五-16，不再单独列 |

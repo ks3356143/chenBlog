@@ -259,6 +259,15 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
       别急着判定"没生效"。
     - 描边在 Header 里靠 `var(--primary)` 换色，favicon 没有这个环境，所以图标里是**写死的品牌绿**。
 
+20. **`.btn-plain` 会盖掉 Tailwind 的显示类**（2026-09-28 踩过，搜索按钮因此在桌面端和搜索框同时出现）。
+    `src/styles/singles/abutton.css` 里 `.btn-plain { display: flex }`，而它在 `BaseLayout.astro` 的导入顺序
+    **排在 `global.css`（即 Tailwind 工具类）之后**，两者特异性相同（都是单类），于是
+    `<button class="btn-plain … hidden">` / `lg:hidden` **不生效**——元素照样显示出来。
+    → 要按断点显隐一个 `.btn-plain` 元素，**把显隐类放到外层不带 `btn-plain` 的容器上**
+    （父级 `display:none` 一定能压住子级）。
+    → 同类风险：`main.css` / `mainSingles.css` / `layout-style.css` 里自定义类的属性，
+      都可能覆盖同名 Tailwind 工具类；调"为什么这个 utility 不生效"时先查导入顺序与自定义类。
+
 ## 六、部署
 
 **部署方式：本地构建 + 上传 `dist`，服务器不跑 build。**（2026-09-20 起）

@@ -13,6 +13,9 @@ const postsCollection = defineCollection({
         image: z.string().optional().default(""),
         tags: z.array(z.string()).optional().default([]),
         category: z.string().optional().nullable().default(""),
+        // 系列名（空=不属于任何系列），配合 seriesOrder 决定系列内顺序
+        series: z.string().optional().default(""),
+        seriesOrder: z.number().optional(),
         lang: z.string().optional().default(""),
         pinned: z.boolean().optional().default(false),
         author: z.string().optional().default(""),

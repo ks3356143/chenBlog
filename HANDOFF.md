@@ -12,9 +12,16 @@
 ### 🔴 待部署：站内搜索 + 新站点图标（2026-09-28 深夜做完）
 
 本地已提交、`npm run build`（含索引）与 `npm run preview` 实测通过，**线上还没有**：
-1. **搜索**：点导航搜索按钮开毛玻璃面板，输 `flex` 出 7 条、`蒙层` 命中第13天并高亮；
-   暗色 `rgba(23,23,23,.6)`、亮色 `rgba(255,255,255,.55)`，都是 `blur(20px) saturate(1.5)` + 直角 + 顶部内高光；
-   ↑↓ 选结果、Esc 关闭、点结果会真跳转。
+1. **搜索**：形态第二轮已改成参考站同款——桌面（`lg+`）是导航栏里一条**点一下变宽**的内联输入框
+   （`w-40` → `:focus` 时 `w-60`，底条 `bg-black/4`→`/6`、暗色 `white/5`→`white/10`），
+   移动端才是按钮点开毛玻璃面板（面板内自带输入框）。全部直角。
+   `npm run preview` 实测：移动端真实点击开面板 480×126、`blur(20px) saturate(1.5)`、
+   暗色 `rgba(23,23,23,.6)`、`borderRadius 0px`、含 inset 高光、无横向溢出；输 `svg` 出 12 条 / 19 处高亮、
+   href 正确；`tick()` 后自动聚焦生效、点面板外自动关闭、Esc 可关。
+   ⚠️ **桌面端 `:focus` 那条我在这台机器上测不到**：测试用的 iframe 拿不到文档焦点，
+   `:focus` 永不匹配（`focus-within` 却匹配，因为只看 activeElement），所以 `focus:w-60` 只验证了
+   "规则确实产出并被页面引用"（`.focus\:w-60:focus{width:calc(var(--spacing)*60)}` 在
+   `dist/_astro/Layout.*.css` 里）。**变宽效果要你自己在真浏览器里看一眼。**
 2. **图标**：`public/favicon.svg` 换成绿底白色**两棵树**的双木成林 mark，`npm run icons` 重生成
    16/32/96 PNG、ICO(16/32/48)、apple-touch 180、manifest 192/512；`site.webmanifest` 的
    `MyWebSite/MySite` 占位名改成「亦林 YILIn / 亦林」。

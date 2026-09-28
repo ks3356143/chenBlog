@@ -236,6 +236,12 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
       `astro build && pagefind --site dist`，索引输出到 **`dist/pagefind/`**（不是 `_pagefind`）。
     - 组件 `src/components/controls/Search.svelte`（Svelte 5 runes），在 `Header.astro` 里以
       `<Search client:load />` 挂载；旧的装饰性 `src/components/uiverse/Search.astro` **已删**，别再引它。
+    - **形态照搬参考站**：桌面端（`lg+`）是导航栏里一条**内联输入框**，`w-40` 在 `:focus` 时扩到 `w-60`
+      （参考站同款 `focus:w-60 active:w-60`），底条 `bg-black/4` → `hover/focus-within:bg-black/6`、
+      暗色 `bg-white/5` → `white/10`；移动端才是 `lg:hidden` 的按钮，点开浮层面板、面板内自带一条输入框。
+      **不要给这些加圆角**（本站浮层与底条一律直角）。
+    - 面板开在 `{#if}` 里 → 用 `tick().then(() => input.focus())` 聚焦，**别用 `requestAnimationFrame`**
+      （后台标签页 rAF 被节流，会出现"面板开了但光标没进输入框"）。
     - 索引懒加载：只在 `import.meta.env.PROD` 下 `import(indexUrl)`，**URL 必须是变量**（见第九项的警告）；
       300ms 防抖 + `reqId` 防竞态；dev 下没有索引，面板显示真提示而不是像参考站那样塞假结果。
     - 排除规则在根 `pagefind.yml`：KaTeX span、`[data-pagefind-ignore]`、`.search-panel`/`#search-panel`。

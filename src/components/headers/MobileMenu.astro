@@ -141,4 +141,14 @@ const lastTopLevel = navBarLinks.length - 1
 			trigger.setAttribute("aria-expanded", String(!open))
 		})
 	}
+
+	// Swup 换完内容后把整个菜单和子菜单收起：菜单在容器外不会被替换，
+	// 不收的话跳转后它还挂着，子项也停在展开态
+	document.addEventListener("swup:contentReplaced", () => {
+		dropdownContent?.classList.remove("open")
+		for (const box of document.querySelectorAll<HTMLElement>("[data-mobile-dropdown]")) {
+			box.setAttribute("data-expanded", "false")
+			box.querySelector("[data-mobile-dropdown-trigger]")?.setAttribute("aria-expanded", "false")
+		}
+	})
 </script>

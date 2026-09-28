@@ -3,32 +3,25 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-09-28 夜：文章下拉 + `/series/` + `/tags/` + SeriesNav 已实现并本地实测，待用户验收与部署**
+> 最后更新：**2026-09-28 深夜：文章下拉 + `/series/` + `/tags/` + SeriesNav 已推送并部署上线，公网实测通过，仅待用户肉眼验收观感**
 
 ---
 
 ## 一、下次会话第一件事
 
-### 🔴 待验收 + 待部署：顶部「文章」下拉与系列/标签页（2026-09-28 夜实现）
+### ✅ 2026-09-28 夜：「文章」下拉 + 系列页 + 标签页 —— 已上线，只剩肉眼验收
 
-本地已提交、**线上还没有**（线上仍是 09-28 白天那版：无下拉、无 /series/、无 /tags/）。
-用户验收点：
-1. 桌面（≥1024px）hover/点击「文章」出下拉，四项 归档/分类/标签/系列；键盘 Tab→Enter/Space/↑↓/Esc 能用。
-2. 移动端汉堡里「文章」可展开子菜单，箭头旋转、不撑破面板。
-3. `/series/` 两张卡片（CSS100Day 25 篇 / CodePen 1 篇），点开手风琴、互斥收起。
-4. 文章页「属于系列：CSS100Day」导航盒展开后当前篇标"本篇"、序号按天数排。
-5. **Swup 软导航前后**上述交互都还工作（这是本项目最容易坏的一块）。
+已推送远端（推完 ahead 归 0）并按第六节流程部署，从公网 IP 实测：下拉四项开合正常、
+面板与子项 `borderTopLeftRadius` 均 `0px`（直角）、点「系列」跳页后 `aria-expanded=false` 且面板 opacity 0、
+`/series/` 两张手风琴卡片展开到 1240px。**要用户自己看的只剩观感**（动效手感、SeriesNav 样式）。
+实现经过见第二节，规矩见 AGENTS 第五节 16、17。
 
-### 🔧 用户第一轮验收反馈（2026-09-28 夜，已修并 iframe 实测，待复验）
-
-1. **下拉是圆角、全站是直角** → 去掉面板 `border-radius` 与子项 `rounded-lg`（`35db5b1`）。
-   根因已写进 AGENTS 五-16：参考站的圆角走 `--radius-large`，我们裁剪主题时没带这个变量，
-   所以它在参考站实际也是直角。实测 `borderTopLeftRadius` 面板与子项均为 `0px`。
-2. **点「文章」→点子项跳页后，鼠标移出下拉不消失** → 同一笔修复：点子项即收起 + 收起时 `blur()` 焦点
-   + 监听 `swup:contentReplaced` 兜底；移动端 `.open` 菜单与子菜单同理，另起一笔 `6bbb1f7`。
-   实测：桌面跳页后 `aria-expanded=false`、面板 opacity 0、焦点不在下拉内；移动端 `panelOpen=false`、
-   `data-expanded=false`。根因（`:focus-within` + `aria-expanded` 在容器外的 Header 上不会自动清）已写进 AGENTS 五-16。
-→ 认可后走 AGENTS 第六节标准流程部署；细节与规矩在 AGENTS 第五节 16、17。
+**第一轮验收反馈（同日夜，两条都已修并复测）**：
+① 下拉圆角 → 全站直角（根因：参考站圆角走 `--radius-large`，我们裁剪主题时没带这个变量，
+它自己在参考站实际也是直角；已写进 AGENTS 五-16）；
+② 点子项跳页后下拉不消失 → 根因是 Header 在 Swup 容器外不被替换，`aria-expanded` 与焦点都还留着
+（`:focus-within` 也撑着面板）。修法：点子项即收起 + 收起时 `blur()` + 监听 `swup:contentReplaced` 兜底，
+移动端 `.open` 菜单同理。
 
 ### ✅ 已完成（不用再管）
 
@@ -38,12 +31,12 @@
 
 ### 🟠 悬着的事，需要用户点头
 
-1. **部署上面那批** + **推送远端**（本地领先 `origin/main` 33 个提交；铁律：推送前先问）。
-2. **about 页对外邮箱**：已统一到 `314298729@qq.com`；若 `xiaye@msn.com` 才是收件地址，显示文本也要一起换。
-3. **`storybook` 技能搬不进仓库**：`E:\works\skills\storybook` 在本机不存在（E 盘没有 `works` 目录；
-   C/D/E 盘按目录名与 `SKILL.md` 内容全搜过，也没有任何 storybook 技能）。它已作为插件技能注册
-   （列表里的 `qoder-guide:storybook`），可直接用。要落进仓库需用户给出真实源路径，
-   且注意本仓库公开——第三方技能正文入库等于发布到公网。
+1. **about 页对外邮箱**：已统一到 `314298729@qq.com`；若 `xiaye@msn.com` 才是收件地址，显示文本也要一起换。
+2. **服务器回滚资产越攒越多**（`dist.old` + 数个时间戳备份）：确认稳定后可清，但**必须用户明确说**才删。
+3. ~~部署 + 推送~~：**2026-09-28 深夜已完成**（用户当次授权，推 `1c5e502..9ed0c32`，dist 原子替换）。
+   下次改动仍需重新授权。
+4. ~~`storybook` 技能搬运~~：**结掉，不用再查**。`E:\works\skills\storybook` 在本机不存在（E 盘没有 `works` 目录；
+   C/D/E 盘按目录名与 `SKILL.md` 内容全搜过），它已作为插件技能注册（`qoder-guide:storybook`），可直接用。
 
 ### 🟡 AGENTS.md 第九节的存量待办
 
@@ -115,21 +108,21 @@ CategoryBar（不隐藏 + 软高亮 + 更多 pill）、`/categories/` 页、归�
 
 ---
 
-## 三、当前状态快照（2026-09-28 夜实测）
+## 三、当前状态快照（2026-09-28 深夜实测）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 本次功能共 6 笔：`6bbb1f7` 移动端跳页收起、`35db5b1` 下拉改直角+跳页收起、`0ea14c3` 文章页接入 SeriesNav、`2c51e26` 导航配置化+下拉、`9b5ec12` /series/ + /tags/ + SeriesNav、`39c9ae1` schema + 26 篇 frontmatter（再往前是白天体检的 4 笔，末为 `1e1b365`） |
-| 工作区 | 只剩 AGENTS/HANDOFF 文档改动（收尾提交） |
-| 与远端 | **ahead 33**，全部未推送（推送前先问） |
+| 本地 HEAD | 本次功能 6 笔 + 文档 3 笔，末笔是本次收尾提交；功能 6 笔：`6bbb1f7` 移动端跳页收起、`35db5b1` 下拉改直角+跳页收起、`0ea14c3` 文章页接入 SeriesNav、`2c51e26` 导航配置化+下拉、`9b5ec12` /series/ + /tags/ + SeriesNav、`39c9ae1` schema + 26 篇 frontmatter |
+| 工作区 | 干净（改动全部已提交） |
+| 与远端 | **已推送**：`1c5e502..9ed0c32` 推上去 33 笔，收尾文档笔随后再推；当前 ahead 0 |
 | 本地构建 | 退出码 0，**40 页 / dist 261 文件 / `_astro` 187 / 27M**，热缓存 3.6~7s；引用扫描 **0 缺失**、标题审计 **0 问题** |
 | `npm audit` | **0 vulnerabilities** |
-| 线上站点 | 停在 09-28 白天那版（5 处体检修复）；**下拉 / /series/ / /tags/ / SeriesNav 均未上线** |
-| 服务器回滚资产 | `dist.old` + `dist_backup_20260928_121051` + 多个 `dist_backup_20260924_*` + `dist_backup_20260920_234618`。**均保留中** |
+| 线上站点 | **已上到最新**（09-28 深夜原子替换）：下拉 `/series/` `/tags/` SeriesNav 均在公网实测通过（面板与子项 `borderTopLeftRadius` 0px、跳页后 aria-expanded=false 且 opacity 0、`/series/` 展开到 1240px） |
+| 服务器回滚资产 | `dist.old` + 8 个时间戳备份：`dist_backup_20260928_144355`（本次）、`_121051`、`20260924_140609/144423/150536/220412/223726`、`20260920_234618`。**均保留中**，需用户明确同意才删；线上 dist 27M |
 | dev server | 后台运行中（任务 `b91ngmhhy`，端口 4321），下次可直接用 |
 | 本机网络提示 | `curl https://github.com/...` 返回 `HTTP 000` 是 Windows schannel 吊销检查失败（`CRYPT_E_NO_REVOCATION_CHECK`），**不是站点问题** |
-| 既存小坑（本次未动） | `MobileMenu.astro` 里 `transform: translateY()` 是空参数的非法声明（历史遗留）。圆角变量 `--radius-large`、`--panel-border-color` 未定义这事已经查清并写进 AGENTS 五-16，不再单独列 |
-| 临时文件 | 本地与服务器 `/tmp` 已清（扫描脚本、sparse clone 的 Firefly 仓库、参考站 HTML） |
+| 既存小坑（本次未动） | `MobileMenu.astro` 里 `transform: translateY()` 是空参数的非法声明（历史遗留）。圆角变量 `--radius-large`、`--panel-border-color` 未定义这事已查清并写进 AGENTS 五-16，不再单独列 |
+| 临时文件 | 本地与服务器 `/tmp` 已清（打包 tar、扫描脚本、sparse clone 的 Firefly 仓库、参考站与线上 HTML） |
 
 ---
 

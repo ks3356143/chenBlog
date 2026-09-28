@@ -3,19 +3,19 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-09-28 深夜：搜索（Pagefind，参考站形态）+ 双木成林图标全套已部署上线并公网实测通过**
+> 最后更新：**2026-09-28 深夜：搜索第三轮修复（去原生清除按钮、结果层改由关键词驱动）已推+部署，线上实测通过**
 
 ---
 
 ## 一、下次会话第一件事
 
-### ✅ 2026-09-28 深夜：站内搜索 + 站点图标 —— 已推送并部署，公网实测通过
+### ✅ 2026-09-28 深夜：站内搜索 + 站点图标 —— 已推送到远端并部署，公网实测通过
 
-线上实测（http://47.108.230.220/）：1440 下只有内联搜索框（160px、放大镜 18px）、按钮容器 `display:none`；
-420 下只有搜索按钮（40×40、图标 **24px**，与主题切换/汉堡的 24px 一致）；
-`/pagefind/pagefind.js` 200，线上直接 `search('svg')` 返回 12 条、首条 `CSS100Day(10)-SVG旋转动画`；
-`favicon.svg / favicon-32x32.png / favicon.ico / apple-touch-icon.png / site.webmanifest` 全 200，
-manifest 名已是「亦林 YILIn」。
+线上（16:53 原子替换，`dist` 307 文件）实测：输 `蒙层` → 命中 `CSS100Day(13)-图片hover上方出现蒙层和元素`、
+2 处 `<mark>`；亮色面板 `rgba(255,255,255,.55)` + `blur(20px) saturate(1.5)` + `borderRadius 0px`；
+放大镜 **16px** 且图形中心与框中心同为 cy=36（偏移 0）；输入文字 16px/700 与导航标签一致；
+`type="search"` 残留 0（浏览器原生 ✕ 不再出现）；420 下按钮图标 24px = 主题/汉堡 24px；
+`/pagefind/pagefind.js` 200，`favicon.*` 与 `site.webmanifest`（名「亦林 YILIn」）全 200。
 ⚠️ **标签页图标可能仍显示旧的** —— 浏览器对 favicon 缓存极强，验收前先 Ctrl+Shift+R 或开无痕。
 ⚠️ **桌面 `:focus` 变宽（w-40→w-60）我在这台机器上测不到**（测试 iframe 拿不到文档焦点，`:focus` 永不匹配），
 只验证了规则确实产出并被引用 —— **这一条要用户肉眼确认**。
@@ -132,13 +132,13 @@ CategoryBar（不隐藏 + 软高亮 + 更多 pill）、`/categories/` 页、归�
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `3b0ca54` 搜索控件重复/图标尺寸修复（其前 `802ab1d`、`ffff265` 搜索改参考站形态、`860787a`、`b9c9805`、`3bd0240` 图标全套、`6de53c0` Pagefind 搜索、`cd1aa56` 下拉可靠收起） |
+| 本地 HEAD | 搜索三轮修复：`d8dd608` 去原生清除按钮 + 结果层由 query 驱动、`8fbd5b4` 放大镜 viewBox 收紧（视觉居中）、`e409372` 尺寸对齐导航行（其前 `3b0ca54` 控件重复/图标尺寸、`802ab1d`/`ffff265` 搜索改参考站形态、`3bd0240` 图标全套、`6de53c0` Pagefind 搜索、`cd1aa56` 下拉可靠收起） |
 | 工作区 | 干净（改动全部已提交） |
-| 与远端 | **ahead 0**（`4135ff2..802ab1d`、`802ab1d..3b0ca54` 均已推） |
+| 与远端 | **ahead 0**（`a3c94f1..d8dd608` 已推；本笔文档提交一并推） |
 | 本地构建 | `npm run build` = astro build + 索引，退出码 0：**40 页 / dist 307 文件 / 28M**（`_astro` 187、`pagefind` 42 / 759K），约 5s + 0.2s |
 | `npm audit` | **0 vulnerabilities**（必须 `npm audit --registry=https://registry.npmjs.org`；默认 npmmirror 源不实现 audit 接口，会报 `NOT_IMPLEMENTED`） |
-| 线上站点 | **已上到最新**（09-28 16:13 原子替换）：下拉/系列/标签/SeriesNav + Pagefind 搜索 + 新图标，公网逐项实测通过 |
-| 服务器回滚资产 | `dist.old` + 9 个时间戳备份（最新 `dist_backup_20260928_161324`）。**均保留中**，需用户明确同意才删 |
+| 线上站点 | **已上到最新**（09-28 16:53 原子替换）：下拉/系列/标签/SeriesNav + Pagefind 搜索（三轮修复后形态）+ 新图标，公网逐项实测通过 |
+| 服务器回滚资产 | `dist.old` + 10 个时间戳备份（最新 `dist_backup_20260928_165301`）。**均保留中**，需用户明确同意才删 |
 | dev server | 后台运行中（任务 `b91ngmhhy`，端口 4321）；preview `:4322` 用完已关 |
 | 本机网络提示 | `curl https://github.com/...` 返回 `HTTP 000` 是 Windows schannel 吊销检查失败（`CRYPT_E_NO_REVOCATION_CHECK`），**不是站点问题** |
 | 测试环境限制 | 定宽 iframe 里 `:focus` 永不匹配（文档拿不到焦点，`:focus-within` 却看 activeElement）→ 焦点驱动的效果只能让用户肉眼验；改用真实点击（`click` 工具）可验交互 |

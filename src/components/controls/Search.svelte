@@ -133,7 +133,7 @@
 		class="relative hidden lg:flex items-center h-10 mr-2 bg-black/4 transition-colors hover:bg-black/6 focus-within:bg-black/6
 		       dark:bg-white/5 dark:hover:bg-white/10 dark:focus-within:bg-white/10"
 	>
-		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-50">
+		<svg width="16" height="16" viewBox="1.4 1.1 13.8 13.8" fill="none" aria-hidden="true" class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-50">
 			<path
 				d="M7.667 12.667A5.333 5.333 0 1 0 7.667 2a5.333 5.333 0 0 0 0 10.667ZM14.334 14l-2.9-2.9"
 				stroke="currentColor"
@@ -169,7 +169,7 @@
 			aria-controls="search-panel"
 			onclick={openMobile}
 		>
-			<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="shrink-0">
+			<svg width="24" height="24" viewBox="1.4 1.1 13.8 13.8" fill="none" aria-hidden="true" class="shrink-0">
 				<path
 					d="M7.667 12.667A5.333 5.333 0 1 0 7.667 2a5.333 5.333 0 0 0 0 10.667ZM14.334 14l-2.9-2.9"
 					stroke="currentColor"
@@ -191,7 +191,7 @@
 			>
 				<!-- 移动端在面板里自带一条输入框（桌面端输入框已在导航栏里） -->
 				<div class="relative flex items-center lg:hidden">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-50">
+					<svg width="16" height="16" viewBox="1.4 1.1 13.8 13.8" fill="none" aria-hidden="true" class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-50">
 						<path
 							d="M7.667 12.667A5.333 5.333 0 1 0 7.667 2a5.333 5.333 0 0 0 0 10.667ZM14.334 14l-2.9-2.9"
 							stroke="currentColor"

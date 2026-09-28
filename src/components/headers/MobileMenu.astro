@@ -2,7 +2,6 @@
 import { Icon } from "astro-icon/components"
 import { navBarLinks } from "@/config/navBarConfig"
 
-const lastTopLevel = navBarLinks.length - 1
 ---
 
 <div
@@ -46,7 +45,7 @@ const lastTopLevel = navBarLinks.length - 1
 				</div>
 			) : (
 				<a
-					class:list=["dropdown-item", "btn-plain", "h-10", i === lastTopLevel && "mb-0"]
+					class="dropdown-item btn-plain h-10"
 					href={link.url}
 					aria-label={`${link.name} page`}
 				>

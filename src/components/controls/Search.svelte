@@ -140,7 +140,7 @@
 			<path
 				d="M7.667 12.667A5.333 5.333 0 1 0 7.667 2a5.333 5.333 0 0 0 0 10.667ZM14.334 14l-2.9-2.9"
 				stroke="currentColor"
-				stroke-width="1.8"
+				stroke-width="1.2"
 				stroke-linecap="round"
 				stroke-linejoin="round"></path>
 		</svg>
@@ -169,11 +169,11 @@
 			aria-controls="search-panel"
 			onclick={openMobile}
 		>
-			<svg width="24" height="24" viewBox="1.4 1.1 13.8 13.8" fill="none" aria-hidden="true" class="shrink-0">
+			<svg width="22" height="22" viewBox="1.4 1.1 13.8 13.8" fill="none" aria-hidden="true" class="shrink-0">
 				<path
 					d="M7.667 12.667A5.333 5.333 0 1 0 7.667 2a5.333 5.333 0 0 0 0 10.667ZM14.334 14l-2.9-2.9"
 					stroke="currentColor"
-					stroke-width="1.6"
+					stroke-width="1.0"
 					stroke-linecap="round"
 					stroke-linejoin="round"></path>
 			</svg>
@@ -195,7 +195,7 @@
 						<path
 							d="M7.667 12.667A5.333 5.333 0 1 0 7.667 2a5.333 5.333 0 0 0 0 10.667ZM14.334 14l-2.9-2.9"
 							stroke="currentColor"
-							stroke-width="1.8"
+							stroke-width="1.2"
 							stroke-linecap="round"
 							stroke-linejoin="round"></path>
 					</svg>

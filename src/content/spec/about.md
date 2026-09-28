@@ -6,7 +6,7 @@
 
 这个网站使用 **Astro** 框架构建，基于 [Firefly](https://github.com/CuteLeaf/Firefly) 模板进行裁剪和开发，请尊重开源项目
 
-**🏠我的博客： [暂未部署](暂未部署)**
+**🏠我的博客： [亦林](/)**
 
 ::github{repo="ks3356143/chenBlog"}
 
@@ -20,7 +20,7 @@
 如果你想和我交流技术问题，分享有趣的想法，或者只是想打个招呼，欢迎通过以下方式联系我：
 
 - 💻 **GitHub**: [ks3356143](https://github.com/ks3356143)
-- ✉️ **Email**: [314298729@qq.com](mailto:xiaye@msn.com)
+- ✉️ **Email**: [314298729@qq.com](mailto:314298729@qq.com)
 
 ---
 

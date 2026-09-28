@@ -88,21 +88,23 @@ const hasChildren = children.length > 0
 			border-color 0.15s;
 	}
 
-	/* hover、键盘聚焦、以及点击展开（触屏设备没有 hover）三种情形都要能看见 */
+	/* 展开的三种情形：hover、键盘聚焦（:focus-visible，鼠标点击不算）、点击/触屏展开的 aria 态。
+	   用 :has(:focus-visible) 而不是 :focus-within：后者连鼠标点击造成的聚焦也算，
+	   于是点完 trigger 再点空白处，JS 把 aria 收回了面板却还靠聚焦撑着（用户报的那个 bug）。 */
 	.dropdown-container:hover .dropdown-menu,
-	.dropdown-container:focus-within .dropdown-menu,
+	.dropdown-container:has(.dropdown-item:focus-visible) .dropdown-menu,
 	.dropdown-container:has(.dropdown-trigger[aria-expanded="true"]) .dropdown-menu {
 		@apply pointer-events-auto;
 	}
 
 	.dropdown-container:hover .dropdown-panel,
-	.dropdown-container:focus-within .dropdown-panel,
+	.dropdown-container:has(.dropdown-item:focus-visible) .dropdown-panel,
 	.dropdown-container:has(.dropdown-trigger[aria-expanded="true"]) .dropdown-panel {
 		@apply translate-y-0 opacity-100;
 	}
 
 	.dropdown-container:hover .dropdown-arrow,
-	.dropdown-container:focus-within .dropdown-arrow,
+	.dropdown-container:has(.dropdown-item:focus-visible) .dropdown-arrow,
 	.dropdown-container:has(.dropdown-trigger[aria-expanded="true"]) .dropdown-arrow {
 		@apply rotate-180;
 	}
@@ -145,6 +147,10 @@ const hasChildren = children.length > 0
 		const isOpen = () => trigger.getAttribute("aria-expanded") === "true"
 
 		trigger.addEventListener("click", () => setOpen(!isOpen()))
+
+		// 指针离开整个容器就收起：点开的态（aria-expanded）否则要等下次点击别处才清，
+		// 用户会觉得"移开鼠标它还挂着"
+		dropdown.addEventListener("mouseleave", () => setOpen(false))
 
 		trigger.addEventListener("keydown", e => {
 			if (e.key === "Enter" || e.key === " ") {

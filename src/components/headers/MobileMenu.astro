@@ -120,19 +120,33 @@ const lastTopLevel = navBarLinks.length - 1
 <script>
 	const menuIcon = document.querySelector("#nav-menu-panel")
 	const dropdownContent = document.querySelector("#dropdown-content")
+	const submenus = Array.from(document.querySelectorAll<HTMLElement>("[data-mobile-dropdown]"))
+
+	// 收起所有子菜单（面板收起时必须一起收，否则下次打开还停在展开态）
+	const collapseSubmenus = () => {
+		for (const box of submenus) {
+			box.setAttribute("data-expanded", "false")
+			box.querySelector("[data-mobile-dropdown-trigger]")?.setAttribute("aria-expanded", "false")
+		}
+	}
+	const closePanel = () => {
+		dropdownContent?.classList.remove("open")
+		collapseSubmenus()
+	}
+
 	// 点击按钮事件
 	menuIcon?.addEventListener("click", () => {
+		const opening = !dropdownContent?.classList.contains("open")
 		dropdownContent?.classList.toggle("open")
+		if (!opening) collapseSubmenus()
 	})
 	// 点击其他地方消失
 	document.addEventListener("click", e => {
-		if (!menuIcon?.contains(e.target as Node) && !dropdownContent?.contains(e.target as Node)) {
-			dropdownContent?.classList.remove("open")
-		}
+		if (!menuIcon?.contains(e.target as Node) && !dropdownContent?.contains(e.target as Node)) closePanel()
 	})
 
 	// 子菜单展开/收起（Header 在 Swup 容器外，本脚本只跑一次即可）
-	for (const box of document.querySelectorAll<HTMLElement>("[data-mobile-dropdown]")) {
+	for (const box of submenus) {
 		const trigger = box.querySelector<HTMLElement>("[data-mobile-dropdown-trigger]")
 		if (!trigger) continue
 		trigger.addEventListener("click", () => {
@@ -142,13 +156,12 @@ const lastTopLevel = navBarLinks.length - 1
 		})
 	}
 
-	// Swup 换完内容后把整个菜单和子菜单收起：菜单在容器外不会被替换，
-	// 不收的话跳转后它还挂着，子项也停在展开态
-	document.addEventListener("swup:contentReplaced", () => {
-		dropdownContent?.classList.remove("open")
-		for (const box of document.querySelectorAll<HTMLElement>("[data-mobile-dropdown]")) {
-			box.setAttribute("data-expanded", "false")
-			box.querySelector("[data-mobile-dropdown-trigger]")?.setAttribute("aria-expanded", "false")
-		}
+	// 点任意菜单项即刻收手：不能等 Swup 的事件，整页跳转和 reduced-motion 下它不触发
+	dropdownContent?.addEventListener("click", e => {
+		const link = (e.target as Element)?.closest?.("a")
+		if (link) closePanel()
 	})
+
+	// Swup 换完内容后再兜一次底
+	document.addEventListener("swup:contentReplaced", closePanel)
 </script>

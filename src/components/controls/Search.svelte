@@ -132,7 +132,7 @@
 		class="relative hidden lg:flex items-center h-10 mr-2 bg-black/4 transition-colors hover:bg-black/6 focus-within:bg-black/6
 		       dark:bg-white/5 dark:hover:bg-white/10 dark:focus-within:bg-white/10"
 	>
-		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="pointer-events-none absolute left-3 text-50">
+		<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-50">
 			<path
 				d="M7.667 12.667A5.333 5.333 0 1 0 7.667 2a5.333 5.333 0 0 0 0 10.667ZM14.334 14l-2.9-2.9"
 				stroke="currentColor"
@@ -158,23 +158,26 @@
 		/>
 	</div>
 
-	<!-- 移动：按钮 -->
-	<button
-		type="button"
-		class="btn-plain h-10 px-3 lg:hidden"
-		aria-expanded={mobileOpen}
-		aria-controls="search-panel"
-		onclick={openMobile}
-	>
-		<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-			<path
-				d="M7.667 12.667A5.333 5.333 0 1 0 7.667 2a5.333 5.333 0 0 0 0 10.667ZM14.334 14l-2.9-2.9"
-				stroke="currentColor"
-				stroke-width="1.6"
-				stroke-linecap="round"
-				stroke-linejoin="round"></path>
-		</svg>
-	</button>
+	<!-- 移动：按钮。外层容器才带 lg:hidden——按钮自己有 .btn-plain{display:flex}，
+	     它在 abutton.css 里、加载顺序在 Tailwind 工具类之后，同特异性会盖掉按钮上的 lg:hidden -->
+	<div class="flex items-center lg:hidden">
+		<button
+			type="button"
+			class="btn-plain h-10 w-10 items-center justify-center"
+			aria-expanded={mobileOpen}
+			aria-controls="search-panel"
+			onclick={openMobile}
+		>
+			<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="shrink-0">
+				<path
+					d="M7.667 12.667A5.333 5.333 0 1 0 7.667 2a5.333 5.333 0 0 0 0 10.667ZM14.334 14l-2.9-2.9"
+					stroke="currentColor"
+					stroke-width="1.6"
+					stroke-linecap="round"
+					stroke-linejoin="round"></path>
+			</svg>
+		</button>
+	</div>
 
 	{#if panelShown}
 		<div class="absolute top-full right-0 z-50 w-[min(92vw,30rem)] pt-2 lg:pt-3">
@@ -187,7 +190,7 @@
 			>
 				<!-- 移动端在面板里自带一条输入框（桌面端输入框已在导航栏里） -->
 				<div class="relative flex items-center lg:hidden">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="pointer-events-none absolute left-3 text-50">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-50">
 						<path
 							d="M7.667 12.667A5.333 5.333 0 1 0 7.667 2a5.333 5.333 0 0 0 0 10.667ZM14.334 14l-2.9-2.9"
 							stroke="currentColor"

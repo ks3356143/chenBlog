@@ -3,40 +3,39 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-09-28 深夜：文章下拉 + `/series/` + `/tags/` + SeriesNav 已推送并部署上线，公网实测通过，仅待用户肉眼验收观感**
+> 最后更新：**2026-09-28 深夜（第二轮）：Pagefind 搜索 + 双木成林站点图标全套已做完并 preview 实测，待部署**
 
 ---
 
 ## 一、下次会话第一件事
 
-### ✅ 2026-09-28 夜：「文章」下拉 + 系列页 + 标签页 —— 已上线，只剩肉眼验收
+### 🔴 待部署：站内搜索 + 新站点图标（2026-09-28 深夜做完）
 
-已推送远端（推完 ahead 归 0）并按第六节流程部署，从公网 IP 实测：下拉四项开合正常、
-面板与子项 `borderTopLeftRadius` 均 `0px`（直角）、点「系列」跳页后 `aria-expanded=false` 且面板 opacity 0、
-`/series/` 两张手风琴卡片展开到 1240px。**要用户自己看的只剩观感**（动效手感、SeriesNav 样式）。
-实现经过见第二节，规矩见 AGENTS 第五节 16、17。
-
-**第一轮验收反馈（同日夜，两条都已修并复测）**：
-① 下拉圆角 → 全站直角（根因：参考站圆角走 `--radius-large`，我们裁剪主题时没带这个变量，
-它自己在参考站实际也是直角；已写进 AGENTS 五-16）；
-② 点子项跳页后下拉不消失 → 根因是 Header 在 Swup 容器外不被替换，`aria-expanded` 与焦点都还留着
-（`:focus-within` 也撑着面板）。修法：点子项即收起 + 收起时 `blur()` + 监听 `swup:contentReplaced` 兜底，
-移动端 `.open` 菜单同理。
+本地已提交、`npm run build`（含索引）与 `npm run preview` 实测通过，**线上还没有**：
+1. **搜索**：点导航搜索按钮开毛玻璃面板，输 `flex` 出 7 条、`蒙层` 命中第13天并高亮；
+   暗色 `rgba(23,23,23,.6)`、亮色 `rgba(255,255,255,.55)`，都是 `blur(20px) saturate(1.5)` + 直角 + 顶部内高光；
+   ↑↓ 选结果、Esc 关闭、点结果会真跳转。
+2. **图标**：`public/favicon.svg` 换成绿底白色**两棵树**的双木成林 mark，`npm run icons` 重生成
+   16/32/96 PNG、ICO(16/32/48)、apple-touch 180、manifest 192/512；`site.webmanifest` 的
+   `MyWebSite/MySite` 占位名改成「亦林 YILIn / 亦林」。
+   ⚠️ 部署后你那边标签页图标大概率还是旧的——**浏览器缓存极强**，先 Ctrl+Shift+R 或开无痕再看。
+→ 用户点头就走第六节标准流程部署（`dist/pagefind/` 会随包一起上传，服务器不用改）。
+   规则细节在 AGENTS 第五节 18、19 与第三节命令说明。
 
 ### ✅ 已完成（不用再管）
 
-- **2026-09-28 白天**：全站体检 5 处修复（about 死链+邮箱、空 h1、重复 h1、标题层级、分页假链接）
-  已部署并公网验收。
-- **2026-09-24 夜**：过渡/分类栏/归档/横幅/品牌标识 6 笔，用户验收通过。
+- **2026-09-28 夜**：「文章」下拉 + `/series/` + `/tags/` + SeriesNav 已部署并公网实测；
+  第一轮验收反馈的两条（圆角、跳页后不收起）也已修完上线。
+- **2026-09-28 白天**：全站体检 5 处修复已上线验收。
+- **2026-09-24 夜**：过渡/分类栏/归档/横幅/品牌标识 6 笔，验收通过。
+- **storybook 技能**：`E:\works\skills\storybook` 在本机不存在（E 盘没有 `works` 目录，C/D/E 全盘搜过），
+  已作为插件技能注册（`qoder-guide:storybook`）可直接用 —— **这条别再查了**。
 
 ### 🟠 悬着的事，需要用户点头
 
-1. **about 页对外邮箱**：已统一到 `314298729@qq.com`；若 `xiaye@msn.com` 才是收件地址，显示文本也要一起换。
-2. **服务器回滚资产越攒越多**（`dist.old` + 数个时间戳备份）：确认稳定后可清，但**必须用户明确说**才删。
-3. ~~部署 + 推送~~：**2026-09-28 深夜已完成**（用户当次授权，推 `1c5e502..9ed0c32`，dist 原子替换）。
-   下次改动仍需重新授权。
-4. ~~`storybook` 技能搬运~~：**结掉，不用再查**。`E:\works\skills\storybook` 在本机不存在（E 盘没有 `works` 目录；
-   C/D/E 盘按目录名与 `SKILL.md` 内容全搜过），它已作为插件技能注册（`qoder-guide:storybook`），可直接用。
+1. **部署上面那批** + **推送远端**（本地领先 `origin/main`，铁律：推送前先问）。
+2. **about 页对外邮箱**：已统一到 `314298729@qq.com`；若 `xiaye@msn.com` 才是收件地址，显示文本也要一起换。
+3. **服务器回滚资产越攒越多**（`dist.old` + 8 个时间戳备份）：确认稳定后可清，但**必须用户明确说**才删。
 
 ### 🟡 AGENTS.md 第九节的存量待办
 
@@ -46,6 +45,29 @@
 ---
 
 ## 二、历次会话做了什么
+
+### 2026-09-28 深夜（第二轮）：Pagefind 搜索 + 双木成林站点图标 + 下拉收起二次修
+
+**搜索**：先扒参考站（`pagefind ^1.5.2` + build 后跑 `run-pagefind.ts` + `pagefind.yml`，
+UI 是 `controls/Search.svelte` + `pages/AdvancedSearch.svelte`，PROD 下懒加载 `/pagefind/pagefind.js`、
+300ms 防抖、请求号防竞态）。按同一套接进我们仓库：新增 devDep `pagefind` 与 `sharp`（后者只为出图），
+`build` 改成 `astro build && pagefind --site dist`，索引落 `dist/pagefind/`（42 文件 / 759K，随 dist 部署，服务器零改动）。
+组件重写为 `src/components/controls/Search.svelte`（Svelte 5 runes），删掉原来那个纯装饰的
+`uiverse/Search.astro`。**踩坑**：`import("/pagefind/pagefind.js")` 写字面量会被 Vite 在构建期当模块解析而直接失败
+（那会儿产物还不存在），`@vite-ignore` 注释经 Svelte 编译会丢 → 必须走变量 URL。
+参考站在 dev 下塞假搜索结果，我们改成显示真提示（dev 没有索引是事实，不该演）。
+**图标**：`public/favicon.svg` 原来是早期自动生成的「渐变底 + YILIn 字样」，与品牌无关；
+换成绿底 `#00ba99` + 白色**两棵树**描边的双木成林 mark（用户特别强调不要三棵），
+新增 `scripts/generate-icons.mjs`（`npm run icons`）用 sharp 出 16/32/96 PNG、
+手写 PNG-in-ICO 容器（内嵌 16/32/48）、apple-touch 180 满幅不透明、manifest 192/512，
+并把 `site.webmanifest` 里的 `MyWebSite/MySite` 占位名改掉。
+**下拉第二轮**：用户报"移动端子菜单不收回、桌面点空白不收回"。合成点击测不出桌面那条，
+查出真机制是 `:focus-within` 把鼠标点击造成的聚焦也算进去 → 换成 `:has(.dropdown-item:focus-visible)`，
+并补 `mouseleave` 即收起、移动端点任意菜单项立刻收面板与子菜单（Swup 事件只当兜底，整页跳转和
+reduced-motion 下它不触发）。
+**验证**：`npm run preview` 上实测——`flex` 7 条 / `蒙层` 命中第13天带 2 处 `<mark>`；
+面板 `blur(20px) saturate(1.5)`、亮 `rgba(255,255,255,.55)`、暗 `rgba(23,23,23,.6)`、`borderRadius 0px`、
+含 inset 高光；↑↓ 焦点到结果项、Esc 关闭、点结果会真跳转。dist 基线 40 页 / 307 文件 / 28M。
 
 ### 2026-09-28 夜：顶部「文章」下拉 + `/series/` + `/tags/` + 文章页系列导航盒
 
@@ -112,13 +134,17 @@ CategoryBar（不隐藏 + 软高亮 + 更多 pill）、`/categories/` 页、归�
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 本次功能 6 笔 + 文档 3 笔，末笔是本次收尾提交；功能 6 笔：`6bbb1f7` 移动端跳页收起、`35db5b1` 下拉改直角+跳页收起、`0ea14c3` 文章页接入 SeriesNav、`2c51e26` 导航配置化+下拉、`9b5ec12` /series/ + /tags/ + SeriesNav、`39c9ae1` schema + 26 篇 frontmatter |
+| 本地 HEAD | 本轮 5 笔未推：文档收尾笔、`b9c9805` lockfile、`3bd0240` 双木成林图标全套、`6de53c0` Pagefind 搜索、`cd1aa56` 下拉/移动菜单可靠收起 |
 | 工作区 | 干净（改动全部已提交） |
-| 与远端 | **已推送**：`1c5e502..9ed0c32` 推上去 33 笔，收尾文档笔随后再推；当前 ahead 0 |
-| 本地构建 | 退出码 0，**40 页 / dist 261 文件 / `_astro` 187 / 27M**，热缓存 3.6~7s；引用扫描 **0 缺失**、标题审计 **0 问题** |
-| `npm audit` | **0 vulnerabilities** |
-| 线上站点 | **已上到最新**（09-28 深夜原子替换）：下拉 `/series/` `/tags/` SeriesNav 均在公网实测通过（面板与子项 `borderTopLeftRadius` 0px、跳页后 aria-expanded=false 且 opacity 0、`/series/` 展开到 1240px） |
-| 服务器回滚资产 | `dist.old` + 8 个时间戳备份：`dist_backup_20260928_144355`（本次）、`_121051`、`20260924_140609/144423/150536/220412/223726`、`20260920_234618`。**均保留中**，需用户明确同意才删；线上 dist 27M |
+| 与远端 | **ahead 5**，未推送（推送前先问；上一批 `1c5e502..9ed0c32` 已推过） |
+| 本地构建 | `npm run build` = astro build + 索引，退出码 0：**40 页 / dist 307 文件 / 28M**（`_astro` 187、`pagefind` 42 / 759K），约 5~7s + 0.2s；`npm run preview` 实测搜索可用 |
+| `npm audit` | **0 vulnerabilities**（必须 `npm audit --registry=https://registry.npmjs.org`；默认 npmmirror 源不实现 audit 接口，会报 `NOT_IMPLEMENTED`） |
+| 线上站点 | 停在 09-28 夜 14:43 那版（下拉/系列/标签已在公网）；**本轮的搜索、新图标、下拉二次修复均未上线** |
+| 服务器回滚资产 | `dist.old` + 8 个时间戳备份（最新 `dist_backup_20260928_144355`）。**均保留中**，需用户明确同意才删 |
+| dev server | 后台运行中（任务 `b91ngmhhy`，端口 4321）；本轮另起过 preview `:4322` 已关 |
+| 本机网络提示 | `curl https://github.com/...` 返回 `HTTP 000` 是 Windows schannel 吊销检查失败（`CRYPT_E_NO_REVOCATION_CHECK`），**不是站点问题** |
+| 既存小坑（本次未动） | `MobileMenu.astro` 里 `transform: translateY()` 是空参数的非法声明（历史遗留）。圆角变量 `--radius-large`、`--panel-border-color` 未定义已查清并写进 AGENTS 五-16 |
+| 临时文件 | 本地与服务器 `/tmp` 已清（preview 日志、扫描脚本、sparse clone 的 Firefly 仓库、参考站与线上 HTML） |
 | dev server | 后台运行中（任务 `b91ngmhhy`，端口 4321），下次可直接用 |
 | 本机网络提示 | `curl https://github.com/...` 返回 `HTTP 000` 是 Windows schannel 吊销检查失败（`CRYPT_E_NO_REVOCATION_CHECK`），**不是站点问题** |
 | 既存小坑（本次未动） | `MobileMenu.astro` 里 `transform: translateY()` 是空参数的非法声明（历史遗留）。圆角变量 `--radius-large`、`--panel-border-color` 未定义这事已查清并写进 AGENTS 五-16，不再单独列 |

@@ -1,8 +1,9 @@
 # AGENTS.md — 项目长期指令
 
 > 陈俊亦的个人博客。每次对话开始时自动读取本文件作为上下文。
-> 最后更新：2026-09-28（晚：新增 /series/ + /tags/ + 顶部「文章」下拉、frontmatter 加 series/seriesOrder，
-> 第五节补 16、17，改 5、9；早前：新增第一节"参考源"、两条假缺陷证伪、修掉全站唯一真 404 与全部 Audit 提示）
+> 最后更新：2026-09-28 深夜（Pagefind 站内搜索 + 双木成林站点图标全套 + 下拉可靠收起；
+> 第五节补 18、19，更正 9、11，第三节加 `npm run icons` 与 audit 换官方源的说明。
+> 同日早前：新增 /series/ + /tags/ + 顶部「文章」下拉（五-16、17）、第一节"参考源"、两条假缺陷证伪）
 
 ## 📌 开始工作前先读 [`HANDOFF.md`](./HANDOFF.md)
 
@@ -65,11 +66,17 @@ https://firefly.cuteleaf.cn/ 与 https://github.com/CuteLeaf/Firefly 。
 
 ```bash
 npm run dev       # 本地开发，http://localhost:4321
-npm run build     # 构建，产物在 dist/
-npm run preview   # 预览构建产物
+npm run build     # astro build + Pagefind 索引，产物在 dist/（含 dist/pagefind/）
+npm run preview   # 预览构建产物——【搜索只能在这里或线上验】
+npm run icons     # 由 public/favicon.svg 重生成整套站点图标（PNG/ICO）
 ```
 
 `package.json` 里**没有** lint / test 脚本，也没有部署脚本。验证手段就是 `dev` 看效果 + `build` 确认能构建通过。
+查漏洞要**显式换官方源**：默认 registry 是 npmmirror，它不实现 audit 接口，
+`npm audit` 会报 `404 NOT_IMPLEMENTED` 而不是给出结论 →
+`npm audit --registry=https://registry.npmjs.org`（2026-09-28 实测，结果 **0 vulnerabilities**）。
+⚠️ **`dev` 下搜索一定不可用**：Pagefind 索引是 `astro build` 之后才生成的，dev 服务不认 `dist/pagefind/`，
+组件会显示"开发模式下没有搜索索引"的提示——这是设计，不是 bug（参考站在 dev 下是塞假结果，我们塞真提示）。
 
 ## 四、目录结构（关键位置）
 
@@ -85,6 +92,8 @@ src/pages/                  # 路由：about / archive / categories / tags / ser
 src/pages/rss.xml.js        # RSS 已实现
 src/layouts/                # BaseLayout.astro + Layout.astro
 src/plugins/                # 8 个自研 remark/rehype 插件（见下）
+scripts/generate-icons.mjs  # 由 public/favicon.svg 生成全套图标（npm run icons）
+pagefind.yml                # 搜索索引排除规则（KaTeX、data-pagefind-ignore、搜索面板自身）
 src/styles/                 # CSS + 一处 Stylus（markdown-extend.styl）
 src/utils/                  # content/date/gallery/image/layout/toc/url 工具函数
 ```
@@ -133,11 +142,14 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
    导致整个页面（含首页）渲染失败。Astro 6 容忍、Astro 7 报错。
    → 已于 2026-09-20 从 `src/pages/[...page].astro` 移除一处。要么写内容，要么整行删掉，别留空标签。
 
-9. 构建产物基线（**2026-09-28 实测**：新增 `/series/`、`/tags/` 后）：
-   **40 个页面 / dist 261 个文件 / 27M**，其中 `_astro/` 占 187 个，热缓存构建约 3.6~7s（冷缓存 20s+）。
-   （历史：09-21/09-23 是 37 页 / 260 文件；09-24 删 `logo.png` 并加 `/categories/` → 38 页 / 259 文件。）
-   已验证 dist 内 **starlight / pagefind 产物为 0**（见第九节，那两个是纯 devDep 膨胀）。
-   已知无害警告：vite chunk 体积提示。看到不用管（`logo.png` 的 `INEFFECTIVE_DYNAMIC_IMPORT` 已随文件删除消失）。
+9. 构建产物基线（**2026-09-28 深夜实测**：接 Pagefind 之后）：
+   **40 个页面 / dist 307 个文件 / 28M**，其中 `_astro/` 187 个、`pagefind/` 42 个（索引 28 页 / 2326 词），
+   热缓存 `npm run build` 约 5~7s + 索引 0.2s。
+   （历史：09-21/09-23 是 37 页 / 260 文件；09-24 加 `/categories/` → 38 页 / 259；09-28 加 /series/ /tags/ → 40 页 / 261。）
+   Pagefind 会提示 `doesn't support stemming for zh-cmn` —— 中文没有词干还原，**属正常**，不影响命中。
+   已验证 dist 内 **starlight 产物为 0**（见第九节，那是纯 devDep 膨胀）。
+   已知无害警告：vite chunk 体积提示、以及 Svelte 里动态 `import(变量)` 的"无法静态分析"提示（**必须保留变量写法**，
+   写字符串字面量会被 Vite 在构建期当模块解析而直接失败，因为 `/pagefind/pagefind.js` 那时还不存在）。
 
 10. **`@astrojs/markdown-remark` 必须是显式依赖**。`astro.config.mjs:12` 直接
     `import { unified } from "@astrojs/markdown-remark"`，但 `astro@7.3.4` 与 `@astrojs/mdx@8.0.2`
@@ -150,11 +162,15 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
     → 通则：`astro.config.mjs` 里 import 的每个包都必须在 `package.json` 中显式声明，
       别依赖 hoisting 或 peer 自动安装的运气。
 
-11. **`package.json` 的 `allowScripts` 钉的是精确版本**（`esbuild@x.y.z` / `sharp@x.y.z`）。
-    这两个包升级后若忘了同步改，npm 会**静默跳过它们的 postinstall**（原生二进制装不上），
+11. **`package.json` 的 `allowScripts` 钉的是精确版本**，现在只剩 **`esbuild@0.28.2`**。
+    被钉的包升级后若忘了同步改，npm 会**静默跳过它的 postinstall**（原生二进制装不上），
     日志只给一条 `install-scripts ... not yet covered by allowScripts` 警告。
     本地因为旧二进制还在所以构建照过，**全新克隆或服务器上重装才会崩**。
-    → 每次升 esbuild/sharp 都要同步更新 `allowScripts` 的版本号。
+    → 每次升 esbuild 都要同步改这里的版本号。
+    → **2026-09-28 更正**：原先这里还钉着 `sharp@0.35.4`，但 sharp 从 0.35.5 起、以及 `pagefind@1.5.2`
+      都**不再有 install 脚本**（改用 `@pagefind/windows-x64` 这类平台可选依赖），那条钉法是过期配置，已删。
+      判断方法：`node -e "console.log(require('./node_modules/<包>/package.json').scripts)"` 看有没有 install 钩子，
+      别凭旧记录一直挂着，也别看到平台包就以为被拦了。
 
 12. **品牌标识 = 内联 SVG「双木成林」mark + "亦林" 文字**（`src/components/headers/Header.astro`，2026-09-24 重设计）。
     mark 是两棵高低错落的圆头描边小树加一条地平线，`stroke: var(--primary)`（亮 `#00ba99` / 暗 `#0dcaa9` 自动换）；
@@ -215,9 +231,33 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
       改的时候别混。
     - 新页面记得给 `Layout` 传 `title`（`系列-Yilin` / `标签-Yilin`），区块标题从 `h2` 起（见第十三项）。
 
+18. **搜索 = Pagefind 全文检索**（2026-09-28 接，照 Firefly）。
+    - 依赖 `pagefind@^1.5.2` + `sharp@^0.35.5`（后者只为生成图标）；`build` 脚本是
+      `astro build && pagefind --site dist`，索引输出到 **`dist/pagefind/`**（不是 `_pagefind`）。
+    - 组件 `src/components/controls/Search.svelte`（Svelte 5 runes），在 `Header.astro` 里以
+      `<Search client:load />` 挂载；旧的装饰性 `src/components/uiverse/Search.astro` **已删**，别再引它。
+    - 索引懒加载：只在 `import.meta.env.PROD` 下 `import(indexUrl)`，**URL 必须是变量**（见第九项的警告）；
+      300ms 防抖 + `reqId` 防竞态；dev 下没有索引，面板显示真提示而不是像参考站那样塞假结果。
+    - 排除规则在根 `pagefind.yml`：KaTeX span、`[data-pagefind-ignore]`、`.search-panel`/`#search-panel`。
+    - **样式是毛玻璃 + 直角**：`backdrop-filter: blur(20px) saturate(1.5)`，亮 `#ffffff8c` / 暗 `#17171799`，
+      边框 `#0000000f` / `#ffffff1a`，顶部 1px 内高光 `inset 0 1px #ffffff2e` / `#ffffff0f`；
+      暗色靠 `:global(html[data-theme="dark"])`（我们不是 `prefers-color-scheme`）。数值是从参考站编译产物抄的。
+    - 验证只能在 `npm run preview`（服务 dist）或线上做；`<mark>` 命中词已改成品色加粗。
+    - 加密文章目前零篇，若将来启用 `password`，Pagefind 会把正文索引进去（构建产物里能搜到），届时要处理。
+
+19. **站点图标只有一个源文件：`public/favicon.svg`**（双木成林 = **两棵树**，绿底 `#00ba99` + 白色描边）。
+    改完跑 `npm run icons` 重生成 `favicon-16/32/96.png`、`favicon.ico`（内嵌 16/32/48）、
+    `apple-touch-icon.png`(180 满幅不透明)、`web-app-manifest-192/512.png`。
+    - 别手改那些 PNG/ICO，都是脚本产物。
+    - ⚠️ 浏览器对标签页图标**缓存极强**：改完在本地看到旧图标是常态，要硬刷新（Ctrl+Shift+R）或开无痕，
+      别急着判定"没生效"。
+    - 描边在 Header 里靠 `var(--primary)` 换色，favicon 没有这个环境，所以图标里是**写死的品牌绿**。
+
 ## 六、部署
 
 **部署方式：本地构建 + 上传 `dist`，服务器不跑 build。**（2026-09-20 起）
+> 2026-09-28 接了 Pagefind：索引在 `dist/pagefind/` 里，**随 dist 一起打包上传就行，服务器和 Nginx 不用改**；
+> 但 `npm run build` 现在包含索引步骤，别只跑 `astro build` 就打包，那样线上搜索会 404。
 
 - 服务器：阿里云 ECS，宝塔面板 + Nginx
 - SSH：`root@47.108.230.220`，**端口 22**，仅 publickey 认证（密码登录已关闭），本机 SSH 公钥已授权到该服务器 ✅

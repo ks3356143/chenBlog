@@ -3,32 +3,30 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-09-29（代码体检 + 三处 MD 去重已改完；未提交、未部署）**
+> 最后更新：**2026-09-29 上午（代码体检全部收口 → 已提交、已推送、已部署上线并公网实测通过）**
 
 ---
 
 ## 一、下次会话第一件事
 
-### 🔴 唯一的下一步：等用户点头提交 / 推送 / 部署
+### ✅ 2026-09-29 已全部交付：提交 + 推送 + 部署 + 公网实测通过
 
-**体检的全部待办都已经解决完了**（见第二节 09-29 那笔），现在只剩交付动作。
-工作区 **28 个文件**改动（25 源码+依赖 / 3 MD，明细见第三节），
-已按 AGENTS 第九节走过**干净 `npm ci` + 清内容缓存的全量构建**，产物逐项核过。
+代码体检的**所有待办都解决并上线了**。三笔提交 `c925043`（依赖 dayjs）/
+`b55ee68`（代码清理 + 三处暗色失效修复）/ `6fd44a7`（文档），已推 `origin/main`；
+按第六节流程原子替换线上 `dist`（备份 `dist_backup_20260929_102733`）。
 
-1. **提交与推送** —— AGENTS 第七节「推送前先问」，所以没做。建议拆 3 笔：
-   ① 依赖（`package.json` + lock 的 dayjs）② 代码清理与暗色缺陷修复 ③ 文档。
-2. **部署上线** —— ⚠️ **这批必须部署，不部署线上看不到**，因为它含**两条真实视觉缺陷修复**（不是行为等价的清理）：
-   - 暗色悬浮目录此前是**白色半透明板**（`--card-bg-rgb` 未定义 + 内联样式压过 `dark:`），现已跟主题走；
-   - 暗色浮动按钮此前**无描边**、暗色滚动条颜色**不跟随主题**，均已修。
-   另加链接 hover 的虚线下划线**首次真正出现**。标准流程见 AGENTS 第六节。
+**下次要做的只有两件**：
+
+1. **请用户肉眼验收三处暗色改动**（脚本量到的值都对，但观感只有人能定）：
+   切到暗色后看 `/posts/css100天-第10天/` ——
+   悬浮目录底色应由白转深 `rgba(22,31,27,.6)`、右下角浮动按钮应有浅描边、侧栏目录滚动条应为浅色。
+   ⚠️ **链接 hover 现在多了一条绿色虚下划线**（`--link-hover` 补值的结果，本批唯一非缺陷类视觉新增）。
+   觉得多余就删 `src/styles/markdown.css` 那一条 `border-bottom` 再走一次第六节即可回到旧观感。
+2. 若线上稳定几天，**用户明确同意后**可清理服务器回滚资产（现状见第三节，**我不会自己删**）。
 
 ### 🟠 更早悬着的事（需用户点头）
 
 1. **about 页对外邮箱**：已统一到 `314298729@qq.com`；若 `xiaye@msn.com` 才是收件地址，显示文本也要一起换。
-2. **服务器回滚资产**：实测 **11 个 `dist_backup_*` + `dist.old` ≈ 319M**（2026-09-29 只读核查）。
-   确认稳定后可清，但**必须用户明确说**才删。
-3. **`--link-hover` 的取值**这次按作者原意定成了 `var(--primary)`（hover 出现绿色虚线）。
-   若觉得多余，删 `markdown.css` 那一行即可回到"只有底色没有线"。**这是本批唯一一处非缺陷类的视觉新增。**
 
 ### 🟡 AGENTS 第九节的存量待办
 
@@ -41,7 +39,7 @@
 
 ## 二、历次会话做了什么
 
-### 2026-09-29：代码体检 + MD 去重（**未提交、未部署**）
+### 2026-09-29：代码体检 + MD 去重（已提交 `c925043 b55ee68 6fd44a7`，已部署上线）
 
 **清点临时产物**：仓库内无游离脚本（`scripts/` 只有 `generate-icons.mjs` 这个正经脚本）、
 无未跟踪文件、本地与服务器 `/tmp` 无本次产物。本地 `/tmp/LibScanGame/` 是**别的项目**的目录，没碰。
@@ -169,18 +167,18 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `e44ca55`，**工作区 28 个文件改动未提交**（25 源码+依赖 / 3 MD：AGENTS / HANDOFF / README） |
-| 与远端 | ahead 0 —— 这批**还没提交**，远端等于本地 HEAD，但都不含本批改动 |
+| 本地 HEAD | `6fd44a7`（本会话共 3 笔：`c925043` 依赖 / `b55ee68` 代码 / `6fd44a7` 文档），**工作区干净** |
+| 与远端 | **ahead 0**，`origin/main` 已含这三笔 |
+| 线上站点 | ✅ **已部署到最新**（2026-09-29 10:26 构建、10:27 原子替换，备份 `dist_backup_20260929_102733`）。公网实测：首页 200 / 中文文章 URL 200 / `/pagefind/pagefind.js` 200；`/_astro/Layout.BrzIS_NV.css` 内含 `--card-bg-rgb:22, 31, 27` 与 `[data-theme=dark] .custom-scrollbar`，`--shodow` 0 命中；浏览器在线量得暗色 `toc_bg=rgba(22,31,27,.6)`、按钮描边 `rgba(255,255,255,.08)`、滚动条 `rgba(255,255,255,.2)` |
 | 依赖 | `dayjs@^1.11.23` 已进 `dependencies`；`package.json` +1、`package-lock.json` +2/−1，**无版本漂移**。已用**干净 `npm ci`（退出码 0）** + 全量构建验证。`allowScripts` 仍只钉 `esbuild@0.28.2`，与实际安装版本一致 ✅ |
-| 线上站点 | 停在 **2026-09-28 17:28** 那次原子替换（服务器 `stat dist/index.html` 实测）；**本批未上线**，含两条暗色真缺陷修复 → 该部署 |
-| 本地构建 | 清内容缓存后全量重建：`npm run build` 退出码 0，40 页 / dist 307 文件 / 28M，`_astro/` 189、`pagefind/` 42（索引 28 页 / 2326 词） |
-| 产物审计 | h1 审计 **40 页 0 问题**；`/about/` 死链 0、邮箱仍 `314298729@qq.com`、github 卡片仍 3 张；Twikoo 日志 0 命中；`--shodow` 0 命中；`--card-bg-rgb` 亮暗两值都在；产物里 `.dark` 只剩 `rehype-callouts` 自带 2 条（非本项目源码） |
-| 内容层缓存 | `node_modules/.astro/data-store.json` **已于 09-29 删除并重建**。下次动 `src/plugins/**` 或 markdown 处理链务必再删（AGENTS 五-21） |
-| dev server | 后台运行中（任务 `b23v8bgcd`，端口 4321，HTTP 200）。⚠️ **停它要连子进程一起清** —— `TaskStop` 只杀 shell，孤儿 `astro dev` 会锁住 lightningcss（AGENTS 九 依赖坑 ③） |
-| 服务器回滚资产 | `dist.old` + 11 个 `dist_backup_*`，**≈319M**（最新 `dist_backup_20260928_172912`）。全部保留中，删需用户明确同意 |
-| 临时文件 | `%TEMP%` 下的体检脚本已删（本来就没进仓库）；`/tmp` 里本次抓的 `p.html` 等待清；本地与服务器无其他本次产物 |
+| 本地构建 | 部署用的那次是**清内容缓存后全量重建**：`npm run build` 退出码 0，40 页 / dist 307 文件 / 28M，`_astro/` 189、`pagefind/` 42（索引 28 页 / 2326 词） |
+| 产物审计 | h1 审计 **40 页 0 问题**；`/about/` 死链 0、邮箱仍 `314298729@qq.com`、github 卡片仍 3 张；Twikoo 日志 0 命中；`--shodow` 0 命中；产物里 `.dark` 只剩 `rehype-callouts` 自带 2 条（非本项目源码）；**全部改动文件 0 乱码** |
+| 内容层缓存 | `node_modules/.astro/data-store.json` **本会话删过 3 次**（每次改插件/CSS 后重建都清）。下次动 `src/plugins/**` 或 markdown 处理链务必再删（AGENTS 五-21） |
+| dev server | **已停止**，且已确认无孤儿 `astro dev` 进程残留（`TaskStop` 只杀 shell，子进程要按命令行精确匹配单独清，见 AGENTS 九 依赖坑 ③） |
+| 服务器回滚资产 | `dist.old` + **12 个 `dist_backup_*`**，合计 **343M**（最新 `dist_backup_20260929_102733`）。全部保留中，**删需用户明确同意** |
+| 临时文件 | 本地 `%TEMP%` 的体检脚本与 `chenblog_dist.tar.gz`、构建日志**均已删**；服务器 `/tmp` 已确认无残留 tar |
 | 测试环境限制（本次又验证有效） | ① 定宽 iframe 里 `:focus` 永不匹配 → 焦点/hover 驱动的效果只能比产物或用户肉眼验；② **带 `transition` 的元素，同步改 `data-theme` 后立刻读 `getComputedStyle` 读到的是过渡起点** → 必须先注入 `transition:none!important`（本次差点把暗色滚动条误判成"没修好"）；③ 内联 `style=` 不在样式表里，`cssRules` 遍历搜不到 |
-| 既存小坑 | ~~`MobileMenu.astro` 的 `transform: translateY()` 空参数~~ **本次已删**；`--radius-large` / `--panel-border-color` 已查清（AGENTS 五-16，别重复查）；`tsconfig.json` 的 react jsx 残留无影响 |
+| 既存小坑 | `--radius-large` / `--panel-border-color` 已查清（AGENTS 五-16，别重复查）；`tsconfig.json` 的 react jsx 残留无影响；~~`MobileMenu.astro` 空参数 transform~~、~~`--shodow-md` 拼写~~ 本会话已修 |
 | `npm audit` | 补 `dayjs` 后重测（官方源）= **0 vulnerabilities**，与 09-28 基线一致。⚠️ 默认 registry 是 npmmirror 不实现 audit 接口，必须加 `--registry=https://registry.npmjs.org`（AGENTS 第三节） |
 
 ---

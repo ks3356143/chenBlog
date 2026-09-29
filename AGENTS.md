@@ -1,9 +1,13 @@
 # AGENTS.md — 项目长期指令
 
 > 陈俊亦的个人博客。每次对话开始时自动读取本文件作为上下文。
-> 最后更新：2026-09-28 深夜（Pagefind 站内搜索 + 双木成林站点图标全套 + 下拉可靠收起；
-> 第五节补 18、19，更正 9、11，第三节加 `npm run icons` 与 audit 换官方源的说明。
-> 同日早前：新增 /series/ + /tags/ + 顶部「文章」下拉（五-16、17）、第一节"参考源"、两条假缺陷证伪）
+> 最后更新：2026-09-29（代码体检**已全部收口**，含两条真实暗色缺陷。
+> 新增**第五节 21：内容层缓存藏在 `node_modules/.astro/`**（改插件必须清它）、
+> **第五节 22：`style=` 内联样式压过 `dark:` 工具类**（暗色悬浮目录变白的根因）；
+> 第九节体检记录改为「已解决」并留 1 项不可达的未定值；依赖坑补第 ③ 条（开着 dev 跑 `npm ci` 会删空 `node_modules`）；
+> 第八节更正两条过期事实（`<github>` 卡片与代码块折叠**一直在生产用**）；
+> 删掉一条与「证伪」自相矛盾的旧记录、页数 38→40、五-9 基线刷新、回滚资产数量移出到 HANDOFF。
+> 变量改名：`--shodow-md`→`--panel-shadow`，新增 `--card-bg-rgb`。）
 
 ## 📌 开始工作前先读 [`HANDOFF.md`](./HANDOFF.md)
 
@@ -142,10 +146,11 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
    导致整个页面（含首页）渲染失败。Astro 6 容忍、Astro 7 报错。
    → 已于 2026-09-20 从 `src/pages/[...page].astro` 移除一处。要么写内容，要么整行删掉，别留空标签。
 
-9. 构建产物基线（**2026-09-28 深夜实测**：接 Pagefind 之后）：
-   **40 个页面 / dist 307 个文件 / 28M**，其中 `_astro/` 187 个、`pagefind/` 42 个（索引 28 页 / 2326 词），
+9. 构建产物基线（**2026-09-29 实测**：接 Pagefind 之后）：
+   **40 个页面 / dist 307 个文件 / 28M**，其中 `_astro/` 189 个、`pagefind/` 42 个（索引 28 页 / 2326 词），
    热缓存 `npm run build` 约 5~7s + 索引 0.2s。
-   （历史：09-21/09-23 是 37 页 / 260 文件；09-24 加 `/categories/` → 38 页 / 259；09-28 加 /series/ /tags/ → 40 页 / 261。）
+   （页历史：37 → 09-24 加 `/categories/` 38 → 09-28 加 `/series/` `/tags/` 40。
+   文件数在 09-28 接 Pagefind 后从 26x 跳到 307，两批数字不可直接对比，别拿旧基线核新产物。）
    Pagefind 会提示 `doesn't support stemming for zh-cmn` —— 中文没有词干还原，**属正常**，不影响命中。
    已验证 dist 内 **starlight 产物为 0**（见第九节，那是纯 devDep 膨胀）。
    已知无害警告：vite chunk 体积提示、以及 Svelte 里动态 `import(变量)` 的"无法静态分析"提示（**必须保留变量写法**，
@@ -206,8 +211,8 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
       （第三种是**触屏没有 hover 才加的 click 切换，Firefly 自己没有**，别当成照搬）。
     - 手风琴类交互（下拉、`/series/` 系列卡片、文章页 SeriesNav）一律**事件委托 + `window.__xxxInit` 幂等标志**，
       因为 `@swup/scripts-plugin` 会重跑容器内脚本（第十节 2）。Header 在容器外，它的脚本只跑一次，无需幂等标志。
-    - **只在部分页面渲染的组件，布局类 CSS 必须放全局样式表**（现已放在
-      `src/styles/singles/mainSingles.css` 的 `.series-acc-*` / `.series-nav-*`）；
+    - **只在部分页面渲染的组件，布局类 CSS 必须放全局样式表**（成因与实测案例见第十节 2，此处不复述）；
+      落到本项目：`.series-acc-*` / `.series-nav-*` 放在 `src/styles/singles/mainSingles.css`。
       Header 系组件每页都渲染，所以 `DropdownMenu.astro` 的 scoped `<style>` 是安全的。
     - ⚠️ **别在 `.astro` 的三元分支里写 `class:list=[..., cond && "x"]`**：本项目实测这样渲染出来是
       `class=""`（顶级菜单项的 `dropdown-item btn-plain h-10` 全丢，移动端菜单直接错乱）。
@@ -270,6 +275,29 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
     （父级 `display:none` 一定能压住子级）。
     → 同类风险：`main.css` / `mainSingles.css` / `layout-style.css` 里自定义类的属性，
       都可能覆盖同名 Tailwind 工具类；调"为什么这个 utility 不生效"时先查导入顺序与自定义类。
+
+21. ⚠️ **改了 `src/plugins/**` 或 `astro.config.mjs` 里的 markdown 处理链，必须删 `node_modules/.astro/data-store.json` 再构建**
+    （2026-09-29 实测，非推测）。Astro 的**内容层缓存不在项目的 `.astro/`，而在 `node_modules/.astro/`**：
+    它按**内容文件的哈希**失效，**插件源码变了它不管**。
+    → 症状：删了插件里的一行、`npm run build` 退出码 0、`dist/` 里那行**还在**；
+      连 `rm -rf .astro` 都没用（那个 `.astro/` 只放类型和 collections，不是内容缓存）。
+    → 本次的实际后果：`data-store.json` 的时间戳停在 09-28 14:03，说明**09-28 17:29 那次上线和 09-29 的全部构建，
+      文章内容部分都在复用这个旧缓存**。CSS/JS 不受影响（走 Vite），所以暗色滚动条那条是真的生效了。
+    → 正确验证顺序：改插件 → `rm -f node_modules/.astro/data-store.json` → `npm run build` → **grep 产物确认改动在里面**。
+      第七节"build 通过再报完成"对**内容类改动不充分**，必须核产物。
+    → 好消息：清空缓存不会变慢多少（重建仍是 40 页 / 307 文件 / 约 5s），所以**拿不准就删了再构建**。
+
+22. ⚠️ **`style=` 内联样式会压过一切样式表规则，包括 Tailwind 的 `dark:` 工具类**（2026-09-29 踩实）。
+    `FloatingToc.astro` 在元素上写 `style="background-color: rgba(var(--card-bg-rgb, 255,255,255), .6)"`，
+    同一个元素又挂了 `dark:bg-black/60` —— 内联胜出，于是**暗色下悬浮目录整块是白的**，
+    而且因为 `--card-bg-rgb` 从来没定义过，那个 fallback 让它**永远等于白色**，看起来"有在跟随主题"其实没有。
+    → 要在内联样式里传主题色，**必须同时把那个变量在 `global.css` 的亮、暗两个主题块里都定义好**
+    （现在 `--card-bg-rgb` 亮 `255,255,255` / 暗 `22,31,27`，与 `--card-bg` 的 `#fff` / `#161f1b` 同色）。
+    → 排查这类"暗色不生效"时，**先看元素有没有 `style=`**，再谈特异性和 `!important`；
+      光比源码顺序（内联样式根本不在样式表里，`cssRules` 遍历搜不到）会得出错误结论。
+    → 附带教训：`var(--x, fallback)` 的 fallback **不是"没定义也没事"** 的标志。
+      本项目里 `--card-bg-rgb` 有 fallback 却是真 bug，而 `--collapsedHeight` 无 fallback 反而是正常的
+      （它由 Astro `<style define:vars>` 注入）。判断可达性要逐个看来源，别按"有没有 fallback"一刀切。
 
 ## 六、部署
 
@@ -404,12 +432,28 @@ curl -s -o /dev/null -w "%{http_code}\n" \
 
 ### 日常约定
 
-- **改之前先跑起来看现状**，不凭想象动手；改完必须 `npm run build` 通过再报完成
+- **改之前先跑起来看现状**，不凭想象动手；改完必须 `npm run build` 通过再报完成。
+  ⚠️ 但 **build 退出码 0 ≠ 产物是新的**：动到 markdown 插件链时先按第五节 21 清内容层缓存，再 grep 产物确认。
 - **UI 改动要在浏览器里实际验证**（可用 browser-use 只读访问线上站点对比）
 - 提交粒度小，一次改动一件事，方便回退
 - 提交信息用中文，跟现有风格一致（如"添加前端css邪修-2ge"）
 - 不引入新依赖前先问；不擅自升级大版本
 - 不确定就问，别猜
+- **批量改文件必须逐行保留原行尾**（2026-09-29 踩过）：本仓库 `core.autocrlf=true` 且**没有 `.gitattributes`**，
+  而 git 索引里的行尾**本身就是混杂的**——实测一部分文件的 blob 存 CRLF、另一部分存 LF，工作区全是 CRLF。
+  → 用脚本（node/sed）批量改写时要按 `(\\r?\\n)` 捕获再原样写回；改完先看 `git diff --numstat`，
+  **每个文件应当只有你真正动过的那几行**。若出现"1 行改动变成 40/40"，就是行尾被整体翻转，立刻 `git checkout --` 回退换写法。
+  反过来"把全项目统一成 CRLF/LF"这种好心想也别做，那会产生整文件重写式 diff。
+  ⚠️ 同一天还犯了一个**更狠的：读写编码不一致会直接写坏文件**。
+  `readFileSync(f,"latin1")` 读、却 `writeFileSync(f,str)`（默认 utf8）写 → 非 ASCII 字节被重新编码，
+  **中文注释全变乱码**，`global.css` 的 diff 从预期的 3 行炸成 16/14。
+  → 铁律：**读什么编码就用什么编码写回**。本项目源码是 UTF-8 且中文注释极多，正常应当 utf8 读写；
+    `latin1` 只适合只读地数列数/行尾，**绝不能顺手写回**。
+  → 自查：改完跑 `grep -E "Ã©|å´|ä¸»|æå"` 扫一遍所有改动文件，命中即为乱码。
+  提交前可用 `cp .git/index /tmp/tidx && GIT_INDEX_FILE=/tmp/tidx git add <文件>` 在**临时索引**里模拟暂存，
+  确认 diff 规模没炸——这招不碰真索引，安全。
+- **组件自述写 frontmatter 里的 `//` 注释**，不要声明成 `const DES = "…"`（2026-09-29 统一）。
+  后者在 14 个文件里是**只声明从未读取**的死变量，已全量转注释；Astro frontmatter 是 JS，注释合法且不进产物。
 
 ## 八、文章写作规范（2026-09-21 实测调研，非推测）
 
@@ -458,13 +502,19 @@ schema 里其余 8 个（`pinned` `author` `sourceLink` `licenseName` `licenseUr
 
 ### ⚠️ 这些功能配置齐全但从未在生产环境用过
 
-Mermaid、KaTeX 公式、`:::` callout 提示框、`<github>` 卡片、图片网格、代码块折叠——
+Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
 26 篇文章**一个都没用到**，全部是纯 HTML + 内联 `<style>`（CSS100Day 系列的做法）。
 
 → 这些渲染路径等于**零实战验证**。首次写用到它们的文章，必须在 `npm run dev` 里逐项确认再上线，
 别以为配置装了就能用。
 
-## 九、待办与未决（最近一次更新：2026-09-28）
+**已确认在生产用的，别混进上面那份清单**（2026-09-29 逐条核 `dist/`）：
+- **代码块折叠**：28+ 个产物含 `ec-collapse`，文章里超 15 行的代码块一直在折叠（见第五节 3）。
+- **`<github>` 卡片**：`/about/` 上实打实渲染着 3 张（`chenBlog` / `cdTestPlant3` / `cdtestplant_v1`）。
+  也就是说 `src/plugins/rehype-component-github-card.mjs` **是活代码不是摆设** ——
+  它注入的是**浏览器端脚本**，改完必须按第五节 21 清内容层缓存才看得到变化。
+
+## 九、待办与未决（最近一次更新：2026-09-29）
 
 ### 文章方向，等用户拍板
 
@@ -473,27 +523,65 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、`<github>` 卡片、图片网
 2. **是否开始配文章封面**：可做成"按分类自动配图"，成本低。
 3. **是否要文章脚手架**：一条命令生成带正确 frontmatter 的模板文件。
 
-### 缺陷现状（2026-09-28 全站实测后）
+### 缺陷现状（2026-09-29 复核）
 
-**已知缺陷：无未修项。** 2026-09-28 用「解析真实元素 + 逐路径核 dist」扫全站 38 页：
-本地引用 106 个 **0 缺失**、远程 57 个 URL 全部 200（100dayscss 12 个 / 本站绝对链接 39 个 / astro.build 1 个 / GitHub 5 个）；
-标题层级审计 **38 页 0 问题**。修的内容见 [`HANDOFF.md`](./HANDOFF.md) 第二节，此处不重复；
+**已知缺陷：无未修项。** 2026-09-28~29 用「解析真实元素 + 逐路径核 dist」扫全站 **40 页**：
+本地引用 **0 缺失**、远程 57 个 URL 全部 200（100dayscss 12 个 / 本站绝对链接 39 个 / astro.build 1 个 / GitHub 5 个）；
+标题层级审计 **40 页 0 问题**。修了什么见 [`HANDOFF.md`](./HANDOFF.md) 第二节，此处不重复；
 本节只留**长期有用的排查方法**。
 
-- **两条"已知缺陷"当初是误判，别再当真**（2026-09-28 证伪）：
-  ① ~~"2 处 `<img src="./heart.svg">` 线上 404"~~ —— 那两处引用都在 ` ``` ` 围栏内，是示例代码文本，
-     页面上没有 `<img>` 元素、不发请求。grep HTML 能搜到是因为 expressive-code 把整段代码塞进了
-     复制按钮的 `data-code="..."` 属性。
-  ② ~~"代码块的语言徽章和行号从未渲染过"~~ —— **两者一直正常渲染**。徽章是
-     `[data-language]::before`（`content: attr(data-language)`）——伪元素**不在 HTML 文本里**，
-     按标签去 grep 必然搜不到；行号是 `div.gutter > div.ln`（第10天那页实测 124 个），
-     之前用 `ec-line-numbers` 这种不存在的类名去查，自然"零产出"。
+- **两条曾挂着的多轮"已知缺陷"是误判，别再当真**（2026-09-28 证伪）：
+  ① `<img src="./heart.svg">` 线上 404、② "代码块语言徽章与行号从未渲染"。
+  两者都是**用错了探测手段**：① 那两处引用在 ` ``` ` 围栏内是示例文本（grep 命中的是 expressive-code
+  塞进复制按钮 `data-code` 属性的整段代码），页面上没有 `<img>` 元素、不发请求；
+  ② 徽章是 `[data-language]::before` **伪元素**（不在 HTML 文本里）、行号是 `div.gutter > div.ln`
+  （第10天页实测 124 个），拿 `ec-line-numbers` 这种不存在的类名去查自然"零产出"。
   → **通则：查渲染缺陷要按产物实际结构验证，别用"搜 HTML 字符串"和臆想的类名当证据。**
   → `<img>` 是 void element，解析器不会把它挂成 `<pre>` 的后代，所以"跳过 pre 子树"的 HTML 解析法也会漏判；
      正确做法是**按源码 ` ``` ` 围栏逐行判定**（围栏内=示例文本，围栏外=真实元素），再核 `dist` 里文件在不在。
 - **远程图片依赖 `100dayscss.com`**：实测 12 个 distinct 资源 / 13 处真实请求（另有大量写在围栏内的示例引用，不发请求）。
   对方关站或开防盗链会集体裂图，属**外部风险**，不是当前缺陷。
 
+### 2026-09-29 代码体检：全部已解决（含两条真缺陷）
+
+体检方式：`console.log` / 死变量 / 未用导入 / 非法 CSS / 写死测试值 五类逐项扫 + 逐条核产物。
+纯清理项（14 处死变量、4 条调试日志、1 条非法声明）见 [`HANDOFF.md`](./HANDOFF.md) 第二节。
+**这里只留查出来的缺陷和它们的答案**：
+
+1. ✅ **`dayjs` 已补为显式依赖**（`^1.11.23`）。它此前只靠 `mermaid`（devDep）和 `sanitize-html→launder` 带进来，
+   是第五节 10 那条 `@astrojs/markdown-remark` 事故的同一类风险。已按第九节走**干净 `npm ci` + 构建**验证通过。
+2. ✅ **暗色悬浮目录是白的**（真缺陷，非冗余）。`FloatingToc.astro:38,42` 用**内联 `style=`** 写死
+   `rgba(var(--card-bg-rgb, 255,255,255), .6)`，而 `--card-bg-rgb` **从未定义** → 恒等于白色半透明，
+   且内联样式把 `dark:bg-black/60` 工具类**整个压掉**。
+   → 修法：在 `global.css` 两个主题块里补 `--card-bg-rgb`（亮 `255,255,255` / 暗 `22,31,27`，与 `--card-bg` 同色）。
+   实测暗色由 `rgba(255,255,255,.6)` → `rgba(22,31,27,.6)`，亮色零变化。
+   ⚠️ 顺带纠正一个我这次先判断错的点：**那两条 `:global(.dark) … !important` 不是冗余副本**，
+   是作者为打穿这条内联样式写的（但选择器写错所以从没生效）。已随内联修好而删除，无需再用 `!important`。
+   → **通则见第五节 22：`style=` 内联样式会压过一切样式表规则，含 `dark:` 工具类。**
+3. ✅ **浮动按钮暗色描边看不见**：`FloatingButton.astro` 的 `border: 1px solid rgba(0,0,0,0.1)` 写死黑色，
+   叠在 `#161f1b` 卡面上≈无描边；改为 `var(--line-divider)`（主题感知，与全站其它卡片一致）后暗色出现浅描边。
+   同时删掉该组件里那条永远不生效的 `:global(.dark) .floating-btn` 块，和两处引用**未定义变量**
+   `--shadow-button` / `--shadow-button-dark` 的 `box-shadow`（按钮的阴影一直由 `.card-base` 的 `shadow-xs` 提供，删掉无视觉变化）。
+4. ✅ **文章链接 hover 的虚下划线从未出现**：`markdown.css` 的 `border-bottom: 1px dashed var(--link-hover)`
+   和 `decoration-(--link-underline)` **两个变量都不存在**。后者换成 `--primary` 是**等价替换、零视觉变化**
+   （原本 `text-decoration-color` 无效 → 回落到 `currentColor`，而链接色就是 `--primary`）；
+   前者补成 `var(--primary)` 后 hover 会**新增**一条绿色虚线（作者原意是"下划线换成描边"，此前只有底色没有线）。
+5. ✅ **`--shodow-md` 拼写错已改名为 `--panel-shadow`**（`global.css` + `MobileMenu.astro` + `DropdownMenu.astro` 三处同步）。
+   ⚠️ **别图省事改名成 `--shadow-md`**：Tailwind v4 的 `theme.css` 里 `--shadow-md` 是**utility 命名空间的 token**，
+   在 `:root` 覆盖它会连带改掉全站 `shadow-md` 工具类的值（本项目当前没人用 `shadow-md`，所以是**潜伏**的坑，不是当下报错）。
+   → 通则：给自定义变量起名要先排除 Tailwind v4 的 `--color-*` / `--shadow-*` / `--radius-*` / `--spacing-*` 等命名空间。
+6. **仅剩的未定义变量都在「不可达」路径上，故不动**（改也无从验证）：
+   `markdown-extend.styl` 的 `.mermaid-loading` / `.mermaid-error` 里引用 `--text-color-secondary`、`--primary-hover`
+   —— 只有 Mermaid 渲染时才会出现，而 26 篇文章零使用（第八节）。
+   首次写 Mermaid 文章时按第八节在 dev 逐项验，届时一并定值。
+   另：`markdown.css:188` 的 `body.wallpaper-transparent { … var(--card-bg-transparent) }`
+   —— **全站没有任何代码设置过 `wallpaper-transparent` 这个类**，整块不可达，不只是变量缺失。
+
+> 产物里现在只剩 `.dark .callout` / `.dark .callout-title` 两条裸 `.dark`，
+> 那来自 `node_modules/rehype-callouts/…/github/index.css`（依赖自带），不是本项目源码，且 callout 零使用，别去动。
+
+另：`tsconfig.json` 里 `"jsx": "react-jsx"` / `"jsxImportSource": "react"` 是模板残留（项目无 React），
+不影响构建，也未动。
 
 ### 版本天花板（撞过墙了，别反复尝试）
 
@@ -520,10 +608,20 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、`<github>` 卡片、图片网
   npm run build
   ```
 
-  ⚠️ **两个已实际犯过的低效写法，别再来**：
+  ⚠️ **三个已实际犯过的低效 / 危险写法，别再来**：
   ① 先 `npm update` 再 `rm -rf node_modules && npm ci` —— 把 614 个包写进磁盘又立刻删掉重装，
      白等约 3 分钟（2026-09-23 实测）。
   ② 在 `npm ci` 前手动 `rm -rf node_modules` —— `npm ci` 自己会清掉已有 `node_modules`，多此一举。
+  ③ **开着 dev server 就 `npm ci`**（2026-09-29 实际把项目搞坏过一次）—— `npm ci` 会先删 `node_modules`，
+     而 Windows 下 `lightningcss-win32-x64-msvc\*.node` 这类**原生二进制被 dev/vite 进程锁住**，
+     删到一半报 `EPERM: operation not permitted, unlink`，**结果是 `node_modules` 被删空、项目当场不可用**。
+     → 更阴的是：`TaskStop` 停掉后台任务只杀外层 shell，`npm run dev → astro dev` 的**子进程会变成孤儿继续存活**
+       （本次同时留着 2 个 astro dev + 2 个 npm 包装进程）。
+     → 顺序：`Get-CimInstance Win32_Process` 按 `CommandLine -like '*chenBlog*'` 精确定位 PID 后逐个 `Stop-Process`
+       （**别批量杀 node.exe**，Qoder 自身和一堆 MCP server 都是 node 进程）；确认残留为 0 再 `npm ci`。
+       万一已经失败了，先 `npm install`（增量、不删目录）把项目救回来，再重试干净安装。
+  → 另：`npm ci` / `npm install` 后面接 `| tail -20` 会把**退出码换成 tail 的**，
+     失败也会显示成"成功"。依赖类命令要拿真实退出码就 `> 文件 2>&1; echo $?`，别信管道后的 `$?`。
 - **`expressive-code-language-badge` 有个假的 starlight peer**：1.1.0 与 2.0.0 都把
   `@astrojs/starlight` 声明为**非 optional** peer，但该包 dist 只 `import "@expressive-code/core"`、
   产物内零 starlight 引用（16K，README 也没提过）——纯属上游 `package.json` 写坏。
@@ -545,15 +643,15 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、`<github>` 卡片、图片网
 - ✅ **代码块功能无回归**：拿线上旧构建（0.43.1）与新构建（0.44.2）做同一篇文章 A/B 对照，
   `ec-collapse*` 折叠类、`ec-line` 数量、复制按钮文案全部一致；108 行差异只有资源哈希、
   Astro 7.3 更紧的压缩空白、一个 HTML 注释
-- ⚠️ A/B 对照同时暴露一个**既存缺陷**（语言徽章与行号从未渲染），已归入本节「已知缺陷」，此处不重复。
 - `npm ci` 有一条 `npm warn deprecated glob@10.5.0`（传递依赖），不阻塞构建。
 
 ### 运维
 
 - 宝塔面板密码曾在对话中明文出现，用户当前选择暂不修改；面板 IP 白名单未开。
-- 服务器回滚资产 `dist.old` + `dist_backup_20260920_234618`（共 52M）**保留中**，
-  确认线上稳定数日后才可删。
-- 前端计划：**页面间动画已于 2026-09-23 用 Swup 实现**（见第十节）；404 页面仍以 `README.md` 为准。
+- **回滚资产的存放规则**：每次部署都留 `dist.old` + `dist_backup_<时间戳>`，**永不自动清理**。
+  只有用户明确说"确认稳定，清掉备份"才删（见第七节收尾铁律）。
+  ⚠️ 当前有几个、共占多少是**会变的状态**，只记在 [`HANDOFF.md`](./HANDOFF.md) 第三节，别在这里复制一份过期数。
+- 前端计划：**页面间动画已于 2026-09-23 用 Swup 实现**（见第十节）；剩余计划见 `README.md` 的「后续计划」。
 
 ## 十、Swup 页面过渡的坑（2026-09-23 引入，全部实测踩到）
 

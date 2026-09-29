@@ -3,160 +3,185 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-09-28 下班收尾：功能全部上线 + 代码体检清理已提交（待推），线上与远端一致**
+> 最后更新：**2026-09-29（代码体检 + 三处 MD 去重已改完；未提交、未部署）**
 
 ---
 
 ## 一、下次会话第一件事
 
-### 🧹 2026-09-28 下班收尾（本次会话结束前的体检）
+### 🔴 唯一的下一步：等用户点头提交 / 推送 / 部署
 
-体检结果：今日改动文件里**无 `console.log`、无死变量、无未用导入、无临时脚本残留**；
-顺手清掉两处：删掉空的 `src/components/uiverse/`（装饰性 Search.astro 移除后的空壳），
-`Search.svelte` 的防抖 `$effect` 从裸 `query;` 隐式依赖改成显式取值传参（`runSearch(q)`）。
-改完重建 + preview 复测：搜 `svg` 仍 12 条 / 19 处高亮、自动聚焦正常、连续输入结果稳定。
-**这笔清理已提交并推送**（`52ac9a0`）；线上产物仍是 17:29 那版 —— 清理笔行为等价，
-下次因别的需求重新 build 时自然带上，不必单独为它部署一次。
+**体检的全部待办都已经解决完了**（见第二节 09-29 那笔），现在只剩交付动作。
+工作区 **28 个文件**改动（25 源码+依赖 / 3 MD，明细见第三节），
+已按 AGENTS 第九节走过**干净 `npm ci` + 清内容缓存的全量构建**，产物逐项核过。
 
-### ✅ 2026-09-28 深夜：搜索/图标/移动端菜单 —— 已推送到远端并部署（17:29 原子替换）
+1. **提交与推送** —— AGENTS 第七节「推送前先问」，所以没做。建议拆 3 笔：
+   ① 依赖（`package.json` + lock 的 dayjs）② 代码清理与暗色缺陷修复 ③ 文档。
+2. **部署上线** —— ⚠️ **这批必须部署，不部署线上看不到**，因为它含**两条真实视觉缺陷修复**（不是行为等价的清理）：
+   - 暗色悬浮目录此前是**白色半透明板**（`--card-bg-rgb` 未定义 + 内联样式压过 `dark:`），现已跟主题走；
+   - 暗色浮动按钮此前**无描边**、暗色滚动条颜色**不跟随主题**，均已修。
+   另加链接 hover 的虚线下划线**首次真正出现**。标准流程见 AGENTS 第六节。
 
-线上核对：移动端面板 9 个控件 class 全部就位（空 class 0 个）、`itemH` 均 40、无折行；
-搜索按钮 svg 22px/描边标称 1.0（渲染 1.59px，图形 19.1px 对比汉堡 19.7px）、输入框放大镜 16px/标称 1.2；
-`dist` 与线上 HTML 的描边值逐项一致。
-⚠️ **标签页图标可能仍显示旧的** —— favicon 缓存极强，先 Ctrl+Shift+R 或开无痕。
-⚠️ **桌面 `:focus` 变宽（w-40→w-60）本机测不到**（隐藏表面 + iframe 拿不到文档焦点），
-只验证了规则产出与被引用 —— **要用户肉眼确认**。
-⚠️ 隐藏表面里 `innerWidth` 会是 0，此时量出的 `scrollWidth-clientWidth` 等绝对值全是假象，
-只信相对量（类名、标称值、元素间尺寸对比）；要量视口相关值得先确认 `innerWidth > 0`。
-
-### ✅ 已完成（不用再管）
-
-- **2026-09-28 夜**：「文章」下拉 + `/series/` + `/tags/` + SeriesNav 已上线；两轮验收反馈
-  （圆角→直角、跳页后不收起、搜索控件重复/图标尺寸）都已修完上线。
-- **2026-09-28 白天**：全站体检 5 处修复已上线验收。
-- **2026-09-24 夜**：过渡/分类栏/归档/横幅/品牌标识 6 笔，验收通过。
-- **storybook 技能**：`E:\works\skills\storybook` 在本机不存在（E 盘没有 `works`，C/D/E 全盘搜过），
-  已作为插件技能注册（`qoder-guide:storybook`）可直接用 —— **这条别再查了**。
-
-### 🟠 悬着的事，需要用户点头
+### 🟠 更早悬着的事（需用户点头）
 
 1. **about 页对外邮箱**：已统一到 `314298729@qq.com`；若 `xiaye@msn.com` 才是收件地址，显示文本也要一起换。
-2. **服务器回滚资产越攒越多**（`dist.old` + 9 个时间戳备份）：确认稳定后可清，但**必须用户明确说**才删。
-3. **推送前先问这条仍生效**：当前 ahead 0，本地与远端一致。
+2. **服务器回滚资产**：实测 **11 个 `dist_backup_*` + `dist.old` ≈ 319M**（2026-09-29 只读核查）。
+   确认稳定后可清，但**必须用户明确说**才删。
+3. **`--link-hover` 的取值**这次按作者原意定成了 `var(--primary)`（hover 出现绿色虚线）。
+   若觉得多余，删 `markdown.css` 那一行即可回到"只有底色没有线"。**这是本批唯一一处非缺陷类的视觉新增。**
 
-### 🟡 AGENTS.md 第九节的存量待办
+### 🟡 AGENTS 第九节的存量待办
 
-- 3 个文章方向等用户拍板（URL 用不用中文 / 要不要配封面 / 要不要文章脚手架）
+- 3 个文章方向等用户拍板（URL 用不用中文 / 要不要配封面 / 要不要文章脚手架）——后两条已同步进 `README.md` 的「后续计划」
 - 宝塔面板密码曾在对话中明文出现过，用户选择暂不改；面板 IP 白名单未开
+- Mermaid 专属的 2 个未定义变量（`--text-color-secondary` / `--primary-hover`）**故意留白**：
+  零页面可达、无从验证。等首篇 Mermaid 文章时按第八节在 dev 逐项验，届时一并定值。
 
 ---
 
 ## 二、历次会话做了什么
 
-### 2026-09-28 深夜（第二轮）：Pagefind 搜索 + 双木成林站点图标 + 下拉收起二次修
+### 2026-09-29：代码体检 + MD 去重（**未提交、未部署**）
 
-**搜索**：先扒参考站（`pagefind ^1.5.2` + build 后跑 `run-pagefind.ts` + `pagefind.yml`，
-UI 是 `controls/Search.svelte` + `pages/AdvancedSearch.svelte`，PROD 下懒加载 `/pagefind/pagefind.js`、
-300ms 防抖、请求号防竞态）。按同一套接进我们仓库：新增 devDep `pagefind` 与 `sharp`（后者只为出图），
-`build` 改成 `astro build && pagefind --site dist`，索引落 `dist/pagefind/`（42 文件 / 759K，随 dist 部署，服务器零改动）。
-组件重写为 `src/components/controls/Search.svelte`（Svelte 5 runes），删掉原来那个纯装饰的
-`uiverse/Search.astro`。**踩坑**：`import("/pagefind/pagefind.js")` 写字面量会被 Vite 在构建期当模块解析而直接失败
-（那会儿产物还不存在），`@vite-ignore` 注释经 Svelte 编译会丢 → 必须走变量 URL。
-参考站在 dev 下塞假搜索结果，我们改成显示真提示（dev 没有索引是事实，不该演）。
-**图标**：`public/favicon.svg` 原来是早期自动生成的「渐变底 + YILIn 字样」，与品牌无关；
-换成绿底 `#00ba99` + 白色**两棵树**描边的双木成林 mark（用户特别强调不要三棵），
-新增 `scripts/generate-icons.mjs`（`npm run icons`）用 sharp 出 16/32/96 PNG、
-手写 PNG-in-ICO 容器（内嵌 16/32/48）、apple-touch 180 满幅不透明、manifest 192/512，
-并把 `site.webmanifest` 里的 `MyWebSite/MySite` 占位名改掉。
-**下拉第二轮**：用户报"移动端子菜单不收回、桌面点空白不收回"。合成点击测不出桌面那条，
-查出真机制是 `:focus-within` 把鼠标点击造成的聚焦也算进去 → 换成 `:has(.dropdown-item:focus-visible)`，
-并补 `mouseleave` 即收起、移动端点任意菜单项立刻收面板与子菜单（Swup 事件只当兜底，整页跳转和
-reduced-motion 下它不触发）。
-**验证**：`npm run preview` 上实测——`flex` 7 条 / `蒙层` 命中第13天带 2 处 `<mark>`；
-面板 `blur(20px) saturate(1.5)`、亮 `rgba(255,255,255,.55)`、暗 `rgba(23,23,23,.6)`、`borderRadius 0px`、
-含 inset 高光；↑↓ 焦点到结果项、Esc 关闭、点结果会真跳转。dist 基线 40 页 / 307 文件 / 28M。
+**清点临时产物**：仓库内无游离脚本（`scripts/` 只有 `generate-icons.mjs` 这个正经脚本）、
+无未跟踪文件、本地与服务器 `/tmp` 无本次产物。本地 `/tmp/LibScanGame/` 是**别的项目**的目录，没碰。
 
-### 2026-09-28 夜：顶部「文章」下拉 + `/series/` + `/tags/` + 文章页系列导航盒
+**清掉的代码卫生问题**（五类逐条核过，不是照抄工具报告）：
+- **14 个文件**里的 `const DES` / `const COMPDES`：只声明从未读取的死变量，全量转成 frontmatter `//` 注释
+  （保留作者自述、去掉死绑定）。改后 `git diff --numstat` = 14 文件 / 14 增 / 14 删，行尾零污染。
+- `MobileMenu.astro` 的非法 `transform: translateY();`（空参数，浏览器整条丢弃）→ 删。
+  真正的位移由下一行 `@apply translate-y-[-8px]` 提供，**属 no-op**。
+- `Twikoo.astro` 3 条 `console.log`（其中一条打印含 envId 的配置）→ 删；顺带把因此变空的 `.then()` 摘掉。
+  `console.error` 保留。`rehype-component-github-card.mjs` 注入到浏览器端的成功日志 → 删（`catch` 里的 `warn` 保留）。
+- `Pagination.astro` 一句失真的 `// for test` → 删。
 
-用户点名照 `firefly.cuteleaf.cn/series/` 做。先扒参考站编译产物、再 sparse clone Firefly 仓库读实现
-（`navBarConfig.ts` 的 children 结构、`getSeriesList`/`sortBySeriesOrder`、`series/index.astro` 手风琴、
-`SeriesNav.astro`、frontmatter `series`/`seriesOrder`），确认它**没有 `/series/<slug>/` 详情页**，
-所以系列页做成单页手风琴。四个决策由用户拍板：下拉四项（含分类）、新建 `/tags/`（pill 仍跳归档筛选）、
-一起加 SeriesNav、系列名用 `CSS100Day`（跟标题前缀，而非 tag 的"CSS100天"）。
-改动分三笔：① schema + 26 篇 frontmatter + utils 聚合函数；② `/series/` `/tags/` + SeriesNav
-（手风琴 CSS 放全局 `mainSingles.css`，避开 Swup 不换 head 的坑）；③ 导航配置化 + 桌面/移动下拉。
-唯一一处**主动偏离参考站**：桌面下拉额外支持点击展开（触屏没有 hover），已在 AGENTS 五-16 标明。
-验证用定宽 iframe（1440/375）+ 注入 `transition:none` 取稳定态读计算样式：
-下拉 opacity 0→1、箭头 `rotate:180deg`、手风琴 maxHeight 0→1234px 且互斥收起、
-SeriesNav 38px→960px 且当前篇带"本篇"、移动端子菜单 0→160px 零横向溢出、
-从首页经下拉软导航到 `/tags/` `/series/` 正常。dist 重扫 40 页 0 缺失引用、标题审计 0 问题。
+**唯一的行为改动**：`src/styles/main.css` 4 条 `.dark .custom-scrollbar*` → `[data-theme="dark"]`。
+取证方式：dev 站点上切换 `data-theme` 读 `getComputedStyle().scrollbarColor`，
+修前暗色仍是 `rgba(0,0,0,.2)`，修后 亮 `rgba(0,0,0,.2)` / 暗 `rgba(255,255,255,.2)` 对比成立；
+dist 产物已确认输出 `[data-theme=dark] .custom-scrollbar{scrollbar-color:#fff3 transparent}`。
 
-### 2026-09-28：验收通过 + 全站体检（4 条待办里 2 条是假的，5 处真问题已修）
+**两条 agent 报告是误报，核实后没改**（记下来免得下次又被捞出来）：
+① `CoverImage.astro` 并没有 `import { Image }`，第 3 行只有 `Picture`，第 2 行注释里的 "ImageWrapper" 被当成了引用；
+② `Category.astro` 的 `--collapsedHeight` 不是未定义变量，是 Astro `<style define:vars>` 注入的。
 
-用户说"看还有哪些有问题，不要问我直接解决"，于是把 AGENTS/HANDOFF 里的待办**逐条实测复核**再动手。
+#### 🔴 本次最有价值的发现：Astro 内容层缓存藏在 `node_modules/.astro/`
 
-**两条"已知缺陷"被证伪**（都记了不止一次会话，白挂着）：
-1. `heart.svg` 线上 404 —— 引用在 ` ``` ` 围栏内，是示例代码文本，页面没有 `<img>` 元素、不发请求。
-   grep 得到是 expressive-code 把整段代码塞进复制按钮 `data-code` 属性所致；第6天那处实际还是
-   `./jessica-potter.jpg`，文件名都记错了。
-2. "代码块语言徽章与行号从未渲染过" —— **两者一直正常**：徽章是 `[data-language]::before` 伪元素
-   （不在 HTML 文本里），行号是 `div.gutter > div.ln`（第10天页实测 124 个）；上次拿 `ec-line-numbers`
-   这类不存在的类名去查，自然"零产出"。
-3. 附带更正：第五节 4 原先说 `dark:` class 无效——`global.css:3` 早把 dark 变体绑到 `[data-theme=dark]`，
-   `dark:` 是好用的（差点把 20 个文件里的 dark: 当死代码"清理"掉）。
+删掉插件里的 `console.log` 后，`npm run build` **退出码 0、产物里那行还在**，
+而且 `dist/about/index.html` 的 mtime 明确晚于源码修改时间。逐层排除：
+停掉 dev 再建 → 仍在；`rm -rf .astro` → 仍在（那个目录只放类型和 collections）；
+**`rm -f node_modules/.astro/data-store.json` → 立刻归零**（保留的 `console.warn` 仍 3 处，卡片没被我改坏）。
 
-**真正修掉的 5 处**（`npm run build` 通过、dist 重扫 0 缺失、标题审计 38 页 0 问题）：
-- `about.md` 的 `[暂未部署](暂未部署)` 死链 → `[亦林](/)`（全站唯一真 404）
-- `about.md` 邮箱 `mailto` 与显示文本不一致 → 统一为 `314298729@qq.com`
-- 空 h1：`Layout.astro` 的 sr-only h1 加 `?? "YILIn"` 兜底（首页与 `/2/` `/3/` 之前是空的）
-- 重复 h1：`/about/` 正文自带 h1，加 `contentHasH1` 属性抑制注入；`/categories/` 删掉页面自己那个多余 h1
-- 层级跳变与假链接：悬浮目录 / 评论区 / 相册卡 `h3`→`h2`；分页禁用态去掉 `href="#"`（改由 Astro 省略属性）
+根因：内容层缓存按**内容文件哈希**失效，**插件源码变更不在它的失效范围里**。
+该文件时间戳停在 **09-28 14:03**，意味着 **09-28 17:29 那次上线、以及今天所有构建，文章内容部分都在复用旧缓存**。
+CSS/JS 走 Vite 不受影响，所以暗色滚动条那条是真的生效了。规则已写进 **AGENTS 第五节 21**。
 
-**排查方法固化**：按源码围栏逐行判定 + 逐路径核 dist，别 grep HTML 字符串当证据 → 写进 AGENTS 第九节。
-新规矩（每页一个非空 h1、区块标题从 h2 起、禁用态不写 `href="#"`）→ AGENTS 第五节 13、14。
-另按用户要求把**参考源**固化进 AGENTS 第一节：`firefly.cuteleaf.cn` + `github.com/CuteLeaf/Firefly`。
-当天用户授权后按 AGENTS 第六节标准流程部署上线，并从公网逐项验收（死链引用 0、`/ /2/ /3/` h1 均为 `YILIn`、
-categories 单 h1、首页 `href="#"` 0 次、目录/评论区/相册卡均为 h2）。
+顺带因此更正了两条过期事实（AGENTS 第八节）：
+- `<github>` 卡片**不是**"配置了从没用过"—— `/about/` 上实渲染 3 张，那个插件是活代码；
+- 代码块折叠也早已在生产（28+ 个产物含 `ec-collapse`），原清单把它和 Mermaid 并列是错的。
 
-### 2026-09-24 夜：过渡 1:1 照搬参考站 + 一批对齐（已上线，6 笔，09-28 验收通过）
+清缓存后的**全新全量构建**已复核：40 页 / 307 文件 / 28M、h1 审计 40 页 0 问题、
+`/about/` 死链文本 0 命中、邮箱仍为 `314298729@qq.com`、Twikoo 日志 0 命中。
+**所以现在的 `dist/` 是可信的，和 09-28 上线那版不是一回事。**
 
-用户三次否掉自创过渡后点名 cuteleaf；扒其编译产物发现**数值本就逐字节相同，差在挂载位置**，
-于是 `.transition-main` 移到 `#swup-container`，编排（进度条 / `visit:start` 回顶 / `is-page-transitioning`）、
-CategoryBar（不隐藏 + 软高亮 + 更多 pill）、`/categories/` 页、归档 SSR、横幅高矮过渡、品牌标识全部照搬或对齐。
-提交 `4a97845 ffda5c0 da68cd4 a512fc5 902b56e b713fbf`，用户当次授权部署，已按第六节流程上线
-（线上核对：mark 的 `stroke="var(--primary)"`、`--banner-height-non-home` 在 CSS bundle、logo.png 引用 0）。
-细节在 AGENTS 第五节 12、第十节 5/9。
-教训入记忆 `page-transition-copy-cuteleaf.md` 与 `measure-visual-bugs-programmatically.md`（隐藏标签页测不了时序）。
+#### 第二轮：把 4 项遗留全部收口，过程中挖出两条**真实暗色缺陷**
 
-### 更早（2026-09-23 ~ 09-24 晚，均已上线，细节在 AGENTS 第十节）
+- **`dayjs` 补为显式依赖**（`^1.11.23`）。查明它此前只由 `mermaid`（devDep）和 `sanitize-html→launder` 带进来。
+  `lockfile` 只 +2/−1、无版本漂移；esbuild 仍是 `0.28.2`，与 `allowScripts` 钉版一致。
+  ⚠️ **踩了一场大坑**：为了按 AGENTS 走"干净 `npm ci`"，在**没确认 dev 进程已退**的情况下执行 ——
+  `npm ci` 先删 `node_modules`，然后 `lightningcss-win32-x64-msvc.node` 被进程锁住报 `EPERM`，**项目当场被删空**。
+  真凶是 `TaskStop` 只杀外层 shell，`npm run dev → astro dev` 的子进程变孤儿继续活（同时留着 2 个 astro dev + 2 个 npm 包装）。
+  按命令行精确匹配 `*chenBlog*` 逐个 `Stop-Process`（**没批量杀 node.exe**，Qoder 自己和一堆 MCP server 都是 node）后才恢复。
+  先用增量 `npm install` 把项目救回来，再重试 `npm ci` → 退出码 0。
+  另外：第一次 `npm ci | tail -20` 的"退出码 0"是 **tail 的**退出码，把 npm 的失败吞了 —— 已连同上面这些一起写进 AGENTS 第九节第 ③ 条。
+- ✅ **真缺陷 1：暗色下悬浮目录是白色半透明板。** 根因不在那两条 `.dark` 规则，而在
+  `FloatingToc.astro:38,42` 的**内联 `style=`** `rgba(var(--card-bg-rgb, 255,255,255), .6)` ——
+  `--card-bg-rgb` 从未定义 → fallback 让它恒为白，且内联样式把 `dark:bg-black/60` 整个压掉。
+  → 在 `global.css` 亮/暗两个主题块补 `--card-bg-rgb`（`255,255,255` / `22,31,27`，与 `--card-bg` 同色）。
+  实测：暗色 `rgba(255,255,255,.6)` → `rgba(22,31,27,.6)`，**亮色零变化**，`blur(20px)` 不受影响（它来自组件另一条规则）。
+  ⚠️ **我前一轮的判断是错的，这里明确纠正**：当时把这两条 `:global(.dark)` 判成"`dark:` 工具类已生效，属冗余副本"——
+  实际上 `dark:` **从来没在这个元素上生效过**，那两条 `!important` 是作者为打穿内联样式写的（只是选择器写错）。
+  错因是**只看 CSS 源码顺序就下结论**，而内联样式根本不在样式表里、`cssRules` 遍历搜不到。
+- ✅ **真缺陷 2：暗色浮动按钮无描边。** `FloatingButton.astro` 写死 `border: 1px solid rgba(0,0,0,0.1)`，
+  叠在 `#161f1b` 上≈隐形。改用全站其它卡片都在用的主题感知 `--line-divider` → 暗色出现浅描边。
+  顺带删掉该组件那条永不生效的 `:global(.dark) .floating-btn` 块、以及引用未定义变量
+  `--shadow-button`/`--shadow-button-dark` 的两条 `box-shadow`（按钮阴影一直由 `.card-base` 的 `shadow-xs` 提供，删掉零变化）；
+  还清了一处重复声明的 `cursor: pointer`。
+- ✅ `--shodow-md` → **`--panel-shadow`**（三处同步）。**没改成 `--shadow-md`**：Tailwind v4 的 `--shadow-md`
+  是 utility 命名空间 token，覆盖它会连带改掉全站 `shadow-md` 的值（当前无人用，属潜伏坑）。
+- ✅ `markdown.css` 链接的 `--link-underline` → `--primary` 是**等价替换、零视觉变化**（原来只是回落到 `currentColor`）；
+  `--link-hover` → `--primary` 会让**链接 hover 首次出现绿色虚线**，这是本批唯一非缺陷类的视觉新增，已在第一节标出可一键回退。
+- **剩余**：`markdown-extend.styl` 里 Mermaid 专属的 2 个未定义变量（零页面可达、无从验证）与
+  `markdown.css:188` 的 `body.wallpaper-transparent` 整块（**全站无人设这个类**）—— 见 AGENTS 第九节第 6 条。
+- **收尾复验**：清内容缓存全量构建 40 页 / 307 文件 / `_astro` 189，退出码 0；
+  产物 `--shodow` 0 命中、`--card-bg-rgb` 两主题都在、`.dark` 只剩 `rehype-callouts` 自带那两条（非本项目源码）。
 
-- 09-23：依赖 patch 升级（audit 21→0）+ Swup 页面过渡首版 + 窗口缩放 morph；四个坑入第十节 1-4。
-- 09-24 白天：手机滑动重影修复（resize 只在宽度变化时 morph，第十节 6）+ 归档时间线移动端列宽。
-- 09-24 下午~晚：过渡观感三轮迭代（veil 否 → 幕布否 → Firefly 式 120ms 滑移）+ PostCard scoped 样式
-  移入 global.css（Swup 不换 head 的入口页依赖，第十节 2）+ 时间线年份列宽回修。
+**MD 三件事**：
+- **删矛盾**：AGENTS 第九节「已偿还」里有条 ⚠️ 说"语言徽章与行号从未渲染"这个缺陷"已归入已知缺陷"，
+  而同节 09-28 的复核已经**证伪**了它 —— 两处对同一件事给了相反结论，删掉那条过期的。
+- **去重**：AGENTS 五-16 与 十-2 都在讲"部分页面渲染的组件要把布局 CSS 放全局"，五-16 改为只引用第十节 2 + 保留本项目落点；
+  "回滚资产有几个/多大"从 AGENTS（写的是过期的"共 52M"）移到本文件第三节，AGENTS 只留规则。
+- **刷新**：AGENTS 第九节审计页数 38→**40**（09-28 加 `/series/` `/tags/` 后没跟着改）、
+  五-9 基线 `_astro/` 187→**189**（本批改动产生的新 chunk）、日期；
+  **`README.md` 重写** —— 它的「后续计划」第 1 条"考虑 swup 方案"早在 09-23 就上线了。
+- 新增两条 AGENTS 长期规则：第七节的**批量改文件必须逐行保留原行尾**（本次踩过，见下）、
+  组件自述用 `//` 注释不要写成 `const DES`。
+
+⚠️ **本次踩的新坑（已固化为 AGENTS 第七节一条）**：本仓库 `core.autocrlf=true` 且无 `.gitattributes`，
+但 **git 索引里的行尾本身是混杂的**（一部分 blob 存 CRLF、一部分存 LF，工作区全 CRLF）。
+用 node 脚本批量改写时把 `\r\n` 写成 `\n` → 14 个文件各引入 1 处混合行尾；
+接着想用脚本"归一化回 CRLF"反而把 **LF blob 的那些文件整文件翻转**（`[...slug].astro` 一度变成 50/50 行 diff）。
+两次都是 `git checkout --` 回退、第三次改成**逐行捕获 `(\\r?\\n)` 原样写回**才干净。
+
+### 2026-09-28 深夜（第二轮）：Pagefind 搜索 + 站点图标 + 下拉收起二次修（已上线）
+
+先扒参考站实现（`pagefind ^1.5.2` + build 后跑索引 + `pagefind.yml`，UI 是 `controls/Search.svelte`，
+PROD 下懒加载 `/pagefind/pagefind.js`、300ms 防抖、请求号防竞态），按同一套接进来：
+`build` 改 `astro build && pagefind --site dist`，索引落 `dist/pagefind/`（随 dist 部署，服务器零改动）。
+图标：`public/favicon.svg` 换成双木成林 mark（**两棵树**，绿底白描边），新增 `scripts/generate-icons.mjs` 出全套 PNG/ICO。
+下拉第二轮修的是"`:focus-within` 把鼠标点击的聚焦也算进去"→ 换 `:has(.dropdown-item:focus-visible)` + `mouseleave` 收起。
+**踩坑**：`import("/pagefind/pagefind.js")` 写字面量会被 Vite 在构建期当模块解析而失败 → 必须走变量 URL。
+细节见 AGENTS 五-18、五-19。下班前又做了一笔**行为等价**的清理（删空的 `uiverse/`、防抖 `$effect` 改显式传参），
+已提交推送 `52ac9a0`，**线上产物仍是 17:29 那版**，未为它单独部署。
+
+### 2026-09-28 夜：顶部「文章」下拉 + `/series/` + `/tags/` + SeriesNav（已上线）
+
+照 `firefly.cuteleaf.cn/series/` 做：先扒编译产物、再 sparse clone Firefly 读实现，确认它没有 `/series/<slug>/`
+详情页，所以系列页做成单页手风琴。四个决策由用户拍板（下拉四项 / 新建 `/tags/` / 一起加 SeriesNav / 系列名用 `CSS100Day`）。
+唯一一处**主动偏离参考站**：桌面下拉额外支持点击展开（触屏没 hover），已标在 AGENTS 五-16。
+细节见 AGENTS 五-16、五-17。
+
+### 2026-09-28：全站体检，4 条待办里 2 条是假的、5 处真问题已修（已上线）
+
+两条"已知缺陷"被证伪（`heart.svg` 404、"代码块徽章与行号从未渲染"），真修掉 5 处：
+about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重复 h1、区块标题 `h3`→`h2` + 分页去掉 `href="#"`。
+当天用户授权后按第六节流程部署并从公网验收。**排查方法论**（按源码围栏逐行判定 + 逐路径核 dist）
+已固化进 AGENTS 第九节，新规矩进五-13、五-14，具体修了什么不在这里复述。
+
+### 2026-09-24 夜及更早（均已上线，细节在 AGENTS 第十节）
+
+- 09-24 夜：过渡 1:1 照搬参考站 + 分类栏/归档/横幅/品牌标识 6 笔，验收通过（`4a97845`…`b713fbf`）。
+- 09-23：依赖 patch 升级（audit 21→0）+ Swup 页面过渡首版 + 窗口缩放 morph。
+- 09-24 白天：手机滑动重影修复（resize 只在宽度变化时 morph）+ 归档时间线移动端列宽。
 
 ---
 
-## 三、当前状态快照（2026-09-28 深夜实测）
+## 三、当前状态快照（2026-09-29 实测）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 搜索共四轮修复，末笔 `3d78476` 移动端顶级项丢类名 + 图标收细（其前 `d8dd608` 去原生 ✕ + 结果层由 query 驱动、`8fbd5b4` viewBox 收紧、`e409372` 尺寸对齐、`3b0ca54` 控件重复、`ffff265` 改参考站形态、`3bd0240` 图标全套、`6de53c0` Pagefind 搜索、`cd1aa56` 下拉可靠收起） |
-| 工作区 | 干净（改动全部已提交） |
-| 与远端 | **ahead 0**（`86c78d8..52ac9a0` 已推，下班清理笔也在远端）；线上产物是 17:29 那版，清理笔（删空目录 + `$effect` 传参）行为等价、未重新部署 |
-| 本地构建 | `npm run build` = astro build + 索引，退出码 0：**40 页 / dist 307 文件 / 28M**（`_astro` 187、`pagefind` 42 / 759K），约 5s + 0.2s |
-| `npm audit` | **0 vulnerabilities**（必须 `npm audit --registry=https://registry.npmjs.org`；默认 npmmirror 源不实现 audit 接口，会报 `NOT_IMPLEMENTED`） |
-| 线上站点 | **已上到最新**（09-28 17:29 原子替换）：下拉/系列/标签/SeriesNav + Pagefind 搜索（四轮修复后形态）+ 新图标，线上 HTML 与本地 dist 逐项核对一致 |
-| 服务器回滚资产 | `dist.old` + 11 个时间戳备份（最新 `dist_backup_20260928_172912`）。**均保留中**，需用户明确同意才删 |
-| dev server | 后台运行中（任务 `b91ngmhhy`，端口 4321）；preview `:4322` 用完已关 |
-| 本机网络提示 | `curl https://github.com/...` 返回 `HTTP 000` 是 Windows schannel 吊销检查失败（`CRYPT_E_NO_REVOCATION_CHECK`），**不是站点问题** |
-| 测试环境限制 | 定宽 iframe 里 `:focus` 永不匹配（文档拿不到焦点，`:focus-within` 却看 activeElement）→ 焦点驱动的效果只能让用户肉眼验；改用真实点击（`click` 工具）可验交互 |
-| 既存小坑（本次未动） | `MobileMenu.astro` 里 `transform: translateY()` 是空参数的非法声明（历史遗留）。圆角变量 `--radius-large`、`--panel-border-color` 未定义已查清并写进 AGENTS 五-16 |
-| 临时文件 | 本地与服务器 `/tmp` 已清（打包 tar、preview 日志、扫描脚本、sparse clone 的 Firefly 仓库、参考站与线上 HTML） |
-| dev server | 后台运行中（任务 `b91ngmhhy`，端口 4321），下次可直接用 |
-| 本机网络提示 | `curl https://github.com/...` 返回 `HTTP 000` 是 Windows schannel 吊销检查失败（`CRYPT_E_NO_REVOCATION_CHECK`），**不是站点问题** |
-| 既存小坑（本次未动） | `MobileMenu.astro` 里 `transform: translateY()` 是空参数的非法声明（历史遗留）。圆角变量 `--radius-large`、`--panel-border-color` 未定义这事已查清并写进 AGENTS 五-16，不再单独列 |
-| 临时文件 | 本地与服务器 `/tmp` 已清（打包 tar、扫描脚本、sparse clone 的 Firefly 仓库、参考站与线上 HTML） |
+| 本地 HEAD | `e44ca55`，**工作区 28 个文件改动未提交**（25 源码+依赖 / 3 MD：AGENTS / HANDOFF / README） |
+| 与远端 | ahead 0 —— 这批**还没提交**，远端等于本地 HEAD，但都不含本批改动 |
+| 依赖 | `dayjs@^1.11.23` 已进 `dependencies`；`package.json` +1、`package-lock.json` +2/−1，**无版本漂移**。已用**干净 `npm ci`（退出码 0）** + 全量构建验证。`allowScripts` 仍只钉 `esbuild@0.28.2`，与实际安装版本一致 ✅ |
+| 线上站点 | 停在 **2026-09-28 17:28** 那次原子替换（服务器 `stat dist/index.html` 实测）；**本批未上线**，含两条暗色真缺陷修复 → 该部署 |
+| 本地构建 | 清内容缓存后全量重建：`npm run build` 退出码 0，40 页 / dist 307 文件 / 28M，`_astro/` 189、`pagefind/` 42（索引 28 页 / 2326 词） |
+| 产物审计 | h1 审计 **40 页 0 问题**；`/about/` 死链 0、邮箱仍 `314298729@qq.com`、github 卡片仍 3 张；Twikoo 日志 0 命中；`--shodow` 0 命中；`--card-bg-rgb` 亮暗两值都在；产物里 `.dark` 只剩 `rehype-callouts` 自带 2 条（非本项目源码） |
+| 内容层缓存 | `node_modules/.astro/data-store.json` **已于 09-29 删除并重建**。下次动 `src/plugins/**` 或 markdown 处理链务必再删（AGENTS 五-21） |
+| dev server | 后台运行中（任务 `b23v8bgcd`，端口 4321，HTTP 200）。⚠️ **停它要连子进程一起清** —— `TaskStop` 只杀 shell，孤儿 `astro dev` 会锁住 lightningcss（AGENTS 九 依赖坑 ③） |
+| 服务器回滚资产 | `dist.old` + 11 个 `dist_backup_*`，**≈319M**（最新 `dist_backup_20260928_172912`）。全部保留中，删需用户明确同意 |
+| 临时文件 | `%TEMP%` 下的体检脚本已删（本来就没进仓库）；`/tmp` 里本次抓的 `p.html` 等待清；本地与服务器无其他本次产物 |
+| 测试环境限制（本次又验证有效） | ① 定宽 iframe 里 `:focus` 永不匹配 → 焦点/hover 驱动的效果只能比产物或用户肉眼验；② **带 `transition` 的元素，同步改 `data-theme` 后立刻读 `getComputedStyle` 读到的是过渡起点** → 必须先注入 `transition:none!important`（本次差点把暗色滚动条误判成"没修好"）；③ 内联 `style=` 不在样式表里，`cssRules` 遍历搜不到 |
+| 既存小坑 | ~~`MobileMenu.astro` 的 `transform: translateY()` 空参数~~ **本次已删**；`--radius-large` / `--panel-border-color` 已查清（AGENTS 五-16，别重复查）；`tsconfig.json` 的 react jsx 残留无影响 |
+| `npm audit` | 补 `dayjs` 后重测（官方源）= **0 vulnerabilities**，与 09-28 基线一致。⚠️ 默认 registry 是 npmmirror 不实现 audit 接口，必须加 `--registry=https://registry.npmjs.org`（AGENTS 第三节） |
 
 ---
 

@@ -52,6 +52,14 @@ export const galleryConfig: GallaryConfig = {
             date: "2026-05-31",
             tags: ["生活", "川内"],
         },
+        {
+            id: "wlh-concert-2026",
+            name: "王力宏演唱会",
+            description: "演唱会近距离",
+            location: "中国·成都",
+            date: "2026-07-03",
+            tags: ["娱乐", "生活"],
+        },
     ],
     // 瀑布流最小列宽(px)，浏览器根据容器宽度自动计算列数，默认 240
     // 值越小列数越多，值越大列数越少

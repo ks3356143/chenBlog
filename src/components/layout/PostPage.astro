@@ -2,6 +2,7 @@
 import type { CollectionEntry } from "astro:content"
 import PostCard from "@/components/layout/PostCard.astro"
 import { url } from "@/utils/url-utils"
+import { getPostCover } from "@/utils/cover-utils"
 // 该文件主要用于渲染分页文章
 
 const { page } = Astro.props // 传入的分页后的文章
@@ -29,7 +30,7 @@ const baseClass = `flex flex-col gap-4 md:gap-4 list-mode`
 				updated={entry.data.updated}
 				tags={entry.data.tags}
 				category={entry.data.category}
-				image={entry.data.image}
+				image={getPostCover(entry)}
 				description={entry.data.description}
 				draft={entry.data.draft}
 				pinned={entry.data.pinned}

@@ -34,6 +34,15 @@ export const siteConfig = {
     },
     // 文章封面图回退路径设置
     fallbackPath: "assets/postImages/loadingfalse.png",
+    // 列表页自动封面素材池（相对 src/）。文章 frontmatter 手写了 image 时以手写为准，
+    // 没写的按 seriesOrder 在这组里轮播；只作用于列表卡片，不影响详情页与 og:image。
+    // 素材由 cover-N.svg 经 `npm run covers` 渲染而来，改图改 SVG 不要改 webp
+    autoCoverPaths: [
+        "assets/postImages/covers/cover-1.webp",
+        "assets/postImages/covers/cover-2.webp",
+        "assets/postImages/covers/cover-3.webp",
+        "assets/postImages/covers/cover-4.webp",
+    ],
     // 主题：'github' | 'obsidian' | 'vitepress'，每个主题风格和语法不同，可根据喜好选择
     rehypeCallouts: {
         theme: "github",

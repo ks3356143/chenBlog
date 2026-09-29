@@ -2,6 +2,7 @@
 import type { MarkdownHeading } from "astro"
 import SiteStatus from "@/components/card/SiteStatus.astro"
 import Calender from "@/components/card/Calender.astro"
+import DynamicSidebar from "@/components/card/DynamicSidebar.astro"
 import SiderBarToc from "../card/SiderBarToc.astro"
 
 // 右边栏，文章详情显示TOC，其他时候显示日历
@@ -20,6 +21,8 @@ const className = Astro.props.class
 <div class:list={["mb-4 flex w-full flex-col gap-4", className]}>
 	<!-- 站点统计 -->
 	<SiteStatus />
+	<!-- 最新动态（数据为空或关了动态页时整块不渲染） -->
+	<DynamicSidebar />
 </div>
 
 <!-- sticky卡片 -->

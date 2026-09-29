@@ -1,0 +1,120 @@
+---
+import { getCollection } from "astro:content"
+import { createMarkdownProcessor } from "@astrojs/markdown-remark"
+import { Icon } from "astro-icon/components"
+import { sortDynamics } from "@/utils/dynamic-utils"
+import { formatDateTimeToYYYYMMDDHHmm } from "@/utils/date-utils"
+import { url } from "@/utils/url-utils"
+import { siteConfig } from "@/config/siteConfig"
+
+// 侧栏「最新动态」，照 firefly.cuteleaf.cn 的 latest-dynamics 卡片。
+// 与参考站的偏离：它是 Svelte 岛 + client:visible + fetch（为了支持 Memos 远程源），
+// 我们数据在本地 markdown、且侧栏在 #swup-container 外面不被软导航替换，所以直接构建期渲染。
+// 条目一律链到 /dynamic/：feed 里的条目是客户端从 <template> 克隆出来的、没有锚点可指。
+const LIMIT = 2
+
+// markdown 渲染结果转纯文本：先去标签，再**单趟**解实体。
+// 必须单趟：markdown-remark 会把正文里的 & 转成 &#x26;、< 转成 &#x3C;，
+// 分多趟 replace 会把解出来的 &lt; 再解一次，短文本预览就变成乱码了。
+const NAMED_ENTITIES: Record<string, string> = {
+	nbsp: " ",
+	amp: "&",
+	lt: "<",
+	gt: ">",
+	quot: '"',
+	apos: "'",
+}
+
+function decodeEntities(s: string): string {
+	return s.replace(/&(?:#x([\da-f]+)|#(\d+)|([a-zA-Z]+));/gi, (whole, hex, dec, name) => {
+		if (hex) return String.fromCodePoint(parseInt(hex, 16))
+		if (dec) return String.fromCodePoint(Number(dec))
+		return NAMED_ENTITIES[name.toLowerCase()] ?? whole
+	})
+}
+
+function toPlainText(html: string): string {
+	return decodeEntities(html.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim()
+}
+
+const entries = await getCollection("dynamic")
+const total = entries.length
+let items: { published: number; text: string; pinned: boolean; location: string }[] = []
+
+if (siteConfig.pages.dynamic && total > 0) {
+	// 与 src/pages/api/dynamic.json.ts 用同一个处理器，侧栏预览才和 /dynamic/ 页文字一致
+	const processor = await createMarkdownProcessor()
+	items = await Promise.all(
+		sortDynamics(entries)
+			.slice(0, LIMIT)
+			.map(async entry => ({
+				published: entry.data.published.getTime(),
+				text: toPlainText((await processor.render(entry.body ?? "")).code),
+				pinned: entry.data.pinned,
+				location: entry.data.location,
+			})),
+	)
+}
+---
+
+{
+	total > 0 &&
+	items.length > 0 && (
+		<div class="card-base pb-4">
+			<div class="card-title">最新动态</div>
+			<div class="overflow-hidden px-4">
+				<div class="flex flex-col gap-1.5">
+					{items.map(item => {
+						const text = item.text
+						const date = new Date(item.published)
+						return (
+							<a
+								href={url("/dynamic/")}
+								aria-label={`最新动态: ${text}`}
+								class="flex min-h-16 items-center gap-3 p-2 text-neutral-700/75 transition-colors duration-150 hover:bg-(--btn-plain-bg-hover) hover:text-(--primary) active:bg-(--btn-plain-bg-active) dark:text-neutral-300/75"
+							>
+								<div class="min-w-0 flex-1">
+									<div class="mb-1 flex items-center gap-1 text-xs leading-4 text-(--primary)">
+										<Icon
+											name="material-symbols:schedule-rounded"
+											class="size-4 shrink-0"
+											aria-hidden="true"
+										/>
+										<time datetime={date.toISOString()}>
+											{formatDateTimeToYYYYMMDDHHmm(date, "time", siteConfig.timezone)}
+										</time>
+										{item.pinned && (
+											<span class="inline-flex items-center gap-0.5 bg-(--primary)/10 px-1 py-0.5 text-[10px] font-medium text-(--primary)">
+												<Icon name="material-symbols:push-pin" class="size-3" aria-hidden="true" />
+												置顶
+											</span>
+										)}
+										{item.location && (
+											<span class="ml-auto inline-flex items-center gap-0.5 text-[10px] text-neutral-500 dark:text-neutral-400">
+												<Icon
+													name="material-symbols:location-on-rounded"
+													class="size-3.5 shrink-0"
+													aria-hidden="true"
+												/>
+												{item.location}
+											</span>
+										)}
+									</div>
+									<p class="m-0 line-clamp-3 text-sm leading-[1.35rem]">{text}</p>
+								</div>
+							</a>
+						)
+					})}
+				</div>
+				<a
+					href={url("/dynamic/")}
+					class="btn-plain mt-2 flex items-center justify-center gap-1 p-1.5 text-sm text-(--primary)"
+				>
+					<Icon name="material-symbols:dynamic-feed-rounded" class="size-4.5" aria-hidden="true" />
+					<span>更多动态</span>
+					<span class="opacity-60">({total})</span>
+				</a>
+			</div>
+		</div>
+	)
+}

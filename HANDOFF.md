@@ -9,6 +9,9 @@
 
 ## 一、下次会话第一件事
 
+> **dev server 已停**（下班收尾），要开发先 `npm run dev`（:4321）。
+> 注意 dev 下站内搜索必然不可用（Pagefind 索引只在 build 后存在），验搜索用 `npm run preview`。
+
 ### ✅ 两批都已交付，当前没有待办卡在我手上
 
 - **上午**：代码体检 + MD 去重 → `c925043 b55ee68 6fd44a7 d1f445b`，10:27 上线。
@@ -241,7 +244,7 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 | 动态功能验证 | 全过：`dist/api/dynamic.json` 现为 **1 条真实条目**（示例已删） / h1 审计 41 页 0 问题 / 导航桌面+移动两处入口 / 浏览器实测时间·亮暗·直角全对 / 分页用临时每页 2 条**真跑过**（2→3、按钮自动消失）后改回 10 / 375px 0 溢出 / 首页软导航正常 / 1024~1440 四断点导航 0 溢出。⚠️ 置顶与定位两条渲染路径**线上暂无数据覆盖**（首条没用到这两个字段），逻辑已在示例阶段验过 |
 | 产物审计 | h1 审计 **41 页 0 问题**；`/about/` 死链 0、邮箱仍 `314298729@qq.com`、github 卡片仍 3 张；Twikoo 日志 0 命中；`--shodow` 0 命中；产物里 `.dark` 只剩 `rehype-callouts` 自带 2 条（非本项目源码）；**全部改动文件 0 乱码** |
 | 内容层缓存 | `node_modules/.astro/data-store.json` **本会话删过 5 次**（每次改插件/CSS/内容后重建都清）。下次动 `src/plugins/**` 或 markdown 处理链务必再删（AGENTS 五-21） |
-| dev server | **运行中**（任务 `baqtwxfbq`，端口 4321 HTTP 200）。⚠️ **停它必须连子进程一起清**：`TaskStop` 只杀外层 shell，孤儿的 `astro dev` 会锁住 lightningcss 导致后续 `npm ci` 删空 `node_modules`（AGENTS 九 依赖坑 ③） |
+| dev server | **已停止**（2026-09-29 下班收尾），已确认 0 残留进程、端口 4321 无响应。⚠️ 下次停它要**连子进程一起清**：`TaskStop` 只杀外层 shell，孤儿的 `astro dev` 会锁住 lightningcss，导致后续 `npm ci` 删空 `node_modules`（AGENTS 九 依赖坑 ③） |
 | 服务器回滚资产 | `dist.old` + **13 个 `dist_backup_*`**，合计 **370M**（最新 `dist_backup_20260929_133913`）。全部保留中，**删需用户明确同意** |
 | 临时文件 | 本地 `%TEMP%` 的体检脚本、抓的参考站 HTML/JSON、Firefly sparse 克隆、构建日志、`chenblog_dist.tar.gz` **均已删**；服务器 `/tmp` 复查无本次残留 |
 | 测试环境限制（本次又验证有效） | ① 定宽 iframe 里 `:focus` 永不匹配 → 焦点/hover 驱动的效果只能比产物或用户肉眼验；② **带 `transition` 的元素，同步改 `data-theme` 后立刻读 `getComputedStyle` 读到的是过渡起点** → 必须先注入 `transition:none!important`（本次差点把暗色滚动条误判成"没修好"）；③ 内联 `style=` 不在样式表里，`cssRules` 遍历搜不到 |

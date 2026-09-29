@@ -67,14 +67,13 @@ import { navBarLinks } from "@/config/navBarConfig"
 		top: calc(var(--spacing) * 21);
 		border: 1px solid var(--panel-border-color);
 		overflow: hidden;
-		box-shadow: var(--shodow-md);
+		box-shadow: var(--panel-shadow);
 		overflow-y: auto;
 		background-color: var(--panel-bg);
 
 		/* 默认隐藏 */
 		opacity: 0;
 		visibility: hidden;
-		transform: translateY();
 		@apply translate-y-[-8px];
 	}
 	html[data-theme="dark"] .dropdown-content {

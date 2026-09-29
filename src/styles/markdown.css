@@ -27,7 +27,7 @@
     }
 
     a:not(.no-styling) {
-        @apply relative bg-none font-medium text-(--primary) underline decoration-(--link-underline) decoration-dashed decoration-1 underline-offset-4;
+        @apply relative bg-none font-medium text-(--primary) underline decoration-(--primary) decoration-dashed decoration-1 underline-offset-4;
         box-decoration-break: clone;
         -webkit-box-decoration-break: clone;
 
@@ -35,7 +35,7 @@
         &:active {
             @apply decoration-transparent;
             background: var(--btn-plain-bg-hover);
-            border-bottom: 1px dashed var(--link-hover);
+            border-bottom: 1px dashed var(--primary);
             text-decoration: none;
         }
     }

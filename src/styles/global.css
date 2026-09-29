@@ -24,7 +24,7 @@
     --grey-9-a5: oklch(0 0 0 / 0.5);
     --grey-9-a6: oklch(0 0 0 / 0.6);
     --grey-2-a0: oklch(0.975 0 0 / 0);
-    --shodow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --panel-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     --page-width: 100rem;
     --deep-text: #19251f;
     --title-active: #3a9371;
@@ -52,6 +52,7 @@
     --panel-bg: #ffffffd2;
     --page-bg: #e9f1ed;
     --card-bg: #fff;
+    --card-bg-rgb: 255, 255, 255;
     --line-divider: rgba(0, 0, 0, 0.08);
     --btn-regular-bg: #e0f4ea;
     --btn-content: #008760;
@@ -79,6 +80,7 @@
     --panel-bg: #171717f2;
     --page-bg: #080f0c;
     --card-bg: #161f1b;
+    --card-bg-rgb: 22, 31, 27;
     --line-divider: rgba(255, 255, 255, 0.08);
     --btn-regular-bg: #243b31;
     --btn-content: #6cc29e;

@@ -1,11 +1,13 @@
 # AGENTS.md — 项目长期指令
 
 > 陈俊亦的个人博客。每次对话开始时自动读取本文件作为上下文。
-> 最后更新：2026-09-29 午后（新增**动态（说说）功能** `/dynamic/`：内容集合 + 构建期 JSON + 客户端填 `<template>`。
-> 随之固化三条新认知：**五-23 带时分的 frontmatter 必须写 `+08:00` 偏移**（Astro 的 YAML 按 UTC 解析，
-> 而 Node 按本地，差 8 小时；文章只写日期所以一直没暴露）、**五-24 动态内容不进 Pagefind 索引属预期**、
-> **十-10 `client:load` 岛在 Swup 容器内可用**（探针实测，含容器整体替换后仍能重新水合；此前全站无先例）。
-> 五-9 基线 40→41 页。同日早前：代码体检收口 + 内容层缓存坑（五-21）+ 内联样式坑（五-22）。）
+> 最后更新：2026-09-29 傍晚（① 内容基建三件套：**五-25 列表页自动封面**、**五-26 新文章 ASCII slug + `npm run new:post` 脚手架**、
+> `npm run covers` 从 SVG 源重生成素材；② 侧栏「最新动态」卡片（五-24 末条，**构建期静态、主动偏离参考站的岛**）。
+> 三条新认知：**五-27 markdown 转纯文本时实体必须单趟解码**（`&#x26;` 不是 `&amp;`，实测出来的乱码）、
+> 五-21 补充「**别在 dev 运行时删 `data-store.json`**」（dev/build 共用，删了 dev 会停在旧内容集合）、
+> Pagefind 分片是 **gzip 不是 brotli**（解错会得出"0 命中"的假结论）。
+> 另更正两条记错的事实：八节"空 image 显示兜底图 loadingfalse.png"（实际**一张图都没有**）、
+> 五-17"CSS100Day 缺 1 和 11"（实际缺 **5 和 11**）。五-9 基线文件数 311→331（`_astro/` 191→211）。）
 
 ## 📌 开始工作前先读 [`HANDOFF.md`](./HANDOFF.md)
 
@@ -71,6 +73,8 @@ npm run dev       # 本地开发，http://localhost:4321
 npm run build     # astro build + Pagefind 索引，产物在 dist/（含 dist/pagefind/）
 npm run preview   # 预览构建产物——【搜索只能在这里或线上验】
 npm run icons     # 由 public/favicon.svg 重生成整套站点图标（PNG/ICO）
+npm run covers    # 由 src/assets/postImages/covers/*.svg 重生成列表页自动封面（webp）
+npm run new:post -- --day 29 --title "标题"   # 文章脚手架（ASCII slug + 全量 frontmatter）
 ```
 
 `package.json` 里**没有** lint / test 脚本，也没有部署脚本。验证手段就是 `dev` 看效果 + `build` 确认能构建通过。
@@ -87,7 +91,8 @@ astro.config.mjs        # 所有插件和 markdown 处理链的唯一配置入�
 src/content.config.ts   # 文章 frontmatter schema（改文章字段前必看）
 src/config/siteConfig.ts    # 站点总开关：分页数、图片格式、页面开关、site_url
 src/config/navBarConfig.ts  # 顶部菜单项（含「文章」子菜单）——改菜单只改这里
-src/config/                 # 另有 backgroundWallpaper / commentConfig / galleryConfig
+src/config/                 # 另有 backgroundWallpaper / commentConfig / galleryConfig（相册清单，见五-28）
+public/gallery/<id>/        # 相册图片本体，按 1.jpg 2.jpg 序号命名；与 galleryConfig 的 id 一一对应
 src/content/posts/          # 26 篇文章（24 .md + 2 .mdx）；images/ 是空的历史遗留目录
 src/content/spec/           # 单页内容（about 等）
 src/content/dynamic/        # 动态（说说）：一条一个 md，文件名 YYYY-MM-DD-HHMMSS.md 即条目 id
@@ -95,12 +100,15 @@ src/pages/                  # 路由：about / archive / categories / tags / ser
 src/pages/api/dynamic.json.ts  # 动态数据端点：build 时预渲染成 dist/api/dynamic.json
 src/pages/rss.xml.js        # RSS 已实现
 src/components/pages/dynamic/  # DynamicFeed.svelte（取数+分页）+ DynamicItemTemplate.astro（<template> 骨架）
+src/components/card/        # 侧栏卡片：SiteStatus / Calender / DynamicSidebar（最新动态，构建期静态）
 src/layouts/                # BaseLayout.astro + Layout.astro
 src/plugins/                # 8 个自研 remark/rehype 插件（见下）
 scripts/generate-icons.mjs  # 由 public/favicon.svg 生成全套图标（npm run icons）
+scripts/generate-covers.mjs # 由 src/assets/postImages/covers/*.svg 生成自动封面 webp（npm run covers）
+scripts/new-post.mjs        # 文章脚手架（npm run new:post：ASCII slug + 全量 frontmatter）
 pagefind.yml                # 搜索索引排除规则（KaTeX、data-pagefind-ignore、搜索面板自身）
 src/styles/                 # CSS + 一处 Stylus（markdown-extend.styl）
-src/utils/                  # content/date/gallery/image/layout/toc/url 工具函数
+src/utils/                  # content/cover/date/gallery/image/layout/toc/url 工具函数
 ```
 
 ### 自研插件（`src/plugins/`）
@@ -147,10 +155,11 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
    导致整个页面（含首页）渲染失败。Astro 6 容忍、Astro 7 报错。
    → 已于 2026-09-20 从 `src/pages/[...page].astro` 移除一处。要么写内容，要么整行删掉，别留空标签。
 
-9. 构建产物基线（**2026-09-29 实测**：接 Pagefind + 加 `/dynamic/` 之后）：
-   **41 个页面 / dist 311 个文件 / 28M**，其中 `_astro/` 191 个、`pagefind/` 42 个（索引 28 页 / 2326 词），
+9. 构建产物基线（**2026-09-29 傍晚实测**：接 Pagefind + `/dynamic/` + 自动封面 + 侧栏最新动态 + 新相册之后）：
+   **42 个页面 / dist 334 个文件 / 28M**，其中 `_astro/` 211 个（自动封面 4 张 × 5 档响应式 = 20 个）、`pagefind/` 42 个（索引 28 页 / 2326 词），
    热缓存 `npm run build` 约 5~7s + 索引 0.2s。
-   （页历史：37 → 09-24 加 `/categories/` 38 → 09-28 加 `/series/` `/tags/` 40 → 09-29 加 `/dynamic/` 41。
+   （页历史：37 → 09-24 加 `/categories/` 38 → 09-28 加 `/series/` `/tags/` 40 → 09-29 加 `/dynamic/` 41 →
+   09-29 加第 5 个相册 `/gallery/wlh-concert-2026/` 42。**每加一个相册页数就 +1**，它走 `getStaticPaths`。
    文件数在 09-28 接 Pagefind 后从 26x 跳到 307，两批数字不可直接对比，别拿旧基线核新产物。）
    Pagefind 会提示 `doesn't support stemming for zh-cmn` —— 中文没有词干还原，**属正常**，不影响命中。
    已验证 dist 内 **starlight 产物为 0**（见第九节，那是纯 devDep 膨胀）。
@@ -235,9 +244,9 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
       该篇没写 `series` 时返回 `null`）。**序号判空必须用 `!== undefined`**，否则 `seriesOrder: 0` 会被排到最后。
     - `/series/` 是**单页手风琴**，Firefly 没有 `/series/<slug>/` 详情页，我们也没做；
       `/tags/` 是标签总览 + Top 10 排行，点具体标签仍跳 `/archive/?tag=xx`（沿用 `getTagUrl()`，归档页没改）。
-    - 现有 26 篇：25 篇 `series: "CSS100Day"`（`seriesOrder` = 天数，第 2~28 天，缺 1 和 11），
-      1 篇 `series: "CodePen"` 序号 1。系列名跟标题前缀 `CSS100Day(N)-` 保持一致，**与 tag 的 `CSS100天` 是两套写法**，
-      改的时候别混。
+    - 现有 26 篇：25 篇 `series: "CSS100Day"`（`seriesOrder` = 天数，第 2~28 天，**缺 5 和 11**），
+      1 篇 `series: "CodePen"`（`边框炫彩和模糊炫彩特效.md`）序号 1。系列名跟标题前缀 `CSS100Day(N)-` 保持一致，
+      **与 tag 的 `CSS100天` 是两套写法**，改的时候别混。
     - 新页面记得给 `Layout` 传 `title`（`系列-Yilin` / `标签-Yilin`），区块标题从 `h2` 起（见第十三项）。
 
 18. **搜索 = Pagefind 全文检索**（2026-09-28 接，照 Firefly）。
@@ -287,6 +296,10 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
     → 正确验证顺序：改插件 → `rm -f node_modules/.astro/data-store.json` → `npm run build` → **grep 产物确认改动在里面**。
       第七节"build 通过再报完成"对**内容类改动不充分**，必须核产物。
     → 好消息：清空缓存不会变慢多少（重建仍是 40 页 / 307 文件 / 约 5s），所以**拿不准就删了再构建**。
+    → ⚠️ **别在 dev 运行时删它**（2026-09-29 实测）。dev 和 build **共用**这个文件，删掉之后
+      **正在跑的 dev 会停在旧内容集合上**：新增两个 `src/content/dynamic/*.md` 后，dev 的 `/api/dynamic.json`
+      仍只返回 1 条、侧栏也是 1 条，而 `dist` 里已经是 3 条——看起来像"新代码有 bug"，其实是 dev 的内容层没重扫。
+      → 要么先停 dev 再清缓存，要么清完**重启 dev**（停法见第九节依赖坑 ③，孤儿子进程会锁 lightningcss）。
 
 22. ⚠️ **`style=` 内联样式会压过一切样式表规则，包括 Tailwind 的 `dark:` 工具类**（2026-09-29 踩实）。
     `FloatingToc.astro` 在元素上写 `style="background-color: rgba(var(--card-bg-rgb, 255,255,255), .6)"`，
@@ -324,6 +337,76 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
       Swup 也不换 head）。**别再往组件里写 scoped `<style>`。**
     - `.dynamic-pinned` / `.dynamic-location` 带 `display:flex`，所以文件末尾那两条
       `[hidden]{display:none}` 是**必需的**（否则 `hidden` 属性被压掉、置顶和定位标记永远显示）——同五-20 的 `.btn-plain` 事故。
+    - **侧栏「最新动态」**（2026-09-29 加，照参考站的 `latest-dynamics` 卡片）：
+      `src/components/card/DynamicSidebar.astro`，挂在 `RightSideBar.astro` 的 `<SiteStatus />` 之后。
+      构建期读 `getCollection("dynamic")` → `sortDynamics()`（**置顶优先**，所以侧栏第一条未必是时间最新的）→ 取 2 条。
+      - ⚠️ **它是构建期静态渲染，不是岛**——这是**主动偏离参考站**：Firefly 用 Svelte 岛 + `client="visible"` + `fetch`
+        是为了支持 Memos 远程源，而我们数据在本地 markdown，且**侧栏在 `#swup-container` 外面**
+        （`Layout.astro:112` 容器闭合，侧栏在 115-122），软导航根本不替换它，所以岛纯属多一个 chunk + 一次 fetch + 一个转圈骨架。
+      - **条目一律链到 `/dynamic/`，不是 `/dynamic/#dynamic-<id>`**：feed 里的条目是客户端从 `<template>` 克隆的、
+        **没有锚点可指**（`DynamicItemTemplate.astro` 不设 id），而且 `SwupManager.astro:77` 在 `visit:start` 无条件回顶，
+        就算有锚点也会被冲掉。要成真深链得补三处（模板加 id + 克隆保留 + Swup 换内容后按 hash 滚动），当前明确不做。
+      - 只在 **xl（≥1280px）** 显示（`#right-sidebar` 是 `hidden … xl:block`），移动端底部侧栏那份手写列表
+        （`Layout.astro:124-132`）**没有**放它——这是用户拍板的范围。
+      - `total === 0` 或 `siteConfig.pages.dynamic === false` 时整块不渲染。
+      - 不污染搜索索引：实测把 28 个 `dist/pagefind/fragment/*.pf_fragment` **gunzip** 后全文搜，侧栏文本 0 命中
+        （控制组用文章正文词验证方法有效）。因为 `data-pagefind-body` 只在 `Markdown.astro` 上，侧栏在那棵子树外。
+        ⚠️ 分片是 **gzip 不是 brotli**（`\x1f\x8b` 魔数），用 `brotliDecompressSync` 解会静默失败、
+        拿二进制去搜必然"0 命中"，得出假结论。
+
+25. **列表页自动封面**（2026-09-29 加）：`src/utils/cover-utils.ts` 的 `getPostCover(post)`，
+    规则是「frontmatter 手写 `image` 永远优先 → 否则按 `seriesOrder` 在 `siteConfig.autoCoverPaths` 里轮播
+    （`(n-1) % 4`，第 2 天落在第 1 张）→ 无 seriesOrder 的按 id 稳定哈希兜底」。
+    - **只作用于列表卡片**：唯一消费点是 `src/components/layout/PostPage.astro`（全站列表只有
+      `[...page].astro → PostPage → PostCard` 这一条路径，`/archive/` `/categories/` `/tags/` `/series/` 各自用自己的 markup）。
+      详情页 banner 与 `og:image` 仍读原始 `post.data.image`，所以自动封面**不会**出现在文章页顶部——这是刻意的范围收紧，别"顺手补上"。
+    - **素材是 SVG 渲染出来的 webp，不是手绘位图**：源文件 `src/assets/postImages/covers/cover-N.svg`，
+      改完跑 `npm run covers`（`scripts/generate-covers.mjs`，与 `npm run icons` 同路子）重生成。
+      ⚠️ 别直接把 `.svg` 填进 `autoCoverPaths`——`CoverImage.astro` 的 `import.meta.glob` 只收
+      `{png,jpg,jpeg,webp,avif}`，svg 找不到文件、只在构建期 `console.error` 然后静默不出图。
+    - **卡片版式在所有断点都是「右侧竖条」**：`global.css:132` 的 `.has-cover .post-card-image` 用 `!important`
+      把 PostCard 上那串 Tailwind 类（`w-full aspect-2/1 md:absolute…`）整个覆盖掉了（同五-20 的导入顺序事故，但这次是有意为之）。
+      实测尺寸：桌面 240×176、移动 144×272。**所以封面素材要按「无焦点、四角均匀」来画**，
+      有主体的图会在窄竖条里被裁坏；`chen1~4.webp`（动漫图）因此不再被引用，但文件保留未删。
+    - 加载态验证有个陷阱：`.loading-spinner` 带 `transition: opacity .3s`，图片 load 完立刻读
+      `getComputedStyle().opacity` 会读到过渡起点而误判成"遮罩没消失"。**要读 `data-loading` 属性**，
+      或先注入 `transition:none!important`（同第十节那条通用教训）。
+
+26. **新文章一律 ASCII slug，用脚手架生成**（2026-09-29 定）：
+    - 命名规则：系列文 `css100day-<天数>.md`（→ `/posts/css100day-29/`）；非系列文 `<英文短标题-kebab>.md`。
+      **已有 26 篇的中文 URL 一律不动**（会丢外链和收录），只做增量。
+    - `npm run new:post -- --day 29 --title "3D 翻转卡片" [--desc 摘要] [--tags a,b]`
+      或 `--slug flex-center --title "…"`（非系列必须显式给 `--slug`，脚本**不做中文标题音译/翻译**，猜错就是永久错 URL）。
+      脚本会补全 frontmatter、给系列标题自动加 `CSS100Day(N)-` 前缀、检测重复天数、拒绝覆盖同名文件。
+      只写文件，不 build 不 git。
+    - 为什么值得做：slug 就是文件名（`post.id`，见 `[...slug].astro` 的 `getStaticPaths`），
+      所以这条纯粹是「约定 + 脚手架强制」，**没有任何运行时代码**。
+
+27. ⚠️ **把 markdown 渲染结果转纯文本预览时，实体解码必须单趟做完**（2026-09-29 踩实，`DynamicSidebar.astro`）。
+    `@astrojs/markdown-remark` 把正文里裸的 `&` 转成 **`&#x26;`**、`<` 转成 **`&#x3C;`**，
+    **不是** `&amp;` / `&lt;`。所以那串常见的
+    `.replace(/&amp;/g,"&").replace(/&lt;/g,"<")…` 一条都命中不了，侧栏预览会显示成 `AT&#x26;T` 这种乱码
+    （Astro 输出 `{text}` 时又会把那个 `&` 再转义一次，变成 `&amp;#x26;`，看起来更像坏了）。
+    → 正确做法：**先去标签，再用一个正则一趟解完所有实体**（数字 + 十六进制 + 具名），
+      未知具名实体原样保留。分多趟 replace 会有二次解码问题（`&amp;lt;` 被解成 `<`）。
+    → 顺序也别反：先解实体再剥标签的话，正文里字面写的 `&lt;p&gt;` 会被解成 `<p>` 再被当成标签吃掉。
+    → 通用提醒：这类"文本处理函数对不对"光看源码看不出来，**要拿带 `&`、`<`、`>` 的真实内容跑一遍核产物**。
+
+28. **相册加一个图集 = 改两处**（2026-09-29 加第 5 个相册 `wlh-concert-2026` 时摸清）：
+    - ① 图片放 `public/gallery/<id>/`，**按 `1.jpg`、`2.jpg` 序号命名**（`scanAlbumPhotos()` 用
+      `fs.readdirSync` 扫目录，文件名不参与语义，但顺序就是展示顺序）。
+      **不写 `cover` 字段时第一张就是卡片封面** → 挑最好看的那张放 `1.jpg`。
+    - ② 在 `src/config/galleryConfig.ts` 的 `albums` 数组追加一项：
+      `id`（= 文件夹名 = URL `/gallery/<id>/`）/ `name`（卡片标题）/ `description`（副标题）/
+      `location` / `date`（必须 `YYYY-MM-DD`，用于排序与显示）/ `tags`（数组）。
+      **地点沿用站点带间隔号的写法**：`中国·成都`、`自贡·大安`，别写"中国成都"。
+    - ⚠️ **`public/` 整份原样拷进 `dist/`，不走 Astro 图片优化**（和文章封面那条 `src/assets/` 路线不同，
+      那边会出 webp 变体）。所以相册图**要多大就占多少流量**——现有相册都是原始分辨率 JPEG
+      （3072×2199、1706×1279 这种），要控体积得自己在放进去之前压。
+    - 每加一个相册**页数 +1**（`/gallery/[album].astro` 走 `getStaticPaths`），核基线时别忘了（见五-9）。
+      标签筛选面板的标签是从所有 albums 聚合出来的，**新标签自动出现**，不用另外登记。
+    - 验证：`dist/gallery/index.html` 能 grep 到 `name`/`location`，
+      `dist/gallery/<id>/index.html` 的 `<img>` 数应与同图数的现有相册一致（2 图相册都是 3 个 `<img>`）。
 
 ## 六、部署
 
@@ -480,6 +563,19 @@ curl -s -o /dev/null -w "%{http_code}\n" \
   确认 diff 规模没炸——这招不碰真索引，安全。
 - **组件自述写 frontmatter 里的 `//` 注释**，不要声明成 `const DES = "…"`（2026-09-29 统一）。
   后者在 14 个文件里是**只声明从未读取**的死变量，已全量转注释；Astro frontmatter 是 JS，注释合法且不进产物。
+- ⚠️ **这台机器上 bash / node / PowerShell 三套路径与引号语义互不通用**，2026-09-29 一次会话踩 4 次，
+  每次都白白产生一个"文件不存在 / 命令失败"的**假结论**：
+  - **Git Bash 不认 `D:/xxx` 盘符写法**（`ls: cannot access`），必须 `/d/xxx`。
+    当时据此判定微信的两张图"不存在"，换成 `/d/` 才发现目录一直在（不过那两个文件确实已被清理，
+    但**排除掉路径写法这个假信号之前，不能下"文件不存在"的结论**）。
+  - **node 的 `fs` 不认 Git Bash 的 `/tmp`**，会解析成当前盘符下的 `E:\tmp` → `ENOENT`。
+    跨工具传临时文件一律用 `path.join(process.env.TEMP, 'xxx')`，别在 node 里写 `/tmp/...`。
+  - **PowerShell 命令串放进 bash 双引号会被 `$` 提前展开**：`$_.CommandLine` 变成 `extglob.CommandLine`，
+    报一串 `CommandNotFoundException`，看起来像 PowerShell 坏了。整段要用**单引号**包，
+    内层需要单引号时用 `'"'"'` 拼。
+  - **写正则改文件前先确认实际缩进与行尾**：本仓库 `package.json` 是 2 空格 + LF，
+    `src/utils/*.ts` 与 `src/config/*.ts` 是 4 空格，`.astro` 是 tab。
+    凭印象写 `\t*` 去匹配 `package.json` 会**静默不匹配**（不报错，只是没改到）。
 
 ## 八、文章写作规范（2026-09-21 实测调研，非推测）
 
@@ -488,6 +584,7 @@ curl -s -o /dev/null -w "%{http_code}\n" \
 26 篇文章 = 24 `.md` + 2 `.mdx`（只有第2、3天用 mdx），**无草稿**，与 `dist/posts` 的 26 个路由一一对应。
 `src/content/posts/images/` 是个**空目录**，历史遗留、git 也不跟踪空目录。
 新文章用 `.md`（主流选择），只有需要嵌组件时才用 `.mdx`。
+**文件名一律 ASCII slug，且用 `npm run new:post` 生成**（规则与理由见第五节 26）。
 
 ### frontmatter
 
@@ -521,10 +618,16 @@ schema 里其余 8 个（`pinned` `author` `sourceLink` `licenseName` `licenseUr
 | `<img src="./xxx.svg">` **写在 ` ``` ` 围栏里** | ✅ **无害**：只是示例代码文本，浏览器不发请求（见第九节"heart.svg 误判"） |
 | `src="https://100dayscss.com/..."` | ⚠️ 依赖他人服务器，对方开防盗链或关站会集体裂图。2026-09-28 实测 12 个真实请求的资源全部 200 |
 
-**封面**：`image` 字段 26 篇**全为空**（10 处写了但值是 `""`），所以列表页封面统一是兜底图
-`assets/postImages/loadingfalse.png`。
+**封面**：`image` 字段 26 篇**全为空**（10 处写了但值是 `""`）。
+> ⚠️ **2026-09-29 更正**：此前这里写的是"所以列表页封面统一是兜底图 `loadingfalse.png`"——**错的**。
+> 核 `dist/index.html`：10 张卡片是 10 个 `post-card-enter-btn`，**一张封面图都没有**；
+> `loadingfalse.png` 在 `CoverImage.astro` 里只在**封面 src 是远程 URL 且加载失败**时才被加载
+> （条件 `!isLocal && !isFallbackPublic`），空 `image` 根本走不到那条分支。
+> 现在列表页空 `image` 的文章由 `getPostCover()` 按 `seriesOrder` 自动配一张（见第五节 25）。
+
 注意 `src/assets/covers/1,2,3.jpg` 是**站头轮播壁纸**（被 `backgroundWallpaper.ts` 引用），
-不是文章封面，别混。
+不是文章封面，别混；`src/assets/postImages/covers/` 才是自动封面素材（svg 源 + 脚本产物 webp），
+`src/assets/postImages/chen1~4.webp` 是已停用但保留的旧动漫素材。
 
 ### ⚠️ 这些功能配置齐全但从未在生产环境用过
 
@@ -542,12 +645,15 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
 
 ## 九、待办与未决（最近一次更新：2026-09-29）
 
-### 文章方向，等用户拍板
+### 文章方向：三条已全部拍板并落地（2026-09-29 午后）
 
-1. **文件名 → URL 是否继续用中文**：现状 26 篇全中文 URL，分享出来是 `%E5%A4%A9` 这种。
-   建议**不动已有 26 个 URL**（会丢外链和收录），但**新的非系列文章改用 ASCII slug**。
-2. **是否开始配文章封面**：可做成"按分类自动配图"，成本低。
-3. **是否要文章脚手架**：一条命令生成带正确 frontmatter 的模板文件。
+1. **新文章走 ASCII slug**，已有 26 篇中文 URL 不动 → 见第五节 26。
+2. **列表页自动配封面**（按 `seriesOrder` 轮播 4 张技术感矢量图，不是原计划的"按分类"——
+   因为 26 篇 `category` 全是同一个值 `"设计灵感"`，按分类分配等于全站一张图，没有区分度）→ 见第五节 25。
+3. **文章脚手架 `npm run new:post`** → 见第五节 26。
+
+余下的内容类待办：**首篇用到 Mermaid / KaTeX / callout / 图片网格 的文章仍未写**，
+那四条渲染路径至今零实战验证（见第八节末尾），首次写时必须按第八节在 `dev` 逐项确认再上线。
 
 ### 缺陷现状（2026-09-29 复核）
 
@@ -563,6 +669,14 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
   ② 徽章是 `[data-language]::before` **伪元素**（不在 HTML 文本里）、行号是 `div.gutter > div.ln`
   （第10天页实测 124 个），拿 `ec-line-numbers` 这种不存在的类名去查自然"零产出"。
   → **通则：查渲染缺陷要按产物实际结构验证，别用"搜 HTML 字符串"和臆想的类名当证据。**
+  → 两条 2026-09-29 部署验收时**当场踩到**的 grep 假阴性，别再来：
+    ① **`[A-Za-z0-9]` 不含下划线**，而 Astro 资源哈希就是带 `_` 的（`cover-4.BL_zRYPd_1Xlmfl.webp`），
+      用不含 `_` 的字符类去匹配必然得"零引用"的**假结论**——当时线上首页明明有 10 张封面，我却 grep 出"封面没上去"。
+      匹配产物文件名要用 `[A-Za-z0-9_-]`。
+    ② **`grep -oc` 数的是"匹配行数"不是出现次数**（`-c` 会覆盖 `-o`），
+      而 dist 的 HTML 是压缩到少数几行的，所以 10 张卡片只会得 1。
+      要出现次数就用 `grep -o ... | wc -l`，或者直接用 node 的 `matchAll`（本项目验证脚本一律走 node，
+      还能顺手把线上产物和本地 `dist/` 逐项比对——这才是"上线成功"的证据）。
   → `<img>` 是 void element，解析器不会把它挂成 `<pre>` 的后代，所以"跳过 pre 子树"的 HTML 解析法也会漏判；
      正确做法是**按源码 ` ``` ` 围栏逐行判定**（围栏内=示例文本，围栏外=真实元素），再核 `dist` 里文件在不在。
 - **远程图片依赖 `100dayscss.com`**：实测 12 个 distinct 资源 / 13 处真实请求（另有大量写在围栏内的示例引用，不发请求）。

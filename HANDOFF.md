@@ -3,68 +3,195 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-09-29 午后（动态功能已提交 `ec53040 5b3bf81`、已推送、已部署上线并公网实测通过）**
+> 最后更新：**2026-09-29 傍晚（内容基建三件套 + 侧栏「最新动态」+ 第 5 个相册「王力宏演唱会」已提交 4 笔并于 17:22 部署上线，公网实测通过；文档笔随后提交，【推送 origin 尚未做，等用户点头】）**
 
 ---
 
 ## 一、下次会话第一件事
 
-> **dev server 已停**（下班收尾），要开发先 `npm run dev`（:4321）。
+> **dev server 在跑**（:4321，本次会话启动）。冷启动约 40s，别以为卡住了。
 > 注意 dev 下站内搜索必然不可用（Pagefind 索引只在 build 后存在），验搜索用 `npm run preview`。
 
-### ✅ 两批都已交付，当前没有待办卡在我手上
+### ✅ 四件事已全部提交并部署上线（2026-09-29 17:22）
 
-- **上午**：代码体检 + MD 去重 → `c925043 b55ee68 6fd44a7 d1f445b`，10:27 上线。
-- **午后**：动态（说说）`/dynamic/` → `ec53040`（功能）+ `5b3bf81`（文档），13:39 上线（备份 `dist_backup_20260929_133913`）。
-  线上已用真实浏览器量过：1 条条目、时间 `2026-09-29 13:30`、亮 `#fff`/暗 `#161f1b`、`radius 0px`、置顶与定位标记正确隐藏。
+- **自动封面** `639bf9a` · **文章脚手架** `f85798c` · **侧栏最新动态** `d16c427` · **新相册** `8625538` · 文档笔在其后
+- **17:22 按 AGENTS 第六节原子替换上线**，备份 `dist_backup_20260929_172215` + `dist.old` 都在，可回滚
+- 公网实测：`/`、`/gallery/`、`/gallery/wlh-concert-2026/`、`/dynamic/`、`/api/dynamic.json`、
+  `/pagefind/pagefind.js`、`/about/`、中文 URL 文章页 **全 200**；两张相册图字节与本地一致（296274 / 261428）；
+  属主 `root:root` 正确（部署坑①）；**线上首页与本地 `dist/index.html` 逐字节相同**（161984B，Last-Modified 17:21:36），
+  封面 10 个锚点 / 0 个箭头兜底 / 轮播序列 `cover-4,3,2,1,4,3,2,1,4,3` 与本地完全一致。
 
-**下次要发新动态**：直接在 `src/content/dynamic/` 建一个 `YYYY-MM-DD-HHMMSS.md`，
+**新增第 5 个相册「王力宏演唱会」**：`name: 王力宏演唱会` / `description: 演唱会近距离` /
+`location: 中国·成都`（站点写法带间隔号，不是用户原话的"中国成都"）/ `date: 2026-07-03` /
+`tags: ["娱乐", "生活"]`（「娱乐」是全新标签，筛选面板自动收）。
+图片 `public/gallery/wlh-concert-2026/1.jpg`（横 1706×1280，当封面）+ `2.jpg`（竖 1280×1706），
+**原样拷未压缩**——`public/` 不走 Astro 图片优化，两张共 558KB 就是实际流量。**页数 41→42**（每个相册一条 `getStaticPaths` 路由）。
+用户放桌面的微信原件已按他的要求删除（删前 MD5 逐一比对一致）。
+
+**下次从这儿接**：
+
+1. **推送 `origin/main` 还没做**——本地 ahead 5，用户只说了"提交代码，部署上线"，
+   按 AGENTS 第七节"推送前先问"，下次开头问一句再推。
+2. **请用户肉眼验收三样东西**（都已上线，但观感只有人能定；不满意就改完再走一次第六节）：
+   - 新封面：http://47.108.230.220/ 看列表卡片右侧竖条（他上次否掉的是动漫图，**矢量图是第一次上线**），桌面 + 手机各看一眼。
+     改图就动 `src/assets/postImages/covers/cover-N.svg` → `npm run covers` → `npm run build`。
+   - 侧栏「最新动态」：⚠️ **只在 ≥1280px 宽显示**（`#right-sidebar` 是 `hidden xl:block`），
+     窗口不够宽会以为没做。当前只有 1 条真实动态，所以卡片里就 1 行 + `(1)`。
+   - 新相册：http://47.108.230.220/gallery/ 看「王力宏演唱会」的封面选图与排序
+     （我把横图放 `1.jpg` 当封面、竖图第二，顺序按微信原始编号 65→66，**他没指定过顺序**）。
+3. 然后才是 **动态页二期剩下的三项**（见下面 🟡）。
+
+### ✅ 今天已结清、不用再跟的
+
+- **三处暗色改动验收通过**：悬浮目录暗 `rgba(22,31,27,.6)`、浮动按钮暗 `rgba(255,255,255,.08)` 描边、
+  滚动条暗 `rgba(255,255,255,.2)`，切回亮色完全复位。
+  ⚠️ 更正一条：浮动按钮**亮色下也从 `rgba(0,0,0,.1)` 变成了 `.08`**（改用 `--line-divider` 的连带效果），
+  此前 HANDOFF 写的"亮色零变化"只对悬浮目录成立。
+- **链接 hover 绿虚线：用户拍板保留**，代码不动。实测是"换位置"不是"多一条"——
+  非 hover 有 `decoration-dashed` 下划线（偏移 4px），hover 时 `decoration-transparent` 隐掉它、
+  改由 `border-bottom: 1px dashed` 贴行盒底边画，加浅绿底色。作用面只有 `/about/`（全站唯一有 markdown 链接的页面）。
+- **首条动态文案不改**、**about 邮箱就留 `314298729@qq.com`**——两条悬事用户已明确答复，别再问。
+- **AGENTS 第九节三条「等用户拍板」全部结清**（ASCII slug / 自动封面 / 脚手架），已改写成结论。
+
+### 🟡 还挂着的事
+
+1. **动态页二期还剩三项**：搜索、年份筛选、图片画廊（第四项「侧栏最新动态」**本次已做完**）。
+   要做仍按 AGENTS 第一节先扒参考实现，再走 brainstorming。
+   ⚠️ 扒的时候注意：参考站的侧栏是**岛**（为了 Memos 远程源），我们那条已改成构建期静态、
+   并且**条目没有锚点可指**（`DynamicItemTemplate.astro` 不设 id + `SwupManager.astro:77` 无条件回顶），
+   所以深链类需求都会撞上这同一堵墙，要做得先补那三处。
+2. **服务器回滚资产 13 个 `dist_backup_*` + `dist.old` ≈ 370M**（见第三节）。
+   **必须用户明确说才删**，我不会自己动。
+3. **宝塔面板密码**曾在对话中明文出现过，用户选择暂不改；面板 IP 白名单未开。
+4. **Mermaid 专属的 2 个未定义变量**（`--text-color-secondary` / `--primary-hover`）**故意留白**：
+   零页面可达、无从验证。等首篇 Mermaid 文章时按 AGENTS 第八节在 dev 逐项验，届时一并定值。
+5. `README.md` 的「后续计划」里"配文章封面 / 文章脚手架"两条**已经做完了**，下次收尾时顺手删掉。
+
+**发新动态**（不变）：在 `src/content/dynamic/` 建 `YYYY-MM-DD-HHMMSS.md`，
 frontmatter 写 `published: 2026-09-29T13:30:00+08:00`（**必须带 `+08:00`**，见 AGENTS 五-23），
 可选 `pinned: true` 与 `location: 某地`；然后 `npm run build` + 按第六节部署。
 
-### 🟠 需要你点头的悬事
-
-1. **首条动态的文案是我替你写的**（"博客加了「动态」页……"）。要改直接编辑
-   `src/content/dynamic/2026-09-29-133000.md` 的正文，或告诉我改成什么。
-2. **about 页对外邮箱**：已统一到 `314298729@qq.com`；若 `xiaye@msn.com` 才是收件地址，显示文本也要一起换。
-3. **服务器回滚资产已累积到 13 个 `dist_backup_*` + `dist.old` ≈ 370M**（见第三节）。
-   确认稳定后可清，但**必须你明确说**才删。
-
-### 🟡 AGENTS 第九节的存量待办
-
-- 3 个文章方向等用户拍板（URL 用不用中文 / 要不要配封面 / 要不要文章脚手架）——后两条已同步进 `README.md` 的「后续计划」
-- 宝塔面板密码曾在对话中明文出现过，用户选择暂不改；面板 IP 白名单未开
-- Mermaid 专属的 2 个未定义变量（`--text-color-secondary` / `--primary-hover`）**故意留白**：
-  零页面可达、无从验证。等首篇 Mermaid 文章时按第八节在 dev 逐项验，届时一并定值。
-- 动态页第一版**没做**搜索/年份筛选/侧栏「最新动态」组件/图片画廊（你当时只勾了核心），要加随时说。
-
-代码体检的**所有待办都解决并上线了**。三笔提交 `c925043`（依赖 dayjs）/
-`b55ee68`（代码清理 + 三处暗色失效修复）/ `6fd44a7`（文档），已推 `origin/main`；
-按第六节流程原子替换线上 `dist`（备份 `dist_backup_20260929_102733`）。
-
-**下次要做的只有两件**：
-
-1. **请用户肉眼验收三处暗色改动**（脚本量到的值都对，但观感只有人能定）：
-   切到暗色后看 `/posts/css100天-第10天/` ——
-   悬浮目录底色应由白转深 `rgba(22,31,27,.6)`、右下角浮动按钮应有浅描边、侧栏目录滚动条应为浅色。
-   ⚠️ **链接 hover 现在多了一条绿色虚下划线**（`--link-hover` 补值的结果，本批唯一非缺陷类视觉新增）。
-   觉得多余就删 `src/styles/markdown.css` 那一条 `border-bottom` 再走一次第六节即可回到旧观感。
-2. 若线上稳定几天，**用户明确同意后**可清理服务器回滚资产（现状见第三节，**我不会自己删**）。
-
-### 🟠 更早悬着的事（需用户点头）
-
-1. **about 页对外邮箱**：已统一到 `314298729@qq.com`；若 `xiaye@msn.com` 才是收件地址，显示文本也要一起换。
-
-### 🟡 AGENTS 第九节的存量待办
-
-- 3 个文章方向等用户拍板（URL 用不用中文 / 要不要配封面 / 要不要文章脚手架）——后两条已同步进 `README.md` 的「后续计划」
-- 宝塔面板密码曾在对话中明文出现过，用户选择暂不改；面板 IP 白名单未开
-- Mermaid 专属的 2 个未定义变量（`--text-color-secondary` / `--primary-hover`）**故意留白**：
-  零页面可达、无从验证。等首篇 Mermaid 文章时按第八节在 dev 逐项验，届时一并定值。
+**写新文章**：`npm run new:post -- --day 29 --title "标题"`（系列）或 `--slug <ascii-kebab>`（非系列），
+见 AGENTS 五-26。
 
 ---
 
 ## 二、历次会话做了什么
+
+### 2026-09-29 傍晚（第四件）：相册新增第 5 个图集「王力宏演唱会」——【未提交未部署】
+
+用户给两个微信临时目录路径要建图集。**那两条路径是死的**：`.../wxid_.../temp/` 是空目录、
+C 盘和 D 盘全盘搜不到那两个文件名、整个迁移目录里 236 张 jpg 全是 `*_thumb.jpg` 聊天缩略图
+（`RWTemp` 是微信接收中的临时目录，会被自动清理）。一开始踩的坑是用 `D:/...` 写法，Git Bash 不认，
+要 `/d/...`——排除掉这个假信号后才确认是真的没文件，而不是路径编码问题。
+
+先摸清相册结构再回话，确认用户要的五个字段**全部现成支持、零 schema 改动**
+（标题→`name`、副标题→`description`、时间→`date`、地点→`location`、标签→`tags`）。
+用户随后把两张图放到了桌面。
+
+**做完的事**：`public/gallery/wlh-concert-2026/1.jpg`（横 1706×1280）+ `2.jpg`（竖 1280×1706），
+`galleryConfig.albums` 追加一项。两个细节：
+① **地点写成 `中国·成都` 而不是用户原话的"中国成都"**——站点既有相册都是带间隔号的 `中国·珠海` / `中国·北京`，跟了站内约定；
+② **横图放第 1 张当封面**（不写 `cover` 字段时代码取第一张），顺序沿用微信原始编号 65→66，用户没指定过顺序。
+放之前用 sharp 合成小图**看过内容**确认是演唱会照片没拿错，并查了 `orientation` 为空（方向已烘进像素，不存在 EXIF 旋转坑）。
+
+**验证**：构建退出码 0，**页数 41→42**（每个相册一条 `getStaticPaths` 路由，基线已在 AGENTS 五-9 更新）、
+文件 331→334；`dist/gallery/index.html` 能 grep 到标题/副标题/地点/新标签「娱乐」（筛选面板自动聚合，无需登记）；
+详情页 `<img>` 数 3 个，与现有同为 2 图的 `zigong-daan-2026` **完全一致**；dev 四条路径全 200。
+**已告知用户一条体积事实**：`public/` 整份原样进 `dist`、**不走 Astro 图片优化**，
+所以这两张 558KB 就是实际流量（现有相册也都是原始分辨率 JPEG，未压缩是站内既有做法）。
+
+**桌面原件已按用户要求删除**——删前用 md5sum 逐一比对拷贝件与原件一致、且站点已正常引用，确认无损才删。
+
+### 2026-09-29 傍晚（第三件）：侧栏「最新动态」卡片——【未提交未部署】
+
+用户看了封面之后直接点名 `firefly.cuteleaf.cn/dynamic/` 右栏那个「最新动态」，要照做。
+按 AGENTS 第一节先扒实现：抓参考站页面 + 它的 `DynamicSidebar.*.js` chunk，读完整逻辑——
+`client="visible"` 懒水合 → fetch `/api/dynamic.json` → `slice(0, limit)` →
+正文 `innerHTML→textContent` 去标签 + `line-clamp-3` → 只有「有图 / 置顶」才渲染徽章行 →
+链到 `/dynamic/#dynamic-<id>` → 并把总数写进**岛外**的 `[data-dynamic-count]` 节点。
+
+**摸清现状后定了四处偏离，全部经用户拍板**（一次四问收齐）：
+① **构建期静态渲染**而非岛——侧栏在 `#swup-container` **外面**（`Layout.astro:112` 闭合、侧栏 115-122），
+软导航根本不替换它，而参考站用岛只是为了 Memos 远程源；岛在这里等于多一个 chunk + 一次 fetch + 一个转圈骨架 + 布局抖动。
+② 条目**只链 `/dynamic/`**，不做锚点深链——因为我们的 feed 条目是客户端从 `<template>` 克隆的、**根本没有 id**，
+且 `SwupManager.astro:77` 在 `visit:start` 无条件回顶，有 id 也会被冲掉。做成真深链要改三处（含动 Swup 那个雷区文件）。
+③ 2 条，与参考站 `limit: 2` 一致。④ 只放桌面右栏，移动端底部那份手写列表不动。
+另外**去掉参考站的 `rounded-lg`**（本站直角，AGENTS 五-16），标题直接用我们自己的 `.card-title`
+（`mainSingles.css:36` 的 `::before` 竖条和它的 `widget-title` 同源，不用新写样式）。
+
+**过程中修掉一个自己造出来的真 bug**：第一版按常见写法串了一排
+`.replace(/&amp;/g,"&").replace(/&lt;/g,"<")…` 做实体解码，结果侧栏把测试文本渲染成
+`AT&amp;#x26;T 的 &amp;#x26; 符号和 &amp;#x3C;尖括号&gt;`——因为 `@astrojs/markdown-remark`
+转义裸 `&` 用的是 **`&#x26;`** 而不是 `&amp;`，一条都命中不了。
+→ 改成**先去标签、再用单个正则一趟解完数字/十六进制/具名三类实体**（未知具名原样保留），
+分趟解会有 `&amp;lt;` 被二次解成 `<` 的问题。已固化为 AGENTS 五-27。
+**教训：文本处理函数光读源码读不出来，要拿带 `&`、`<`、`>` 的真实内容跑一遍核产物。**
+
+**另一个坑不是我的代码问题**：为了按 AGENTS 五-21 清内容层缓存，在 **dev 还在跑**的时候删了
+`node_modules/.astro/data-store.json`，结果 dev 的内容集合停在旧状态——新增 2 条动态后
+dev 的 `/api/dynamic.json` 仍只返回 1 条、侧栏也是 1 条，而 dist 已经是 3 条，看起来像新代码有 bug。
+→ 重启 dev 即恢复。已补进 AGENTS 五-21：**别在 dev 运行时删它**（dev/build 共用同一个文件）。
+
+**验证**（临时造了 2 条动态覆盖全部分支：置顶 + 长文本 + `AT&T` + `<尖括号>` + 地点，验完即删）：
+构建退出码 0、41 页 / 331 文件回到基线、索引 28 页；侧栏 2 条且**置顶排第一**（`sortDynamics` 是置顶优先）、
+`<time>` 显示 `2026-09-28 09:00`（`datetime` 为 `01:00Z`，**时区钉住了**，AGENTS 五-23 生效）、
+置顶徽章 ✓ 地点徽章「上海」+ 图标 ✓、`(3)` 总数 ✓、`line-clamp-3` 生效、markdown 残留（`**`/反引号/链接）全清干净；
+1440px iframe 下侧栏 `display:block`、卡片 `280x189`、**`border-radius: 0px`**、0 横向溢出、每页仍 1 个 `h1`；
+暗色正文色 `oklab(0.371…/.75)` → `oklab(0.87…/.75)` 正确翻转；
+**搜索索引零污染**：gunzip 28 个 `pf_fragment` 后全文搜侧栏文本 0 命中，控制组用文章正文词验证过方法有效
+（⚠️ 第一版我用 `brotliDecompressSync` 解，静默失败拿二进制去搜，差点把"0 命中"当结论——分片是 gzip）。
+
+**文档**：AGENTS 五-24 末尾补侧栏整段（含四处偏离的理由）、新增五-27 实体解码坑、五-21 补 dev 删缓存警告、
+第四节补 `src/components/card/`；HANDOFF 第一/二/三节同步。
+
+### 2026-09-29 傍晚：内容基建三件套（自动封面 / 文章脚手架 / ASCII slug）——【未提交未部署】
+
+用户开场只说"开启开发服务器进行今天的工作"。dev 冷启动 39.8s（Vite 重新预优化依赖），
+起来后 `/`、`/dynamic/`、`/about/` 全 200。工作区干净、HEAD `3c384c5` 与远端和线上一致。
+`HANDOFF` 说没有卡在我手上的待办，于是用一次多选题把四块方向全部收齐：验收暗色 / 收尾杂项 / 动态二期 / 内容基建。
+
+**验收与悬事（零代码改动）**：三处暗色改动程序化复验全过；链接 hover 绿虚线用户拍板保留；
+首条动态文案不改；about 邮箱就留 qq 那个。**顺带更正 HANDOFF 一条过期说法**：
+浮动按钮亮色描边从 `rgba(0,0,0,.1)` 变成 `.08` 了（改用 `--line-divider` 的连带效果），"亮色零变化"只对悬浮目录成立。
+另实测清楚 hover 那条线是**换位置不是多一条**：非 hover 用 `decoration-dashed`（偏移 4px），
+hover 时 `decoration-transparent` 隐掉它、由 `border-bottom: 1px dashed` 贴行盒底边画 + 浅绿底色。
+作用面只有 `/about/`——全站 26 篇正文里一条 markdown 链接都没有。
+
+**内容基建走 brainstorming 的 Bounded 路径**，过程中**推翻了任务本身的前提**：
+"按分类自动配图"做不了区分度，因为 26 篇 `category` **全是 `"设计灵感"`** 这一个值。
+改按 `seriesOrder` 轮播（用户选的），并**把生效范围收紧到只列表页**（详情页 banner 与 og:image 不动）。
+核过全站列表只有 `[...page].astro → PostPage → PostCard` 一条渲染路径，所以消费点真的只有一行。
+
+**素材换过一次**：先用了仓库里零引用的 `chen1~4.webp`（动漫图），用户看过说不要动漫、要景色或技术感、且要小。
+定「技术感矢量图」→ 手写 4 张 800×800 无焦点 SVG（网格光斑 / 同心圆 / 圆角递进 / 贝塞尔控制柄），
+新增 `npm run covers` 用 sharp 渲染成 webp：**单张 6~12KB、共 36KB**（动漫那版 238KB）。
+⚠️ 关键约束：`CoverImage.astro` 的 `import.meta.glob` 只收 `{png,jpg,jpeg,webp,avif}`，**不收 svg**，
+所以必须留"SVG 源 + 脚本产物"这一层，不能直接引用 svg。旧动漫图按用户指示保留不删。
+
+**为什么素材必须"无焦点"**：`global.css:132` 的 `.has-cover .post-card-image` 用 `!important`
+把 PostCard 上那串 Tailwind 类整个覆盖了，导致**所有断点都是右侧竖条**（桌面 240×176、移动 144×272），
+不是类名暗示的"移动端全宽 2:1 横幅"。我一度据此判定为缺陷，读完 CSS 才确认是有意为之——
+has-cover 这条布局路径线上从未走过，所以谁都没见过它。
+
+**脚手架 `npm run new:post`**：系列文 `--day N` → `css100day-N.md` 并自动补 `CSS100Day(N)-` 标题前缀；
+非系列**必须**显式 `--slug`（中文标题不做音译，猜错就是永久错 URL）；检测重复天数、拒绝覆盖。
+错误路径逐条实测过（缺 title / 缺 slug / 中文 slug / 大写 slug / 重复文件全部正确拦截并退出码 1）。
+
+**验证**：`npm run build` 退出码 0、**41 页回到基线**、dist 331 文件（`_astro/` 191→211 = 封面 4 张 × 5 档响应式）、
+Pagefind 仍 28 页 / 2326 词；首页 10 张卡片封面序列实测 = `cover-4,3,2,1,4,3,2,1,4,3`，
+与 `(seriesOrder-1)%4` 在 day 28→19 上**逐张对得上**；详情页 grep `post-cover` **0 命中**（证明范围没溢出）、
+`og:image` 仍是站点默认图；375/768/1440 三档 iframe 探针 **0 横向溢出、0 破图、10/10 真实加载**。
+脚手架实跑 day29 与非系列各一次，验完即删。
+
+**又一次踩到过渡假信号**：`.loading-spinner` 带 `transition: opacity .3s`，图片 load 完立刻读
+`getComputedStyle().opacity` 读到的是过渡起点，差点误判成"遮罩没消失、封面被挡住"。
+改读 `data-loading` 属性才是真状态（10/10 `false`、`pointer-events:none`）。已写进 AGENTS 五-25。
+
+**文档**：AGENTS 新增五-25（自动封面）与五-26（ASCII slug + 脚手架），第三节补两条命令，第四节补两个脚本，
+五-9 基线刷新，**更正两条记错的事实**（八节"空 image 显示兜底图 loadingfalse.png"→实际一张图都没有；
+五-17"CSS100Day 缺 1 和 11"→实际缺 **5 和 11**，那个 1 是 CodePen 系列占的），
+第九节三条「等拍板」改写成结论；HANDOFF 第一节重写并**去掉三处重复段落**。
 
 ### 2026-09-29 午后：新增「动态（说说）」功能 `/dynamic/`（已提交 `ec53040 5b3bf81`，已部署上线）
 
@@ -232,24 +359,25 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-09-29 实测）
+## 三、当前状态快照（2026-09-29 傍晚实测）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `5b3bf81`，**工作区干净**。今天共 6 笔：`c925043 b55ee68 6fd44a7 d1f445b`（上午体检批）+ `ec53040`（动态功能）+ `5b3bf81`（文档） |
-| 与远端 | **ahead 0**，`origin/main` = 本地 HEAD = 线上内容 |
-| 线上站点 | ✅ **已部署到最新**：**13:39 原子替换**（备份 `dist_backup_20260929_133913`）。公网实测 `/`、`/dynamic/`、`/api/dynamic.json`、`/pagefind/pagefind.js` 全 200；首页导航含 `/dynamic/` 两处（桌面+移动）；真实浏览器在线量到条目时间 `2026-09-29 13:30`、亮 `rgb(255,255,255)` / 暗 `rgb(22,31,27)`、`radius 0px`、置顶与定位标记正确隐藏 |
-| 依赖 | `dayjs@^1.11.23` 已进 `dependencies`；`package.json` +1、`package-lock.json` +2/−1，**无版本漂移**。已用**干净 `npm ci`（退出码 0）** + 全量构建验证。`allowScripts` 仍只钉 `esbuild@0.28.2`，与实际安装版本一致 ✅ |
-| 本地构建 | 动态功能落地后清内容缓存全量重建：`npm run build` 退出码 0，**41 页 / dist 311 文件 / 28M**，`_astro/` 191、`pagefind/` 42（索引 28 页 / 2326 词）。⚠️ 页数基线已从 40 变 **41**（AGENTS 五-9 已同步） |
-| 动态功能验证 | 全过：`dist/api/dynamic.json` 现为 **1 条真实条目**（示例已删） / h1 审计 41 页 0 问题 / 导航桌面+移动两处入口 / 浏览器实测时间·亮暗·直角全对 / 分页用临时每页 2 条**真跑过**（2→3、按钮自动消失）后改回 10 / 375px 0 溢出 / 首页软导航正常 / 1024~1440 四断点导航 0 溢出。⚠️ 置顶与定位两条渲染路径**线上暂无数据覆盖**（首条没用到这两个字段），逻辑已在示例阶段验过 |
-| 产物审计 | h1 审计 **41 页 0 问题**；`/about/` 死链 0、邮箱仍 `314298729@qq.com`、github 卡片仍 3 张；Twikoo 日志 0 命中；`--shodow` 0 命中；产物里 `.dark` 只剩 `rehype-callouts` 自带 2 条（非本项目源码）；**全部改动文件 0 乱码** |
-| 内容层缓存 | `node_modules/.astro/data-store.json` **本会话删过 5 次**（每次改插件/CSS/内容后重建都清）。下次动 `src/plugins/**` 或 markdown 处理链务必再删（AGENTS 五-21） |
-| dev server | **已停止**（2026-09-29 下班收尾），已确认 0 残留进程、端口 4321 无响应。⚠️ 下次停它要**连子进程一起清**：`TaskStop` 只杀外层 shell，孤儿的 `astro dev` 会锁住 lightningcss，导致后续 `npm ci` 删空 `node_modules`（AGENTS 九 依赖坑 ③） |
-| 服务器回滚资产 | `dist.old` + **13 个 `dist_backup_*`**，合计 **370M**（最新 `dist_backup_20260929_133913`）。全部保留中，**删需用户明确同意** |
-| 临时文件 | 本地 `%TEMP%` 的体检脚本、抓的参考站 HTML/JSON、Firefly sparse 克隆、构建日志、`chenblog_dist.tar.gz` **均已删**；服务器 `/tmp` 复查无本次残留 |
-| 测试环境限制（本次又验证有效） | ① 定宽 iframe 里 `:focus` 永不匹配 → 焦点/hover 驱动的效果只能比产物或用户肉眼验；② **带 `transition` 的元素，同步改 `data-theme` 后立刻读 `getComputedStyle` 读到的是过渡起点** → 必须先注入 `transition:none!important`（本次差点把暗色滚动条误判成"没修好"）；③ 内联 `style=` 不在样式表里，`cssRules` 遍历搜不到 |
-| 既存小坑 | `--radius-large` / `--panel-border-color` 已查清（AGENTS 五-16，别重复查）；`tsconfig.json` 的 react jsx 残留无影响；~~`MobileMenu.astro` 空参数 transform~~、~~`--shodow-md` 拼写~~ 本会话已修 |
-| `npm audit` | 补 `dayjs` 后重测（官方源）= **0 vulnerabilities**，与 09-28 基线一致。⚠️ 默认 registry 是 npmmirror 不实现 audit 接口，必须加 `--registry=https://registry.npmjs.org`（AGENTS 第三节） |
+| 本地 HEAD | 本批 4 笔代码提交：`639bf9a`（自动封面）/ `f85798c`（文章脚手架）/ `d16c427`（侧栏最新动态）/ `8625538`（新相册），**外加一笔文档**（AGENTS + HANDOFF + README）。工作区提交后应干净。今天累计 12 笔 |
+| 与远端 | **ahead 5**（`639bf9a f85798c d16c427 8625538` + 文档笔），**尚未推送**——用户本次只授权了"提交 + 部署"，按 AGENTS 第七节推送前要问 |
+| 线上站点 | ✅ **17:22 已部署到最新**（备份 `dist_backup_20260929_172215` + `dist.old`）。公网实测 8 条路径全 200（含 `/gallery/wlh-concert-2026/`、`/api/dynamic.json`、`/pagefind/pagefind.js`、中文 URL 文章页）；两张相册图字节与本地一致；属主 `root:root`；**线上首页与本地 `dist/index.html` 逐字节相同**（161984B / Last-Modified 17:21:36），封面 10 锚点 · 0 箭头兜底 · 序列 `cover-4,3,2,1,4,3,2,1,4,3` 与本地完全一致 |
+| 本地构建 | `npm run build` 退出码 0：**42 页 / dist 334 文件 / 28M**，`_astro/` **211**（191 + 封面 4 张 × 5 档响应式）、`pagefind/` 42（索引 28 页 / 2326 词）。⚠️ 页数基线 **41→42**（新相册多一条 `getStaticPaths` 路由），AGENTS 五-9 已同步 |
+| 新相册验证 | 全过：`dist/gallery/index.html` 含「王力宏演唱会 / 演唱会近距离 / 中国·成都 / 娱乐」；详情页 title 正确、日期显示 `2026-07-03`、`<img>` 数 3 个与现有 2 图相册 `zigong-daan-2026` **完全一致**；`dist/gallery/wlh-concert-2026/` 含 `1.jpg` `2.jpg` `index.html`；dev 四条路径（相册列表 / 详情 / 两张图）全 200。桌面微信原件**已按用户要求删除**，删前 MD5 比对一致 |
+| 自动封面验证 | 全过：首页 10 张卡片封面序列 `cover-4,3,2,1,4,3,2,1,4,3` 与 `(seriesOrder-1)%4`（day 28→19）**逐张吻合**；详情页 grep `post-cover` **0 命中**、`og:image` 仍站点默认图（范围没溢出）；375/768/1440 三档 **0 横向溢出、0 破图、10/10 真实加载**、`data-loading` 全 `false`。素材单张 6~12KB / 共 36KB（旧动漫图 238KB）。⚠️ **用户尚未肉眼看过矢量图版**（他否掉的是动漫那版） |
+| 脚手架验证 | 实跑 day29 与非系列各一次：frontmatter 完整、系列标题自动加 `CSS100Day(29)-` 前缀、重复天数告警生效；缺 title / 缺 slug / 中文 slug / 大写 slug / 覆盖同名 **五条错误路径全部正确拦截且退出码 1**。测试文件已删 |
+| 侧栏「最新动态」验证 | 全过（临时造 2 条动态覆盖置顶/地点/长文本/实体后已删）：2 条且**置顶排第一**、`<time>` 显示 `2026-09-28 09:00`（`datetime=01:00Z`，时区已钉住）、`(3)` 总数、`line-clamp-3`、markdown 残留全清、实体解码干净；1440px iframe 下侧栏 `block`、卡片 `280x189`、**`radius 0px`**、0 溢出、每页 1 个 `h1`；暗色正文色正确翻转；**Pagefind 索引 0 污染**（gunzip 28 个分片核过，控制组验证方法有效）。⚠️ 只在 **≥1280px** 显示，窗口窄会以为没做；⚠️ 当前真实数据只有 1 条，卡片就 1 行 |
+| 依赖 | 本批**零新增依赖**（sharp 已在，`package.json` 只加 `covers` 与 `new:post` 两条 script）。`dayjs` 显式依赖与 `allowScripts` 钉版状态沿用上午：干净 `npm ci` 退出码 0、`npm audit`（官方源）**0 vulnerabilities** |
+| 内容层缓存 | 本会话删过 `node_modules/.astro/data-store.json` **两次**，其中一次是**在 dev 运行期间删的**，导致 dev 内容集合停在旧状态（见测试环境限制⑤）。现已重启 dev 恢复正常。下次动 `src/plugins/**` 或 markdown 处理链仍必须删，但**要先停 dev**（AGENTS 五-21） |
+| dev server | **在跑**（本次会话中途为验证内容同步重启过一次，新任务 ID `b5xv5xv97`，:4321）。冷启动实测 39.8s、重启后约 6s。⚠️ 停它要连子进程一起清：`TaskStop` 只杀外层 shell，孤儿 `astro dev` 会锁住 lightningcss（AGENTS 九 依赖坑 ③） |
+| 服务器回滚资产 | `dist.old` + **14 个 `dist_backup_*`**，合计 **398M**（最新 `dist_backup_20260929_172215`，即本次部署的前一版）。全部保留中，**删需用户明确同意** |
+| 临时文件 | **已全部清理**：本地 `%TEMP%` 的 `covershot.*` `home*.html` `p10.html` `live.html` `live_*.html` `about_snapshot.txt` `build*.log` `b4~b7.log` `bdeploy.log` `ff_dynamic.html` `ff_dynsidebar.js` `pkg.*.json` `chenblog_dist.tar.gz` 均删，复查 0 残留；服务器 `/tmp/chenblog_dist.tar.gz` 已删，复查 0 残留。项目内：`covershot.tmp.mjs`、测试文章 `css100day-29.md` / `flex-center.md`、两条测试动态均已删 |
+| 测试环境限制（本次累计六条） | ① 定宽 iframe 里 `:focus` 永不匹配 → 焦点/hover 只能靠真实 `hover` 工具驱动后读 computed style（本次量链接 hover 就是这么做的）；② **带 `transition` 的元素立刻读 `getComputedStyle` 读到的是过渡起点** —— 本次又踩一次（`.loading-spinner` 的 opacity），改读 `data-loading` 属性才对；③ **in-app browser 的元素级截图要可见 surface**，`visibilityState=hidden` 时直接 `NATIVE_BROWSER_VIEWPORT_UNAVAILABLE`，整页截图却可以；④ in-app browser 导航后 DOM 可能停在 Swup 半切换态（`#content-wrapper` 挂着 `transition-leaving`、侧栏/目录元素整个不在），**要先 reload 再量**；⑤ **dev 运行时删 `data-store.json` 会让 dev 内容集合停在旧状态**（本次误判成"侧栏只渲染 1 条"，实际 dist 是 3 条），重启 dev 才恢复；⑥ **Pagefind 分片是 gzip 不是 brotli**，`brotliDecompressSync` 静默失败后拿二进制搜出的"0 命中"是假结论——任何"搜不到所以不存在"的结论都必须配一个已知存在的控制组 |
+| 既存小坑 | `--radius-large` / `--panel-border-color` 已查清（AGENTS 五-16，别重复查）；`tsconfig.json` 的 react jsx 残留无影响；`src/content/posts/images/` 是空的历史遗留目录 |
 
 ---
 

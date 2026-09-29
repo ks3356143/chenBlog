@@ -1,13 +1,11 @@
 # AGENTS.md — 项目长期指令
 
 > 陈俊亦的个人博客。每次对话开始时自动读取本文件作为上下文。
-> 最后更新：2026-09-29（代码体检**已全部收口**，含两条真实暗色缺陷。
-> 新增**第五节 21：内容层缓存藏在 `node_modules/.astro/`**（改插件必须清它）、
-> **第五节 22：`style=` 内联样式压过 `dark:` 工具类**（暗色悬浮目录变白的根因）；
-> 第九节体检记录改为「已解决」并留 1 项不可达的未定值；依赖坑补第 ③ 条（开着 dev 跑 `npm ci` 会删空 `node_modules`）；
-> 第八节更正两条过期事实（`<github>` 卡片与代码块折叠**一直在生产用**）；
-> 删掉一条与「证伪」自相矛盾的旧记录、页数 38→40、五-9 基线刷新、回滚资产数量移出到 HANDOFF。
-> 变量改名：`--shodow-md`→`--panel-shadow`，新增 `--card-bg-rgb`。）
+> 最后更新：2026-09-29 午后（新增**动态（说说）功能** `/dynamic/`：内容集合 + 构建期 JSON + 客户端填 `<template>`。
+> 随之固化三条新认知：**五-23 带时分的 frontmatter 必须写 `+08:00` 偏移**（Astro 的 YAML 按 UTC 解析，
+> 而 Node 按本地，差 8 小时；文章只写日期所以一直没暴露）、**五-24 动态内容不进 Pagefind 索引属预期**、
+> **十-10 `client:load` 岛在 Swup 容器内可用**（探针实测，含容器整体替换后仍能重新水合；此前全站无先例）。
+> 五-9 基线 40→41 页。同日早前：代码体检收口 + 内容层缓存坑（五-21）+ 内联样式坑（五-22）。）
 
 ## 📌 开始工作前先读 [`HANDOFF.md`](./HANDOFF.md)
 
@@ -92,8 +90,11 @@ src/config/navBarConfig.ts  # 顶部菜单项（含「文章」子菜单）—�
 src/config/                 # 另有 backgroundWallpaper / commentConfig / galleryConfig
 src/content/posts/          # 26 篇文章（24 .md + 2 .mdx）；images/ 是空的历史遗留目录
 src/content/spec/           # 单页内容（about 等）
-src/pages/                  # 路由：about / archive / categories / tags / series / guestbook / gallery / posts/[...slug] / [...page]
+src/content/dynamic/        # 动态（说说）：一条一个 md，文件名 YYYY-MM-DD-HHMMSS.md 即条目 id
+src/pages/                  # 路由：about / archive / categories / tags / series / dynamic / guestbook / gallery / posts/[...slug] / [...page]
+src/pages/api/dynamic.json.ts  # 动态数据端点：build 时预渲染成 dist/api/dynamic.json
 src/pages/rss.xml.js        # RSS 已实现
+src/components/pages/dynamic/  # DynamicFeed.svelte（取数+分页）+ DynamicItemTemplate.astro（<template> 骨架）
 src/layouts/                # BaseLayout.astro + Layout.astro
 src/plugins/                # 8 个自研 remark/rehype 插件（见下）
 scripts/generate-icons.mjs  # 由 public/favicon.svg 生成全套图标（npm run icons）
@@ -146,10 +147,10 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
    导致整个页面（含首页）渲染失败。Astro 6 容忍、Astro 7 报错。
    → 已于 2026-09-20 从 `src/pages/[...page].astro` 移除一处。要么写内容，要么整行删掉，别留空标签。
 
-9. 构建产物基线（**2026-09-29 实测**：接 Pagefind 之后）：
-   **40 个页面 / dist 307 个文件 / 28M**，其中 `_astro/` 189 个、`pagefind/` 42 个（索引 28 页 / 2326 词），
+9. 构建产物基线（**2026-09-29 实测**：接 Pagefind + 加 `/dynamic/` 之后）：
+   **41 个页面 / dist 311 个文件 / 28M**，其中 `_astro/` 191 个、`pagefind/` 42 个（索引 28 页 / 2326 词），
    热缓存 `npm run build` 约 5~7s + 索引 0.2s。
-   （页历史：37 → 09-24 加 `/categories/` 38 → 09-28 加 `/series/` `/tags/` 40。
+   （页历史：37 → 09-24 加 `/categories/` 38 → 09-28 加 `/series/` `/tags/` 40 → 09-29 加 `/dynamic/` 41。
    文件数在 09-28 接 Pagefind 后从 26x 跳到 307，两批数字不可直接对比，别拿旧基线核新产物。）
    Pagefind 会提示 `doesn't support stemming for zh-cmn` —— 中文没有词干还原，**属正常**，不影响命中。
    已验证 dist 内 **starlight 产物为 0**（见第九节，那是纯 devDep 膨胀）。
@@ -298,6 +299,31 @@ src/utils/                  # content/date/gallery/image/layout/toc/url 工具�
     → 附带教训：`var(--x, fallback)` 的 fallback **不是"没定义也没事"** 的标志。
       本项目里 `--card-bg-rgb` 有 fallback 却是真 bug，而 `--collapsedHeight` 无 fallback 反而是正常的
       （它由 Astro `<style define:vars>` 注入）。判断可达性要逐个看来源，别按"有没有 fallback"一刀切。
+
+23. ⚠️ **带"时分"的 frontmatter 日期必须写显式时区偏移**（2026-09-29 实测）。
+    Astro 的 YAML 加载器把 `published: 2026-09-29 10:15:00` 按 **UTC** 解析，
+    而 Node 的 `new Date("2026-09-29 10:15:00")` 按**本地**解析——两者差 8 小时。
+    → 症状：动态条目存的是 `10:15`，浏览器显示 `18:15`（我们机器在 Asia/Shanghai）。
+    → 文章一直没暴露这个坑，是因为 `published` 只写到日期（`2026-06-22`），
+      UTC 零点在 +8 下仍是同一天。**只要哪天写 `published: 2026-06-22 20:00`，日期就会跳到次日。**
+    → 正确写法：`published: 2026-09-29T10:15:00+08:00`（ISO 带偏移）。
+      并且展示端要**显式传时区**，否则换个机区的访客看到的还是偏移过的时间：
+      `formatDateTimeToYYYYMMDDHHmm(date, "time", siteConfig.timezone)`（`timezone` 就配在 siteConfig，值 `Asia/Shanghai`）。
+    → 该函数的第 3 个参数**默认不传 = 按访客机区渲染**，现有文章都走这条，未受影响。
+
+24. **动态（`/dynamic/`）是"构建期出 JSON + 客户端填模板"，因此内容进不了搜索索引**。
+    - `src/pages/api/dynamic.json.ts` 在 build 时预渲染成 `dist/api/dynamic.json`；
+      `DynamicFeed.svelte` 取数后克隆 `DynamicItemTemplate.astro` 输出的 `<template data-dynamic-item-template>`
+      并填 `data-dynamic-*` 占位。**条目不在页面 HTML 里**（`grep` 正文搜不到属正常，不是坏了）。
+    - 为什么要绕这一圈：条目里要用 `astro-icon` 与构建期图片优化，而这些在 Svelte 组件里拿不到；
+      用 `<template>` 就能让 Astro 拥有 markup、Svelte 只填值。
+    - Pagefind：全站只有 `Markdown.astro` 带 `data-pagefind-body`，**没有它的页面整页不进索引** →
+      `/dynamic/` 不会被搜索命中，这是预期。若将来要能搜动态正文，得另出一条索引路径，
+      而不是给这页加 `data-pagefind-body`（那只会把"只有页头的空壳"收进索引）。
+    - 条目的布局类在 `mainSingles.css` 的 `.dynamic-*`（原因见第十节 2 / 五-16：克隆出来的节点套不到 scoped 样式，
+      Swup 也不换 head）。**别再往组件里写 scoped `<style>`。**
+    - `.dynamic-pinned` / `.dynamic-location` 带 `display:flex`，所以文件末尾那两条
+      `[hidden]{display:none}` 是**必需的**（否则 `hidden` 属性被压掉、置顶和定位标记永远显示）——同五-20 的 `.btn-plain` 事故。
 
 ## 六、部署
 
@@ -711,3 +737,17 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
    `html.is-wallpaper-transitioning`（给 `#wallpaper-wrapper` 开 `height .45s` 过渡），`visit:end` 后 **500ms** 才摘
    （过渡 450ms，早摘会把 transition 属性撤掉、高度瞬间跳变）。
    ⚠️ 非首页横幅比首页矮是**设计如此**（参考站同款），别当 bug 把两套变量改回同值。
+
+10. **`client:load` 的 Astro 岛放在 Swup 容器内是可用的**（2026-09-29 实测，此前无先例、属未知）。
+    此前全站唯一的 `client:*` 是 Header 里的 `Search.svelte`，而 Header 在 `#swup-container` **外面**、
+    永不被替换，所以"岛能不能活过软导航"一直没被验证过。用一次性探针页测了三步：
+    ① 整页加载后岛可交互；② 从首页点链接软导航进来**同样可交互**；
+    ③ 关键一步——把 `#swup-container` 的 innerHTML 整体换成同一份 HTML（绕开动画时序），
+    岛**仍然重新水合并可交互**。原因是 Astro 给每个岛实例输出的是**内联 module script**，
+    重新插入即重新求值，不依赖"这个 bundle 之前有没有加载过"。
+    → 所以 `/dynamic/` 的 `DynamicFeed.svelte` 直接 `client:load` 挂在容器里，不需要额外桥接事件。
+    → ⚠️ 做这类实验时**别用连续两次 Swup 导航来判断**：隐藏标签页里 transition 不推进，
+      Swup 会卡在 `is-changing is-animating is-rendering`、后续导航静默失效（就是本节第 1 条那个症状），
+      看起来像"岛坏了"。用③那种手动换 innerHTML 的办法可以完全绕开动画时序。
+    → 另：探针页一开始 404，是因为 **Astro 会排除以 `_` 开头的文件**（那是它放局部/私有文件的约定），
+      `__island-probe.astro` 不生成路由。临时文件别用下划线开头。

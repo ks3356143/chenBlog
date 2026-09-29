@@ -8,6 +8,7 @@
     "preview": "astro preview",
     "icons": "node scripts/generate-icons.mjs",
     "covers": "node scripts/generate-covers.mjs",
+    "new:post": "node scripts/new-post.mjs",
     "astro": "astro"
   },
   "dependencies": {

@@ -1,0 +1,38 @@
+---
+// 动态条目的骨架：真实 Astro 组件树 + data-dynamic-* 空占位，由 DynamicFeed 克隆后填值。
+// 之所以不在 Svelte 里拼 HTML，是为了让条目能用 astro-icon 与构建期图片优化；
+// 也因此样式必须放全局（mainSingles.css），组件 scoped 样式在克隆出来的节点上不适用。
+import { Icon } from "astro-icon/components"
+import ImageWrapper from "@/components/commons/ImageWrapper.astro"
+
+const isDev = import.meta.env.DEV
+---
+
+<template data-dynamic-item-template>
+	<div class="dynamic-entry card-base">
+		<header class="dynamic-entry-header">
+			<a href="/about/" class="dynamic-avatar" aria-label="关于我">
+				<ImageWrapper
+					src={isDev ? "assets/touxiangDev.png" : "assets/touxiang.jpeg"}
+					alt="犟哟"
+					class="h-full w-full object-cover"
+				/>
+			</a>
+			<div class="dynamic-identity">
+				<a href="/about/" class="dynamic-author">犟哟</a>
+				<div class="dynamic-meta">
+					<time data-dynamic-time></time>
+					<span class="dynamic-location" data-dynamic-location hidden>
+						<Icon name="material-symbols:location-on-rounded" aria-hidden="true" />
+						<span data-dynamic-location-text></span>
+					</span>
+				</div>
+			</div>
+			<span class="dynamic-pinned" data-dynamic-pinned hidden>
+				<Icon name="material-symbols:push-pin" aria-hidden="true" />
+				置顶
+			</span>
+		</header>
+		<div class="custom-md dynamic-content" data-dynamic-content></div>
+	</div>
+</template>

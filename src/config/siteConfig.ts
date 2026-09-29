@@ -40,9 +40,13 @@ export const siteConfig = {
     },
     // siteUrl
     site_url: isDev ? "http://localhost:4321" : "http://47.108.230.220",
+    // 站点时区：需要"作者写几点就显示几点"的地方用它格式化（如动态的时间），
+    // 否则访客机区不同会看到偏移过的时间
+    timezone: "Asia/Shanghai",
     // 页面配置
     pages: {
         guestbook: true, // 留言板页面开关
         gallery:true, // 展示内容开关
+        dynamic: true, // 动态（说说）页面开关
     },
 }

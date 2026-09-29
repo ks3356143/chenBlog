@@ -21,6 +21,7 @@ export const navBarLinks: NavBarLink[] = [
             { name: "系列", url: "/series/", icon: "material-symbols:layers" },
         ],
     },
+    { name: "动态", url: "/dynamic/", icon: "material-symbols:dynamic-feed-rounded" },
     { name: "留言", url: "/guestbook/", icon: "chat" },
     { name: "相册", url: "/gallery/", icon: "xiangce" },
     { name: "关于", url: "/about/", icon: "about" },

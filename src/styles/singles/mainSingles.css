@@ -89,3 +89,50 @@
 .series-nav.is-expanded .series-nav-toggle {
     @apply rounded-b-none;
 }
+
+/* ===== 动态（/dynamic/ 说说流）=====
+   和 .series-acc-* 同理：条目是 <template> 克隆出来的，组件 scoped 的属性选择器套不到它身上，
+   且 Swup 不换 head，所以布局类必须待在全局样式表里（AGENTS 十-2 / 五-16）。 */
+.dynamic-entry {
+    @apply mb-4 px-5 py-4 md:px-6 md:py-5;
+}
+.dynamic-entry-header {
+    @apply mb-2 flex items-center gap-3;
+}
+.dynamic-avatar {
+    @apply block h-10 w-10 shrink-0 overflow-hidden rounded-full;
+}
+.dynamic-identity {
+    @apply min-w-0 flex-1;
+}
+.dynamic-author {
+    @apply block truncate text-sm font-bold text-black/90 dark:text-white/90 transition-colors hover:text-(--primary);
+}
+.dynamic-meta {
+    @apply flex items-center gap-2 text-xs text-black/30 dark:text-white/30;
+}
+.dynamic-location {
+    @apply flex items-center gap-0.5;
+}
+.dynamic-pinned {
+    @apply flex h-6 shrink-0 items-center gap-1 bg-(--btn-plain-bg-hover) px-2 text-xs font-bold text-(--btn-content);
+}
+.dynamic-content {
+    @apply text-[0.95rem] leading-7 text-black/90 dark:text-white/90;
+}
+.dynamic-content > :first-child {
+    @apply mt-0;
+}
+.dynamic-content > :last-child {
+    @apply mb-0;
+}
+.dynamic-state {
+    @apply mb-4 px-8 py-12 text-center text-black/30 dark:text-white/30;
+}
+/* ⚠️ 上面两条都带 display:flex，会盖掉 UA 的 [hidden]{display:none}
+   （正是 AGENTS 五-20 记的 .btn-plain 那类事故），必须显式收回来。
+   属性选择器特异性更高，不需要 !important。 */
+.dynamic-pinned[hidden],
+.dynamic-location[hidden] {
+    display: none;
+}

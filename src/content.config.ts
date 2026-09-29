@@ -39,7 +39,18 @@ const specCollection = defineCollection({
     schema: z.object({}),
 })
 
+// 动态（说说）：一条一个 md 文件，文件名 YYYY-MM-DD-HHMMSS.md 即条目 id
+const dynamicCollection = defineCollection({
+    loader: glob({ pattern: "**/*.md", base: "./src/content/dynamic" }),
+    schema: z.object({
+        published: z.date(),
+        pinned: z.boolean().optional().default(false),
+        location: z.string().optional().default(""),
+    }),
+})
+
 export const collections = {
     posts: postsCollection,
     spec: specCollection,
+    dynamic: dynamicCollection,
 }

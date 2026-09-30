@@ -100,7 +100,7 @@ src/pages/                  # 路由：about / archive / categories / tags / ser
 src/pages/api/dynamic.json.ts  # 动态数据端点：build 时预渲染成 dist/api/dynamic.json
 src/pages/rss.xml.js        # RSS 已实现
 src/components/pages/dynamic/  # DynamicFeed.svelte（取数+分页）+ DynamicItemTemplate.astro（<template> 骨架）
-src/components/card/        # 侧栏卡片：SiteStatus / Calender / DynamicSidebar（最新动态，构建期静态）
+src/components/card/        # 侧栏卡片：SiteStatus / Calender / DynamicSidebar（最新动态）/ SiteInfo（站点信息，均构建期静态）
 src/layouts/                # BaseLayout.astro + Layout.astro
 src/plugins/                # 8 个自研 remark/rehype 插件（见下）
 scripts/generate-icons.mjs  # 由 public/favicon.svg 生成全套图标（npm run icons）
@@ -415,6 +415,33 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
       标签筛选面板的标签是从所有 albums 聚合出来的，**新标签自动出现**，不用另外登记。
     - 验证：`dist/gallery/index.html` 能 grep 到 `name`/`location`，
       `dist/gallery/<id>/index.html` 的 `<img>` 数应与同图数的现有相册一致（2 图相册都是 3 个 `<img>`）。
+
+29. **侧栏「站点信息」卡 = `src/components/card/SiteInfo.astro`，所有值都是构建期算出的**
+    （2026-09-30 加，照 firefly.cuteleaf.cn 的 site-info 卡：常驻两行 + 默认收起的「构建信息」展开区）。
+    - 数据源：`构建平台` 是组件顶部常量 `BUILD_PLATFORM`；`博客版本` 读 `package.json` 的 `version`
+      —— **该字段现在是对外展示口径**，发版就改它（现 `0.1.19` → 显示 `V0.1.19`）；
+      `Astro` 读 `node_modules/astro/package.json` 的**实际安装值**（`package.json` 里写的是范围 `^7.0.2`，
+      直接拿它显示就成一串范围表达式）；`Node` = `process.version`、`系统信息` = `os.platform()` 映射 +
+      `process.arch`。**这三个都是构建机的值**：本站本地构建 + 阿里云 Linux 部署，所以显示
+      `Windows / x64` 是正确的（用户明确要的就是构建机实测值），别当 bug 写成"阿里云 Linux"。
+    - `构建时间` 用 `Intl.DateTimeFormat`，**必须显式传 `timeZone: siteConfig.timezone`**，
+      否则跟着访客机区跑（同五-23 那个差 8 小时的根因）。
+    - ⚠️ **这张卡挂两处（xl 右栏 + 移动底部堆）= 页面上两个 DOM 节点**，脚本必须
+      `querySelectorAll(".site-info-card")` 逐个绑定、状态各记各的；**用 `getElementById` 只会拿到第一份、
+      第二份点不开**。折叠规则也因此放全局（`mainSingles.css` 的 `.site-info-*`），且折叠层
+      `.site-info-detail` 自身**不带任何 padding**（padding 全在内层），否则 `border-box` 下 `max-height:0`
+      连内边距一起算、收起后仍漏一条缝。收起时给折叠层 `inert`，不然 Tab 会走进看不见的值。
+    - ⚠️ **图标只能用本项目真装了的集合**：`material-symbols` / `fa-solid` / `fa6-solid` / `fa7-solid` /
+      `mingcute` + `src/icons/` 本地图标。注意 **`astro.config.mjs` 的 `icon({include})` 里还写着
+      `mdi` / `simple-icons` / `fa7-brands` / `fa7-regular`，但这四个包根本没装**
+      （`node_modules/@iconify-json/` 下只有那五个）——配置看着支持其实不支持。
+      **照抄参考站的图标名会把构建直接打挂**：本次抄它的 `mdi:clover` 就报
+      `Unable to locate the "mdi" icon set!`，退出码 1，**而且 `dist/` 已被清空**（别以为产物还在）。
+      → 那四行假配置 2026-09-30 用户拍板**先不删也不装包**，见到别当新发现。要 Node/pnpm 之类的品牌 logo
+      得先装 `@iconify-json/fa7-brands` 或 `simple-icons`，属于新增依赖要先问。
+      → 要核一个名字存不存在就读 `node_modules/@iconify-json/<集合>/icons.json`，
+      **`icons` 与 `aliases` 两张表都要看**：`material-symbols:push-pin` 只在 `aliases` 里，
+      光查 `icons` 会误判成"这图标没装"。
 
 ## 六、部署
 

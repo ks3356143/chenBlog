@@ -300,6 +300,19 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
       **正在跑的 dev 会停在旧内容集合上**：新增两个 `src/content/dynamic/*.md` 后，dev 的 `/api/dynamic.json`
       仍只返回 1 条、侧栏也是 1 条，而 `dist` 里已经是 3 条——看起来像"新代码有 bug"，其实是 dev 的内容层没重扫。
       → 要么先停 dev 再清缓存，要么清完**重启 dev**（停法见第九节依赖坑 ③，孤儿子进程会锁 lightningcss）。
+    → ⚠️ **同一族还有 `node_modules/.vite/`：dev 与 build 也共用它**（2026-09-30 实测，症状极具误导性）。
+      dev 跑着的时候反复 `npm run build`（或中途 `npm ci` 把 node_modules 清掉），预打包依赖会被重建，
+      而**正在跑的 dev 页面仍引用旧哈希** → `import` 失败 → **整个模块静默不执行**。
+      本次症状是"**切页没动画了**"：`window.swup` 是 `undefined`、`--transition-duration` 没被设上，
+      但 CSS 规则一条不少 —— 看起来完全像 JS 回归或样式被谁改坏，实际只是缓存错位。
+      → 判别三步（很快）：① 控制台/页面里 `window.swup` 在不在；
+        ② `curl` 那个模块 URL 里 import 的 `/node_modules/.vite/deps/xxx.js?v=<哈希>`，
+          **返回 504 就是它**（Vite 的 outdated-dep 信号，且响应体是空的，别当成"文件没生成"）；
+        ③ `ls node_modules/.vite/deps/` 看那个文件在不在。
+      → 修法就是**重启 dev**（它会重新预打包，新哈希立刻 200）。**线上不受影响**，
+        因为 build 产物里是打过 bundle 的 chunk，不依赖 `.vite/deps`。
+      → 顺带一条通用结论：**dev 里看到"某功能整体消失"，先确认它是不是 dev 独有，
+        再去 build 产物上复现**（本次同一天还有一次：Swup 脚本重执行的 bug 在 dev 下根本不复现）。
 
 22. ⚠️ **`style=` 内联样式会压过一切样式表规则，包括 Tailwind 的 `dark:` 工具类**（2026-09-29 踩实）。
     `FloatingToc.astro` 在元素上写 `style="background-color: rgba(var(--card-bg-rgb, 255,255,255), .6)"`，

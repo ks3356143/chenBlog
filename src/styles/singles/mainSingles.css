@@ -190,3 +190,38 @@
         min-height: 0;
     }
 }
+
+/* 站点信息卡的折叠区（照 firefly.cuteleaf.cn 的 site-info，但本站直角）。
+   规则必须放全局而不是组件 scoped：这张卡在页面上渲染两份（xl 右栏 + 移动底部堆），
+   且侧栏样式随 head 走——写在这儿和 .dynamic-* / .series-acc-* 同一处，口径统一。
+   ⚠️ .site-info-detail 本身不带 padding，padding 全在它的内层，否则 border-box 下
+   max-height:0 会把内边距一起算进去、收起后仍漏一条缝。 */
+.site-info-detail {
+    max-height: 0;
+    transition: max-height 0.25s ease-out;
+}
+.site-info-card[data-open="true"] .site-info-detail {
+    max-height: 16rem;
+}
+.site-info-toggle-icon {
+    transition: transform 0.2s ease-out;
+}
+.site-info-card[data-open="true"] .site-info-toggle-icon {
+    transform: rotate(180deg);
+}
+/* 按钮文案由 data-open 驱动，JS 不写字符串，展开/收起两处不会各说各话 */
+.site-info-text-collapse {
+    display: none;
+}
+.site-info-card[data-open="true"] .site-info-text-collapse {
+    display: block;
+}
+.site-info-card[data-open="true"] .site-info-text-expand {
+    display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    .site-info-detail,
+    .site-info-toggle-icon {
+        transition: none;
+    }
+}

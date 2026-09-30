@@ -3,6 +3,7 @@ import type { MarkdownHeading } from "astro"
 import SiteStatus from "@/components/card/SiteStatus.astro"
 import Calender from "@/components/card/Calender.astro"
 import DynamicSidebar from "@/components/card/DynamicSidebar.astro"
+import SiteInfo from "@/components/card/SiteInfo.astro"
 import SiderBarToc from "../card/SiderBarToc.astro"
 
 // 右边栏，文章详情显示TOC，其他时候显示日历
@@ -23,6 +24,8 @@ const className = Astro.props.class
 	<SiteStatus />
 	<!-- 最新动态（数据为空或关了动态页时整块不渲染） -->
 	<DynamicSidebar />
+	<!-- 站点信息（构建期取值，常驻两行 + 可展开的构建信息） -->
+	<SiteInfo />
 </div>
 
 <!-- sticky卡片 -->

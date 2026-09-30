@@ -1,0 +1,126 @@
+---
+import os from "node:os"
+import fs from "node:fs"
+import path from "node:path"
+import { Icon } from "astro-icon/components"
+import { siteConfig } from "@/config/siteConfig"
+
+// 站点信息卡，照 firefly.cuteleaf.cn 侧栏的 site-info 卡：常驻两行 + 一个默认收起的「构建信息」展开区。
+// 所有值都在构建期算出（本站是纯静态 SSG），运行时零请求。
+// 主动偏离参考站两处：① 参考站按钮与行带 rounded-lg，本站全站直角（AGENTS 五-16）；
+// ② 参考站展开区四格等宽，我们把「构建时间」单独占满一行，否则在 280px 侧栏里会被挤到折行。
+
+const BUILD_PLATFORM = "阿里云服务器"
+
+const readVersion = (file: string): string => JSON.parse(fs.readFileSync(file, "utf8")).version
+const blogVersion = readVersion(path.join(process.cwd(), "package.json"))
+// 实际安装值，不是 package.json 里那个 ^7.0.2 的范围
+const astroVersion = readVersion(path.join(process.cwd(), "node_modules/astro/package.json"))
+
+const osName = ({ win32: "Windows", darwin: "macOS" } as Record<string, string>)[os.platform()] ?? os.platform()
+const buildTime = new Intl.DateTimeFormat("zh-CN", {
+	year: "numeric",
+	month: "long",
+	day: "numeric",
+	hour: "2-digit",
+	minute: "2-digit",
+	second: "2-digit",
+	hour12: false,
+	timeZone: siteConfig.timezone, // 不显式定区就会跟着访客机区跑，见 AGENTS 五-23
+}).format(new Date())
+
+const mainRows = [
+	{ icon: "material-symbols:cloud-outline", label: "构建平台", value: BUILD_PLATFORM },
+	{ icon: "material-symbols:deployed-code-outline", label: "博客版本", value: `V${blogVersion}` },
+]
+
+const detailRows = [
+	{ icon: "material-symbols:rocket-launch-outline", label: "Astro", value: `v${astroVersion}`, cls: "col-span-1" },
+	// 参考站这里用 fa7-brands:node-js 的官方 logo，但本项目没装 brands 集合（见 AGENTS 五-29），
+	// 用户拍板用通用图标：memory 读作「运行时/环境」，与下一格的 computer 成对
+	{ icon: "material-symbols:memory", label: "Node", value: process.version, cls: "col-span-1" },
+	{ icon: "material-symbols:computer-outline", label: "系统信息", value: `${osName} / ${process.arch}`, cls: "col-span-1" },
+	{ icon: "material-symbols:build-outline", label: "构建时间", value: buildTime, cls: "col-span-2" },
+]
+---
+
+<div class="card-base pb-4 site-info-card" data-open="false">
+	<div class="card-title">站点信息</div>
+	<div class="overflow-hidden px-4">
+		<div class="flex flex-col gap-1">
+			{
+				mainRows.map(row => (
+					<div class="flex items-center justify-between px-3 py-1.5">
+						<div class="flex items-center gap-2.5">
+							<div class="text-xl text-(--primary)">
+								<Icon name={row.icon} aria-hidden="true" />
+							</div>
+							<span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">{row.label}</span>
+						</div>
+						<span
+							class="max-w-[55%] truncate text-right text-sm font-bold text-neutral-900 dark:text-neutral-100"
+							title={row.value}
+						>
+							{row.value}
+						</span>
+					</div>
+				))
+			}
+		</div>
+
+		<!-- 折叠层不带任何 padding：border-box 下 max-height:0 会连内边距一起算，自带 pt 会漏出一条缝 -->
+		<div class="site-info-detail overflow-hidden" inert>
+			<div class="grid grid-cols-2 gap-2 px-3 pt-2 pb-1">
+				{
+					detailRows.map(row => (
+						<div
+							class={`flex flex-col items-center gap-1 bg-neutral-100/60 px-1 py-2 dark:bg-neutral-800/50 ${row.cls}`}
+						>
+							<div class="text-lg text-(--primary)">
+								<Icon name={row.icon} aria-hidden="true" />
+							</div>
+							<span class="text-xs text-neutral-500 dark:text-neutral-400">{row.label}</span>
+							<span
+								class="text-center text-sm font-bold text-neutral-900 dark:text-neutral-100"
+								title={row.value}
+							>
+								{row.value}
+							</span>
+						</div>
+					))
+					}
+			</div>
+		</div>
+
+		<button
+			type="button"
+			class="site-info-toggle btn-plain flex mt-1 h-8 w-full cursor-pointer items-center justify-center gap-1.5 text-sm text-(--primary)"
+			aria-expanded="false"
+		>
+			<Icon
+				name="material-symbols:keyboard-arrow-down-rounded"
+				class="site-info-toggle-icon h-6 w-6"
+				aria-hidden="true"
+			/>
+			<span class="site-info-text-expand">展开构建信息</span>
+			<span class="site-info-text-collapse">收起构建信息</span>
+		</button>
+	</div>
+</div>
+
+<script>
+	// 本卡挂在侧栏（#swup-container 外面），脚本只跑一次，不需要幂等标志。
+	// 但它在页面上有**两份**（xl 右栏 + 移动底部堆），所以必须逐个绑定、各自记状态，
+	// 用 getElementById 只会拿到第一份、第二份点不开。
+	document.querySelectorAll<HTMLElement>(".site-info-card").forEach(card => {
+		const btn = card.querySelector<HTMLButtonElement>(".site-info-toggle")
+		const detail = card.querySelector<HTMLElement>(".site-info-detail")
+		btn?.addEventListener("click", () => {
+			const open = card.getAttribute("data-open") === "true" // 点击**前**的状态
+			card.setAttribute("data-open", String(!open))
+			btn.setAttribute("aria-expanded", String(!open))
+			// 收起时才 inert：open 是旧状态，点完变成收起就意味着 open 为真
+			detail?.toggleAttribute("inert", open)
+		})
+	})
+</script>

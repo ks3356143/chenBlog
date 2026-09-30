@@ -126,7 +126,9 @@
     flex-direction: row !important;
 }
 .has-cover .post-card-content {
-    width: calc(100% - 9rem - 0.75rem) !important;
+    /* 移动端与桌面共用 PostCard 内联的 --coverWidth（30%），只有一处数字可调，
+       不会出现「图变宽了但文字区没让出来」的错位（2026-09-30 手机反馈竖条太大） */
+    width: calc(100% - var(--coverWidth) - 0.75rem) !important;
     padding: 0.75rem 0.5rem 0.75rem 0.75rem !important;
 }
 .has-cover .post-card-image {
@@ -134,7 +136,7 @@
     top: 0.5rem !important;
     bottom: 0.5rem !important;
     right: 0.5rem !important;
-    width: 9rem !important;
+    width: var(--coverWidth) !important;
     aspect-ratio: auto !important;
     border-radius: 0.75rem !important;
 }
@@ -161,8 +163,7 @@
         top: 1rem !important;
         bottom: 1rem !important;
         right: 1rem !important;
-        width: var(--coverWidth) !important;
-        border-radius: 0.75rem !important;
+        /* width 与 border-radius 与基础规则同值，不重复声明 */
     }
     .no-cover .post-card-content {
         width: calc(100% - 52px - 12px) !important;

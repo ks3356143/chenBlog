@@ -95,8 +95,5 @@ import "@/styles/fancybox-custom.css"
     document.addEventListener("swup:content:replace", setup)
     document.addEventListener("swup:visit:start", cleanupFancybox)
 
-    // 加密文章解密后重新绑定灯箱
-    document.addEventListener("password:decrypted", () => {
-        setTimeout(setup, 200)
-    })
+    // 这里原有 password:decrypted 重绑灯箱的监听：本站无密码门 UI、事件无派发方，2026-09-30 删（见 AGENTS 五-5）
 </script>

@@ -92,8 +92,5 @@ const { headings: _headings = [], class: className, style } = Astro.props
 		window.tocInternalNavigation = false
 	})
 
-	// 密码解密后重新初始化 TOC
-	document.addEventListener("password:decrypted", () => {
-		setTimeout(initSidebarTOC, 200)
-	})
+	// 这里原有 password:decrypted 重初始化监听：本站无密码门 UI、事件无派发方，2026-09-30 删（见 AGENTS 五-5）
 </script>

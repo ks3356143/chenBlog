@@ -160,13 +160,18 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
    导致整个页面（含首页）渲染失败。Astro 6 容忍、Astro 7 报错。
    → 已于 2026-09-20 从 `src/pages/[...page].astro` 移除一处。要么写内容，要么整行删掉，别留空标签。
 
-9. 构建产物基线（**2026-09-29 傍晚实测**：接 Pagefind + `/dynamic/` + 自动封面 + 侧栏最新动态 + 新相册之后）：
-   **42 个页面 / dist 334 个文件 / 28M**，其中 `_astro/` 211 个（自动封面 4 张 × 5 档响应式 = 20 个）、`pagefind/` 42 个（索引 28 页 / 2326 词），
+9. 构建产物基线（**2026-09-30 傍晚实测**：相册压成 webp + 新增 `og-image.jpg` 之后）：
+   **42 个页面 / dist 335 个文件 / 20.3MB**，其中 `_astro/` 211 个（自动封面 4 张 × 5 档响应式 = 20 个）、
+   `pagefind/` 42 个（28 个 fragment / 索引 28 页）、`gallery/` 26 个（20 张照片共 3.46MB）。
    热缓存 `npm run build` 约 5~7s + 索引 0.2s。
-   （页历史：37 → 09-24 加 `/categories/` 38 → 09-28 加 `/series/` `/tags/` 40 → 09-29 加 `/dynamic/` 41 →
+   （体积历史：28M → 09-30 相册 webp 化后 **20.3M**（−7.7M）。文件数历史：307（09-28 接 Pagefind）→
+   334（09-29 新相册）→ **335**（09-30 加 `public/og-image.jpg`）。
+   页历史：37 → 09-24 加 `/categories/` 38 → 09-28 加 `/series/` `/tags/` 40 → 09-29 加 `/dynamic/` 41 →
    09-29 加第 5 个相册 `/gallery/wlh-concert-2026/` 42。**每加一个相册页数就 +1**，它走 `getStaticPaths`。
-   文件数在 09-28 接 Pagefind 后从 26x 跳到 307，两批数字不可直接对比，别拿旧基线核新产物。）
+   ⚠️ 两批数字不可直接对比，核基线前先看清是哪一批之后的数。）
    Pagefind 会提示 `doesn't support stemming for zh-cmn` —— 中文没有词干还原，**属正常**，不影响命中。
+   （顺带：这个提示的根因就是 `<html lang="zh-cmn">` 是非法 BCP47，属体检查出但本批未做的项，
+   清单在 `HANDOFF.md` 第一节「还挂着的事 3.」。）
    已验证 dist 内 **starlight 产物为 0**（见第九节，那是纯 devDep 膨胀）。
    已知无害警告：vite chunk 体积提示、以及 Svelte 里动态 `import(变量)` 的"无法静态分析"提示（**必须保留变量写法**，
    写字符串字面量会被 Vite 在构建期当模块解析而直接失败，因为 `/pagefind/pagefind.js` 那时还不存在）。

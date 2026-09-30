@@ -3,9 +3,9 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-09-30 下午（修两条移动端缺陷 + 竖条收窄 + 移动端补动态卡 + 新增「站点信息」卡 +
-> 卸载 `@swup/scripts-plugin`；线上 15:29 部署到最新并公网实测通过；**今天的提交全部未推送**，
-> 笔数用 `git rev-list --count origin/main..HEAD` 现查，别在文档里追这个数）**
+> 最后更新：**2026-09-30 傍晚（三路体检 → 修掉 5 条已核实缺陷 + 相册压图 11.39→3.46MB +
+> 卸载 dayjs + 给 Nginx 加了缓存策略；线上 17:34 部署到最新并公网逐条验收通过；
+> **今天的提交全部未推送**，笔数用 `git rev-list --count origin/main..HEAD` 现查，别在文档里追这个数）**
 
 ---
 
@@ -18,24 +18,24 @@
 
 ### ✅ 交付状态：本地 = 线上，**GitHub 未同步（今天的提交都没推）**
 
-- 本地 HEAD `6b525c8`，工作区干净；**`origin/main` 还停在昨天的 `47543a4`，除 HANDOFF 笔之外有 8 笔未推送**
-  （用户今天只授权了提交 + 部署，没让推；准确数用 `git rev-list --count origin/main..HEAD` 现查）。下次要推就先问。
-- 线上 dist = 本地 dist（**首页逐字节相同，172739B**），15:29 部署。CSS/JS 已逐项核对：
-  `@keyframes cover-spin` 在、遮罩褪去规则在、竖条走 `var(--coverWidth)` 且 `9rem` 已消失、
-  SwupManager chunk 是容器作用域且无 scripts-plugin 代码。
-  站点信息卡 2 份都在、展开区四格图标齐、值 `阿里云服务器 / V0.1.19 / v7.3.4 / v24.21.0 / Windows / x64`
-  与构建时间全对，文章页同样带这张卡。
+- 工作区干净；**`origin/main` 还停在昨天的 `47543a4`，今天一整天都没推**
+  （用户每次只授权"提交 + 部署"；准确笔数用 `git rev-list --count origin/main..HEAD` 现查）。下次要推先问。
+- 线上 dist = 本地 dist（**首页逐字节相同，173068B**），17:34 部署。公网逐条验收过：
+  **RSS 里 26 条链接全部 200**（改前是 26/26 → 404）、`pubDate` 年份只剩 2026、
+  `og:site_name` = 亦林 YILIn、`og:image` = 本站 `/og-image.jpg` 200/image/jpeg、
+  相册 20 张共 3.46MB 且旧 `.jpg` 已 404、375px 分类「更多」能展开且重复 id 归零、
+  第13天 demo 在容器重插后仍可点且 0 报错。
 
 ### ⬜ 待用户肉眼验收（内容都已上线，观感只有人能定）
 
-1. **手机上重走这两条路径**：① 归档页刷新 → 点回首页，看封面是否直接出图（以前是白框不褪）；
+1. **相册压缩后的清晰度**（这批唯一有画质取舍的改动）：五个相册逐张看一眼，
+   特别是 `yuanmingyuan`（多张压到 1280w/q64，−18%~−52%）与灯箱放大后的效果。
+   不满意就说要哪几张回退——原图在 git 历史里（`git checkout <旧提交> -- public/gallery/...`）。
+2. **手机上重走这两条路径**：① 归档页刷新 → 点回首页，看封面是否直接出图（以前是白框不褪）；
    ② 任意切页后点汉堡按钮，看能否弹出（以前点不动）。
-2. **竖条新尺寸**：375px 下 103×272（原 144），文字区 227px（原 188）。要再窄/再宽只改
-   `PostCard.astro` 里那个 `coverWidth = "30%"` 一处，桌面与移动会一起变。
-3. **移动端底部「最新动态」卡**：在页面最底部（标签之后、站点统计之前），当前只有 1 条动态所以就 1 行。
-4. **新「站点信息」卡**：展开区默认收起，点「展开构建信息」看四格图标 + 浅底观感。
-   Node 那格用的是通用图标 `material-symbols:memory`——本项目没装 brands 图标集，
-   用户拍板不新增依赖；要官方 Node logo 得先装 `@iconify-json/fa7-brands`（见 AGENTS 五-29）。
+3. **竖条新尺寸**：375px 下 103×272（原 144）。要再调只改 `PostCard.astro` 的 `coverWidth = "30%"` 一处。
+4. **移动端底部「最新动态」卡** 与 **新「站点信息」卡**（展开区默认收起；Node 那格是通用图标
+   `material-symbols:memory`，要官方 logo 得先装 `@iconify-json/fa7-brands`，见 AGENTS 五-29）。
 5. 昨天遗留未验收的两项仍在：**新相册封面选图与顺序**、以及新封面观感。
 
 ### 🟡 还挂着的事
@@ -45,11 +45,34 @@
    做前按 AGENTS 第一节先扒参考实现再走 brainstorming。
    ⚠️ 三项里凡是**要深链到某一条动态**的，都会撞同一堵墙：feed 条目是客户端从 `<template>` 克隆的、
    **没有锚点可指**（`DynamicItemTemplate.astro` 不设 id + `SwupManager.astro:77` 无条件回顶），要先补三处。
-2. **服务器回滚资产 17 个 `dist_backup_*` + `dist.old` ≈ 485M**（今天三次部署各 +1）。
+2. **服务器回滚资产 18 个 `dist_backup_*` + `dist.old` ≈ 514M**（今天四次部署各 +1）。
    **必须用户明确说才删**，我不会自己动。
-3. **宝塔面板密码**曾在对话中明文出现过，用户选择暂不改；面板 IP 白名单未开。
-4. **Mermaid 专属的 2 个未定义变量**（`--text-color-secondary` / `--primary-hover`）**故意留白**：
+3. **2026-09-30 三路体检里「报了但本批没做」的清单**（下次要动就从这里挑，别重新扫一遍）：
+   - **性能两项被用户否掉/未选**：Twikoo 无 defer（`/assets/js/twikoo.nocss.js` 589KB × 27 页，
+     加 defer 可让文章页首屏 JS 221.8→36.3KB gz）；横幅 srcset 缺 750w 档（最小档 1280w=165KB，
+     补一档每页省 106KB）。**都是用户看过后选择不做的**，别当新发现再提。
+   - **卫生 P1 一批未动**（已核实方向对，但不在本批范围）：品牌名四种拼法（亦林 / YILIn / YiLin博客 /
+     -Yilin）、`<html lang="zh-cmn">` 非法 BCP47（也正是 Pagefind 报 zh-cmn 的根因，改 `zh-Hans-CN`）、
+     `ThemeIcon` 纯图标按钮无 `aria-label`、`meCard` 四个社交按钮 `href="/"` 全跳首页且同一元素写两遍
+     `aria-label`、`global.css:91/94` 与 `:143/168` 两处重复声明、`env.d.ts` 5 条死 Window 声明、
+     `src/assets/{about,archive,chat,home,xiangce}.svg` 与 `src/icons/` 逐字节相同且零引用（可删 5 个）、
+     schema 里 `lang/author/sourceLink/licenseName/licenseUrl/passwordHint` 6 字段零代码消费者、
+     `Tags.astro:11` 的 `class="collapsed"` 是死类名（`.collapsed` 只定义在 Category 的 scoped 里）。
+   - **模块化 P1 一批未动**：「导航后重 init」脚手架手抄约 16 处（延迟 100/200/220/500ms 各处不同，
+     可出一个 `onReinit(fn)`）；日期格式化 5 套、文章 URL 7 处各拼（已有 `getPostUrlBySlug` 却只有 3 处用，
+     twikoo 按 path 存评论所以尾斜杠不一致会分到两个线程）；同一页把 posts 集合查 4 遍 × 双挂载 = 8 遍；
+     `RecommendedPost` 与 `Calender` 各写一份 `allPostMeta` 缓存；`[...slug].astro:36,39` 同一篇 `render()` 两次。
+   - **代理报了但我判定降级**：每页两个 `<title>`（内容一致，只是无效 HTML）；
+     重复 id `cardTags`/`announcement`/`banner`（无脚本查询，无死控件）。
+   - **待核实**（我没验，别当事实用）：TypeMechine 一次导航触发 5 遍；
+     `rounded-(--radius-large)` 实际 6 处而非五-16 记的 2 处。
+   - **既存小怪象**：只有 1 个分类时分类卡收起态 120px 反而比展开后 40px 高
+     （模板写死的 `collapsedHeight: 7.5rem`）；`/site.webmanifest` 的 Content-Type 是
+     `application/octet-stream`（nginx mime.types 缺 webmanifest，要修得改服务器）。
+4. **宝塔面板密码**曾在对话中明文出现过，用户选择暂不改；面板 IP 白名单未开。
+5. **Mermaid 专属的 2 个未定义变量**（`--text-color-secondary` / `--primary-hover`）**故意留白**：
    零页面可达、无从验证。等首篇 Mermaid 文章时按 AGENTS 第八节在 dev 逐项验，届时一并定值。
+6. **首篇用到 Mermaid / KaTeX / callout / 图片网格 的文章仍未写**——那四条渲染路径至今零实战验证（AGENTS 第八节）。
 
 ### 🔧 常用操作（都已验证可用）
 
@@ -102,6 +125,37 @@
 且我把新文件从 LF 转成 CRLF 对齐同目录对产物零影响）；375/1440 两档实测四格图标
 18×18 且颜色随主题（亮 `#00ba99` / 暗 `#0dcaa9`）、浅底两档分别 `neutral-100/60` 与
 `neutral-800/50`、值全部单行不折行、零溢出、两份实例展开互不干扰。
+
+**追加：三路并行体检（模块化 / 性能 / 卫生）→ 修 5 条缺陷 + 压相册 + 加 Nginx 缓存策略**
+
+用户说"全面检查代码的模块化、精简性，优化性能等"。做法：派 3 个只读代理并行扫，
+**每个都强制先读 AGENTS.md 并禁止复报已判定为故意的项**（否则交回来的是一堆已拍板的事），
+回来以后**每条我自己抽查**再报给用户。结果：
+
+- 三条 P0 全部为真，其中两条我另用浏览器实测复现：RSS 26/26 链接 `/post/undefined` → 404
+  （`slug` 字段不存在 + 路径写成单数）；移动端分类卡「更多」点了没反应（双挂载 + `querySelector`）。
+  第三条是 5 篇文章正文裸 `<script>` 的顶层 `const` 撞上容器脚本重执行 →
+  **线上实测整页加载能开、容器重插一次就点不动 + SyntaxError**。
+- 两条我核后**降级**：每页两个 `<title>` 内容其实一致（只是无效 HTML）；
+  重复 id `cardTags`/`announcement`/`banner` 没有任何脚本查询，无死控件。
+- 一条**代理说反了**：它把"缓存策略可用"列进没问题，实测 HTML 根本没有 `Cache-Control`
+  （只有 `/_astro/*` 有 12h）→ 启发式缓存 + 每次部署旧 chunk 消失 = 客户端 404 脚本。
+  用户先说"给方案我自己改"，随后改口"直接改"，我就改了 Nginx（配置在宝塔 extension 目录，
+  动前备份 vhost，`nginx -t` 过了才 reload）——**第一版我自己写错**：`location ^~ /gallery/`
+  把 `/gallery/` 与 `/gallery/<id>/` 两个 HTML 页面一起吃进 7 天缓存，等于留下自己要修的病，
+  是靠"逐项打响应头"的验收脚本抓出来的，已改成按图片扩展名匹配。
+- 性能数字都我自己复测过：相册 11.39MB（`zigong/1.jpg` 单张 3,943,960B）、
+  Twikoo 589KB 无 defer × 27 页、横幅最小档 1280w=165KB。**用户只选了压相册**，
+  另两项看过后明确不做（记在第一节，别当新发现再提）。
+- 相册压缩**第一版失败**：一刀切 1600w/q78 让 7 张图反而变大。回滚（`git checkout` +
+  手删未跟踪的 .webp）重做成"逐张试 4 档、只省到 ≥5% 才换" → 19 张转 webp、
+  `yuanmingyuan/7.jpg` 保留原图，合计 11.39→3.46MB（−70%）。
+  动手前确认了三件事：无相册写 `cover:`、无相册 ≥10 张（改扩展名不打乱排序）、20 张全在 git 里。
+- `dayjs` 在 RSS 改用原生 Date 后源码零引用 → 已卸载（干净 `npm ci` + build 验过）。
+- 提交时**踩到自己的粗心**：`git add` 里写了已被先前 `git rm` 暂存的 `src/data/site.json`，
+  报 pathspec 不存在，结果那一笔只提交了"删文件"而没有配套的 SEO/rss 改动——
+  单笔不成立且消息与内容不符。6 笔都未推送，用 `git reset`（mixed，不碰工作区）退回重做 7 笔。
+  **教训：`git add` 一组路径前先确认没有已暂存的删除混在里面。**
 
 ### 2026-09-29 傍晚：四件事（自动封面 / 文章脚手架 / 侧栏最新动态 / 新相册）
 
@@ -210,22 +264,22 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-09-30 下午实测）
+## 三、当前状态快照（2026-09-30 傍晚实测）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `6b525c8`，工作区干净。今天 8 笔：`6f929f6` 脚本重执行范围 / `b60f828` 封面遮罩与转圈 / `91000c1` 竖条共用 --coverWidth / `4d8871d` 移动端动态卡 / `2ca2f5a` 文档 / `b8ba0ab` HANDOFF / `f58fffa` 站点信息卡 / `6b525c8` 文档五-29 |
-| 与远端 | ⚠️ **`origin/main` 仍是昨天的 `47543a4`，今天所有提交均未推送**（用户只授权"提交 + 部署"，推送要另外问）。准确笔数现查：`git rev-list --count origin/main..HEAD` |
-| 线上站点 | ✅ **15:29 已部署到最新**（备份 `dist_backup_20260930_152921` + `dist.old`，属主 `root:root`）。证据：公网 4 条路径全 200、**线上首页与本地 `dist/index.html` 逐字节相同（172739B）**、站点信息卡 2 份 + 四格图标 + 六个值全对、文章页也带该卡；CSS 含 `@keyframes cover-spin` 与遮罩褪去规则且 `9rem` 已消失、SwupManager chunk 为容器作用域且无 scripts-plugin 代码、移动底部堆顺序为 公告→分类→标签→最新动态→站点统计→站点信息 |
-| 本地构建 | `npm run build` 退出码 0：**42 页 / dist 334 文件**（与昨天基线一致，本次没新增路由）。干净 `npm ci` 618 包退出码 0 |
-| 本次两条修复的验证 | 全部程序化验过，根因与修法见 AGENTS 第十节 2/11：**菜单**用 MutationObserver 数「一次点击的 class 变更次数」，导航前后恒为 2（含自己那次 remove）且能打开、`SyntaxError` 归零；**封面**在 `/archive/ 整页加载 → 软导航回首页` 路径上量到遮罩 opacity 0（禁 transition 后读）、图 103×272 已绘、环 40px 在转。回归也核：`/dynamic/` 岛软导航后仍水合、文章页推荐位/目录/评论区照常、桌面下拉开合正常、分类栏 `data-active` 与线上行为一致（是既存问题非本次引入） |
-| 依赖 | **卸载 `@swup/scripts-plugin@^2.1.0`**（弃用原因见 AGENTS 十-11），`package.json` / lockfile 同步，`allowScripts` 仍只有 `esbuild@0.28.2`。`npm audit`（官方源）沿用 0 vulnerabilities |
-| 内容层缓存 | 本次**没动** `src/plugins/**` 与 `astro.config.mjs` 的 markdown 链，故未清 `node_modules/.astro/data-store.json`；改动都是组件/CSS，走 Vite 且已逐字节核过产物 |
-| dev server | **正在 `:4321` 跑着**（本次会话没停）。⚠️ 但这两条 bug 在 dev 下**测不出来**（dev 的组件脚本是外部 module，不会被重新求值），要复现必须 build + preview |
-| 服务器回滚资产 | `dist.old` + **17 个 `dist_backup_*`**，合计 **485M**（今天三次部署各 +1）。全部保留，**删需用户明确同意** |
-| 临时文件 | 本地 `%TEMP%` 的 tar 包、构建日志、截图裁切图与服务器 `/tmp` 的上传包**均已清理**（各复查过 0 残留）；浏览器里的探针 iframe 已移除 |
-| 排查方法类坑位 | **不在本节复述**——已全部固化：AGENTS 第十节 11（数监听器的办法）/ 第十节 2（状态机样式随 head 缺失 → 先读 naturalWidth 与 opacity）/ 五-25（隐藏标签页里 transition 不推进，读值前先禁 transition）/ 第九节（grep 两类假阴性、preview 也留孤儿进程）；记忆 `negative-results-need-positive-control` 补第五类（隐藏标签页里 lazy 图不发请求，判资源缺失只能直接 curl） |
-| 既存小坑 | `--radius-large` / `--panel-border-color` 已查清（AGENTS 五-16，别重复查）；`tsconfig.json` 的 react jsx 残留无影响；`src/content/posts/images/` 是空的历史遗留目录；**文章页分类栏无 `data-active` 高亮**是既存现象（线上同样如此），未立案 |
+| 本地 HEAD | 工作区干净。今天分四批：① 两条移动端缺陷 + 竖条 + 卸 scripts-plugin ② 站点信息卡 ③ 体检五缺陷 + 卸 dayjs + Nginx 缓存文档 ④ 本笔 HANDOFF。末几笔：`ad51671` meta+RSS / `fbbc13e` 分类按钮 / `30563b0` demo IIFE / `b5848f1` 死监听 / `d139992` dayjs / `e356da3` 相册 / `c91efe7` 文档 |
+| 与远端 | ⚠️ **`origin/main` 仍是昨天的 `47543a4`，今天所有提交均未推送**（用户每次只授权"提交 + 部署"）。现查：`git rev-list --count origin/main..HEAD` |
+| 线上站点 | ✅ **17:34 已部署到最新**（备份 `dist_backup_20260930_173454` + `dist.old`，属主 `root:root`，22M）。验收证据：**RSS 26 条链接逐条访问全部 200**、pubDate 年份只剩 2026、`og:site_name`=亦林 YILIn、`og:image` 本站 200/image·jpeg、相册 20 张共 3.46MB 且旧 `.jpg` 已 404、375px 分类「更多」可展开且重复 id 归零、第13天 demo 容器重插后仍可点 0 报错、**线上首页与本地 dist 逐字节相同（173068B）** |
+| 服务器配置 | ✅ 新增 `/www/server/panel/vhost/nginx/extension/chenblog.com/cache.conf`（缓存策略，详见 AGENTS 第六节）。vhost 原件备份在 `/root/chenblog_vhost.bak_20260930_163914.conf`；`nginx -t` 通过后才 reload。**这是今天唯一动过的服务器配置** |
+| 本地构建 | `npm run build` 退出码 0：**42 页 / dist 335 文件 / 20.3MB**（比昨天 28MB 小 7.7MB，就是相册压缩的功劳；文件数 +1 是 `og-image.jpg`）。干净 `npm ci` 退出码 0 |
+| 依赖 | 今天卸了两个：`@swup/scripts-plugin`（AGENTS 十-11）、`dayjs`（RSS 改用原生 Date 后源码零引用，lockfile 里剩的是 mermaid/sanitize-html 的传递依赖）。`allowScripts` 仍只有 `esbuild@0.28.2`；`npm audit`（官方源）0 vulnerabilities |
+| dev server | **正在 `:4321` 跑着**（为 `npm ci` 停过一次、随后重启）。⚠️ 两件事：① 今天这些缺陷在 dev 下大多**测不出来**，要复现必须 build + preview；② **dev 与 build 共用 `node_modules/.vite/`**，dev 跑着时反复 build 会让 dev 的预打包依赖失效（症状是切页动画消失、`window.swup` 为 undefined、依赖 URL 返回 504）→ 见 AGENTS 五-21 |
+| 服务器回滚资产 | `dist.old` + **18 个 `dist_backup_*`**，合计 **514M**（今天四次部署各 +1）。全部保留，**删需用户明确同意** |
+| 临时文件 | 本地 `%TEMP%`（tar 包、构建/安装日志、原图对比导出、截图裁切图）与服务器 `/tmp` 上传包**均已清理**，各复查过 0 残留；浏览器探针 iframe 已全部移除；`public/gallery` 无 `.try.` 残留 |
+| 排查方法类坑位 | **不在本节复述**——已全部固化：AGENTS 第十节 11（MutationObserver 数监听器）/ 第十节 2（状态机样式随 head 缺失）/ 五-21（dev 与 build 共用 .vite）/ 五-25（隐藏页 transition 不推进）/ 五-29（图标集合边界）/ 第六节（Nginx 缓存两条踩坑）/ 第九节（grep 假阴性、preview 孤儿进程）；记忆补了第五类假阴性（隐藏页 lazy 图不发请求）与"剥标签取证会连图标一起丢" |
+| 体检未做项 | **全部列在第一节「还挂着的事 3.」**，下次要动从那里挑，别重扫一遍。含：用户看过选择不做的性能两项、卫生 P1 一批、模块化 P1 一批、我核后降级的两条、以及三条待核实 |
+| 既存小坑 | `--radius-large` / `--panel-border-color` 已查清（AGENTS 五-16）；`tsconfig.json` react jsx 残留无影响；`src/content/posts/images/` 空目录；文章页分类栏无 `data-active` 高亮（线上同样如此）；分类卡只有 1 个分类时收起态比展开态高；`/site.webmanifest` 的 Content-Type 是 octet-stream（要修得动 nginx mime.types） |
 
 ---
 

@@ -12,6 +12,7 @@ import Tags from "@/components/card/Tags.astro"
 // 右边栏
 import RightSideBar from "@/components/layout/RightSideBar.astro"
 import SiteStatus from "@/components/card/SiteStatus.astro"
+import DynamicSidebar from "@/components/card/DynamicSidebar.astro"
 
 import { siteConfig } from "@/config/siteConfig"
 // 中间栏
@@ -128,6 +129,8 @@ const postCategory = isPostPage ? String((frontmatter as { category?: unknown } 
                         <Gonggao />
                         <Category />
                         <Tags />
+                        <!-- 位置照参考站手机底部堆的顺序：标签之后、站点统计之前 -->
+                        <DynamicSidebar />
                         <SiteStatus />
                     </div>
                 </div>

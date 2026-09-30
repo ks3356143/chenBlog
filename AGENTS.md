@@ -142,7 +142,12 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
 
 5. **文章 frontmatter schema** 定义在 `src/content.config.ts`，字段包括：
    `title` `published` `updated` `draft` `description` `image` `tags` `category` `series` `seriesOrder` `lang` `pinned` `author` `sourceLink` `licenseName` `licenseUrl` `comment` `password` `passwordHint`
-   新增字段必须改 schema，否则构建报错。支持 `password` 加密文章。
+   新增字段必须改 schema，否则构建报错。
+   ⚠️ **`password` 不是"加密文章"，别当功能用**（2026-09-30 核）：全站只做了两件事——
+   列表卡显示锁图标（`PostCard` 的 `password` prop）、文章页隐藏评论区（`[...slug].astro:175` 的
+   `!post.data.password`）。**没有任何密码门 UI、没有解密逻辑，正文照常渲染进 HTML 并可被 Pagefind 索引**；
+   `passwordHint` 同样零消费。原先三个 `password:decrypted` 监听器（SiderBarToc / FloatingToc /
+   FancyboxManager）因为事件无派发方已作为死代码删除，将来真做加密要连派发方一起补回来。
    `series`（空=不归入任何系列）+ `seriesOrder`（系列内序号，可为 0）驱动 `/series/` 页与文章页系列导航盒，
    见第十六项；**写完文章要顺手写这两个**，否则该篇不进系列。
 
@@ -478,6 +483,29 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
 | 监听 | `listen 80` + `server_name 0.0.0.0` → 裸 IP 直接命中博客，站点标题 `YILIn` |
 
 Nginx 根目录直接指向 `dist/`，**build 完成即上线**，无需额外拷贝或 reload。
+
+### 缓存策略（2026-09-30 加，改在 extension 里）
+
+配置文件：`/www/server/panel/vhost/nginx/extension/chenblog.com/cache.conf`
+（**放 extension 目录是有意的**：宝塔不重写它，且它在 vhost 顶部被 include，
+所以本文件里的正则 location 先于宝塔自带的「图片 30d / js+css 12h」生效）。
+
+| 路径 | Cache-Control | 为什么 |
+|---|---|---|
+| `/_astro/*` | `public, max-age=31536000, immutable` | 文件名带内容哈希，新部署必然换名，永不会拿到旧的（顺带把封面 webp 从"完全没缓存"提到永久） |
+| `/pagefind/*` | `no-cache` | 文件名稳定但内容每次构建都变，长缓存会让搜索索引错位 |
+| `/gallery/**` 图片 | `public, max-age=604800` | 稳定名、偶尔换图，7 天折中 |
+| 其余（所有 HTML 页 / `rss.xml` / `/api/*.json` / favicon） | `no-cache, must-revalidate` | **治的是真病**：原先 HTML 完全没有 `Cache-Control` → 浏览器启发式缓存，而每次部署旧哈希 chunk 就没了，客户端复用旧 HTML 就会 404 掉脚本，表现成"某些交互整体失效" |
+
+三条要记住的：
+
+1. **HTML 必须用兜底 `location /` 匹配，不能写 `location ~ \.html$`**——本站页面请求的 URI 是
+   `/` 和 `/posts/xxx/`（走 `index` 指令找 index.html），按 `.html` 后缀匹配一条都命中不了。
+2. **`/gallery/` 不能用 `location ^~ /gallery/`**——那会把 `/gallery/` 与 `/gallery/<id>/`
+   这两个 HTML 页面一起吃进 7 天缓存，等于把本文件要修的病留下（我第一版就犯了这个，
+   靠逐项打响应头的验收脚本才抓出来）。必须按图片扩展名匹配。
+3. `no-cache` ≠ 每次都重下：实测带 `If-None-Match` 请求首页返回 **304**，只花几十字节。
+   改完要 `nginx -t` 通过再 `nginx -s reload`，动 vhost 前先 `cp -a` 备份到 `/root/`。
 
 > ⚠️ 服务器 `/www/wwwroot/` 下**还并存着其他项目的目录**。曾经发生过把博客路径认错的情况，
 > 若推错目录会直接毁掉另一个项目。动手前务必确认当前路径是 `chenBlog/dist`，不要凭记忆。

@@ -201,7 +201,10 @@
     transition: max-height 0.25s ease-out;
 }
 .site-info-card[data-open="true"] .site-info-detail {
-    max-height: 16rem;
+    /* ⚠️ 必须大于内容实际高度：280px 侧栏下展开内容实测 262px，
+       原先写 16rem=256px 把底部连 padding 一起裁掉，最后一格到按钮只剩 2px。
+       留到 20rem=320px；改这里之后要重新量一次两档断点。 */
+    max-height: 20rem;
 }
 .site-info-toggle-icon {
     transition: transform 0.2s ease-out;

@@ -70,7 +70,8 @@ const detailRows = [
 
 		<!-- 折叠层不带任何 padding：border-box 下 max-height:0 会连内边距一起算，自带 pt 会漏出一条缝 -->
 		<div class="site-info-detail overflow-hidden" inert>
-			<div class="grid grid-cols-2 gap-2 px-3 pt-2 pb-1">
+			<!-- 不再自带 px：外层已有 px-4，多套一层会让小块比上面的常驻行缩进 12px、对不齐 -->
+			<div class="grid grid-cols-2 gap-2 pt-2 pb-2">
 				{
 					detailRows.map(row => (
 						<div

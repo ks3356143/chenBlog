@@ -2,7 +2,6 @@
     // 注意：不能用 define:vars 传配置——那会把脚本内联进每页 HTML，swup bundle 随之重复嵌入
     import { effectsConfig } from "@/config/effectsConfig"
     import Swup from "swup"
-    import SwupScriptsPlugin from "@swup/scripts-plugin"
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
@@ -16,10 +15,24 @@
             // 默认 [class*="transition-"] 会命中全站 Tailwind transition-* 类，display:none 子树里冻住
             // 不过结束的过渡会让 visit 死锁（2026-09-23 实测）
             animationSelector: '[class*="transition-swup-"]',
-            // 容器内的 is:inline 脚本导航后默认不执行，靠它重执行（评论/分享/推荐位）
-            plugins: [new SwupScriptsPlugin()],
         })
         window.swup = swup
+
+        // 重跑容器内脚本（评论/分享/推荐位 + Astro 岛）。不用 @swup/scripts-plugin：它默认 scope 是整个
+        // document，连容器外、永不被替换的 Header/侧栏脚本也一起重新插入执行，于是每次导航都给同一批元素
+        // 再叠一层 addEventListener —— 实测切一次页后汉堡按钮「一次点击 = 两次 toggle」净零，看起来点不开；
+        // 主题按钮同理，另外两个顶层 const 的经典内联脚本重执行还会各抛一条 SyntaxError。
+        // 容器外的组件靠下面的桥接事件自恢复，不依赖重执行。
+        swup.hooks.on("content:replace", () => {
+            document
+                .querySelectorAll("#swup-container script:not([data-swup-ignore-script])")
+                .forEach((old) => {
+                    const fresh = document.createElement("script")
+                    for (const { name, value } of old.attributes) fresh.setAttribute(name, value)
+                    fresh.textContent = old.textContent
+                    old.replaceWith(fresh)
+                })
+        })
 
         // 切页进度条：WAAPI 驱动，数值照搬参考站的 startProgressBar / finishProgressBar
         const progressBar = () => document.getElementById("progress-bar")

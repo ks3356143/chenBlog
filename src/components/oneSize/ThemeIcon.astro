@@ -50,6 +50,6 @@
 	}
 
 	setToggleListener()
-
-	document.addEventListener("astro:after-swap", setToggleListener)
+	// 不在 astro:after-swap 里再绑一次：本按钮在 Header（Swup 容器外），节点永不被替换，
+	// 重新 addEventListener 只会让一次点击翻转两次主题 = 看起来按了没反应
 </script>

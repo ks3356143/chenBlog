@@ -111,7 +111,8 @@ const totalPosts = seriesList.reduce((sum, s) => sum + s.count, 0)
 			content.style.maxHeight = next ? content.scrollHeight + "px" : "0px";
 		}
 
-		// 事件委托 + 幂等标志：Swup 切页后新内容照样能用，且 @swup/scripts-plugin 重跑时不重复注册
+		// 事件委托 + 幂等标志：本脚本在 Swup 容器内，切页时会被重新插入执行（见 SwupManager 的
+		// content:replace），幂等标志保证监听器只注册一次
 		if (!window.__seriesAccordionInit) {
 			window.__seriesAccordionInit = true;
 			document.addEventListener("click", onSeriesAccordion);

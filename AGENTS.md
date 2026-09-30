@@ -58,7 +58,7 @@ https://firefly.cuteleaf.cn/ 与 https://github.com/CuteLeaf/Firefly 。
 | Markdown 处理 | `@astrojs/markdown-remark` **7.3.1**（⚠️ 必须显式声明，见第五节）|
 | 代码高亮 | astro-expressive-code **0.44.2**（one-light / one-dark-pro，内部重命名为 `light` / `dark`） |
 | 图表 / 公式 | Mermaid **11.17.2**（⚠️ 不能升 12）、KaTeX **0.18.7** |
-| 页面过渡 | Swup **4.10.0** + `@swup/scripts-plugin` **2.1.0**（⚠️ 四个坑见第十节） |
+| 页面过渡 | Swup **4.10.0**（脚本重执行改为自己写容器作用域钩子，**2026-09-30 弃用 `@swup/scripts-plugin`**，原因见第十节 11） |
 | 其他 | Fancybox 图库、astro-icon 1.2.0 + Iconify |
 
 > 2026-09-21 做过一次全量依赖升级，`npm audit` 从 21 个漏洞（2 critical）降到 **0**，
@@ -220,7 +220,7 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
     - 桌面下拉的展开由 CSS 三种情形触发：hover、`:focus-within`、`:has(.dropdown-trigger[aria-expanded="true"])`
       （第三种是**触屏没有 hover 才加的 click 切换，Firefly 自己没有**，别当成照搬）。
     - 手风琴类交互（下拉、`/series/` 系列卡片、文章页 SeriesNav）一律**事件委托 + `window.__xxxInit` 幂等标志**，
-      因为 `@swup/scripts-plugin` 会重跑容器内脚本（第十节 2）。Header 在容器外，它的脚本只跑一次，无需幂等标志。
+      因为容器内脚本会被重跑（第十节 2 与 11）。Header 在容器外，它的脚本只跑一次，无需幂等标志。
     - **只在部分页面渲染的组件，布局类 CSS 必须放全局样式表**（成因与实测案例见第十节 2，此处不复述）；
       落到本项目：`.series-acc-*` / `.series-nav-*` 放在 `src/styles/singles/mainSingles.css`。
       Header 系组件每页都渲染，所以 `DropdownMenu.astro` 的 scoped `<style>` 是安全的。
@@ -346,8 +346,12 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
       - **条目一律链到 `/dynamic/`，不是 `/dynamic/#dynamic-<id>`**：feed 里的条目是客户端从 `<template>` 克隆的、
         **没有锚点可指**（`DynamicItemTemplate.astro` 不设 id），而且 `SwupManager.astro:77` 在 `visit:start` 无条件回顶，
         就算有锚点也会被冲掉。要成真深链得补三处（模板加 id + 克隆保留 + Swup 换内容后按 hash 滚动），当前明确不做。
-      - 只在 **xl（≥1280px）** 显示（`#right-sidebar` 是 `hidden … xl:block`），移动端底部侧栏那份手写列表
-        （`Layout.astro:124-132`）**没有**放它——这是用户拍板的范围。
+      - **两处挂载**（2026-09-30 改）：桌面 **xl 右栏**（`#right-sidebar` 是 `hidden … xl:block`）
+        + **移动底部卡片堆**（`Layout.astro` 的 `#mobile-bottom-sidebar`，`md:hidden`），
+        后者是用户反馈"移动端主页没有动态"才补的，**位置照参考站**：标签之后、站点统计之前。
+        ⚠️ **md～xl 这段（768–1279px）两处都不显示，这是参考站同款行为**（实测 firefly.cuteleaf.cn
+        在 1000px 宽时也不出这张卡），不是漏挂、别"顺手补上"。
+        实测 375px 底部堆里恰好 1 张、1440px 只有右栏那 1 张，无重复、零横向溢出。
       - `total === 0` 或 `siteConfig.pages.dynamic === false` 时整块不渲染。
       - 不污染搜索索引：实测把 28 个 `dist/pagefind/fragment/*.pf_fragment` **gunzip** 后全文搜，侧栏文本 0 命中
         （控制组用文章正文词验证方法有效）。因为 `data-pagefind-body` 只在 `Markdown.astro` 上，侧栏在那棵子树外。
@@ -366,11 +370,15 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
       `{png,jpg,jpeg,webp,avif}`，svg 找不到文件、只在构建期 `console.error` 然后静默不出图。
     - **卡片版式在所有断点都是「右侧竖条」**：`global.css:132` 的 `.has-cover .post-card-image` 用 `!important`
       把 PostCard 上那串 Tailwind 类（`w-full aspect-2/1 md:absolute…`）整个覆盖掉了（同五-20 的导入顺序事故，但这次是有意为之）。
-      实测尺寸：桌面 240×176、移动 144×272。**所以封面素材要按「无焦点、四角均匀」来画**，
+      实测尺寸：桌面 240×176；移动端**与桌面共用同一个 `--coverWidth`（30%）**，375px 视口下 = 103×272
+      （2026-09-30 之前是硬编码 `9rem`=144px，占卡片 38%，用户反馈"太大遮挡文字"，已改成与桌面同比例，
+      文字区从 188px 让到 227px）。**所以封面素材要按「无焦点、四角均匀」来画**，
       有主体的图会在窄竖条里被裁坏；`chen1~4.webp`（动漫图）因此不再被引用，但文件保留未删。
     - 加载态验证有个陷阱：`.loading-spinner` 带 `transition: opacity .3s`，图片 load 完立刻读
       `getComputedStyle().opacity` 会读到过渡起点而误判成"遮罩没消失"。**要读 `data-loading` 属性**，
       或先注入 `transition:none!important`（同第十节那条通用教训）。
+      ⚠️ 2026-09-30 又踩一次：在隐藏标签页里 transition **根本不推进**，所以修好之后读 opacity
+      仍是 `1`——差点把已修好的遮罩报成"没生效"。**必须先注 `transition:none!important` 强制落到终值再读**。
 
 26. **新文章一律 ASCII slug，用脚手架生成**（2026-09-29 定）：
     - 命名规则：系列文 `css100day-<天数>.md`（→ `/posts/css100day-29/`）；非系列文 `<英文短标题-kebab>.md`。
@@ -762,6 +770,9 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
      删到一半报 `EPERM: operation not permitted, unlink`，**结果是 `node_modules` 被删空、项目当场不可用**。
      → 更阴的是：`TaskStop` 停掉后台任务只杀外层 shell，`npm run dev → astro dev` 的**子进程会变成孤儿继续存活**
        （本次同时留着 2 个 astro dev + 2 个 npm 包装进程）。
+       ⚠️ **`npm run preview` 同理**（2026-09-30 实测：TaskStop 报"stopped"之后
+       `astro preview` 的 node 子进程仍在，靠命令行匹配才找出来）——所以任何要动 `node_modules` 之前，
+       一律先按命令行精确查一边 `astro` 相关进程，别信 TaskStop 的 summary。
      → 顺序：`Get-CimInstance Win32_Process` 按 `CommandLine -like '*chenBlog*'` 精确定位 PID 后逐个 `Stop-Process`
        （**别批量杀 node.exe**，Qoder 自身和一堆 MCP server 都是 node 进程）；确认残留为 0 再 `npm ci`。
        万一已经失败了，先 `npm install`（增量、不删目录）把项目救回来，再重试干净安装。
@@ -814,11 +825,24 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
    （= 参考站同款：只命中 `#banner-overlay-container` 这类带 `transition-swup-fade` 的专用载体，
    不会误中 Tailwind 的 `transition-*`）。
 2. **Swup 不替换 head，也默认不执行容器内的新 script。** 页面级 `is:inline` 脚本（评论/分享/推荐位）
-   靠 `@swup/scripts-plugin` 重执行；但 **`slot="head"` 的脚本导航过去永不执行**——
+   靠 `SwupManager.astro` 里自己写的 `content:replace` 钩子重执行（**2026-09-30 起不再用
+   `@swup/scripts-plugin`，原因见本节 11**）；但 **`slot="head"` 的脚本导航过去永不执行**——
    `gallery-filter` 自定义元素曾因此从首页导航进相册时彻底失效。这类脚本必须放在容器内（body）。
    同理 **Astro 组件的 scoped `<style>` 只存在于"渲染了该组件的页面"的 head 里**：在不渲染卡片的
    `/archive/` 整页加载后 Swup 回首页，PostCard 样式缺失 → 卡片退回 column 布局、内容与右箭头重叠
    （2026-09-24 实测 64px）。→ 组件的**布局类 CSS 放全局样式表**（`global.css`），每实例变量内联到元素上。
+   → ⚠️ **这条对「状态机样式」同样成立，而且症状会伪装成"资源没加载"**（2026-09-30 实测第二个实例：
+   `CoverImage.astro`）。它的 scoped `<style>` 里有
+   `[data-loading="false"] .loading-spinner{opacity:0}` 和 `.spinner{width:40px…}`，从 `/archive/`
+   软导航进首页时两条**同时缺失** → 图片其实已经下载完并解码（`naturalWidth 374`、JS 已把
+   `data-loading` 翻成 `false`），但白色遮罩**永远盖在上面**，且转圈环塌成 `0px`。
+   用户看到的就是"图片没加载、也没转圈"，而**刷新一下又好了**（整页加载时 head 里有那份样式）。
+   → 排查这类症状的顺序：**先读 `img.naturalWidth` 与遮罩的 `getComputedStyle().opacity`**，
+     两者一个 >0 一个 =1 就一定是样式缺失，别去查网络、别去怀疑文件没上传
+     （本次我就是这样白查了一遍 20 个封面资源，全部 200）。
+   → 修法同 PostCard：整套规则搬进 `src/styles/singles/mainSingles.css`，选择器统一带
+     `.cover-image-container` 前缀（`.spinner` 这种裸名进全局会污染别人），
+     `@keyframes` 改名 `cover-spin`，不复用 `markdown-extend.styl` 里 Mermaid 那个 `spin`。
 3. **别给 `<script>` 用 `define:vars` 传配置。** 那会把脚本**内联进每一页 HTML**，
    swup bundle 曾因此重复嵌入 37 个页面（index.html 涨到 136K 的假象来源之一）。配置在脚本里 `import`。
 4. **事件名三套并存，改前先 grep。** Swup 4 原生 `swup:content:replace` 等；Swup 3 旧名
@@ -870,3 +894,26 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
       看起来像"岛坏了"。用③那种手动换 innerHTML 的办法可以完全绕开动画时序。
     → 另：探针页一开始 404，是因为 **Astro 会排除以 `_` 开头的文件**（那是它放局部/私有文件的约定），
       `__island-probe.astro` 不生成路由。临时文件别用下划线开头。
+
+11. ⚠️ **`@swup/scripts-plugin` 的作用域是整个 `document`，不是 Swup 容器——已因此弃用**（2026-09-30 查掉）。
+    它的默认项是 `{head:true, body:true}`，而 `getScope()` 在两者都为 true 时**直接返回 `document`**；
+    它在 `content:replace` 时把命中的每个 `<script>` 用「新建同名元素 + `replaceWith`」重新插入。
+    而 **Astro 7 把组件脚本内联成 `<script type="module">`**（首页 24 个 script 里只有 4 个是外部 chunk），
+    内联 module **每次重新插入都会重新求值**（外部 module 有 module map 兜着，不会）→
+    于是**每次导航都给容器外那些永不被替换的元素再叠一层 `addEventListener`**。
+    实测后果（线上）：切 1 次页后汉堡按钮「一次点击 = 两次 toggle」净零 → 看起来点了没反应；
+    主题切换按钮同理失效；每次导航还抛
+    `SyntaxError: Identifier 'setTheme' / 'setToggleListener' has already been declared`
+    （那两个是**顶层 const 的经典内联脚本**，重新执行就是重复声明）。
+    → 数监听器的办法：给面板元素挂 `MutationObserver`，数**一次 `.click()` 引发几次 class 变更**
+      （1 次监听 = 2 次变更：我自己那次 remove + handler 的 add）。**别用"能不能打开"当唯一判据**，
+      监听器叠到奇数次时它会诡异地「又好了」——那正是用户说"有时候"的来源。
+    → 现在的做法：`SwupManager.astro` 里 10 行 `swup.hooks.on("content:replace", …)`，
+      只扫 `#swup-container script:not([data-swup-ignore-script])`。首页实测容器内脚本**只有 1 个**
+      （CoverImage），其余 23 个都在容器外，所以这一改同时修掉了汉堡、主题、桌面下拉、
+      侧栏分类展开、Header 滚动监听（原来每次导航多一个 scroll handler）等一串病。
+    → **容器外的组件不得依赖"脚本被重跑"来刷新状态**，要靠 SwupManager 桥接的
+      `astro:page-load` / `swup:contentReplaced` 事件；`ThemeIcon.astro` 原来那句
+      `document.addEventListener("astro:after-swap", setToggleListener)` 就是独立的第二处双绑，已删。
+    → 通用结论：**"切页后某个开关点了没反应"先怀疑重复绑定，而不是怀疑监听器丢了。**
+      判据是「一次点击引发的状态变更次数」，不是「有没有反应」。

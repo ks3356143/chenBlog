@@ -52,6 +52,16 @@ export const siteConfig = {
     // 站点时区：需要"作者写几点就显示几点"的地方用它格式化（如动态的时间），
     // 否则访客机区不同会看到偏移过的时间
     timezone: "Asia/Shanghai",
+    // 站点元信息（SEO / 社交分享卡片）。2026-09-30 从 src/data/site.json 并进来——
+    // 那份是模板遗留脏数据：og:site_name 是「我的技术博客」，og:image 指向第三方图床
+    // s41.ax1x.com（对方一开防盗链，全站分享图集体裂）。以后改文案只改这里。
+    siteMeta: {
+        name: "亦林 YILIn", // 与 site.webmanifest 里的组合同一
+        description: "我的前端技术博客，不止有技术，还有生活相册等内容",
+        // og:image 必须是本站绝对可解析 URL，且文件真实存在于 dist/（1200×630）
+        ogImage: "/og-image.jpg",
+        ogImageAlt: "亦林 YILIn",
+    },
     // 页面配置
     pages: {
         guestbook: true, // 留言板页面开关

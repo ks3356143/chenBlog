@@ -3,17 +3,18 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-01 晚（上午批准的四件工程项做完 + 修掉用户报的横幅标题不切换 bug；全部未提交未上线）**。
-> 本批做完：① schema 删 6 个零消费字段 ② 抽 `onReinit/reinitOnce` 收编 34 处「导航后重 init」脚手架
-> （顺带查出并修掉两条监听器累加的真漏）③ 装 `@astrojs/check`，首跑查出 4 个类型问题并全修
-> ④ AGENTS/HANDOFF 的服务器信息脱敏 + 落本地私密记录
-> ⑤ **修横幅标题 bug**：软导航进文章页横幅还写着 `Lovely Life`、切回主页又挂着文章标题，只有 F5 才对
-> —— 根因是 `#banner-overlay-container` 没登记成 Swup container，且 post-meta 层在它外面（AGENTS 十-15）。
-> ⚠️ **这批改动全部未 commit、未 build 上线**，且**动的是 09-30 出过事故的那块交互**——
-> 已用 `build` + `preview` + 探针逐项验过（见第一节「这批的自测结论」），但**上线仍要用户当次授权**。
+> 最后更新：**2026-10-01 晚 21:20 已提交、已推送、已部署上线（V0.1.21）**。
+> 本批做完 5 件事：① schema 删 6 个零消费字段 ② 抽 `onReinit/reinitOnce` 收编 34 处「导航后重 init」脚手架
+> （顺带修掉两条监听器累加的真漏）③ 装 `@astrojs/check` 并修掉首跑查出的 4 个类型问题
+> ④ AGENTS/HANDOFF 服务器信息脱敏 + 落本地私密记录
+> ⑤ **修用户报的横幅标题 bug**：软导航进文章页横幅还写着 `Lovely Life`、切回主页又挂着文章标题，
+> 只有 F5 才对 —— 根因是 `#banner-overlay-container` 没登记成 Swup container，且 post-meta 层在它外面（AGENTS 十-15）。
+> **本地 = GitHub = 线上三方一致，6 笔提交已推送，dist 已原子替换（336 文件 / 22M）。**
+> ⚠️ 顺手查出**同一根因的第二处**（侧栏卡片不随切页换，见「还挂着的事 9.」）与**一条缓存隐患**
+> （`/assets/js/reinit.js` 被宝塔的 js 规则缓存 12h，见「还挂着的事 10.」）——**两条都已报告用户、等他拍**，别自动动手。
 >
-> 📌 **下次开场先问：这批要不要提交/上线。** 上线由用户执行（AGENTS 第六节铁律），
-> 部署命令的占位符展开版在本地私密记录 `reference-deploy-targets.md`（AGENTS 六节开头有指路）。
+> 📌 **下次开场**：先问用户对上面两条的决定；大方向仍是**功能扩展**（候选见「还挂着的事 1.」），
+> 另有他手上那篇待发文章（流程见 AGENTS 第八节）。
 
 ---
 
@@ -72,40 +73,40 @@
   打字机孤儿定时器链：每秒由它发起的 setTimeout 次数 1→3→2→3→3，**有界不随导航次数递增**。
   控制台干净（那条 `[swup] No CSS animation duration…` 是我自己探针注入 `transition:none!important` 造成的，撤掉即无）。
 
-### ⬜ 这批要他肉眼过的（都在本地 `npm run preview`，**尚未上线**）
+### ⬜ 这批要他肉眼过的（**已上线**，直接看 http://47.108.230.220/ 即可）
 
 0. **他报的横幅标题 bug**（本批最后修的，最该他先看）：首页 ↔ 文章页来回切，
    横幅文案应跟着变（文章页显示标题 +「发布于 / 字数 / 阅读时长」，主页显示 `Lovely Life` + 打字机）。
    ⚠️ **手机上文章页横幅没有标题文字是设计如此**（`hidden lg:flex`，参考站同款），不是没修好。
 1. **评论区两条路**（本批改了注册方式）：① 直接刷新一篇 `/posts/…/`；② 从首页点进文章。
-   两条都验过会挂载，但**没验"能发评论"**。
+   两条我都在线上验过会挂载、表单也渲染出来了，但**没验"能真发一条评论"**。
 2. **切页后的各处重渲染**：随机「猜你喜欢」换一批不闪、打字机不再重复起播、
-   悬浮/侧栏目录仍跟随、日历与站点统计数字对。
+   悬浮目录仍跟随、日历与站点统计数字对。（⚠️ **桌面右栏的「目录」卡在软导航后不会出现**，
+   那是既存的另一处缺陷，见「还挂着的事 9.」，不是本批弄坏的。）
 3. **分类栏鼠标横向滚轮**：以前换页多了会越滚越快（监听累加），现在应恒定一格滚一段。
-4. **移动端底部堆里「站点动态」那格的数字**（这是本批修过的双挂载回归点，375px 首屏看是否还是 0）。
-5. 前端交互回归无法在 dev 里看，若要他自己复现：`npm run build && npm run preview`。
+4. **移动端底部堆里「站点动态」那格的数字**（本批修过的双挂载回归点，375px 首屏看是否还是 0）。
+5. 上一批（V0.1.20）遗留的肉眼验收项仍未回话，见下面那一节，别当已验收。
 
-### 📦 上一批（2026-10-01 11:12 上线，V0.1.20）的交付状态：本地 = GitHub = 线上三方一致
+### 📦 交付状态：本地 = GitHub = 线上三方一致（2026-10-01 **21:20 部署，V0.1.21**）
 
-> ⚠️ 本批（下午这批）**没有动线上**，所以下面这些数字现在仍然是"线上 = 上午那批"，
-> 而本地 `dist` 与源码已经领先一个未提交的批次。
-
-- 本批 7 笔全部已推送并部署：**线上首页与本地 `dist/index.html` 逐字节相同（172770B）**。
-  现查：`git rev-parse --short HEAD` / `git rev-list --count origin/main..HEAD`（应为 0）。
-- 公网逐路径验收全 200：`/` `/rss.xml` `/pagefind/pagefind.js` `/api/dynamic.json` `/og-image.jpg`
-  `/dynamic/` `/gallery/` `/archive/` 与中文文章 URL；缓存头未被本次改动破坏
-  （HTML `no-cache, must-revalidate`、`/pagefind/` `no-cache`）。
-- **线上浏览器实测**（这次改的是评论初始化路径，风险最高，所以在线上而不是只在 preview 验）：
-  硬刷新文章页 `#twikoo` 挂载成功；**连着两次软导航进文章，评论区仍挂载**；
-  单次 `swup:contentReplaced` 触发的随机列表重渲染由旧构建的 **2 次降到 1 次**。控制台 0 报错。
-- 站点信息卡对外版本已随发版抬到 **V0.1.20**（`package.json` 的 `version` 就是展示口径，AGENTS 五-29）。
-- 部署本身没再遇到 `commit_refs`（那条重推即过的经验见记忆 github-network-workarounds，仍有效）。
-- 线上 dist = 本地 dist（**首页逐字节相同，173288B**），**18:13 部署**——这一次是我把用户下班那句
-  「干完以上事情」当作授权执行的，严格说他没有明说上线；下次遇到这种含糊收尾指令，**先问再推生产**。
-- 此前 17:34 那批的公网验收仍有效：**RSS 26 条链接全部 200**（改前 26/26 → 404）、`pubDate` 年份只剩 2026、
-  `og:site_name` = 亦林 YILIn、`og:image` = 本站 `/og-image.jpg` 200/image/jpeg、
-  相册 20 张共 3.46MB 且旧 `.jpg` 已 404、375px 分类「更多」能展开且重复 id 归零、
-  第13天 demo 在容器重插后仍可点且 0 报错。
+- 6 笔提交已推送（`9a917e3..f97e8d0`）：schema 清理 / `@astrojs/check` + 类型修复 / onReinit 重构 /
+  横幅 container 修复 / 发版 0.1.21 / 文档。现查：`git rev-list --count origin/main..HEAD`（应为 0）。
+- 部署走 AGENTS 第六节流程（本地 build → tar → scp → 解压到 `dist.new` → 校验 → `chown root:root` → 原子 `mv`）。
+  **线上 336 文件 / 22M**；`dist.old` 与时间戳备份保留（服务器上现有 **21 个 `dist_backup_*`**，删要用户明确同意）。
+- **公网逐路径全 200**：`/` `/rss.xml` `/pagefind/pagefind.js` `/api/dynamic.json` `/og-image.jpg`
+  `/assets/js/reinit.js` `/dynamic/` `/gallery/` `/archive/` `/series/` `/categories/` `/tags/` `/about/` 与中文文章 URL。
+- **线上首页与本地 `dist/index.html` 逐字节相同（172716B）**；`<title>` = 亦林 YILIn；
+  文章页 title 正常；站点信息卡显示 **V0.1.21**；线上文章页的 post-meta 确认嵌在 overlay 容器内。
+- 缓存头未被破坏：HTML `no-cache, must-revalidate`、`/pagefind/` `no-cache`。
+  ⚠️ 但 **`/assets/js/reinit.js` 拿到的是 `max-age=43200`（宝塔自带 js/css 规则）** → 见「还挂着的事 10.」。
+- **线上浏览器实测**（本批改的是评论注册方式与横幅容器，风险最高，所以在线上验）：
+  ① 横幅 首页→文章页 = post-meta 出现「CSS100Day(28)-振铃动画 / 发布于 2026-06-22」、home 层 `hidden`；
+     文章页→首页 = post-meta 消失、`Lovely Life` 回来。**两向都过。**
+  ② 评论区：硬加载文章页 `#twikoo` 挂载（3 个子节点，`#tcomment` 已被吃掉，符合十-13）；
+     **从首页软导航进文章页同样挂载**，且表单已渲染出「昵称/邮箱/网址/0-500」——**没验"能真发一条评论"**。
+  ③ 重 init 记账：线上各 key 每趟导航 `reinitRuns` 差值 = 1（typewriter/calendar/category-bar/cover-image/twikoo/rec 全部）。
+  ④ 控制台 **0 error 0 warn**。
+- 上一批（11:12，V0.1.20）的验收记录仍有效，细节已并进 AGENTS 与第二节，此处不再复述。
 
 ### ⬜ 上一批（10-01 上午及之前）待用户肉眼验收——**他都还没回话，别当已验收**
 
@@ -210,6 +211,27 @@
 7. **Mermaid 专属的 2 个未定义变量**（`--text-color-secondary` / `--primary-hover`）**故意留白**：
    零页面可达、无从验证。等首篇 Mermaid 文章时按 AGENTS 第八节在 dev 逐项验，届时一并定值。
 8. **首篇用到 Mermaid / KaTeX / callout / 图片网格 的文章仍未写**——那四条渲染路径至今零实战验证（AGENTS 第八节）。
+9. 🆕 **同一根因的第二处：侧栏卡片不随软导航更换**（2026-10-01 晚查横幅 bug 时顺带查出，**已报告用户、等他拍**）。
+   - 证据：`RightSideBar.astro:33` 是 `isPostPage ? <SiderBarToc/> : <Calender/>`，而侧栏在 `#swup-container` **外面**、
+     又没登记成 Swup container → **线上实测**：从首页软导航进文章页后 `#sidebar-toc` 不存在、侧栏里还是
+     35 格日历（`hasSidebarToc:false / hasCalendar:true`）；硬刷新同一篇则正常显示 5 条目录。
+     反向（文章页→首页）同理会一直挂着旧目录。**只有 ≥1280px 才看得见**（`#right-sidebar` 是 `hidden xl:block`），
+     所以窄视口下不容易发现。
+   - **属既存缺陷，不是本批引入**（旧构建的 containers 同样只有 `#swup-container`）。
+   - 参考站的解法就是把侧栏登记成 container（它有 `#left-sidebar-dynamic` / `#right-sidebar-dynamic`）。
+     ⚠️ 但我们这边**不能照抄了事**：侧栏里那几张卡是**双挂载**（xl 右栏 + 移动底部堆，AGENTS 五-29/五-24），
+     移动底部堆是另一个子树，只加 `#right-sidebar` 会漏；而且 AGENTS 五-24 明确写过"侧栏在容器外"是
+     **当初选静态渲染而非岛的理由**，改成 container 会让那条论证过期，要一并重写。
+   - 要做的话：加 container（两个子树都考虑）→ 重跑十-14 那套探针（双挂载卡的 `reinitRuns`、
+     内联脚本重新求值后的监听计数）→ 1440/375 两档 iframe 核卡片内容与顺序。**别顺手就改，先问。**
+10. 🆕 **`/assets/js/reinit.js` 被缓存 12h**（`Cache-Control: max-age=43200`，来自宝塔自带的 js/css 规则；
+    我写的 extension 只覆盖了 `/_astro/*`、`/pagefind/*`、gallery 图片与兜底 HTML）。
+    **文件名稳定 + 内容会变 + 12h 缓存**正是 AGENTS 六节当初给 `/pagefind/` 设 `no-cache` 要防的那类错位：
+    下次改 helper 后，回访用户可能带着旧 helper 跑新 HTML。
+    **今天无害**（文件是全新的，没人缓存过旧版），但**下次改 `reinit.js` 之前必须二选一**：
+    ① 在 `<CACHE_CONF>` 里给它加一条 `no-cache`（属服务器配置改动，要用户授权）；
+    ② 代码侧改成带内容哈希的引用（如 `reinit.js?v=<8位hash>`，BaseLayout 构建期算），无需动服务器。
+    倾向 ②（不碰服务器、自动跟着内容变）。**已报告用户，等他选。**
 
 ### 🔧 常用操作（都已验证可用）
 
@@ -444,23 +466,22 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-10-01 下午这批做完、**尚未提交与上线**时实测）
+## 三、当前状态快照（2026-10-01 21:20 部署后实测）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 仍是上午那批的最后一个提交（分笔现查 `git rev-parse --short HEAD`，别信文档里的 SHA）；**本批四件事一行都没提交** |
-| 工作区 | ⚠️ **脏**：21 个文件已改 + 2 个新文件未跟踪（`public/assets/js/reinit.js`、`src/modules.d.ts`）。逐笔现查 `git status --short` / `git diff --numstat`。行数最大的是 `AGENTS.md`（文档），代码侧单文件最多 23 删（`TypeMechine`）。**下次开场第一件事就是问：这批要不要提交/上线** |
-| 与远端 | `origin/main` == 本地 HEAD（本批未提交，所以谈不上领先） |
-| 线上站点 | **未变**，还是上午 11:12 那版（V0.1.20）。本批一行没上，**别以为线上已经带上 helper 那套** |
-| 服务器配置 | 未动（本批没碰服务器）。缓存策略文件与 vhost 备份位置见 AGENTS 六节（值已脱敏，展开版在私密记录里） |
-| 本地构建 | `npm run build` 退出码 0：**42 页 / dist 336 文件 / 22M**，热缓存 **4.0s**（+ Pagefind 0.2s）。文件数比 09-30 基线 **+1**，就是本批新增的 `dist/assets/js/reinit.js`（`_astro/` 仍 211、`pagefind/` 仍 42，说明没多出 chunk）。**`npm run check` 退出码 0、0 error、2 hint**；`npx tsc --noEmit` 同样 0 |
-| 依赖 | ➕ `@astrojs/check@0.9.10`（devDep，用户已批准的新依赖；带进 77 个包，纯 devDep 不进站点产物）。已按第九节走**干净 `npm ci`（695 包）+ build** 验证 lockfile。`allowScripts` 仍是 `esbuild@0.28.2`（与实装一致）。`npm audit` 待复测（默认源不实现接口，要显式换官方源） |
-| dev / preview server | **`npm run preview` 在跑，占着 :4321**（PID 现查 `netstat -ano \| grep :4321`）；dev 已被我精确停掉。⚠️ 两者同端口互斥，换着用之前先按「可执行文件路径 + 尾参数」精确杀（AGENTS 九节坑③：宽匹配会自伤）。这批的交互验证**只能在 preview 上做**，dev 下容器脚本不重执行 |
-| 服务器回滚资产 | `dist.old` + 时间戳备份（数量与占用**本批未复核**，要精确数就 ssh 现查；AGENTS 九节只留规律不留数）。全部保留，**删需用户明确同意** |
-| 临时文件 | 本批产生的都在本地 `/tmp/chenblog_*.log`（install/ci/build/check/dev/preview 日志），收尾时清；**服务器上本批没产生任何临时文件**（没打包没上传） |
-| 排查方法类坑位 | 10-01 下午新增：**十-14（重 init 唯一实现 + `onReinit`/`reinitOnce` 的判据与三层验证探针 + 「`is-changing` 要留到重插脚本后再摘」这条探针自身的坑）**、三节（`npm run check` 取代 tsc 成为组件类型入口，含两条"故意留着"的 hint）、五-5（**「列表卡有锁图标」是假事实**）、九节（代理计数不可直接采信：30/18 → 实为 34/20）。控制组做两次都省事：真实导航卡 `is-changing` 与首页 2 张遮罩未褪，**线上旧构建给同样数字**，因此都不是本批回归 |
-| 体检未做项 | **全部列在第一节「还挂着的事」**，下次从那里挑，别重扫。现在等拍板只剩两条：PostCard 锁图标要不要补、全站 title 带不带后缀 |
-| 既存小坑 | 同上午（`--radius-large` 未定义、tsconfig react 残留、`posts/images/` 空目录、单分类时分类卡收起更高、`/site.webmanifest` 的 Content-Type 缺 webmanifest 映射）。**新增一条已知未修**：首页 10 张封面里有 2 张的加载遮罩在图片已解码后仍未褪（线上旧构建同样，属 `CoverImage` 状态机那块，五-25 / 十-2） |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。本批 6 笔：① schema 清理 ② `@astrojs/check` + 类型修复 ③ onReinit 重构 ④ 横幅 container 修复 ⑤ 发版 0.1.21 ⑥ 文档 |
+| 工作区 | ✅ 干净（`git status --short` 空），与 `origin/main` 齐平、0 领先 |
+| 线上站点 | ✅ **21:20 部署到最新，V0.1.21**。验收证据见第一节「交付状态」（首页与本地 dist 逐字节相同 172716B、13 条路径全 200、横幅两向切页正确、软导航进文章页评论区挂载、各 key 每趟导航 +1、控制台 0 报错） |
+| 服务器配置 | 未动（本批只换 dist）。缓存策略文件与 vhost 备份位置见 AGENTS 六节（值已脱敏，展开版在私密记录里）。⚠️ 新发现一条缓存隐患见「还挂着的事 10.」 |
+| 本地构建 | `npm run build` 退出码 0：**42 页 / dist 336 文件 / 22M**，热缓存约 **4~6s**（+ Pagefind 0.2s）；比 09-30 基线 **+1 文件** = `dist/assets/js/reinit.js`（`_astro/` 仍 211、`pagefind/` 仍 42）。**`npm run check` 与 `npx tsc --noEmit` 均退出码 0**（check 剩 2 条 hint 是故意留的，见 AGENTS 三节） |
+| 依赖 | ➕ `@astrojs/check@0.9.10`（devDep，用户已批准；带进 77 个包，不进站点产物）。已按第九节走**干净 `npm ci`（695 包）+ build** 验证 lockfile。`allowScripts` 仍是 `esbuild@0.28.2`（与实装一致）。`npm audit` 本批**未复测**（要显式换官方源） |
+| dev / preview server | ⚠️ **`npm run preview` 还开着，占着 :4321**（PID 现查 `netstat -ano \| grep :4321`）；dev 已停。下次要动 `node_modules` 前先按「可执行文件路径 + 尾参数」精确杀掉它（AGENTS 九节坑③：宽匹配会自伤） |
+| 服务器回滚资产 | `dist.old`（22M）+ **21 个 `dist_backup_*`**。全部保留，**删需用户明确同意** |
+| 临时文件 | ✅ 已清：本地 `/tmp/chenblog_*.log`、`/tmp/live_index.html`、`%TEMP%/ref_*.html`、本地与服务器 `/tmp` 的 tar 包（部署脚本尾部 `rm -f` + 手动核过两边都空）。仓库内无残留 |
+| 排查方法类坑位 | 10-01 下午/晚新增：**十-14（重 init 唯一实现 + 三层探针 + 「`is-changing` 要留到重插脚本之后再摘」）、十-15（内容随页变但在容器外的 chrome 必须登记成 Swup container；含"登记前先查有没有把实例句柄挂在元素属性上"这条通则）、三节（`npm run check` 成为组件类型入口 + 两条故意留的 hint）、五-5（「列表卡有锁图标」是假事实）、五-9（基线 336）、九节（代理计数不可直接采信：30/18 → 实为 34/20）**。控制组两次都省事：真实导航卡 `is-changing`、首页 2 张封面遮罩未褪，线上旧构建给同样数字 ⇒ 都不是回归 |
+| 待用户拍板 | ① 侧栏卡片不随软导航更换（既存缺陷，同一根因第二处，见「还挂着的事 9.」）② `reinit.js` 的 12h 缓存怎么解（同 10.）③ PostCard 加密文章锁图标要不要补（同 4.4）④ 全站 title 带不带后缀（SEO）⑤ meCard 三个社交按钮真实地址 |
+| 既存小坑 | `--radius-large` / `--panel-border-color` 未定义（AGENTS 五-16）；`tsconfig.json` react jsx 残留无影响；`src/content/posts/images/` 空目录；单分类时分类卡收起态反而更高；`/site.webmanifest` 的 Content-Type 缺 webmanifest 映射（要动 nginx mime.types）；**首页 10 张封面里 2 张的加载遮罩在图片已解码后仍未褪**（线上旧构建同样，属 `CoverImage` 状态机那块，五-25 / 十-2） |
 
 ---
 

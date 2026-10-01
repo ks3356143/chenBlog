@@ -1223,6 +1223,14 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
       `FancyboxManager` 听 Swup 4 原生名并在 `visit:start` 里 `close+unbind` 配对；
       `BaseLayout` 的 `astro:after-swap` → `setTheme`（head 内，一文档一次）；
       `Calender` 与 `RecommendedPost` 各一份 `__allPostMetaCache` fetch（五-30 已明确不抽）。
+    - ⚠️ **改 `reinit.js` 之前先处理缓存**：它在 `public/assets/js/` 下，文件名稳定，
+      而 Nginx 给它的是宝塔自带 js/css 规则的 **`max-age=43200`（12h）**——不是第六节那套
+      （extension 只覆盖了 `/_astro/*`、`/pagefind/*`、gallery 图片与兜底 HTML）。
+      「稳定名 + 内容会变 + 长缓存」正是第六节给 `/pagefind/` 设 `no-cache` 要防的错位：
+      改了 helper 之后回访用户可能带着旧 helper 跑新 HTML。
+      → 二选一：给 `<CACHE_CONF>` 加一条 `no-cache`（**属服务器配置改动，要用户授权**），
+        或在 `BaseLayout` 里改成带内容哈希的引用（`reinit.js?v=<hash>`，构建期算，不碰服务器，**倾向这个**）。
+      → 通则：**往 `public/` 下新增会被 HTML 直接引用的稳定名文件，都要顺手核一遍它拿到什么 `Cache-Control`。**
 
 15. ⚠️ **凡是"内容随页面变、但位置在 Swup 容器外"的 chrome，必须自己登记成 Swup 的 container**
     （2026-10-01 用户报的横幅标题 bug，根因与修法）。
@@ -1261,3 +1269,10 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
       （本次实测 1→3→2→3→3，有界不增；递增才是漏）。别用"动画还在跑"当判据，孤儿链打在脱离文档的节点上，肉眼看不见。
       ⚠️ 控制台若出现 `[swup] No CSS animation duration defined on elements matching [class*="transition-swup-"]`，
       先确认**是不是自己探针注入了 `transition:none!important`**（本次就是，撤掉即消失），别去改 CSS。
+    - ⚠️ **同族第二处已知未修：侧栏卡片不随软导航更换**（2026-10-01 晚查出，**属既存缺陷不是本批引入**）。
+      `RightSideBar.astro:33` 是 `isPostPage ? <SiderBarToc/> : <Calender/>`，而侧栏在容器外又没登记成 container
+      → 线上实测：从首页软导航进文章页后 `#sidebar-toc` 不存在、侧栏里还是 35 格日历；硬刷新同一篇则正常。
+      **只有 ≥1280px 看得见**（`#right-sidebar` 是 `hidden xl:block`）。参考站靠 `#left/right-sidebar-dynamic`
+      两个 container 解决；我们**不能照抄了事**——侧栏卡片是双挂载（xl 右栏 + 移动底部堆，五-24/五-29），
+      且五-24 当初"侧栏在容器外"正是选静态渲染而非岛的理由，改了就得起重写那条论证。
+      **要不要改属设计决定，先问用户**；改则必须重跑十-14 那套探针 + 1440/375 两档核卡片内容与顺序。

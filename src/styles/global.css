@@ -91,7 +91,6 @@
     --content-meta: rgba(255, 255, 255, 0.6);
     --line-color: rgba(255, 255, 255, 0.1);
     --license-block-bg: var(--codeblock-bg);
-    --content-meta: rgba(255, 255, 255, 0.6);
 
     /* TOC相关变量 - 暗色主题 */
     --toc-badge-bg: var(--btn-regular-bg);
@@ -164,9 +163,6 @@
         bottom: 1rem !important;
         right: 1rem !important;
         /* width 与 border-radius 与基础规则同值，不重复声明 */
-    }
-    .no-cover .post-card-content {
-        width: calc(100% - 52px - 12px) !important;
     }
     .stats a {
         font-size: 0.75rem !important;

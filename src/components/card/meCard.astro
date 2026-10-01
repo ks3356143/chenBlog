@@ -7,7 +7,7 @@ const isDev = import.meta.env.DEV
 ---
 
 <div class="card-base p-3">
-	<a aria-label="Go to About" href="/about/" aria-label="go to about image">
+	<a aria-label="进入关于页" href="/about/">
 		<ImageWrapper src={ isDev ? "assets/touxiangDev.png": "assets/touxiang.jpeg" } loading="eager" />
 	</a>
 	<div class="px-2">
@@ -18,7 +18,7 @@ const isDev = import.meta.env.DEV
 			<a href="/" aria-label="QQ" class="btn-regular h-10 w-10"><Icon name="qq" /></a>
 			<a href="/" aria-label="Wechat" class="btn-regular h-10 w-10"><Icon name="wechat" /></a>
 			<a href="/" aria-label="Github" class="btn-regular h-10 w-10"><Icon name="github" /></a>
-			<a href="/" aria-label="RSS" class="btn-regular h-10 w-10"><Icon name="rss" /></a>
+			<a href="/rss.xml" aria-label="RSS 订阅" class="btn-regular h-10 w-10"><Icon name="rss" /></a>
 		</div>
 	</div>
 </div>

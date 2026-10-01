@@ -55,29 +55,29 @@ const config = {
         }
     }
 
-    // 页面加载时初始化
+    // 页面加载时初始化（本脚本是 is:inline 的 classic script，在解析期执行，故事件尚未触发）
     document.addEventListener("DOMContentLoaded", initTwikoo)
 
-    // Swup 页面切换后重新初始化
-    if (window.swup && window.swup.hooks) {
-        window.swup.hooks.on("content:replace", function () {
-            setTimeout(initTwikoo, 200)
-        })
-    } else {
-        document.addEventListener("swup:enable", function () {
-            if (window.swup && window.swup.hooks) {
-                window.swup.hooks.on("content:replace", function () {
-                    setTimeout(initTwikoo, 200)
-                })
-            }
-        })
-    }
+    // ⚠️ 必须带幂等标志：本脚本在 #swup-container 内，每次进文章页都被 SwupManager 重新插入并重新执行。
+    // 不加标志时每访问一篇就多挂一个 content:replace handler，一次导航会 init N 遍
+    //（每遍 innerHTML="" + twikoo.init() + 一轮评论接口请求），触发次数随访问过的文章数线性增长。
+    // 用第一份闭包是安全的：initTwikoo 每次都重新 getElementById 与 getCurrentPath()，不依赖旧 DOM。
+    if (!window.__twikooSwupInit) {
+        window.__twikooSwupInit = true
 
-    // 自定义事件监听
-    document.addEventListener("firefly:page:loaded", function () {
-        const commentEl = document.getElementById("tcomment")
-        if (commentEl) {
-            initTwikoo()
+        // Swup 页面切换后重新初始化
+        if (window.swup && window.swup.hooks) {
+            window.swup.hooks.on("content:replace", function () {
+                setTimeout(initTwikoo, 200)
+            })
+        } else {
+            document.addEventListener("swup:enable", function () {
+                if (window.swup && window.swup.hooks) {
+                    window.swup.hooks.on("content:replace", function () {
+                        setTimeout(initTwikoo, 200)
+                    })
+                }
+            })
         }
-    })
+    }
 </script>

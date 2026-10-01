@@ -191,5 +191,11 @@ const relatedIds = JSON.stringify(relatedPosts.map(p => p.id))
 	}
 
 	renderRandomPosts()
-	document.addEventListener("swup:contentReplaced", renderRandomPosts)
+	// 幂等标志：本脚本在 #swup-container 内，每次进文章页都重新执行，不加标志则监听器
+	// 按访问过的文章数累加，一次导航把随机列表重渲染 N 遍（每次重新洗牌 + 清空重建，会闪）。
+	// 用第一份闭包安全：renderRandomPosts 每次重新 getElementById 并读 dataset。
+	if (!window.__recommendedPostInit) {
+		window.__recommendedPostInit = true
+		document.addEventListener("swup:contentReplaced", renderRandomPosts)
+	}
 </script>

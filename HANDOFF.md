@@ -6,7 +6,7 @@
 > 最后更新：**2026-09-30 傍晚收尾（全天：修两条移动端缺陷 → 竖条收窄 → 移动端补动态卡 →
 > 新增「站点信息」卡 → 三路体检修 5 条缺陷 → 相册压图 11.39→3.46MB → Nginx 缓存策略 →
 > 卸 dayjs → README 重写 → 站点信息卡展开区被裁的收尾修正。**线上 18:13 部署到最新并公网验收；
-> 收尾时 22 笔提交已推送，本地 = GitHub = 线上三方一致**（`47543a4..d2083a9`）**
+> 收尾时今天提交已全部推送，本地 = GitHub = 线上三方一致**（起点 `47543a4`，此后仅追加 HANDOFF 更正笔）**
 
 ---
 
@@ -24,7 +24,8 @@
 
 ### ✅ 交付状态：本地 = GitHub = 线上，三方一致
 
-- 工作区干净；**今天 22 笔提交已推送**（`47543a4..d2083a9`），`origin/main` == 本地 HEAD。
+- 工作区干净；**今天所有提交已推送**（起点 `47543a4`，`origin/main` == 本地 HEAD；
+  准确的 HEAD 与笔数下次开场现查：`git rev-parse --short HEAD` / `git rev-list --count origin/main..HEAD`）。
   ⚠️ **推送第一次被拒**：`remote: fatal error in commit_refs` / `[remote rejected]`。
   先排除体积（61 个 blob，最大 457,936B，远低于 GitHub 100MB 上限）后**原样重推即成功**——
   那是 GitHub 侧的瞬时故障，**不是配置或权限问题，别去改 remote/凭据**，重推就行。
@@ -280,8 +281,8 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `d2083a9`（站点信息卡展开区被裁的修正 + HANDOFF 收尾）。今天分五批：① 两条移动端缺陷 + 竖条 + 卸 scripts-plugin ② 站点信息卡 ③ 体检五缺陷 + 卸 dayjs + Nginx 缓存文档 ④ README 重写 ⑤ 卡片间距修正 + HANDOFF 收尾 |
-| 与远端 | ✅ **已推送**，`origin/main` == 本地 == `d2083a9`，0 笔未推送。（第一次 `git push` 被 `fatal error in commit_refs` 拒，重推即过——见第一节交付状态那条） |
+| 本地 HEAD | 今天 22 笔（起点 `47543a4`）之后又追加了本表的 HANDOFF 更正笔，**所以别拿这里写过的 SHA 当准，下次开场现查 `git rev-parse --short HEAD`**。今天分五批：① 两条移动端缺陷 + 竖条 + 卸 scripts-plugin ② 站点信息卡 ③ 体检五缺陷 + 卸 dayjs + Nginx 缓存文档 ④ README 重写 ⑤ 卡片间距修正（`2f608e8`）+ HANDOFF 收尾 |
+| 与远端 | ✅ **已推送**，`origin/main` == 本地 HEAD，0 笔未推送。（第一次 `git push` 被 `fatal error in commit_refs` 拒，重推即过——见第一节交付状态那条） |
 | 线上站点 | ✅ **18:13 已部署到最新**（备份 `dist_backup_20260930_181312` + `dist.old`，属主 `root:root`，22M）。验收证据：**线上首页与本地 `dist/index.html` 逐字节相同（173288B）**、CSS 里展开区 `max-height:20rem` 已在产物中、`/` `/dynamic/` `/gallery/` `/rss.xml` 全 200。上一批（17:34）结论仍有效：RSS 26 条链接逐条 200、`og:image` 本站 200、相册 20 张 3.46MB 且旧 `.jpg` 已 404、375px 分类「更多」可展开、第13天 demo 重插后仍可点 |
 | 服务器配置 | ✅ 新增 `/www/server/panel/vhost/nginx/extension/chenblog.com/cache.conf`（缓存策略，详见 AGENTS 第六节）。vhost 原件备份在 `/root/chenblog_vhost.bak_20260930_163914.conf`；`nginx -t` 通过后才 reload。**这是今天唯一动过的服务器配置** |
 | 构建时间戳 | ⚠️ 站点信息卡把**构建时间写进了 HTML**，所以「线上 == 本地 dist 逐字节」只在部署后立刻比成立；隔一会儿重新 build 再比必然差那 2 处时间戳（已实测两次连续构建只差时间戳），别据此判定没部署成功 |

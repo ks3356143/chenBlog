@@ -16,15 +16,10 @@ const postsCollection = defineCollection({
         // 系列名（空=不属于任何系列），配合 seriesOrder 决定系列内顺序
         series: z.string().optional().default(""),
         seriesOrder: z.number().optional(),
-        lang: z.string().optional().default(""),
         pinned: z.boolean().optional().default(false),
-        author: z.string().optional().default(""),
-        sourceLink: z.string().optional().default(""),
-        licenseName: z.string().optional().default(""),
-        licenseUrl: z.string().optional().default(""),
         comment: z.boolean().optional().default(true),
+        // 只有列表卡锁图标与「隐藏评论区」两处消费，没有密码门 UI，正文照常渲染进 HTML
         password: z.string().optional().default(""),
-        passwordHint: z.string().optional().default(""),
 
         /* For internal use */
         prevTitle: z.string().default(""),

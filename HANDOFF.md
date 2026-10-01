@@ -3,13 +3,16 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-01 晚 21:20 已提交、已推送、已部署上线（V0.1.21）**。
+> 最后更新：**2026-10-01 晚 23:05 会话收尾**。21:20 已提交、已推送、已部署上线（V0.1.21），
+> 收尾时复核：工作区干净、与 `origin/main` 齐平 0 领先、线上首页与本地 `dist/index.html` **md5 相同**
+> （`6f24df80…`，172716B）、三方版本号一致（`package.json` 0.1.21 / 线上展示 V0.1.21）。
+> **dev 与 preview 都已停，:4321 已释放。** 本批无待部署增量。
 > 本批做完 5 件事：① schema 删 6 个零消费字段 ② 抽 `onReinit/reinitOnce` 收编 34 处「导航后重 init」脚手架
 > （顺带修掉两条监听器累加的真漏）③ 装 `@astrojs/check` 并修掉首跑查出的 4 个类型问题
 > ④ AGENTS/HANDOFF 服务器信息脱敏 + 落本地私密记录
 > ⑤ **修用户报的横幅标题 bug**：软导航进文章页横幅还写着 `Lovely Life`、切回主页又挂着文章标题，
 > 只有 F5 才对 —— 根因是 `#banner-overlay-container` 没登记成 Swup container，且 post-meta 层在它外面（AGENTS 十-15）。
-> **本地 = GitHub = 线上三方一致，6 笔提交已推送，dist 已原子替换（336 文件 / 22M）。**
+> **本地 = GitHub = 线上三方一致，7 笔提交已推送（`9a917e3..f0c2e77`），dist 已原子替换（336 文件 / 22M）。**
 > ⚠️ 顺手查出**同一根因的第二处**（侧栏卡片不随切页换，见「还挂着的事 9.」）与**一条缓存隐患**
 > （`/assets/js/reinit.js` 被宝塔的 js 规则缓存 12h，见「还挂着的事 10.」）——**两条都已报告用户、等他拍**，别自动动手。
 >
@@ -36,17 +39,21 @@
 > `document.addEventListener("swup:contentReplaced"/"astro:page-load", …)` 做重初始化**——
 > 规则、判据、坑与验证办法全在 **AGENTS 十-14**。
 >
-> **dev server 当前在跑**（:4321）；`npm run preview` 也在跑（同一端口，二者会互相抢，
-> 换着用之前先按可执行文件+尾参数精确停掉另一个，见 AGENTS 九节依赖坑③）。
+> **dev 与 preview 都已停，:4321 空闲**（10-01 收尾时按「可执行文件路径 + 尾参数」精确杀掉
+> `astro preview`，复查 astro 相关 node 进程残留 = 0；宽匹配会自伤，见 AGENTS 九节依赖坑③）。
+> 下次要用先 `npm run dev` 或 `npm run preview`，二者抢同一端口，换着用之前先精确停掉另一个。
 > dev 下站内搜索必然不可用（Pagefind 索引只在 build 后存在），验搜索用 `npm run preview`。
 > ⚠️ **交互类缺陷在 dev 下大多测不出来**，复现与验证一律走 `npm run build` + `npm run preview`。
 > ⚠️ 隐藏标签页里 **Swup 动画不推进**：真实点击导航只能走一趟就卡在 `is-changing`，
 > 多趟导航要用「手动换容器 + 复刻重新插入脚本」的办法（**`is-changing` 要留到重新插入脚本之后再摘**，
 > 提前摘会得出假的"每次导航跑 2~3 遍"），办法与结论见 AGENTS 十-14 末段。
 
-### ✅ 这批的自测结论（全部本地 `dist` + preview 实测，线上未动）
+### ✅ 这批的自测结论（本地 `dist` + preview 实测，**均为 21:20 上线前**；上线后的线上实测见下面「交付状态」）
 
-- `npm run build` **42 页 / 335 文件 / 4.0s**，与五-9 基线一致（页数与文件数没变）。
+- `npm run build` **42 页 / 336 文件 / 22M / 约 4.0s**：页数与 09-30 基线一致，**文件数 +1**
+  = 新增的 `dist/assets/js/reinit.js`（`_astro/` 仍 211、`pagefind/` 仍 42）。AGENTS 五-9 已同步成 336。
+  ⚠️ 收尾时**没有重跑 build**——重跑会把 SiteInfo 卡的「构建时间」换掉，让本地 `dist` 与线上不再逐字节相同，
+  反而毁掉下次会话「线上是不是最新」的判据。当前 `dist` 就是 21:20 上线那一份，HEAD 也正是构建它的那棵树。
 - `npm run check`（新装的 `astro check`）**退出码 0，0 error**，剩 2 条 hint（都是"故意留着"的，见三节）。
   `npx tsc --noEmit -p tsconfig.json` 同样退出码 0。
 - **重 init 记账**：5 趟导航（首页→文章页→归档→另一篇文章页→再回第一篇）里
@@ -89,8 +96,10 @@
 
 ### 📦 交付状态：本地 = GitHub = 线上三方一致（2026-10-01 **21:20 部署，V0.1.21**）
 
-- 6 笔提交已推送（`9a917e3..f97e8d0`）：schema 清理 / `@astrojs/check` + 类型修复 / onReinit 重构 /
-  横幅 container 修复 / 发版 0.1.21 / 文档。现查：`git rev-list --count origin/main..HEAD`（应为 0）。
+- **7 笔提交已推送（`9a917e3..f0c2e77`）**：`beddf86` schema 清理 / `754613f` `@astrojs/check` + 类型修复 /
+  `632b6c7` onReinit 重构 / `56515e7` 横幅 container 修复 / `011cdb5` 发版 0.1.21 /
+  `f97e8d0` 文档（新规矩 + 脱敏）/ `f0c2e77` 文档（交付记录 + 挂起两条）。
+  现查：`git rev-list --count origin/main..HEAD`（收尾实测 = **0**）。
 - 部署走 AGENTS 第六节流程（本地 build → tar → scp → 解压到 `dist.new` → 校验 → `chown root:root` → 原子 `mv`）。
   **线上 336 文件 / 22M**；`dist.old` 与时间戳备份保留（服务器上现有 **21 个 `dist_backup_*`**，删要用户明确同意）。
 - **公网逐路径全 200**：`/` `/rss.xml` `/pagefind/pagefind.js` `/api/dynamic.json` `/og-image.jpg`
@@ -190,7 +199,7 @@
         现在 `npm run check` = 0 error（2 条 hint 是故意留的）。
       - **文档服务器信息脱敏** → AGENTS 六节开头；真实值与展开版部署命令在本地私密记录
         `reference-deploy-targets.md`。**只改了当前版本，历史没重写**（他从未批准 `git filter-repo` + 强推）。
-      ⚠️ **但这四件的代码全部未 commit、未上线**，见第一节顶部。
+      ⚠️ **这四件已全部提交、推送并于 21:20 上线（V0.1.21）**，线上验收证据见第一节「交付状态」。
    4. **🆕 本批查出来、等他拍的（只有一条）**：**加密文章的锁图标其实从来没渲染过**——
       `PostCard.astro:39` 接了 `password` 但从不读（`astro check` 的 `ts(6133)` 抓到），
       AGENTS 五-5 原先"列表卡显示锁图标"那句是假事实，已改成实情。
@@ -245,7 +254,7 @@
 
 ## 二、历次会话做了什么
 
-### 2026-10-01 下午→晚：把上午批准的「四件工程项」全部做完 + 修用户报的横幅标题 bug（**未提交、未上线**）
+### 2026-10-01 下午→晚：把上午批准的「四件工程项」全部做完 + 修用户报的横幅标题 bug（**7 笔已推送，21:20 上线 V0.1.21**）
 
 开场他只说「ok 打开开发服务器准备工作」，随后「开干吧，直接全干」——所以本会话就是按
 `HANDOFF` 第一节那四件事的顺序做的，没另开新战线。四件的落点都在 AGENTS（九节开头有张一览表），
@@ -466,17 +475,17 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-10-01 21:20 部署后实测）
+## 三、当前状态快照（2026-10-01 **23:05 收尾复核**；线上仍是 21:20 部署那版）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。本批 6 笔：① schema 清理 ② `@astrojs/check` + 类型修复 ③ onReinit 重构 ④ 横幅 container 修复 ⑤ 发版 0.1.21 ⑥ 文档 |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。本批 **7 笔**（`9a917e3..f0c2e77`，逐笔清单见第一节「交付状态」）：schema 清理 / `@astrojs/check` + 类型修复 / onReinit 重构 / 横幅 container 修复 / 发版 0.1.21 / 文档 ×2 |
 | 工作区 | ✅ 干净（`git status --short` 空），与 `origin/main` 齐平、0 领先 |
 | 线上站点 | ✅ **21:20 部署到最新，V0.1.21**。验收证据见第一节「交付状态」（首页与本地 dist 逐字节相同 172716B、13 条路径全 200、横幅两向切页正确、软导航进文章页评论区挂载、各 key 每趟导航 +1、控制台 0 报错） |
 | 服务器配置 | 未动（本批只换 dist）。缓存策略文件与 vhost 备份位置见 AGENTS 六节（值已脱敏，展开版在私密记录里）。⚠️ 新发现一条缓存隐患见「还挂着的事 10.」 |
 | 本地构建 | `npm run build` 退出码 0：**42 页 / dist 336 文件 / 22M**，热缓存约 **4~6s**（+ Pagefind 0.2s）；比 09-30 基线 **+1 文件** = `dist/assets/js/reinit.js`（`_astro/` 仍 211、`pagefind/` 仍 42）。**`npm run check` 与 `npx tsc --noEmit` 均退出码 0**（check 剩 2 条 hint 是故意留的，见 AGENTS 三节） |
 | 依赖 | ➕ `@astrojs/check@0.9.10`（devDep，用户已批准；带进 77 个包，不进站点产物）。已按第九节走**干净 `npm ci`（695 包）+ build** 验证 lockfile。`allowScripts` 仍是 `esbuild@0.28.2`（与实装一致）。`npm audit` 本批**未复测**（要显式换官方源） |
-| dev / preview server | ⚠️ **`npm run preview` 还开着，占着 :4321**（PID 现查 `netstat -ano \| grep :4321`）；dev 已停。下次要动 `node_modules` 前先按「可执行文件路径 + 尾参数」精确杀掉它（AGENTS 九节坑③：宽匹配会自伤） |
+| dev / preview server | ✅ **都已停，:4321 空闲**（收尾时精确杀掉 `astro preview` PID 30376，复查 astro 相关 node 进程残留 = 0）。下次要动 `node_modules` 前照旧按「可执行文件路径 + 尾参数」精确查杀，别信 `TaskStop` 的 summary（AGENTS 九节坑③：宽匹配会把自己的 shell 一起吃掉） |
 | 服务器回滚资产 | `dist.old`（22M）+ **21 个 `dist_backup_*`**。全部保留，**删需用户明确同意** |
 | 临时文件 | ✅ 已清：本地 `/tmp/chenblog_*.log`、`/tmp/live_index.html`、`%TEMP%/ref_*.html`、本地与服务器 `/tmp` 的 tar 包（部署脚本尾部 `rm -f` + 手动核过两边都空）。仓库内无残留 |
 | 排查方法类坑位 | 10-01 下午/晚新增：**十-14（重 init 唯一实现 + 三层探针 + 「`is-changing` 要留到重插脚本之后再摘」）、十-15（内容随页变但在容器外的 chrome 必须登记成 Swup container；含"登记前先查有没有把实例句柄挂在元素属性上"这条通则）、三节（`npm run check` 成为组件类型入口 + 两条故意留的 hint）、五-5（「列表卡有锁图标」是假事实）、五-9（基线 336）、九节（代理计数不可直接采信：30/18 → 实为 34/20）**。控制组两次都省事：真实导航卡 `is-changing`、首页 2 张封面遮罩未褪，线上旧构建给同样数字 ⇒ 都不是回归 |

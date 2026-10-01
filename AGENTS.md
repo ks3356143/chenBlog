@@ -1,7 +1,7 @@
 # AGENTS.md — 项目长期指令
 
 > 陈俊亦的个人博客。每次对话开始时自动读取本文件作为上下文。
-> 最后更新：**2026-10-01 下午（上午批准的四件工程项全部做完，尚未部署上线）**。
+> 最后更新：**2026-10-01 晚（四件工程项 + 用户报的横幅标题 bug 全部做完，21:20 已上线 V0.1.21）**。
 > 本批新落盘：**十-14 「导航后重 init」唯一实现 = `public/assets/js/reinit.js` 的
 > `window.onReinit(key,fn,opts)` / `window.reinitOnce(key,fn)`**（34 处散装脚手架收编，12 个文件；
 > 顺带查出两条真漏：分类栏横滚监听按页累加、悬浮目录 `setupAutoClose` 每页多包一层 `history.pushState`）、
@@ -9,11 +9,14 @@
 > 首跑查出 4 个类型问题，见九节新小节）**、五-5 删字段后的 schema 清单 + **纠正「列表卡有锁图标」这句假事实**、
 > 四节补 `reinit.js` 与 `src/modules.d.ts` 两个位置、
 > **六节整节的 SSH 登录目标 / 服务器绝对路径 / 宝塔配置文件名已脱敏成占位符**
-> （真实值 + 展开版部署命令在本地私密记录 `reference-deploy-targets.md`，见六节开头）。
+> （真实值 + 展开版部署命令在本地私密记录 `reference-deploy-targets.md`，见六节开头）、
+> **十-15 「内容随页面变、但位置在 Swup 容器外的 chrome，必须自己登记成 container」**
+> （= 用户报的横幅标题 bug 的根因与修法；含"登记前先查有没有代码把实例句柄挂在该元素属性上"这条通则）。
 > 代码侧：schema 删 6 个零消费字段、`PostMeta.className` 改可选、删 `[...page]` 死变量、
-> 每页多一个 head 同步脚本（2.6KB，`/assets/js/reinit.js`）。
-> 基线：42 页 / 335 文件 / 构建约 **4.0s**（+ Pagefind 0.2s）；`npm run check` 与 `npx tsc --noEmit` 均 **0 error**。
-> ⚠️ 上午那批（十-12/十-13/五-30/五-31/五-32 + 9 处死代码清理，构建 5~7s→4.14s）已于 11:12 上线，版本 V0.1.20。
+> 每页多一个 head 同步脚本（**3.6KB**，`/assets/js/reinit.js`）、`SwupManager` 的 `containers` 增列
+> `#banner-overlay-container`（`Cover.astro` 把 post-meta 层移进该容器）、打字机实例改模块级统一销毁。
+> 基线：42 页 / **336** 文件 / 22M / 构建约 **4.0s**（+ Pagefind 0.2s）；`npm run check` 与 `npx tsc --noEmit` 均 **0 error**。
+> ⚠️ 上一批（十-12/十-13/五-30/五-31/五-32 + 9 处死代码清理，构建 5~7s→4.14s）已于 11:12 上线，版本 V0.1.20。
 
 ## 📌 开始工作前先读 [`HANDOFF.md`](./HANDOFF.md)
 

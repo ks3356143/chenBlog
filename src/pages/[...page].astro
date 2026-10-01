@@ -14,9 +14,6 @@ export const getStaticPaths = (async ({ paginate }) => {
 }) satisfies GetStaticPaths
 
 const { page } = Astro.props
-
-// 总文章数量 - 用于渲染计时
-const len = page.data.length
 ---
 
 <Layout>

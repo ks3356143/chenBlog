@@ -1,13 +1,15 @@
 # AGENTS.md — 项目长期指令
 
 > 陈俊亦的个人博客。每次对话开始时自动读取本文件作为上下文。
-> 最后更新：2026-09-29 傍晚（四件事已提交并于 17:22 部署上线：**五-25 列表页自动封面**、**五-26 新文章 ASCII slug + `npm run new:post`**、
-> **五-24 末条侧栏「最新动态」**（构建期静态、主动偏离参考站的岛）、**五-28 相册加图集的正确步骤**（新增第 5 个相册）。
-> 本批落盘 8 条坑位，其中三条是新的通用认知：**五-27 markdown 转纯文本时实体必须单趟解码**（`&#x26;` 不是 `&amp;`）、
-> 五-21 补充「**别在 dev 运行时删 `data-store.json`**」（dev/build 共用，删了 dev 会停在旧内容集合）、
-> 第九节「**grep 的两类假阴性**」（`[A-Za-z0-9]` 不含 `_`；`grep -oc` 数的是行不是次）。
-> 另更正两条记错的事实：八节"空 image 显示兜底图 loadingfalse.png"（实际**一张图都没有**）、
-> 五-17"CSS100Day 缺 1 和 11"（实际缺 **5 和 11**）。五-9 基线 41→**42 页** / 331→**334 文件**。）
+> 最后更新：**2026-10-01**（本地 4 笔提交就绪，**未推送、未部署**；线上仍是 09-30 18:13 的构建）。
+> 本批新落盘：**十-12 容器内脚本注册全局监听必须带幂等标志**（Twikoo / 随机文章两处，同一机制）、
+> **十-13 `twikoo.init()` 会吃掉它的挂载点**（`#tcomment` → `#twikoo`，故第二遍 init 必然空转）、
+> **五-30 构建期记忆化只在 PROD 生效**（dev 每次都真读，理由就是五-21 那族坑；附「消费方不得就地 sort」）、
+> **五-31 `<html lang>` 已改合法 `zh-Hans-CN`**（Pagefind 那条 zh-cmn 提示的根因，附改后必做搜索 A/B）、
+> 三节补 `npx tsc --noEmit` 这条廉价回归（⚠️ 它根本不查 `.astro`/`.svelte`）、
+> 七节补「**Edit 工具也会把混合行尾文件整片翻成 CRLF**」及按字节重放原始 blob 的修法。
+> 另清掉 9 处死代码（不可达监听、调用全站不存在函数的分支、零引用全局声明、5 个重复图标），
+> 逐条都先核实"这条待办今天是否仍成立"才动手；构建耗时 5~7s → **4.14s**。
 
 ## 📌 开始工作前先读 [`HANDOFF.md`](./HANDOFF.md)
 
@@ -78,6 +80,9 @@ npm run new:post -- --day 29 --title "标题"   # 文章脚手架（ASCII slug +
 ```
 
 `package.json` 里**没有** lint / test 脚本，也没有部署脚本。验证手段就是 `dev` 看效果 + `build` 确认能构建通过。
+> 2026-10-01 起多一条廉价回归：`npx tsc --noEmit -p tsconfig.json` **退出码 0、零错误**（修掉 `baseUrl` 之后）。
+> ⚠️ 它只查 `src/**/*.ts`——**`.astro` 与 `.svelte` 完全不在 tsc 的射程内**（tsc 不认这些扩展名），
+> 所以「tsc 干净」远不等于「类型干净」。要覆盖组件得装 `@astrojs/check`（**新依赖，装前先问**）。
 查漏洞要**显式换官方源**：默认 registry 是 npmmirror，它不实现 audit 接口，
 `npm audit` 会报 `404 NOT_IMPLEMENTED` 而不是给出结论 →
 `npm audit --registry=https://registry.npmjs.org`（2026-09-28 实测，结果 **0 vulnerabilities**）。
@@ -163,7 +168,7 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
 9. 构建产物基线（**2026-09-30 傍晚实测**：相册压成 webp + 新增 `og-image.jpg` 之后）：
    **42 个页面 / dist 335 个文件 / 20.3MB**，其中 `_astro/` 211 个（自动封面 4 张 × 5 档响应式 = 20 个）、
    `pagefind/` 42 个（28 个 fragment / 索引 28 页）、`gallery/` 26 个（20 张照片共 3.46MB）。
-   热缓存 `npm run build` 约 5~7s + 索引 0.2s。
+   热缓存 `npm run build` 约 **4.1s** + 索引 0.2s（2026-10-01 起；此前 5~7s，差值来自五-30 那批重复渲染的消除）。
    （体积历史：28M → 09-30 相册 webp 化后 **20.3M**（−7.7M）。文件数历史：307（09-28 接 Pagefind）→
    334（09-29 新相册）→ **335**（09-30 加 `public/og-image.jpg`）。
    页历史：37 → 09-24 加 `/categories/` 38 → 09-28 加 `/series/` `/tags/` 40 → 09-29 加 `/dynamic/` 41 →
@@ -466,6 +471,27 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
       **`icons` 与 `aliases` 两张表都要看**：`material-symbols:push-pin` 只在 `aliases` 里，
       光查 `icons` 会误判成"这图标没装"。
 
+30. **构建期记忆化只认 PROD：`src/utils/content-utils.ts` 的 `getAllPosts()`**（2026-10-01 加）。
+    - 动因：一次首页渲染原先要跑 **13 遍** `getCollection("posts")`（CategoryBar 2 + Category/Tags 各双挂载
+      + SiteStatus 双挂载×内部 3 个函数 + 路由本身 1），每遍都重新解析全部 frontmatter。
+    - ⚠️ **只在 `import.meta.env.PROD` 下缓存，dev 每次都真读**。理由就是五-21 那族坑：dev 命中缓存会让
+      内容集合停在旧数据上，看起来「新代码有 bug」。
+    - ⚠️ **缓存的是同一批对象引用，消费方一律不许就地改**：`getRawSortedPosts` 已改成
+      `[...allBlogPosts].sort(...)`，否则一次排序就把缓存本体打乱、后面每页读到的顺序都是错的。
+      加了这个记忆化之后必须核列表顺序（本次核法：本地 6 个列表页与线上逐项比 `href` 序列）。
+    - 同批收掉的重复：`[...slug].astro` 对同一篇调两次 `render()`（合并成一次）、
+      `PostCard` 只在**没写 description** 时才 `render(entry)` 取 excerpt（26 篇全有 description，
+      原先是每张卡白跑一遍完整 remark/rehype 链再丢弃结果）。构建耗时 5~7s → **4.14s**。
+    - 刻意没做：`Calender` 与 `RecommendedPost` 各抄一份 `window.__allPostMetaCache` 的 fetch 逻辑，
+      两处都工作正常，抽公共 helper 要引入脚本加载顺序契约，收益不值当。
+
+31. **`<html lang>` 现在是合法的 `zh-Hans-CN`**（2026-10-01 改，`BaseLayout.astro:34`）。
+    原先的 `zh-cmn` 不是合法 BCP47，也正是 Pagefind 那条 `doesn't support stemming for zh-cmn` 提示的根因。
+    → 改后 Pagefind 重新索引报 `Discovered 1 language: zh-hans-cn`，**仍提示不支持词干还原（中文本来就没有，属正常）**。
+    → ⚠️ 改这个要**重新构建**（语言标记是 Pagefind 建索引时读的），并做搜索 A/B：
+      本次核 动画 12→12、flex 7→7、振铃 1→1 且首条结果逐条一致，才敢说无回归。
+    → 顺带：`commentConfig.ts` 里的 `lang: "zh-CN"` 是 Twikoo 自己的界面语言，与 `<html lang>` 无关，别混改。
+
 ## 六、部署
 
 **部署方式：本地构建 + 上传 `dist`，服务器不跑 build。**（2026-09-20 起）
@@ -634,6 +660,13 @@ curl -s -o /dev/null -w "%{http_code}\n" \
   → 用脚本（node/sed）批量改写时要按 `(\\r?\\n)` 捕获再原样写回；改完先看 `git diff --numstat`，
   **每个文件应当只有你真正动过的那几行**。若出现"1 行改动变成 40/40"，就是行尾被整体翻转，立刻 `git checkout --` 回退换写法。
   反过来"把全项目统一成 CRLF/LF"这种好心想也别做，那会产生整文件重写式 diff。
+  ⚠️ **2026-10-01 补：不只是脚本会翻，`Edit` 工具改一个混合行尾文件也会整片归一化成 CRLF**。
+  本次改 `global.css`（blob 实测 112 CRLF + 64 LF）只想删 4 行，Edit 之后 `git diff --numstat` 变 61/65。
+  → 修法：用 `git show HEAD:<file>` 取原始**字节**，按 `0x0A` 切块（块内保留 `\r`）、过滤掉目标块、
+    `Buffer.concat` 原样写回，全程不做任何编码转换 → 净 diff 回到 0 增 4 删。
+  → 判规模要用 `git diff HEAD --numstat`：`git reset --soft` 之后索引里还留着上一次那份翻好的文件，
+    裸 `git diff` 比的是工作区 vs 索引，会给出一个误导性的数字。
+  → 每次改完**先跑这一条再提交**，别等提交完才看到 diff 变大。
   ⚠️ 同一天还犯了一个**更狠的：读写编码不一致会直接写坏文件**。
   `readFileSync(f,"latin1")` 读、却 `writeFileSync(f,str)`（默认 utf8）写 → 非 ASCII 字节被重新编码，
   **中文注释全变乱码**，`global.css` 的 diff 从预期的 3 行炸成 16/14。
@@ -990,3 +1023,23 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
       `document.addEventListener("astro:after-swap", setToggleListener)` 就是独立的第二处双绑，已删。
     → 通用结论：**"切页后某个开关点了没反应"先怀疑重复绑定，而不是怀疑监听器丢了。**
       判据是「一次点击引发的状态变更次数」，不是「有没有反应」。
+
+12. ⚠️ **换成自写的容器作用域重跑之后，「容器内脚本注册全局监听」依然是雷——必须带 `window.__xxxInit` 幂等标志**
+    （2026-10-01 查出：`Twikoo.astro` 与 `RecommendedPost.astro` 各一处，同一机制）。
+    第 11 条只保证「容器外的元素不再被重复绑」，但**容器内的脚本每次进该页仍会重新求值**，
+    若它注册的是 `document.addEventListener(...)` 或 `window.swup.hooks.on(...)`，
+    每次求值出来的函数是新对象、引用不同 → `addEventListener` 不去重 → 监听器按「访问过该页的次数」累加。
+    → 同族对照：`SeriesNav.astro:123`、`series/index.astro:116` 写了幂等标志（正确），
+      `Search.svelte:124` 在 `onMount` 返回里 `removeEventListener`（正确），漏网的只有那两处。
+    → **留第一份闭包是安全的**，前提是被注册的函数每次调用都重新 `getElementById`（这两处都满足），
+      旧闭包不会指向已被换掉的节点。反过来，捕获了元素引用的闭包不能这么留。
+    → 实测办法：`document.dispatchEvent(new Event('swup:contentReplaced'))` 后数目标函数被调了几次
+      （包一层 `document.getElementById` 当计数器，**别猜类名**）。线上单次事件触发 2 次重渲染，加标志后恒为 1。
+    → ⚠️ 严重性别说过头：实测线上是 2 次，**没有验证过它随访问页数无限增长**，报结论只报测到的数。
+
+13. **`twikoo.init()` 会吃掉它的挂载点**（2026-10-01 实测）：`#tcomment` 渲染完成后在 DOM 里变成 twikoo
+    自己的根节点 `#twikoo`，**第二次 `document.getElementById("tcomment")` 必然拿到 null**。
+    → 后果一：评论区的「重新初始化」逻辑里 `if (el) init()` 这种守卫从第二遍起静默空转，
+      看起来「评论没重新加载」其实正常。查「评论没了」要先看 `#twikoo` 在不在，别只看 `#tcomment`。
+    → 后果二：`BaseLayout` 那条派发 `firefly:page:loaded` 的通知链整条空转（它只在整页加载时派发，
+      而那条路上 `DOMContentLoaded` 已经完成初始化了），已连监听方与派发方一起删除。

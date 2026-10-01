@@ -3,10 +3,10 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-09-30 傍晚收尾（全天：修两条移动端缺陷 → 竖条收窄 → 移动端补动态卡 →
-> 新增「站点信息」卡 → 三路体检修 5 条缺陷 → 相册压图 11.39→3.46MB → Nginx 缓存策略 →
-> 卸 dayjs → README 重写 → 站点信息卡展开区被裁的收尾修正。**线上 18:13 部署到最新并公网验收；
-> 收尾时今天提交已全部推送，本地 = GitHub = 线上三方一致**（起点 `47543a4`，此后仅追加 HANDOFF 更正笔）**
+> 最后更新：**2026-10-01 上午（第二轮体检：并行只读代理逐条复核昨天的 P1 清单 + 查错）**。
+> 本批做完 4 件事并各自提交：① 修容器内脚本重复注册监听 ② 清 9 处死代码 ③ 收构建期重复开销
+> （构建 5~7s → 4.14s）④ 修卫生项（`lang` 改合法 BCP47、CSS 重复声明、图标按钮无障碍名、tsconfig）。
+> **⚠️ 这 4 笔只到本地，没推 GitHub、没上线**——线上仍是 09-30 18:13 的构建。
 
 ---
 
@@ -22,13 +22,17 @@
 > ⚠️ **交互类缺陷在 dev 下大多测不出来**（dev 的组件脚本是外部 module、不会被重新求值），
 > 复现与验证一律走 `npm run build` + `npm run preview`，别在 dev 里下结论。
 
-### ✅ 交付状态：本地 = GitHub = 线上，三方一致
+### ✅ 交付状态：**本地领先 4 笔，未推送、未部署**（2026-10-01 上午）
 
-- 工作区干净；**今天所有提交已推送**（起点 `47543a4`，`origin/main` == 本地 HEAD；
-  准确的 HEAD 与笔数下次开场现查：`git rev-parse --short HEAD` / `git rev-list --count origin/main..HEAD`）。
-  ⚠️ **推送第一次被拒**：`remote: fatal error in commit_refs` / `[remote rejected]`。
-  先排除体积（61 个 blob，最大 457,936B，远低于 GitHub 100MB 上限）后**原样重推即成功**——
-  那是 GitHub 侧的瞬时故障，**不是配置或权限问题，别去改 remote/凭据**，重推就行。
+- 工作区干净；`origin/main` 与线上都还是 09-30 收尾那一版（`88b43a5`），本地其后多了四笔：
+  `16df19d` 容器内脚本幂等 / `377f47f` 清死代码 / `3e6eb6d` 构建期重复开销 / `89fbf00` 卫生项。
+  现查：`git rev-list --count origin/main..HEAD`。
+- **推不推、上不上线等用户说**（AGENTS 六节铁律：上线默认他本人执行，授权一次只对那一次有效）。
+  真要上线就重跑 `npm run build` 再走第六节流程——本地 dist 已是含全部改动的最新构建。
+- 推送有个已知**假信号**：第一次 `git push` 可能报 `remote: fatal error in commit_refs` 被拒，
+  **原样重推即过**（GitHub 侧瞬时故障，不是 remote/凭据问题，别去改配置）。
+- 09-30 那批的公网验收结论仍有效（RSS 26 条链接全 200、`og:image` 本站 200、相册 20 张 3.46MB、
+  375px 分类「更多」可展开、第13天 demo 重插后仍可点），本批没动这些路径。
 - 线上 dist = 本地 dist（**首页逐字节相同，173288B**），**18:13 部署**——这一次是我把用户下班那句
   「干完以上事情」当作授权执行的，严格说他没有明说上线；下次遇到这种含糊收尾指令，**先问再推生产**。
 - 此前 17:34 那批的公网验收仍有效：**RSS 26 条链接全部 200**（改前 26/26 → 404）、`pubDate` 年份只剩 2026、
@@ -51,6 +55,16 @@
    **需要他再看一眼确认观感**。
 5. 昨天遗留未验收的两项仍在：**新相册封面选图与顺序**、以及新封面观感。
 
+**2026-10-01 这批新增的要你肉眼过一下**（都在本地 dist，未上线；`npm run preview` 就能看）：
+
+6. **评论区两条路径**（本批改了 init 的注册方式，这是唯一有回归风险的地方）：
+   ① 直接刷新一篇 `/posts/…/` 文章页要出评论；② 从首页点进文章也要出评论。
+   两条我都用浏览器验过（`#twikoo` 渲染出来了），但**没验"能发评论"**——那要真发一条，你自己决定。
+7. **随机文章列表**：切页后仍能换一批、不闪、不重复渲染。
+8. **搜索**：`lang` 改成 `zh-Hans-CN` 后索引重建过，我做过 A/B（动画 12→12、flex 7→7、振铃 1→1，
+   首条结果逐条一致），你再随手搜两个词确认命中高亮正常。
+9. **meCard 的 RSS 按钮**现在应打开 `/rss.xml`（原先跳首页）。
+
 ### 🟡 还挂着的事
 
 1. **动态页二期还剩三项**：搜索、年份筛选、图片画廊（第四项「侧栏最新动态」已完成，
@@ -60,32 +74,62 @@
    **没有锚点可指**（`DynamicItemTemplate.astro` 不设 id + `SwupManager.astro:77` 无条件回顶），要先补三处。
 2. **服务器回滚资产 19 个 `dist_backup_*` + `dist.old` ≈ 528M**（今天五次部署各 +1）。
    **必须用户明确说才删**，我不会自己动。
-3. **2026-09-30 三路体检里「报了但本批没做」的清单**（下次要动就从这里挑，别重新扫一遍）：
-   - **性能两项被用户否掉/未选**：Twikoo 无 defer（`/assets/js/twikoo.nocss.js` 589KB × 27 页，
-     加 defer 可让文章页首屏 JS 221.8→36.3KB gz）；横幅 srcset 缺 750w 档（最小档 1280w=165KB，
-     补一档每页省 106KB）。**都是用户看过后选择不做的**，别当新发现再提。
-   - **卫生 P1 一批未动**（已核实方向对，但不在本批范围）：品牌名四种拼法（亦林 / YILIn / YiLin博客 /
-     -Yilin）、`<html lang="zh-cmn">` 非法 BCP47（也正是 Pagefind 报 zh-cmn 的根因，改 `zh-Hans-CN`）、
-     `ThemeIcon` 纯图标按钮无 `aria-label`、`meCard` 四个社交按钮 `href="/"` 全跳首页且同一元素写两遍
-     `aria-label`、`global.css:91/94` 与 `:143/168` 两处重复声明、`env.d.ts` 5 条死 Window 声明、
-     `src/assets/{about,archive,chat,home,xiangce}.svg` 与 `src/icons/` 逐字节相同且零引用（可删 5 个）、
-     schema 里 `lang/author/sourceLink/licenseName/licenseUrl/passwordHint` 6 字段零代码消费者、
-     `Tags.astro:11` 的 `class="collapsed"` 是死类名（`.collapsed` 只定义在 Category 的 scoped 里）。
-   - **模块化 P1 一批未动**：「导航后重 init」脚手架手抄约 16 处（延迟 100/200/220/500ms 各处不同，
-     可出一个 `onReinit(fn)`）；日期格式化 5 套、文章 URL 7 处各拼（已有 `getPostUrlBySlug` 却只有 3 处用，
-     twikoo 按 path 存评论所以尾斜杠不一致会分到两个线程）；同一页把 posts 集合查 4 遍 × 双挂载 = 8 遍；
-     `RecommendedPost` 与 `Calender` 各写一份 `allPostMeta` 缓存；`[...slug].astro:36,39` 同一篇 `render()` 两次。
+3. **2026-09-30 那批「报了但没做」的清单——2026-10-01 已清掉大半，剩下的都在下面**
+   （别重新扫一遍，直接从这里挑）：
+   - **✅ 已做完**（细节见 AGENTS 十-12 / 十-13 / 五-30 / 五-31 与四笔提交）：`<html lang>` 改合法
+     `zh-Hans-CN`、`ThemeIcon` 补 `aria-label`、`meCard` 重复 `aria-label` 与 RSS 按钮指向 `/rss.xml`、
+     `global.css` 两处重复声明、`env.d.ts` 5 条零引用声明、`src/assets` 5 个重复图标、`Tags` 的死类名
+     `collapsed`、`[...slug]` 双 `render()`、`PostCard` 无谓 `render()`、posts 集合 13 遍→记忆化、
+     容器内脚本重复注册监听（Twikoo / 随机文章）。
+   - **✅ 两条「待核实」已核实，别再当悬案**：① TypeMechine 不是"5 遍"而是每次导航 3 个入口 × 2 = **6 次**
+     init，且它 `window.swup.hooks.on` 那两行**从来没注册上**（内联 module 文档序在 SwupManager 的外链
+     module 之前，跑到时 `window.swup` 还是 undefined）；它在容器外，所以监听器不累加，只是打字动画重放。
+     ② `rounded-(--radius-large)` 是 **4 处类写法 + 2 处 CSS 引用 = 6 处**，`--radius-large` 确实从未定义，
+     全部按直角渲染（与五-16 结论一致，只是数目记少了）。
+   - **❌ 昨天那句"twikoo 按 path 存评论、尾斜杠不一致会分到两个线程"是错的**，已证伪并随之简化：
+     `Twikoo.astro` 的 `getCurrentPath()` 一直无条件覆盖 SSR 传下来的 path，各写法归一后是同一个线程。
+     那条 SSR 链路（`Comment` 的 `post`/`customPath` 与 `Twikoo` 的 `path` prop）已整条删除。
+     → 文章 URL 仍有 **6 处手拼**（`PostPage.astro:27`、`comment/index.astro` 已删则不算、
+       `RecommendedPost.astro:113`、`Calender.astro:370/433`），要统一成 `getPostUrlBySlug` 仍是待办。
+   - **⏳ 仍要做但要用户先拍板的，见下面「🔴 等拍板」一节**（品牌名、schema 6 字段、`onReinit` 抽象、
+     是否装 `@astrojs/check`、公开仓库里的服务器路径要不要脱敏）。
+   - **⏳ 刻意没做**：`Calender` 与 `RecommendedPost` 各一份 `__allPostMetaCache` fetch（抽公共要引入
+     脚本加载顺序契约，收益不值当）；「导航后重 init」脚手架 30 处（实测分布：幂等标志 3 + 带延迟 13 +
+     不带延迟 14，分散在 18 个文件）等 `onReinit(fn)` 拍了再统一改。
+   - **性能两项被用户否掉/未选，别当新发现再提**：Twikoo 无 defer（589KB × 27 页）、横幅 srcset 缺
+     750w 档。都是用户看过后选择不做的。
    - **代理报了但我判定降级**：每页两个 `<title>`（内容一致，只是无效 HTML）；
      重复 id `cardTags`/`announcement`/`banner`（无脚本查询，无死控件）。
-   - **待核实**（我没验，别当事实用）：TypeMechine 一次导航触发 5 遍；
-     `rounded-(--radius-large)` 实际 6 处而非五-16 记的 2 处。
    - **既存小怪象**：只有 1 个分类时分类卡收起态 120px 反而比展开后 40px 高
      （模板写死的 `collapsedHeight: 7.5rem`）；`/site.webmanifest` 的 Content-Type 是
      `application/octet-stream`（nginx mime.types 缺 webmanifest，要修得改服务器）。
-4. **宝塔面板密码**曾在对话中明文出现过，用户选择暂不改；面板 IP 白名单未开。
-5. **Mermaid 专属的 2 个未定义变量**（`--text-color-secondary` / `--primary-hover`）**故意留白**：
+
+4. **🔴 等用户拍板（2026-10-01 体检剩下的都是这类，属设计/取舍，不该我替他定）**
+   1. **品牌名到底叫什么**：现在四种口径并存 —— `亦林`（Header/siteMeta/manifest/about）、
+      `YILIn`（Layout 的 title 与 h1 兜底、manifest name）、`-Yilin`（5 个列表页 title 后缀）、
+      `YiLin博客`（`BaseLayout.astro:47`，**产物里 0 次**，那条 `||` 分支被 Layout 的 `??` 挡死，纯死代码）。
+      另有人名三种：`陈俊亦` / `KisJuyial` / `犟哟`+`Juyial`。定一个口径我来全站统一。
+   2. **meCard 三个社交按钮的真实地址**：QQ / 微信 / GitHub 现在仍 `href="/"`（点了跳首页）。
+      RSS 那个已改好。给我地址我就填；微信一般是二维码，那要换成交互不是链接。
+   3. **frontmatter 那 6 个零消费字段删不删**（`lang` `author` `sourceLink` `licenseName` `licenseUrl`
+      `passwordHint`，全部 26 篇没写过、代码里也没有一个消费方）。留着是"将来想做 CC 署名/加密"的话，
+      就顺手把消费方补上，否则删掉更干净。
+   4. **要不要抽 `onReinit(fn)`** 替掉 30 处手抄的"导航后重 init"脚手架（延迟 100/200/220/500ms 各处不同）。
+      收益是一致性与以后少踩坑，代价是碰 18 个文件、且这块正是昨天出事故的地方。
+   5. **要不要装 `@astrojs/check`**：现在 `npx tsc --noEmit` 已经零错误，但它**根本不查 `.astro`/`.svelte`**，
+      所以类型覆盖是假的。装它是新依赖（AGENTS 约定先问）。
+   6. **公开仓库里的服务器信息要不要脱敏**（安全代理扫过的结论见下一节）。
+5. **公开仓库暴露面（2026-10-01 安全代理全历史扫过）**：**零凭据泄露**——零私钥块、零密码/token 值、
+   零 `.env`、零面板地址/端口/安全入口、零手机号/身份证、提交信息干净、6 个 dangling commit 也查了。
+   但 `AGENTS.md` 第六节与 `HANDOFF.md` 里有 **root@IP、`/www/wwwroot/...` 路径、vhost 配置文件名、
+   `/root/*.conf` 备份名**，仓库公开 ⇒ 这些等于已发布，**且全部历史可读**（删当前版本不消除暴露）。
+   风险有限（密码登录已关、IP 本就公开），要不要脱敏（或改成本地私密记录）由用户定；
+   真要彻底清除得 `git filter-repo` 重写历史 + 强推，代价大。另：Twikoo `envId` 是裸 `IP:8099`，
+   前端 JS 里公开，若该实例没设访问限制可被垃圾评论写入（建议同域反代路径，属服务器改动）。
+6. **宝塔面板密码**曾在对话中明文出现过，用户选择暂不改；面板 IP 白名单未开。
+7. **Mermaid 专属的 2 个未定义变量**（`--text-color-secondary` / `--primary-hover`）**故意留白**：
    零页面可达、无从验证。等首篇 Mermaid 文章时按 AGENTS 第八节在 dev 逐项验，届时一并定值。
-6. **首篇用到 Mermaid / KaTeX / callout / 图片网格 的文章仍未写**——那四条渲染路径至今零实战验证（AGENTS 第八节）。
+8. **首篇用到 Mermaid / KaTeX / callout / 图片网格 的文章仍未写**——那四条渲染路径至今零实战验证（AGENTS 第八节）。
 
 ### 🔧 常用操作（都已验证可用）
 

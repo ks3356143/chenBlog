@@ -46,8 +46,13 @@ const className = Astro.props.class
 const descriptionLines = Math.max(0, Math.trunc(siteConfig.postListLayout.descriptionLines ?? 2))
 const descriptionClampLines = String(descriptionLines)
 const shouldClampDescription = descriptionLines > 0
-const { remarkPluginFrontmatter } = await render(entry)
-const descriptionText = description || remarkPluginFrontmatter.excerpt || ""
+// 只有没写 description 的才付一次整篇 markdown 渲染的代价：render() 会跑完整条 remark/rehype 链，
+// 而首页每张卡都要建一次卡片（10 张/页），此前无论有没有 description 都无脑渲染一遍再丢弃
+let descriptionText = description || ""
+if (!descriptionText) {
+	const { remarkPluginFrontmatter } = await render(entry)
+	descriptionText = remarkPluginFrontmatter?.excerpt || ""
+}
 
 // 获取文章图片
 const coverWidth = "30%"

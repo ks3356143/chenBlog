@@ -7,12 +7,25 @@ export type Category = {
     url: string
 }
 
-// 1.获取分类列表
-export async function getCategoryList() {
-    const allBlogPosts = await getCollection("posts", ({ data }) => {
+// 构建期进程内记忆化：一次首页渲染要跑十几遍 getCollection("posts")
+//（CategoryBar 2 + Category×2 挂载 + Tags×2 挂载 + SiteStatus×2 挂载×3 个函数 + 路由本身 1），
+// 每遍都重新解析全部 frontmatter。缓存的是同一批对象引用，所以消费方一律不许就地改
+//（getRawSortedPosts 已改成拷一份再 sort）。
+// ⚠️ 只在 PROD 缓存：dev 下命中缓存会让新增/改动的内容集合停在旧数据上（见 AGENTS 五-21 那族坑）。
+let postsCache: CollectionEntry<"posts">[] | null = null
+async function getAllPosts(): Promise<CollectionEntry<"posts">[]> {
+    if (import.meta.env.PROD && postsCache) return postsCache
+    const posts = await getCollection("posts", ({ data }) => {
         // 在开发模式草稿可以出现
         return import.meta.env.PROD ? data.draft !== true : true
     })
+    if (import.meta.env.PROD) postsCache = posts
+    return posts
+}
+
+// 1.获取分类列表
+export async function getCategoryList() {
+    const allBlogPosts = await getAllPosts()
     const count: { [key: string]: number } = {}
     allBlogPosts.forEach((post) => {
         if (!post.data.category) {
@@ -46,9 +59,7 @@ export type Tag = {
     count: number
 }
 export async function getTagList(): Promise<Tag[]> {
-    const allBlogPosts = await getCollection<"posts">("posts", ({ data }) => {
-        return import.meta.env.PROD ? data.draft !== true : true
-    })
+    const allBlogPosts = await getAllPosts()
 
     const countMap: { [key: string]: number } = {}
     allBlogPosts.forEach((post: { data: { tags: string[] } }) => {
@@ -68,11 +79,11 @@ export async function getTagList(): Promise<Tag[]> {
 
 // 3.获取排序的文章
 async function getRawSortedPosts() {
-    const allBlogPosts = await getCollection("posts", ({ data }) => {
-        return import.meta.env.PROD ? data.draft !== true : true
-    })
+    const allBlogPosts = await getAllPosts()
 
-    const sorted = allBlogPosts.sort((a, b) => {
+    // ⚠️ 必须先拷一份再 sort：allBlogPosts 是 getAllPosts 的缓存数组本体，
+    // 就地 sort 会把它打乱，后续每一遍读到的顺序都是错的
+    const sorted = [...allBlogPosts].sort((a, b) => {
         // 首先按置顶状态排序，置顶文章在前
         if (a.data.pinned && !b.data.pinned) return -1
         if (!a.data.pinned && b.data.pinned) return 1

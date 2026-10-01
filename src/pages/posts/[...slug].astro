@@ -32,11 +32,9 @@ export const getStaticPaths = (async () => {
 // 文章对象
 const { post } = Astro.props
 
-// 获取标题、内容
-const { Content, headings } = await render(post)
-
-// 获取插件解析内容
-const { remarkPluginFrontmatter } = await render(post)
+// 获取标题、内容与插件解析结果（一次 render 就全有了；此前分两次调，同一篇整条
+// markdown 链跑了两遍，26 页各多付一次）
+const { Content, headings, remarkPluginFrontmatter } = await render(post)
 
 // 判断是否有Cover图
 const hasImage = post.data.image ? true : false

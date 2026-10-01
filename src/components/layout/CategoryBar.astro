@@ -304,9 +304,9 @@ const categoriesUrl = url("/categories/")
 	// 初始化滚动特性-横线滚动/左右背景透明渐变
 	function initScrollFeatures() {
 		const bar = document.getElementById("category-bar")
-		if (!bar) return
+		if (!bar) return false
 		const scroll = bar.querySelector<HTMLElement>(".category-scroll")
-		if (!scroll) return
+		if (!scroll) return false
 		// 鼠标横线滚动
 		scroll.addEventListener(
 			"wheel",
@@ -358,16 +358,12 @@ const categoriesUrl = url("/categories/")
 			fadeRight.removeAttribute("data-visible")
 		}
 	}
-	updateCategoryBar()
+	window.onReinit("category-bar", updateCategoryBar)
 	initCategoryBarInteractions()
-	initScrollFeatures()
-	document.addEventListener("astro:page-load", () => {
-		updateCategoryBar()
-		initScrollFeatures()
-	})
-	document.addEventListener("swup:contentReplaced", () => {
-		updateCategoryBar()
-	})
+	// 分类栏在 Swup 容器外、元素永不被替换，所以滚动相关的监听整个文档只该绑一次。
+	// 原来这里跟 updateCategoryBar 一起挂在 astro:page-load 上，每换一次页就多一组
+	// wheel/scroll/resize 监听 → 鼠标横滚的位移按访问页数叠加（2026-10-01 查出）
+	window.reinitOnce("category-bar-scroll", initScrollFeatures)
 	// 在 Swup 导航时同步分类栏的高亮（参考站：visit:start 只刷高亮，不做显隐）
 	function setupSwupEarlyUpdate() {
 		if (!window.swup?.hooks) return

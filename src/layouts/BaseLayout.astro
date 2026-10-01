@@ -47,6 +47,8 @@ const isHome = pathname === "/" || /^\/\d+\/$/.test(pathname)
         <meta name="generator" content={Astro.generator} />
         <title>{title || siteConfig.siteMeta.name}</title>
         <SEO {...Astro.props} />
+        <!-- 「导航后重 init」注册表：必须在 body 之前同步执行——容器内的 is:inline 脚本在解析期就要拿到 window.onReinit -->
+        <script is:inline src="/assets/js/reinit.js"></script>
         <script is:inline>
             const setTheme = () => {
                 const theme = (() => {

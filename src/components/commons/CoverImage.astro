@@ -226,6 +226,6 @@ const remoteReferrerPolicy = !isLocal && shouldAddNoReferrer(isPublic ? url(src)
 		})
 	}
 
-	initCoverImages()
-	document.addEventListener("astro:page-load", initCoverImages)
+	// 首次 + 每次导航后补绑新出现的封面（容器里的 data-initialized 已经防了重复绑定）
+	window.onReinit("cover-image", initCoverImages)
 </script>

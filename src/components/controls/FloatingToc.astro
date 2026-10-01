@@ -277,9 +277,12 @@ const sidebarPosition = "sticky"
 			// 初始化
 			window.FloatingTOC.manager.init()
 
-			// 设置点击事件 - 标记为 TOC 内部导航
-			const tocContent = document.getElementById("floating-toc-content")
-			if (tocContent) {
+			// 设置点击事件 - 标记为 TOC 内部导航。
+			// #floating-toc-content 在 Swup 容器外、永不被替换，所以这个监听整个文档只绑一次；
+			// 放在 initFloatingTOC 里裸绑的话每换一次页就多一个（2026-10-01 用 addEventListener 计数探针查出）
+			window.reinitOnce("floating-toc-inner-click", () => {
+				const tocContent = document.getElementById("floating-toc-content")
+				if (!tocContent) return false
 				tocContent.addEventListener(
 					"click",
 					e => {
@@ -291,31 +294,25 @@ const sidebarPosition = "sticky"
 					},
 					{ capture: true },
 				)
-			}
+			})
 
-			// 设置自动关闭
-			setupAutoClose()
+			// 自动关闭：里面是往 window/document 上挂 7 个监听并包装 history.pushState/replaceState，
+			// 属于「整个文档只该做一次」的动作。initFloatingTOC 每次导航都会跑，不做一次性的话
+			// 每换一次页就多一层 pushState 包装 + 7 个监听（AGENTS 十-12 那条机制的大号实例）
+			window.reinitOnce("floating-toc-autoclose", setupAutoClose)
 		} catch (error) {
 			console.error("Failed to load TOCManager:", error)
 		}
 	}
 
-	// 初始化
-	initFloatingTOC()
+	// 首次 + 每次导航后重建：helper 把 swup:contentReplaced 与 astro:page-load 两个桥接派发
+	// 压成一趟导航一次（原来两个监听都挂着，每换页建两遍）
+	window.onReinit("floating-toc", initFloatingTOC, { delay: 100 })
 
-	// 监听页面切换事件
-	if (typeof window !== "undefined" && !window.floatingTOCListenersInitialized) {
+	// 以下三个不是「换页后重 init」，是浏览器后退 / 断点切换 / 窗口缩放，保持原样；
+	// 这个块自身靠 floatingTOCListenersInitialized 只注册一次
+	if (!window.floatingTOCListenersInitialized) {
 		window.floatingTOCListenersInitialized = true
-
-		// Swup 路由切换
-		document.addEventListener("swup:contentReplaced", () => {
-			setTimeout(initFloatingTOC, 100)
-		})
-
-		// Astro 页面切换事件
-		document.addEventListener("astro:page-load", () => {
-			setTimeout(initFloatingTOC, 100)
-		})
 
 		// 浏览器导航事件
 		window.addEventListener("popstate", () => {

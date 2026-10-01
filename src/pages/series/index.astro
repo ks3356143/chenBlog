@@ -111,11 +111,10 @@ const totalPosts = seriesList.reduce((sum, s) => sum + s.count, 0)
 			content.style.maxHeight = next ? content.scrollHeight + "px" : "0px";
 		}
 
-		// 事件委托 + 幂等标志：本脚本在 Swup 容器内，切页时会被重新插入执行（见 SwupManager 的
-		// content:replace），幂等标志保证监听器只注册一次
-		if (!window.__seriesAccordionInit) {
-			window.__seriesAccordionInit = true;
+		// 事件委托，整个文档只注册一次：本脚本在 Swup 容器内，切页时会被重新插入执行（见 SwupManager 的
+		// content:replace）。reinitOnce 取代原来手写的 window.__seriesAccordionInit 幂等标志
+		window.reinitOnce("series-accordion", function () {
 			document.addEventListener("click", onSeriesAccordion);
-		}
+		});
 	</script>
 </Layout>

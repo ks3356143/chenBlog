@@ -119,9 +119,9 @@ const { seriesName, posts, currentPostId } = Astro.props
 		}
 	}
 
-	// 事件委托 + 幂等标志：Swup 换内容不换 head，重跑内联脚本时不能重复注册
-	if (!window.__seriesNavInit) {
-		window.__seriesNavInit = true;
+	// 事件委托，整个文档只注册一次：本脚本在 #swup-container 内，每次进文章页会被重新插入并重新求值，
+	// reinitOnce 取代了原来手写的 window.__seriesNavInit 幂等标志（helper 见 public/assets/js/reinit.js）
+	window.reinitOnce("series-nav-toggle", function () {
 		document.addEventListener("click", onSeriesNavToggle);
-	}
+	});
 </script>

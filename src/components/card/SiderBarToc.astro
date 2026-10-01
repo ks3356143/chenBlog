@@ -61,25 +61,11 @@ const { headings: _headings = [], class: className, style } = Astro.props
 		}
 	}
 
-	// 初始化
-	// 确保DOM准备好后再执行
-	if (document.readyState === "loading") {
-		document.addEventListener("DOMContentLoaded", initSidebarTOC)
-	} else {
-		initSidebarTOC()
-	}
+	// 首次 + 每次导航后重建管理器；helper 把 swup:contentReplaced 与 astro:page-load
+	// 两个派发名压成一趟导航一次（原来两个监听都在，每次换页建两遍）
+	window.onReinit("sidebar-toc", initSidebarTOC, { delay: 100 })
 
-	// 页面切换时重新初始化（swup）
-	document.addEventListener("swup:contentReplaced", () => {
-		setTimeout(initSidebarTOC, 100)
-	})
-
-	// Astro页面切换事件
-	document.addEventListener("astro:page-load", () => {
-		setTimeout(initSidebarTOC, 100)
-	})
-
-	// 浏览器导航事件
+	// 下面两条不是「换页后重 init」，是浏览器前进后退与锚点跳转，保留
 	window.addEventListener("popstate", () => {
 		setTimeout(initSidebarTOC, 200)
 	})

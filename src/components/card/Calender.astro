@@ -501,13 +501,8 @@ const postUrlPrefix = url("/posts/")
 		}
 	}
 
-	// 页面加载时渲染日历
-	initCalendar()
-
-	// 页面切换时重新渲染
-	document.addEventListener("swup:contentReplaced", () => {
-		setTimeout(initCalendar, 100)
-	})
+	// 首次渲染 + 每次导航后重渲染（helper 保证一趟导航只跑一次，见 public/assets/js/reinit.js）
+	window.onReinit("calendar", initCalendar, { delay: 100 })
 </script>
 
 <style>

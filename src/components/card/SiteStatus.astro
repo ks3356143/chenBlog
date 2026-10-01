@@ -152,11 +152,6 @@ const stats = [
 		}
 	}
 
-	// 页面加载时更新
-	updateDynamicStats()
-
-	// 页面切换时重新更新
-	document.addEventListener("swup:contentReplaced", () => {
-		setTimeout(updateDynamicStats, 100)
-	})
+	// 首次 + 每次导航后重算（函数内部按 data-stat-id 全量查， xl 右栏与移动底部堆两处一起更新）
+	window.onReinit("site-status", updateDynamicStats, { delay: 100 })
 </script>

@@ -38,10 +38,6 @@ import { url } from "@/utils/url-utils"
 		}
 	}
 
-	// 初始化检查
-	updateBackToHomeVisibility()
-
-	// 再次检查，因为引入了swup
-	document.addEventListener("astro:page-load", updateBackToHomeVisibility)
-	document.addEventListener("swup:contentReplaced", updateBackToHomeVisibility)
+	// 首次 + 每次导航后重算显隐（helper 把 astro:page-load 与 swup:contentReplaced 压成一次）
+	window.onReinit("back-to-home", updateBackToHomeVisibility)
 </script>

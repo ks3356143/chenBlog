@@ -1,17 +1,19 @@
 # AGENTS.md — 项目长期指令
 
 > 陈俊亦的个人博客。每次对话开始时自动读取本文件作为上下文。
-> 最后更新：**2026-10-01 上午（第二轮体检 + 品牌名统一；11:12 已推送并上线，版本 V0.1.20）**。
-> 本批新落盘：**十-12 容器内脚本注册全局监听必须带幂等标志**（Twikoo / 随机文章两处，同一机制）、
-> **十-13 `twikoo.init()` 会吃掉它的挂载点**（`#tcomment` → `#twikoo`，故第二遍 init 必然空转）、
-> **五-30 构建期记忆化只在 PROD 生效**（dev 每次都真读，理由就是五-21 那族坑；附「消费方不得就地 sort」）、
-> **五-31 `<html lang>` 已改合法 `zh-Hans-CN`**（Pagefind 那条 zh-cmn 提示的根因，附改后必做搜索 A/B）、
-> 三节补 `npx tsc --noEmit` 这条廉价回归（⚠️ 它根本不查 `.astro`/`.svelte`）、
-> 七节补「**Edit 工具也会把混合行尾文件整片翻成 CRLF**」及按字节重放原始 blob 的修法、
-> **五-32 品牌名口径唯一来源 = `siteConfig.siteMeta.name`**（四种拼法已统一为「亦林 YILIn」）、
-> 九节坑③补「拿项目名宽匹配去杀进程，会连自己的 bash 包装进程与 PowerShell 本体一起杀掉」。
-> 另清掉 9 处死代码（不可达监听、调用全站不存在函数的分支、零引用全局声明、5 个重复图标），
-> 逐条都先核实"这条待办今天是否仍成立"才动手；构建耗时 5~7s → **4.14s**。
+> 最后更新：**2026-10-01 下午（上午批准的四件工程项全部做完，尚未部署上线）**。
+> 本批新落盘：**十-14 「导航后重 init」唯一实现 = `public/assets/js/reinit.js` 的
+> `window.onReinit(key,fn,opts)` / `window.reinitOnce(key,fn)`**（34 处散装脚手架收编，12 个文件；
+> 顺带查出两条真漏：分类栏横滚监听按页累加、悬浮目录 `setupAutoClose` 每页多包一层 `history.pushState`）、
+> 十-12 与五-16 改指向该 helper、**三节把 `npx tsc` 那条升级为 `npm run check`（`@astrojs/check` 已装，
+> 首跑查出 4 个类型问题，见九节新小节）**、五-5 删字段后的 schema 清单 + **纠正「列表卡有锁图标」这句假事实**、
+> 四节补 `reinit.js` 与 `src/modules.d.ts` 两个位置、
+> **六节整节的 SSH 登录目标 / 服务器绝对路径 / 宝塔配置文件名已脱敏成占位符**
+> （真实值 + 展开版部署命令在本地私密记录 `reference-deploy-targets.md`，见六节开头）。
+> 代码侧：schema 删 6 个零消费字段、`PostMeta.className` 改可选、删 `[...page]` 死变量、
+> 每页多一个 head 同步脚本（2.6KB，`/assets/js/reinit.js`）。
+> 基线：42 页 / 335 文件 / 构建约 **4.0s**（+ Pagefind 0.2s）；`npm run check` 与 `npx tsc --noEmit` 均 **0 error**。
+> ⚠️ 上午那批（十-12/十-13/五-30/五-31/五-32 + 9 处死代码清理，构建 5~7s→4.14s）已于 11:12 上线，版本 V0.1.20。
 
 ## 📌 开始工作前先读 [`HANDOFF.md`](./HANDOFF.md)
 
@@ -76,15 +78,24 @@ https://firefly.cuteleaf.cn/ 与 https://github.com/CuteLeaf/Firefly 。
 npm run dev       # 本地开发，http://localhost:4321
 npm run build     # astro build + Pagefind 索引，产物在 dist/（含 dist/pagefind/）
 npm run preview   # 预览构建产物——【搜索只能在这里或线上验】
+npm run check     # astro check：类型检查，覆盖 .astro/.svelte（2026-10-01 装，见下面说明）
 npm run icons     # 由 public/favicon.svg 重生成整套站点图标（PNG/ICO）
 npm run covers    # 由 src/assets/postImages/covers/*.svg 重生成列表页自动封面（webp）
-npm run new:post -- --day 29 --title "标题"   # 文章脚手架（ASCII slug + 全量 frontmatter）
+npm run new:post -- --day 29 --title "标题"   # 文章脚手架（ASCII slug + 只写 9 个真在用的 frontmatter）
 ```
 
-`package.json` 里**没有** lint / test 脚本，也没有部署脚本。验证手段就是 `dev` 看效果 + `build` 确认能构建通过。
-> 2026-10-01 起多一条廉价回归：`npx tsc --noEmit -p tsconfig.json` **退出码 0、零错误**（修掉 `baseUrl` 之后）。
-> ⚠️ 它只查 `src/**/*.ts`——**`.astro` 与 `.svelte` 完全不在 tsc 的射程内**（tsc 不认这些扩展名），
-> 所以「tsc 干净」远不等于「类型干净」。要覆盖组件得装 `@astrojs/check`（**新依赖，装前先问**）。
+`package.json` 里**没有** lint / test 脚本，也没有部署脚本。验证手段就是 `dev` 看效果 + `build` 确认能构建通过
++ **`npm run check` 查类型**（当前基线：**0 error**，剩 2 条 hint，见下）。
+> **`npm run check`（= `astro check`，`@astrojs/check` 0.9.10，devDep）是 2026-10-01 装的**，
+> 它补上了 `npx tsc --noEmit` 的盲区——**tsc 只查 `src/**/*.ts`，`.astro` 与 `.svelte` 完全不在射程内**。
+> 装它的当场就查出 4 个真问题（见第九节「astro check 首跑」）。
+> ⚠️ 它比 tsc 慢得多（首次约 20~30s，冷启动要起 language server），别每次改一行都跑。
+> ⚠️ 两条既存 hint 别当 error 追：① `PostCard.astro:39` `password` 声明未读（= 五-5 那条「锁图标其实是空的」）；
+>   ② `SiteStatus.astro:123` `siteStartDate` 找不到（那是 `define:vars` 注入的，**tsc 看不到但运行时真有**，
+>   和五-22 那条 `--collapsedHeight` 是同一个道理）。
+> `src/modules.d.ts` 里那条 `declare module "@rehype-callouts-theme"` 是给它准备的——
+> 那个名字是 `astro.config.mjs:64` 的 **vite alias**，tsc/Volar 不解析 alias，删了这行 check 报 ts(2882)。
+> 老的 `npx tsc --noEmit -p tsconfig.json` 仍应退出码 0（它快，适合随手核）。
 查漏洞要**显式换官方源**：默认 registry 是 npmmirror，它不实现 audit 接口，
 `npm audit` 会报 `404 NOT_IMPLEMENTED` 而不是给出结论 →
 `npm audit --registry=https://registry.npmjs.org`（2026-09-28 实测，结果 **0 vulnerabilities**）。
@@ -110,6 +121,8 @@ src/components/pages/dynamic/  # DynamicFeed.svelte（取数+分页）+ DynamicI
 src/components/card/        # 侧栏卡片：SiteStatus / Calender / DynamicSidebar（最新动态）/ SiteInfo（站点信息，均构建期静态）
 src/layouts/                # BaseLayout.astro + Layout.astro
 src/plugins/                # 8 个自研 remark/rehype 插件（见下）
+src/modules.d.ts            # 只有一条 declare module "@rehype-callouts-theme"（给 astro check 用，三节有说明）
+public/assets/js/reinit.js  # ⚠️ 「导航后重 init」注册表：onReinit/reinitOnce 的唯一实现，BaseLayout head 同步加载（十-14）
 scripts/generate-icons.mjs  # 由 public/favicon.svg 生成全套图标（npm run icons）
 scripts/generate-covers.mjs # 由 src/assets/postImages/covers/*.svg 生成自动封面 webp（npm run covers）
 scripts/new-post.mjs        # 文章脚手架（npm run new:post：ASCII slug + 全量 frontmatter）
@@ -148,13 +161,19 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
    （2026-09-28 实测确认；此前本条写作"`dark:` 无效"是错的，害得每次都要重新查。）
 
 5. **文章 frontmatter schema** 定义在 `src/content.config.ts`，字段包括：
-   `title` `published` `updated` `draft` `description` `image` `tags` `category` `series` `seriesOrder` `lang` `pinned` `author` `sourceLink` `licenseName` `licenseUrl` `comment` `password` `passwordHint`
+   `title` `published` `updated` `draft` `description` `image` `tags` `category` `series` `seriesOrder` `pinned` `comment` `password`
+   （另有 4 个 `prevTitle/prevSlug/nextTitle/nextSlug` 是模板留下的「For internal use」，全站零消费方）
+   **2026-10-01 删掉了 6 个零消费字段**：`lang` `author` `sourceLink` `licenseName` `licenseUrl` `passwordHint`
+   —— 26 篇一篇没写过、全仓（含 `siteConfig` 与 CopyShare 的许可区块）**零引用方**，`astro check` 也确认零读取。
    新增字段必须改 schema，否则构建报错。
-   ⚠️ **`password` 不是"加密文章"，别当功能用**（2026-09-30 核）：全站只做了两件事——
-   列表卡显示锁图标（`PostCard` 的 `password` prop）、文章页隐藏评论区（`[...slug].astro:175` 的
-   `!post.data.password`）。**没有任何密码门 UI、没有解密逻辑，正文照常渲染进 HTML 并可被 Pagefind 索引**；
-   `passwordHint` 同样零消费。原先三个 `password:decrypted` 监听器（SiderBarToc / FloatingToc /
-   FancyboxManager）因为事件无派发方已作为死代码删除，将来真做加密要连派发方一起补回来。
+   ⚠️ **`password` 不是"加密文章"，别当功能用**（2026-09-30 核）：全站只有两件事——
+   ① 文章页隐藏评论区（`[...slug].astro` 的 `post.data.comment && !post.data.password`），
+   ② 「猜你喜欢」里排除加密篇（`RecommendedPost.astro:97` 读 `/api/allPostMeta.json` 的 `password`）。
+   ⚠️ **原先这里写的「列表卡显示锁图标」是错的**（2026-10-01 `astro check` 查出来）：
+   `PostCard.astro` 一直**接收但从不读** `password`（`astro check` 报 ts(6133)），产物里没有任何锁图标，
+   所以加密文章在列表页看起来和普通文章完全一样。要真的显示锁得在 PostCard 里补 UI——**这是待办，不是现状**。
+   **没有任何密码门 UI、没有解密逻辑，正文照常渲染进 HTML 并可被 Pagefind 索引**；
+   原先三个 `password:decrypted` 监听器（SiderBarToc / FloatingToc / FancyboxManager）因为事件无派发方已作为死代码删除，将来真做加密要连派发方一起补回来。
    `series`（空=不归入任何系列）+ `seriesOrder`（系列内序号，可为 0）驱动 `/series/` 页与文章页系列导航盒，
    见第十六项；**写完文章要顺手写这两个**，否则该篇不进系列。
 
@@ -167,18 +186,19 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
    导致整个页面（含首页）渲染失败。Astro 6 容忍、Astro 7 报错。
    → 已于 2026-09-20 从 `src/pages/[...page].astro` 移除一处。要么写内容，要么整行删掉，别留空标签。
 
-9. 构建产物基线（**2026-09-30 傍晚实测**：相册压成 webp + 新增 `og-image.jpg` 之后）：
-   **42 个页面 / dist 335 个文件 / 20.3MB**，其中 `_astro/` 211 个（自动封面 4 张 × 5 档响应式 = 20 个）、
+9. 构建产物基线（**2026-10-01 下午实测**：加了 `public/assets/js/reinit.js` 之后）：
+   **42 个页面 / dist 336 个文件 / 22MB**，其中 `_astro/` 211 个（自动封面 4 张 × 5 档响应式 = 20 个）、
    `pagefind/` 42 个（28 个 fragment / 索引 28 页）、`gallery/` 26 个（20 张照片共 3.46MB）。
-   热缓存 `npm run build` 约 **4.1s** + 索引 0.2s（2026-10-01 起；此前 5~7s，差值来自五-30 那批重复渲染的消除）。
-   （体积历史：28M → 09-30 相册 webp 化后 **20.3M**（−7.7M）。文件数历史：307（09-28 接 Pagefind）→
-   334（09-29 新相册）→ **335**（09-30 加 `public/og-image.jpg`）。
+   热缓存 `npm run build` 约 **4.0s** + 索引 0.2s（2026-10-01 起；此前 5~7s，差值来自五-30 那批重复渲染的消除）。
+   （体积历史：28M → 09-30 相册 webp 化后 **20.3M**（−7.7M）→ 10-01 下午 **22M**。
+   文件数历史：307（09-28 接 Pagefind）→ 334（09-29 新相册）→ 335（09-30 加 `public/og-image.jpg`）→
+   **336**（10-01 下午加 `public/assets/js/reinit.js`，十-14）。
    页历史：37 → 09-24 加 `/categories/` 38 → 09-28 加 `/series/` `/tags/` 40 → 09-29 加 `/dynamic/` 41 →
    09-29 加第 5 个相册 `/gallery/wlh-concert-2026/` 42。**每加一个相册页数就 +1**，它走 `getStaticPaths`。
    ⚠️ 两批数字不可直接对比，核基线前先看清是哪一批之后的数。）
-   Pagefind 会提示 `doesn't support stemming for zh-cmn` —— 中文没有词干还原，**属正常**，不影响命中。
-   （顺带：这个提示的根因就是 `<html lang="zh-cmn">` 是非法 BCP47，属体检查出但本批未做的项，
-   清单在 `HANDOFF.md` 第一节「还挂着的事 3.」。）
+   Pagefind 提示 `doesn't support stemming for the language zh-hans-cn` —— 中文没有词干还原，**属正常**，不影响命中。
+   （五-31 已把 `<html lang>` 从非法的 `zh-cmn` 改成 `zh-Hans-CN`，所以这条提示的语言名跟着变，
+   **不是回归**；改这个必须重新构建并做搜索 A/B，见五-31。）
    已验证 dist 内 **starlight 产物为 0**（见第九节，那是纯 devDep 膨胀）。
    已知无害警告：vite chunk 体积提示、以及 Svelte 里动态 `import(变量)` 的"无法静态分析"提示（**必须保留变量写法**，
    写字符串字面量会被 Vite 在构建期当模块解析而直接失败，因为 `/pagefind/pagefind.js` 那时还不存在）。
@@ -236,8 +256,9 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
     （`home` `archive` `chat` `xiangce` `about` `arrow-right`）或 Iconify 全名（`material-symbols:layers` 等）。
     - 桌面下拉的展开由 CSS 三种情形触发：hover、`:focus-within`、`:has(.dropdown-trigger[aria-expanded="true"])`
       （第三种是**触屏没有 hover 才加的 click 切换，Firefly 自己没有**，别当成照搬）。
-    - 手风琴类交互（下拉、`/series/` 系列卡片、文章页 SeriesNav）一律**事件委托 + `window.__xxxInit` 幂等标志**，
-      因为容器内脚本会被重跑（第十节 2 与 11）。Header 在容器外，它的脚本只跑一次，无需幂等标志。
+    - 手风琴类交互（下拉、`/series/` 系列卡片、文章页 SeriesNav）一律**事件委托**，注册动作走
+      `window.reinitOnce(key, fn)`（**2026-10-01 起**；原先这里写的是"自己写 `window.__xxxInit` 幂等标志"，
+      现已收编进第十节 14），因为容器内脚本会被重跑（第十节 2 与 11）。Header 在容器外，它的脚本只跑一次，无需幂等标志。
     - **只在部分页面渲染的组件，布局类 CSS 必须放全局样式表**（成因与实测案例见第十节 2，此处不复述）；
       落到本项目：`.series-acc-*` / `.series-nav-*` 放在 `src/styles/singles/mainSingles.css`。
       Header 系组件每页都渲染，所以 `DropdownMenu.astro` 的 scoped `<style>` 是安全的。
@@ -506,12 +527,22 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
 
 ## 六、部署
 
+> 🔒 **本节的主机登录目标、服务器绝对路径、宝塔配置文件名一律写成占位符**（2026-10-01 脱敏，
+> 因为仓库公开 = 这些值等于已发布）。真实值在本地私密记录 **project memory 的
+> `reference-deploy-targets.md`**（`C:\Users\31429\.qoder-cn\projects\E--fontendProjects-chenBlog\memory\`，
+> 每次会话自动载入，那份记录里同时有**把占位符展开后的完整部署命令**，可直接复制执行）。
+> 用到的占位符：`<ECS_SSH>`（user@host + 端口）、`<ECS_IP>`、`<REPO_DIR>`、`<NGINX_ROOT>`、
+> `<VHOST_CONF>`、`<CACHE_CONF>`、`<CONF_BACKUP_DIR>`、`<WWW_ROOT>`、`<TWIKOO_ENV_ID>`。
+> ⚠️ 取不到那份记录**不要猜路径**，问用户。面板密码 / SSH 私钥 / 任何 token **哪一份记录都不存**。
+> 裸 IP 不算秘密（它就在 `src/config/siteConfig.ts` 的 `site_url` 和每个页面的产物里），所以
+> 「验证线上」那几条 curl 仍写实际 IP；被移出的只有登录目标与服务器内部路径。
+
 **部署方式：本地构建 + 上传 `dist`，服务器不跑 build。**（2026-09-20 起）
 > 2026-09-28 接了 Pagefind：索引在 `dist/pagefind/` 里，**随 dist 一起打包上传就行，服务器和 Nginx 不用改**；
 > 但 `npm run build` 现在包含索引步骤，别只跑 `astro build` 就打包，那样线上搜索会 404。
 
 - 服务器：阿里云 ECS，宝塔面板 + Nginx
-- SSH：`root@47.108.230.220`，**端口 22**，仅 publickey 认证（密码登录已关闭），本机 SSH 公钥已授权到该服务器 ✅
+- SSH：`<ECS_SSH>`，仅 publickey 认证（密码登录已关闭），本机 SSH 公钥已授权到该服务器 ✅
 - 服务器上虽有 node `v24.14.1` / npm `11.11.0` 和一份 `node_modules`，但**已不用于部署**：
   那份依赖停在 Astro 6.1.6，`npm ci` 会因 peer 冲突直接失败（详见"已知坑"）。**别在服务器上 build。**
 - 服务器上的 git 仓库也不再是部署来源，会与远端脱节，属正常现象。
@@ -520,16 +551,16 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
 
 | 项 | 值 |
 |---|---|
-| 仓库目录 | `/www/wwwroot/chenBlog` |
-| **Nginx 根目录** | **`/www/wwwroot/chenBlog/dist`** |
-| vhost 配置 | `/www/server/panel/vhost/nginx/html_chenblog.com.conf` |
-| 监听 | `listen 80` + `server_name 0.0.0.0` → 裸 IP 直接命中博客，站点标题 `YILIn` |
+| 仓库目录 | `<REPO_DIR>` |
+| **Nginx 根目录** | **`<NGINX_ROOT>`**（= `<REPO_DIR>/dist`） |
+| vhost 配置 | `<VHOST_CONF>` |
+| 监听 | `listen 80` + `server_name 0.0.0.0` → 裸 IP 直接命中博客 |
 
 Nginx 根目录直接指向 `dist/`，**build 完成即上线**，无需额外拷贝或 reload。
 
 ### 缓存策略（2026-09-30 加，改在 extension 里）
 
-配置文件：`/www/server/panel/vhost/nginx/extension/chenblog.com/cache.conf`
+配置文件：`<CACHE_CONF>`
 （**放 extension 目录是有意的**：宝塔不重写它，且它在 vhost 顶部被 include，
 所以本文件里的正则 location 先于宝塔自带的「图片 30d / js+css 12h」生效）。
 
@@ -548,12 +579,14 @@ Nginx 根目录直接指向 `dist/`，**build 完成即上线**，无需额外�
    这两个 HTML 页面一起吃进 7 天缓存，等于把本文件要修的病留下（我第一版就犯了这个，
    靠逐项打响应头的验收脚本才抓出来）。必须按图片扩展名匹配。
 3. `no-cache` ≠ 每次都重下：实测带 `If-None-Match` 请求首页返回 **304**，只花几十字节。
-   改完要 `nginx -t` 通过再 `nginx -s reload`，动 vhost 前先 `cp -a` 备份到 `/root/`。
+   改完要 `nginx -t` 通过再 `nginx -s reload`，动 vhost 前先 `cp -a` 备份到 `<CONF_BACKUP_DIR>`。
 
-> ⚠️ 服务器 `/www/wwwroot/` 下**还并存着其他项目的目录**。曾经发生过把博客路径认错的情况，
+> ⚠️ 服务器 `<WWW_ROOT>`（站点根那一层）下**还并存着其他项目的目录**。曾经发生过把博客路径认错的情况，
 > 若推错目录会直接毁掉另一个项目。动手前务必确认当前路径是 `chenBlog/dist`，不要凭记忆。
 
 ### 标准部署流程（已验证可用）
+
+> 下面写的是占位符；**展开后的可直接执行版本在 `reference-deploy-targets.md` 里**，抄那一份，别自己拼。
 
 ```bash
 # ① 本地构建 + 打包
@@ -561,11 +594,11 @@ npm run build
 tar -czf /tmp/chenblog_dist.tar.gz -C dist .
 
 # ② 上传
-scp /tmp/chenblog_dist.tar.gz root@47.108.230.220:/tmp/
+scp /tmp/chenblog_dist.tar.gz <ECS_SSH>:/tmp/
 
 # ③ 服务器：解压到临时目录 → 校验 → 原子替换
-ssh root@47.108.230.220 'set -e
-  cd /www/wwwroot/chenBlog
+ssh <ECS_SSH> 'set -e
+  cd <REPO_DIR>
   cp -a dist "dist_backup_$(date +%Y%m%d_%H%M%S)"   # 先备份，出问题可回滚
   rm -rf dist.new && mkdir dist.new
   tar -xzf /tmp/chenblog_dist.tar.gz -C dist.new
@@ -626,7 +659,9 @@ curl -s -o /dev/null -w "%{http_code}\n" \
 
 ### 面板与凭据
 
-- 宝塔面板地址、端口、安全入口等**一律不写进本文件**（仓库公开）。需要时问用户，或查本地私密记录。
+- 宝塔面板地址、端口、安全入口等**一律不写进本文件**（仓库公开）。需要时问用户，或查本地私密记录
+  （project memory 的 `reference-deploy-targets.md` —— 里面同时有部署目标真实值与展开后的部署命令；
+  凭据本身**哪份记录都不存**）。
 - 面板为**自签名证书**，浏览器自动化会被 `ERR_CERT_AUTHORITY_INVALID` 拦住，
   且 in-app 浏览器 surface 隐藏无法截图；http 访问直接 `ERR_CONNECTION_RESET`
   → **面板不适合自动化，一律走 SSH。**
@@ -747,9 +782,10 @@ draft: false
 ---
 ```
 
-26 篇实测**只出现了 10 个字段名**：上例那 9 个（`title` `published` `updated` `description` `tags` `category`
-`series` `seriesOrder` `draft`）人人都有，`image` 只有 10 篇写了、且值全是 `""`（所以封面全走兜底图）。
-schema 里其余 8 个（`pinned` `author` `sourceLink` `licenseName` `licenseUrl` `comment` `password` `lang`）零使用。
+26 篇实测**只出现了 9 个字段名**：上例那 9 个（`title` `published` `updated` `description` `tags` `category`
+`series` `seriesOrder` `draft`），`image` 只有 10 篇写了、且值全是 `""`（所以封面全走兜底图）。
+schema 里剩下 3 个（`pinned` `comment` `password`）零使用。
+（**2026-10-01 删掉了 6 个零使用字段**：`lang` `author` `sourceLink` `licenseName` `licenseUrl` `passwordHint`，见五-5。）
 `category` 会进分类导航栏，要新增分类值前先确认；`series` 决定文章是否出现在 `/series/`（见第五节 17）。
 
 ### 图片：最容易出事的地方
@@ -786,7 +822,22 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
   也就是说 `src/plugins/rehype-component-github-card.mjs` **是活代码不是摆设** ——
   它注入的是**浏览器端脚本**，改完必须按第五节 21 清内容层缓存才看得到变化。
 
-## 九、待办与未决（最近一次更新：2026-09-29）
+## 九、待办与未决（最近一次更新：2026-10-01 下午）
+
+### 2026-10-01 上午批准的四件工程项：全部完成（细节见对应条目）
+
+| 项 | 结果 |
+|---|---|
+| 删 schema 6 个零消费字段 | ✅ 见五-5；`npm run new:post` 本来就只写 9 个字段，**无需同步**（原待办里那句担心是多余的） |
+| 抽 `onReinit(fn)` 统一 34 处重 init 脚手架 | ✅ 见**十-14**（含回归取证办法）；按原指示**没在 dev 下验**，全程 `build` + `preview` |
+| 装 `@astrojs/check` | ✅ 见三节；首跑 4 个类型问题已修（九节「`astro check` 首跑」小节），已走干净 `npm ci` + build |
+| 文档里服务器信息脱敏 | ✅ 六节改成占位符，真实值 + 展开版命令在本地私密记录 `reference-deploy-targets.md`；**只改当前版本，未动历史** |
+
+**这批新添的未决项只有一条**：`PostCard` 的加密文章锁图标**其实从来没渲染过**（五-5 已纠正说法）。
+补法很小（一个 `<Icon name="material-symbols:lock">` + 一个条件），但**当前零篇加密文章 → 无任何可见影响**，
+属"要不要补个缺失的 UI"的设计决定 → **等用户点头再做**，别自动顺手加。
+（同时注意：`/api/allPostMeta.json` 会把每篇的 `password` 布尔值公开出去，正文本来就公开，所以不算泄露，
+但真做加密时别把这个接口当访问控制。）
 
 ### 文章方向：三条已全部拍板并落地（2026-09-29 午后）
 
@@ -870,6 +921,36 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
 
 另：`tsconfig.json` 里 `"jsx": "react-jsx"` / `"jsxImportSource": "react"` 是模板残留（项目无 React），
 不影响构建，也未动。
+
+### 2026-10-01 下午这批：`astro check` 首跑 + 重 init 脚手架收编
+
+**`astro check` 首跑查出 4 个类型问题**（全部已修，现在 `npm run check` 退出码 0）：
+
+1. ✅ `PostMeta.astro:11` 的 `className: string` 是**必填**，但唯一调用方 `PostCard.astro:81` 从来没传 →
+   `ts(2322)`。改 `className?: string`（`class:list` 收到 `undefined` 本来就该跳过）。
+2. ✅ `SwupManager.astro:64` 那个 `closest("a[href]")` 被当成 `Element`，于是 `a.target` 报 `ts(2339)`
+   → 断言成 `HTMLAnchorElement | null`。**只是类型层修正，拦截逻辑运行时一直是对的**（`target` 属性本来就在）。
+3. ✅ `[...page].astro:19` 的 `const len = page.data.length` 是零引用死变量（注释还写着"用于渲染计时"）→ 删。
+4. ✅ `BaseLayout.astro:12` 的 `import "@rehype-callouts-theme"` 报 `ts(2882)`——它是 `astro.config.mjs:64`
+   的 **vite alias**，tsc/Volar 不解析 alias。**已加 `src/modules.d.ts` 一条环境声明**（不动源码写法，
+   因为那个别名是按 `siteConfig.rehypeCallouts.theme` 拼的，硬编码成真实路径会把主题选择写死进组件）。
+   ⚠️ 别因为「零使用」（callouts 26 篇没用到）就删这条声明或删这个 alias——那会让 callouts 首次使用时才炸。
+
+**查出来但按现状保留的一条**：`PostCard.astro:39` 的 `password` 声明未读（`ts(6133)` hint）——
+**它证明 AGENTS 五-5 原先那句「列表卡显示锁图标」是假的**（产物里没有任何锁图标，全站也没有 `lock` 图标引用）。
+没有顺手删掉这个 prop，因为**作者原意是 UI 缺失（待补），不是死代码**；删掉就等于把这条缺陷藏回去。
+已把五-5 改成实情，并把它列进下面的待办。**要补的话**：在 `PostCard` 里按 `password` 渲染一枚
+`material-symbols:lock`（图标集合已装，见五-29），零篇加密文章所以现在无可见影响。
+
+**「导航后重 init」34 处收编成 helper**（实现与全部结论见第十节 14，这里是它顺带查出的两条真漏）：
+- ⚠️ **`CategoryBar.initScrollFeatures()` 每次导航给容器外那个常驻 `.category-scroll` 再叠一组
+  `wheel`/`scroll`/`resize` 监听** → 横滚位移按访问页数叠加。改 `reinitOnce`。
+- ⚠️ **`FloatingToc.setupAutoClose()` 每次导航多挂 7 个 `window`/`document` 监听 + 多包一层
+  `history.pushState/replaceState`**（它被每趟导航都跑的 `initFloatingTOC()` 调用，且自己没有任何保护）。
+  改 `reinitOnce` 后实测包装层数零增长。
+- 代理给的计数是 **30 处 / 18 个文件**，我核到 **34 处 / 20 个文件**（幂等标志实为 5 个不是 3；
+  漏计了 `SiderBarToc:88-93`、`FloatingToc` 的 4 处、`TypeMechine:146`、`CategoryBar:383`、`Twikoo:69-75` 回退分支）。
+  **按惯例：代理报的数只当线索，逐条读过代码才算数。**
 
 ### 版本天花板（撞过墙了，别反复尝试）
 
@@ -998,9 +1079,13 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
    现编排照搬：`link:click` 打 `is-page-transitioning`；`visit:start` 起 WAAPI 进度条
    （`#progress-bar`，scaleX 0→0.95 / 8s）并**即时回顶（仅 ≥768px）**；`visit:end` 收进度条、
    200ms 后摘 `is-page-transitioning`。
-   ⚠️ **回顶放 `visit:start` 现在是对的**（推翻 09-24 的旧结论）：前提是 chrome（封面/侧栏/分类栏）
-   都在 Swup 容器外、不随页替换也不参与过渡，回顶与点击同任务、下一帧绘制前完成，浏览器永远画不出
-   "旧页滚到一半"。若将来把任何会随滚动移动的 chrome 挂回过渡类，这条立刻失效。
+   ⚠️ **回顶放 `visit:start` 现在是对的**（推翻 09-24 的旧结论）：前提是**会随滚动移动的 chrome**
+   （横幅图 `#wallpaper-wrapper`、侧栏、分类栏）都在 Swup 容器外、不随页替换也不参与过渡，
+   回顶与点击同任务、下一帧绘制前完成，浏览器永远画不出"旧页滚到一半"。
+   若将来把任何会随滚动移动的 chrome 挂回过渡类，这条立刻失效。
+   ⚠️ **2026-10-01 更正一处措辞**：横幅的**文案层** `#banner-overlay-container` **是** Swup container
+   （它不随滚动移动，所以不影响上面这条前提）——详见本节 15，此前本条把它一并说成"在容器外"是错的，
+   正是这个错认知让横幅文案一直不随切页更新。
    ⚠️ 无论改什么，**不要用 body/祖先元素的淡入淡出**——实测会让 Swup 卡死在 `is-rendering`、页面停在 opacity 0。
 6. **窗口缩放动画 = 冻结 + View Transitions morph**（`effectsConfig.windowResize`）。
    断点跨越改的是 grid 轨道数量与 sidebar 的 display，CSS transition 插值不了；
@@ -1071,6 +1156,12 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
     → 实测办法：`document.dispatchEvent(new Event('swup:contentReplaced'))` 后数目标函数被调了几次
       （包一层 `document.getElementById` 当计数器，**别猜类名**）。线上单次事件触发 2 次重渲染，加标志后恒为 1。
     → ⚠️ 严重性别说过头：实测线上是 2 次，**没有验证过它随访问页数无限增长**，报结论只报测到的数。
+    → **2026-10-01 更新：这条机制已被 `public/assets/js/reinit.js` 从结构上消掉**（第十节 14）——
+      注册表与它自己的监听都在 head 里、head 不被 Swup 替换，所以累加不再可能。
+      新代码请写 `window.onReinit(key, fn)` / `window.reinitOnce(key, fn)`，**不要再手写 `window.__xxxInit`**；
+      原先的 5 处手写标志（`__seriesNavInit` / `__seriesAccordionInit` / `__recommendedPostInit`
+      / `__twikooSwupInit` / `floatingTOCListenersInitialized`）前四处已收编，
+      最后那个只保护 `popstate`/`layoutChange`/`resize` 三个非导航监听，保留。
 
 13. **`twikoo.init()` 会吃掉它的挂载点**（2026-10-01 实测）：`#tcomment` 渲染完成后在 DOM 里变成 twikoo
     自己的根节点 `#twikoo`，**第二次 `document.getElementById("tcomment")` 必然拿到 null**。
@@ -1078,3 +1169,95 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
       看起来「评论没重新加载」其实正常。查「评论没了」要先看 `#twikoo` 在不在，别只看 `#tcomment`。
     → 后果二：`BaseLayout` 那条派发 `firefly:page:loaded` 的通知链整条空转（它只在整页加载时派发，
       而那条路上 `DOMContentLoaded` 已经完成初始化了），已连监听方与派发方一起删除。
+
+14. ⚠️ **「导航后重 init」一律走 `window.onReinit(key, fn, opts)` / `window.reinitOnce(key, fn)`**
+    （2026-10-01 立的规矩，实现在 `public/assets/js/reinit.js`，由 `BaseLayout` 的 **head** 同步加载）。
+    第十节 11/12 那套「手写 `window.__xxxInit` 标志 + 自己挑事件名 + 自己 setTimeout」的散装脚手架已全量收编，
+    **别再往组件里写回那三样**。
+    - **为什么必须是它**（这三条是三个不同的病，helper 一次治完）：
+      ① **一趟导航被派发两个事件名**：`SwupManager.astro:111` 在 `content:replace` 派发 `swup:contentReplaced`，
+        `:112-115` 在 `page:view` 又派发 `astro:page-load` + `astro:after-swap`。
+        **同时听这两个名字的组件每换一页就跑两遍**（原先 `SiderBarToc`/`FloatingToc`/`CategoryBar`/`CoverImage`
+        /`BackToHome` 全中，`TypeMechine` 最狠：3 个事件名 × (立即 + 220ms) = **一趟 6 遍**）。
+        helper 只听第一个名字、用 token 把两个派发压成一趟一次。
+      ② **监听器累加**（十-12 那条）：注册表与它那两个 `document.addEventListener` 都在 head 里，
+        head 不被 Swup 替换 → **结构上就不可能累加**，不需要每个组件自己写幂等标志。
+      ③ **`document`/`window` 级的一次性动作被反复做**：`reinitOnce` 专治这类（见下面两条实例）。
+    - **语义**：`onReinit` = 注册时立即跑一次（**不等 delay**，等价于原先的「直接调用」）+ 每次导航后再跑一次
+      （`delay` **只用在导航那一次**，保留各处 100/200/220ms 的既有时序）。
+      `opts.immediate:false` 用于「首屏由别的路径负责」的场合（`Twikoo` 就是：首屏仍走 `DOMContentLoaded`
+      以保持 10-01 验收过的时序，只有换页才由 helper 跑）。
+    - ⚠️ **`fn` 每次调用都必须重新查 DOM**，不许抓住旧节点闭包——容器整片被换掉，抓住引用会指到已移除的节点
+      （十-12 末尾那条同族结论）。注册同一个 key **只换闭包**，不叠加、不补跑。
+    - ⚠️ **两个例外要辨出来，用 `reinitOnce` 而不是 `onReinit`**（这是本次查出的两条真漏）：
+      · `FloatingToc.astro` 的 `setupAutoClose()` 里面是往 `window`/`document` 挂 **7 个监听**
+        并**包装 `history.pushState/replaceState`**；它被每次导航都跑的 `initFloatingTOC()` 调用 →
+        换页越多层数越深（一次点击触发 N 次）。已改成 `reinitOnce`，实测连发 3 次切换页
+        `pushState` 包装层数恒 0 增长。
+      · `CategoryBar.astro` 的 `initScrollFeatures()` 给**容器外那个永不被替换的** `.category-scroll`
+        绑 `wheel`/`scroll` + `window` `resize`，原先跟高亮刷新一起挂在 `astro:page-load` 上 →
+        **鼠标横滚的位移按访问页数叠加**。已改 `reinitOnce`。
+      → 判据：**被绑的目标元素会不会随容器一起被换掉？** 会 → `onReinit`（新节点需要重新绑）；
+        不会（`document`/`window`/容器外元素）→ `reinitOnce`。
+      ⚠️ `reinitOnce` 的 `fn` **显式 `return false` 表示「这次没做成，下次再试」**（元素还没解析出来时用），
+      否则会被锁死。`initScrollFeatures` / 悬浮目录内部点击标记两处都靠它。
+    - ⚠️ **同一组件挂两处时（`SiteStatus` 的 xl 右栏 + 移动底部堆），解析期的重复注册必须允许再跑一次**：
+      第一份脚本求值时第二份的 DOM 还没解析出来，只跑一次会让移动端子首屏停在占位值上
+      （实测 `running-days` 两个节点 `274|0`，修成 `274|274`）。
+      helper 用 `<html>` 上的 `is-changing`（= Swup 一次 visit 期间）区分「软导航途中的重求值」和「解析期的双挂载」：
+      **`is-changing` 中不补跑**（交给紧随其后的 `runAll`），**不在其中就补跑**。
+      → 自己写测试复刻导航时，**`is-changing` 要一直留到重新插入脚本之后**再摘；
+        我第一版探针提前摘了，于是「首次进文章页跑 2~3 遍」被误报成回归。
+    - **验证办法**（`npm run build` + `npm run preview`，dev 下容器脚本不重执行所以测不出来）：
+      ① `window.reinitRuns(key)` 是 helper 自带的计数器，逐次导航读差值，**要求恒为 1**；
+      ② 泄漏看 `addEventListener` 计数——先包一层 `EventTarget.prototype.addEventListener`
+        只统计 `this===document||this===window` 的调用，跑几趟导航后差值应为 0（元素上的随便涨，那些节点会被丢弃）。
+      ③ **一定要拿线上旧构建当控制组**：本次「首页 10 张封面里 2 张遮罩没褪」看着像回归，
+        但线上旧构建同一探针同一页给出**完全一样的数字** → 既存行为，别去"修"。
+      实测现状：5 趟导航（含两次进文章页）所有 key 差值全为 1；每次进文章页新增的 4 个 document/window 监听
+      **全部来自 `twikoo.nocss.js` 自己的 `init()`**（栈顶是 `twikoo.nocss.js:2:` 的模块 id），
+      与改动前同量，不是本项目代码。
+    - 未被收编的（**核实过，不属这类，别再去"统一"**）：`Search.svelte` 在 `onMount` 返回里
+      `removeEventListener`（正确写法）；`gallery/index.astro` 的 `customElements.get` 守卫；
+      Header 系（`MobileMenu`/`DropdownMenu`）只监听容器外元素且脚本每文档只跑一次；
+      `FancyboxManager` 听 Swup 4 原生名并在 `visit:start` 里 `close+unbind` 配对；
+      `BaseLayout` 的 `astro:after-swap` → `setTheme`（head 内，一文档一次）；
+      `Calender` 与 `RecommendedPost` 各一份 `__allPostMetaCache` fetch（五-30 已明确不抽）。
+
+15. ⚠️ **凡是"内容随页面变、但位置在 Swup 容器外"的 chrome，必须自己登记成 Swup 的 container**
+    （2026-10-01 用户报的横幅标题 bug，根因与修法）。
+    - **症状**：首页横幅写着 `Lovely Life` + 打字机副标题，点进文章页**横幅文案不变**（该显示
+      文章标题 +「发布于 …/字数/阅读时长」的地方还是主页那套）；反向从文章页切回主页，
+      横幅又一直挂着文章标题。**只有 F5 才正常**（SSR 按当页渲染）。
+    - **根因（两条同时成立才会犯）**：① `SwupManager.astro` 的 `containers` 只有 `["#swup-container"]`；
+      ② `Cover.astro` 里 `.banner-post-meta-overlay` 是 `#banner-overlay-container` 的**兄弟节点**（在它外面）。
+      于是横幅文案层既不被替换、文章页那块也压根不在任何容器里 → 整页只渲染一次。
+      ⚠️ 迷惑点：`#banner-overlay-container` 本来就带 `transition-swup-fade`（animationSelector 的等待目标，
+      `transitions.css:44-52` 的规则也是照它写的），**看起来像"已经在参与过渡了"**，
+      实际它只是淡出淡入**同一份内容**——所以用户看到的是"有动画但字没换"。
+    - **修法 = 照参考站结构改两处**（`firefly.cuteleaf.cn` 实测 `window.swup.options.containers` =
+      `["#banner-overlay-container","#banner-dim-container","#swup-container","#left-sidebar-dynamic",
+      "#right-sidebar-dynamic","#floating-toc-wrapper"]`，且它的 post-meta 层**嵌在** overlay 容器里）：
+      ① `Cover.astro`：把 `{isPostPage && bannerPostMeta && (…)}` 整块**移进** `#banner-overlay-container`；
+      ② `SwupManager.astro`：`containers: ["#banner-overlay-container", "#swup-container"]`。
+    - **连带必须处理的一件事**（否则修好标题、漏一个定时器）：横幅层被换掉后，
+      `TypeMechine` 的 `.typewriter` 元素是**新节点**，旧实例挂在旧节点的 `__typewriterInstance` 上、
+      再也 destroy 不到 → 多条文案时那个 `setTimeout` 递归链会**永久打在已脱离文档的节点上**，每导航一次多一条。
+      已改成**模块级 `liveInstances` 数组**，每次 `initTypewriterElements()` 先全部 `destroy()` 再重建。
+      → 通则：**只要把一个元素登记成 Swup container，就要检查所有"把实例句柄挂在元素属性上"的代码**，
+        它们会静默失去清理机会。
+    - **刻意没跟着参考站做的**：它的 `#banner-dim-container` / `#left-sidebar-dynamic` /
+      `#right-sidebar-dynamic` / `#floating-toc-wrapper` 我们**不加**——dim 层各页内容完全相同（换了是白费），
+      侧栏与悬浮目录是本站**刻意**留在容器外的（五-24：侧栏靠构建期静态渲染 + 十-14 的重 init，不靠替换）。
+      这是有依据的偏离，别当漏改补上。
+    - **验证办法**（两向都要测，只测一向会漏）：真实点击导航后读
+      `.banner-home-text-overlay.classList.contains("hidden")` 与 `!!document.querySelector(".banner-post-meta-overlay")`，
+      要求「进文章页 = `hidden` 为 true 且 post-meta 存在」「回主页 = post-meta 不存在且 `hidden` 为 false」。
+      另用 1440 / 375 定宽 iframe 复核显示态：post-meta 是 `hidden lg:flex`，**375 下 display:none 属正常**
+      （参考站同款），别当"移动端坏了"去改。
+      还要核 `#banner-overlay-container` 在**全部 42 页**都存在（Swup 要求两个页面都有这个容器，
+      缺了会报错），以及 26 篇文章页都带 post-meta。
+      ⚠️ 打字机孤儿链的判据：**统计"每秒由打字机回调发起的 setTimeout 次数"是否随导航次数递增**
+      （本次实测 1→3→2→3→3，有界不增；递增才是漏）。别用"动画还在跑"当判据，孤儿链打在脱离文档的节点上，肉眼看不见。
+      ⚠️ 控制台若出现 `[swup] No CSS animation duration defined on elements matching [class*="transition-swup-"]`，
+      先确认**是不是自己探针注入了 `transition:none!important`**（本次就是，撤掉即消失），别去改 CSS。

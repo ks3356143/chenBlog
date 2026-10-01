@@ -123,41 +123,27 @@ const textData = Array.isArray(text) ? JSON.stringify(text) : text
 		}
 	}
 
+	// 横幅文案层现在是 Swup 的 container（见 SwupManager），切页时整块被换掉：
+	// 旧元素连同挂在它身上的 __typewriterInstance 一起被丢弃，靠元素属性再也 destroy 不到，
+	// 那个 setTimeout 链会一直打在已脱离文档的节点上（多条文案时是无限循环）。
+	// 所以实例改登记在模块级，每次重建前全部销毁。
+	let liveInstances: TypewriterEffect[] = []
+
 	function initTypewriterElements() {
-		const typewriterElements = document.querySelectorAll(".typewriter")
-		typewriterElements.forEach(element => {
-			const el = element as HTMLElement & { __typewriterInstance?: TypewriterEffect }
-			if (el.__typewriterInstance) {
-				el.__typewriterInstance.destroy()
-			}
+		liveInstances.forEach(instance => instance.destroy())
+		liveInstances = []
+		document.querySelectorAll(".typewriter").forEach(element => {
+			const el = element as HTMLElement
 			el.textContent = ""
-			el.__typewriterInstance = new TypewriterEffect(el)
+			liveInstances.push(new TypewriterEffect(el))
 		})
 	}
 
-	// 初始化所有打字机效果
-	function runInitWithDelay() {
-		initTypewriterElements()
-		// 兼容 banner 显隐晚于内容替换的场景
-		setTimeout(initTypewriterElements, 220)
-	}
-
-	if (document.readyState === "loading") {
-		document.addEventListener("DOMContentLoaded", runInitWithDelay)
-	} else {
-		runInitWithDelay()
-	}
-
-	// 支持页面切换时重新初始化（兼容不同 swup 事件名）
-	document.addEventListener("swup:contentReplaced", runInitWithDelay)
-	document.addEventListener("swup:content:replace", runInitWithDelay)
-	document.addEventListener("swup:page:view", runInitWithDelay)
-
-	// swup hooks（若可用）
-	if (typeof window !== "undefined" && window.swup?.hooks) {
-		window.swup.hooks.on("content:replace", runInitWithDelay)
-		window.swup.hooks.on("page:view", runInitWithDelay)
-	}
+	// 首次 + 每次导航后重跑打字机。这里原来同时听 3 个事件名、外加 220ms 再跑一遍，
+	// 实测一趟导航 init 6 次（每次都是 destroy + 重建，白闪）；helper 压成一趟一次。
+	// 下面那两行 window.swup.hooks.on 从来没有注册上过（本组件的内联 module 文档序在
+	// SwupManager 的外链 module 之前，跑到时 window.swup 还是 undefined），已随这次统一删除。
+	window.onReinit("typewriter", initTypewriterElements, { delay: 220 })
 </script>
 
 <style>

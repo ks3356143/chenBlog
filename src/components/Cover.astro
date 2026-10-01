@@ -151,47 +151,48 @@ const randomSubtitle = getRandomSubtitle()
 				</div>
 			)
 		}
-	</div>
-
-	<!-- 文章详情页面因此横幅文字，使用文章详情页面横幅文字和metadata -->
-	{
-		isPostPage && bannerPostMeta && (
-			<div class="banner-post-meta-overlay pointer-events-none absolute inset-0 z-20 hidden items-center justify-center lg:flex">
-				<div class="mb-0 w-4/5 text-center lg:w-3/4">
-					<div class="flex flex-col items-center gap-3">
-						<div class="banner-title leading-tight font-bold text-white">{bannerPostMeta.title}</div>
-						<div class="banner-post-meta-list flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-white/90 md:text-base">
-							<span class="inline-flex items-center gap-1.5">
-								<Icon name="material-symbols:calendar-month-outline-rounded" class="text-[1.05em]" />
-								<span>发布于 {formatDateTimeToYYYYMMDDHHmm(bannerPostMeta.published, "date")}</span>
-							</span>
-							{bannerPostMeta.updated &&
-								bannerPostMeta.updated.getTime() !== bannerPostMeta.published.getTime() && (
-									<span class="inline-flex items-center gap-1.5">
-										<Icon name="material-symbols:update-rounded" class="text-[1.05em]" />
-										<span>
-											更新于 {formatDateTimeToYYYYMMDDHHmm(bannerPostMeta.updated, "date")}
+		<!-- 文章详情页横幅文字：必须与主页文案同处 #banner-overlay-container 内——
+		     那个 div 是 Swup 的 container（见 SwupManager），放外面就永远不会随切页被替换，
+		     表现成「进了文章页横幅还是 Lovely Life」（2026-10-01 用户报，参考站同结构） -->
+		{
+			isPostPage && bannerPostMeta && (
+				<div class="banner-post-meta-overlay pointer-events-none absolute inset-0 z-20 hidden items-center justify-center lg:flex">
+					<div class="mb-0 w-4/5 text-center lg:w-3/4">
+						<div class="flex flex-col items-center gap-3">
+							<div class="banner-title leading-tight font-bold text-white">{bannerPostMeta.title}</div>
+							<div class="banner-post-meta-list flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-white/90 md:text-base">
+								<span class="inline-flex items-center gap-1.5">
+									<Icon name="material-symbols:calendar-month-outline-rounded" class="text-[1.05em]" />
+									<span>发布于 {formatDateTimeToYYYYMMDDHHmm(bannerPostMeta.published, "date")}</span>
+								</span>
+								{bannerPostMeta.updated &&
+									bannerPostMeta.updated.getTime() !== bannerPostMeta.published.getTime() && (
+										<span class="inline-flex items-center gap-1.5">
+											<Icon name="material-symbols:update-rounded" class="text-[1.05em]" />
+											<span>
+												更新于 {formatDateTimeToYYYYMMDDHHmm(bannerPostMeta.updated, "date")}
+											</span>
 										</span>
+									)}
+								{typeof bannerPostMeta.words === "number" && (
+									<span class="inline-flex items-center gap-1.5">
+										<Icon name="material-symbols:ink-pen-outline-rounded" class="text-[1.05em]" />
+										<span>{bannerPostMeta.words} 字</span>
 									</span>
 								)}
-							{typeof bannerPostMeta.words === "number" && (
-								<span class="inline-flex items-center gap-1.5">
-									<Icon name="material-symbols:ink-pen-outline-rounded" class="text-[1.05em]" />
-									<span>{bannerPostMeta.words} 字</span>
-								</span>
-							)}
-							{typeof bannerPostMeta.minutes === "number" && (
-								<span class="inline-flex items-center gap-1.5">
-									<Icon name="material-symbols:schedule-outline-rounded" class="text-[1.05em]" />
-									<span>{bannerPostMeta.minutes} 分钟 · 阅读时长</span>
-								</span>
-							)}
+								{typeof bannerPostMeta.minutes === "number" && (
+									<span class="inline-flex items-center gap-1.5">
+										<Icon name="material-symbols:schedule-outline-rounded" class="text-[1.05em]" />
+										<span>{bannerPostMeta.minutes} 分钟 · 阅读时长</span>
+									</span>
+								)}
+							</div>
 						</div>
 					</div>
 				</div>
-			</div>
-		)
-	}
+			)
+		}
+	</div>
 </div>
 
 <!-- 随机图片脚本，利用template元素content属性渲染 -->

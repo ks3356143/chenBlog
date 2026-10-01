@@ -9,7 +9,10 @@
         document.documentElement.style.setProperty("--transition-duration", `${effectsConfig.duration}ms`)
 
         const swup = new Swup({
-            containers: ["#swup-container"],
+            // 横幅文案层必须一起换：它带 .transition-swup-fade（animationSelector 的等待目标），
+            // 但只有登记成 container 才会被替换。少这一项的表现是「切到文章页横幅还写着 Lovely Life，
+            // 切回主页还挂着文章标题」——F5 才正常（2026-10-01 用户报，参考站 containers 里就有它）
+            containers: ["#banner-overlay-container", "#swup-container"],
             animateHistoryBrowsing: true,
             // 等待集合照搬参考站：只认 .transition-swup-* 这类专用载体（本项目 = #banner-overlay-container）。
             // 默认 [class*="transition-"] 会命中全站 Tailwind transition-* 类，display:none 子树里冻住
@@ -61,7 +64,7 @@
         document.addEventListener(
             "click",
             e => {
-                const a = (e.target as Element).closest?.("a[href]")
+                const a = (e.target as Element).closest?.("a[href]") as HTMLAnchorElement | null
                 if (!a) return
                 if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
                 if (a.target && a.target !== "_self") return

@@ -169,9 +169,8 @@ const sidebarPosition = "sticky"
 			if (document.hidden) closeTOC()
 		})
 
-		// 监听 Astro 页面切换
+		// 监听 Astro 页面切换（本项目走 Swup，桥接派发的就是 astro:page-load 这个名字）
 		document.addEventListener("astro:page-load", closeTOC)
-		document.addEventListener("astro:before-preparation", closeTOC)
 
 		// 监听 hashchange（排除TOC内部导航）
 		window.addEventListener("hashchange", () => {

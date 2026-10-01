@@ -11,8 +11,6 @@ interface Props {
 	className: string
 	updated?: Date
 	tags?: string[]
-	id?: string
-	customPath?: string
 	hideUpdateDate?: boolean
 	hideTagsForMobile?: boolean
 	showTags?: boolean
@@ -21,8 +19,6 @@ interface Props {
 const {
 	published,
 	category,
-	id,
-	customPath,
 	updated,
 	tags,
 	hideUpdateDate,
@@ -30,7 +26,6 @@ const {
 	showTags = true,
 } = Astro.props
 const className = Astro.props.className
-const path = customPath || (id ? `/posts/${id}` : "")
 ---
 
 <div

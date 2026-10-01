@@ -1,21 +1,10 @@
 ---
-import type { CollectionEntry } from "astro:content"
 import { commentConfig } from "@/config/commentConfig"
-import { removeFileExtension } from "@/utils/url-utils"
 import Twikoo from "./Twikoo.astro"
 
-interface Props {
-    post?: CollectionEntry<"posts"> | CollectionEntry<"spec">
-    customPath?: string
-    title?: string
-}
-
-const { post, customPath, title: customTitle } = Astro.props as Props
-
-// 根据页面类型确定路径
-const slugFromPath = (customPath || "/").replace(/^\/+|\/+$/g, "") || "index"
-const slug = post ? removeFileExtension(post.id) : slugFromPath
-const path = customPath ? customPath : post ? (post.collection === "posts" ? `/posts/${slug}` : `/${slug}`) : `/${slug}`
+// 无 props：twikoo 的线程 key 由 Twikoo.astro 在运行时按 location.pathname 归一化决定，
+// 这里再算一份 path 传进去会被无条件覆盖（原先正是如此），故整条链路删除。
+// 哪个页面渲染本组件、评论区就归到该页面自己的线程下。
 
 // 强制commentService类型为string，避免类型不兼容警告
 let commentService: string = commentConfig?.type || "none"
@@ -50,7 +39,7 @@ let commentService: string = commentConfig?.type || "none"
             </div>
             {/* <!-- 评论内容区域 --> */}
             <div class="relative z-10 pr-2 pl-2">
-                {commentService === "twikoo" && <Twikoo path={path} />}
+                {commentService === "twikoo" && <Twikoo />}
                 {/* 如果没配置评论，则展示下面 */}
                 {commentService === "none" && (
                     <div class="py-8 text-center text-(--content-meta)">

@@ -110,7 +110,6 @@
         const fire = (name: string) => document.dispatchEvent(new CustomEvent(name))
         swup.hooks.on("content:replace", () => fire("swup:contentReplaced"))
         swup.hooks.on("page:view", () => {
-            fire("swup:pageView")
             fire("astro:page-load")
             fire("astro:after-swap")
         })

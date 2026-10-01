@@ -334,17 +334,6 @@ const randomSubtitle = getRandomSubtitle()
 			}
 		}
 
-		window.addEventListener("bannerCarouselChange", function (e) {
-			e.detail && e.detail.enabled ? startCarousel() : stopCarousel()
-		})
-
-		window.addEventListener("wallpaperModeChange", function (e) {
-			if (e.detail && e.detail.mode === "banner") {
-				if (isCarouselEnabled()) startCarousel()
-			} else {
-				stopCarousel()
-			}
-		})
 		startCarousel()
 	})()
 </script>

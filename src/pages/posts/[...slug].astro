@@ -102,7 +102,6 @@ const seriesData = await getSeriesPosts(post)
                     updated={post.data.updated}
                     tags={post.data.tags}
                     category={post.data.category || undefined}
-                    id={post.id}
                     hideUpdateDate={false}
                 />
             </div>
@@ -172,6 +171,6 @@ const seriesData = await getSeriesPosts(post)
         <RecommendedPost relatedPosts={relatedPosts} currentPostId={post.id} />
 
         <!-- 评论 -->
-        {post.data.comment && !post.data.password && <Comment post={post} />}
+        {post.data.comment && !post.data.password && <Comment />}
     </div>
 </Layout>

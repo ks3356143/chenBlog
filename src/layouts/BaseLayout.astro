@@ -18,6 +18,7 @@ import FancyboxManager from "@/components/features/FancyboxManager.astro"
 import SwupManager from "@/components/features/SwupManager.astro"
 // SEO
 import SEO, { type PageSEO } from "@/components/SEO.astro"
+import { siteConfig } from "@/config/siteConfig"
 
 interface Props extends PageSEO {
     title: string
@@ -44,7 +45,7 @@ const isHome = pathname === "/" || /^\/\d+\/$/.test(pathname)
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/site.webmanifest" />
         <meta name="generator" content={Astro.generator} />
-        <title>{title || "YiLin博客"}</title>
+        <title>{title || siteConfig.siteMeta.name}</title>
         <SEO {...Astro.props} />
         <script is:inline>
             const setTheme = () => {

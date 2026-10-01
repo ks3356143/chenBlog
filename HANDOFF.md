@@ -105,10 +105,10 @@
      `application/octet-stream`（nginx mime.types 缺 webmanifest，要修得改服务器）。
 
 4. **🔴 等用户拍板（2026-10-01 体检剩下的都是这类，属设计/取舍，不该我替他定）**
-   1. **品牌名到底叫什么**：现在四种口径并存 —— `亦林`（Header/siteMeta/manifest/about）、
-      `YILIn`（Layout 的 title 与 h1 兜底、manifest name）、`-Yilin`（5 个列表页 title 后缀）、
-      `YiLin博客`（`BaseLayout.astro:47`，**产物里 0 次**，那条 `||` 分支被 Layout 的 `??` 挡死，纯死代码）。
-      另有人名三种：`陈俊亦` / `KisJuyial` / `犟哟`+`Juyial`。定一个口径我来全站统一。
+   1. **✅ 品牌名已统一（2026-10-01，用户拍板「亦林 YILIn」）**：规则与"只改哪里"见 AGENTS 五-32。
+      产物实测：首页 `<title>`/`<h1>` = 亦林 YILIn，5 个列表页后缀改 `-亦林`，全 dist 旧拼法 0 命中。
+      ⚠️ 仍待他决定的一件事：**文章页/相册页/about 的 title 是裸标题不带后缀**（历史行为，没动）；
+      要全站带后缀就会改到 26 页 title，属 SEO 决策。
    2. **meCard 三个社交按钮的真实地址**：QQ / 微信 / GitHub 现在仍 `href="/"`（点了跳首页）。
       RSS 那个已改好。给我地址我就填；微信一般是二维码，那要换成交互不是链接。
    3. **frontmatter 那 6 个零消费字段删不删**（`lang` `author` `sourceLink` `licenseName` `licenseUrl`

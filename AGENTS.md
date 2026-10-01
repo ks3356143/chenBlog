@@ -209,7 +209,7 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
     → 改 mark 时保持 ≤8 笔、24px 仍可辨；**别换回位图**（位图带底色就会重蹈白框覆辙）。
 
 13. **每页恰好一个 `<h1>`，且不能为空**（2026-09-28 立的规矩，Astro Audit 三条提示的根因）。
-    `Layout.astro` 在 `#swup-container` 里注入 `<h1 class="sr-only">{title ?? "YILIn"}</h1>`：
+    `Layout.astro` 在 `#swup-container` 里注入 `<h1 class="sr-only">{title ?? siteConfig.siteMeta.name}</h1>`：
     - 页面**不传 `title` 也不会空**（兜底 `YILIn`，和 `<title>` 一致）——之前首页与 `/2/`、`/3/` 是空 h1。
     - 正文自带可见 h1 的页面（目前只有 `/about/`，其标题写在 `content/spec/about.md` 里）
       必须传 **`contentHasH1`**：`<Layout title="关于我" contentHasH1>`，否则两个 h1 重复。
@@ -262,7 +262,7 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
     - 现有 26 篇：25 篇 `series: "CSS100Day"`（`seriesOrder` = 天数，第 2~28 天，**缺 5 和 11**），
       1 篇 `series: "CodePen"`（`边框炫彩和模糊炫彩特效.md`）序号 1。系列名跟标题前缀 `CSS100Day(N)-` 保持一致，
       **与 tag 的 `CSS100天` 是两套写法**，改的时候别混。
-    - 新页面记得给 `Layout` 传 `title`（`系列-Yilin` / `标签-Yilin`），区块标题从 `h2` 起（见第十三项）。
+    - 新页面记得给 `Layout` 传 `title`（后缀用 `-亦林`，见五-32），区块标题从 `h2` 起（见第十三项）。
 
 18. **搜索 = Pagefind 全文检索**（2026-09-28 接，照 Firefly）。
     - 依赖 `pagefind@^1.5.2` + `sharp@^0.35.5`（后者只为生成图标）；`build` 脚本是
@@ -491,6 +491,16 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
     → ⚠️ 改这个要**重新构建**（语言标记是 Pagefind 建索引时读的），并做搜索 A/B：
       本次核 动画 12→12、flex 7→7、振铃 1→1 且首条结果逐条一致，才敢说无回归。
     → 顺带：`commentConfig.ts` 里的 `lang: "zh-CN"` 是 Twikoo 自己的界面语言，与 `<html lang>` 无关，别混改。
+
+32. **品牌名口径唯一来源 = `siteConfig.siteMeta.name`（现值「亦林 YILIn」）**（2026-10-01 统一）。
+    以前四种拼法并存：`亦林` / `YILIn` / 列表页后缀 `-Yilin` / `BaseLayout` 里那条 `YiLin博客`
+    （后者在产物里 0 次，是被 Layout 的 `??` 挡死的死分支）。现在 `<title>` 兜底（BaseLayout）、
+    sr-only `<h1>` 兜底与 `title` 兜底（Layout）全部取 `siteConfig.siteMeta.name`，
+    5 个列表页后缀统一为 `-亦林`，manifest 是 `name: 亦林 YILIn` / `short_name: 亦林`。
+    - Header 的可见文字与 `aria-label`、about 正文仍用「亦林」——**中文主、英文辅的刻意短形式，不是漏改**。
+    - ⚠️ **以后改品牌文案只改 `siteConfig.siteMeta.name`**，别在组件里再写第五种拼法。
+    - 文章页 / 相册页 / about 的 title 是裸标题、不带后缀（历史行为，本次未动）。
+      要给全站统一后缀 = 改 26 页 title 的 SEO 决策，需另问。
 
 ## 六、部署
 

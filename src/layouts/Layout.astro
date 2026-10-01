@@ -54,7 +54,7 @@ const isPostPage = !!postSlug
 const postCategory = isPostPage ? String((frontmatter as { category?: unknown } | undefined)?.category ?? "") : ""
 ---
 
-<BaseLayout title={title ?? "YILIn"} frontmatter={frontmatter}>
+<BaseLayout title={title ?? siteConfig.siteMeta.name} frontmatter={frontmatter}>
     <slot slot="head" name="head" />
     <Header />
     <div id="progress-bar"></div>
@@ -104,7 +104,7 @@ const postCategory = isPostPage ? String((frontmatter as { category?: unknown } 
                         <!-- 每个页面均设置隐藏title，用于SEO -->
                         {
                             !contentHasH1 && (
-                                <h1 class="sr-only">{title ?? "YILIn"}</h1>
+                                <h1 class="sr-only">{title ?? siteConfig.siteMeta.name}</h1>
                             )
                         }
                         <!-- TODO:网格布局的页面展示 -->

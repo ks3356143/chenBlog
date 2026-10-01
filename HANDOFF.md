@@ -3,18 +3,24 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-01 上午（第二轮体检：并行只读代理逐条复核昨天的 P1 清单 + 查错）**。
-> 本批做完 4 件事并各自提交：① 修容器内脚本重复注册监听 ② 清 9 处死代码 ③ 收构建期重复开销
-> （构建 5~7s → 4.14s）④ 修卫生项（`lang` 改合法 BCP47、CSS 重复声明、图标按钮无障碍名、tsconfig）。
-> **⚠️ 这 4 笔只到本地，没推 GitHub、没上线**——线上仍是 09-30 18:13 的构建。
+> 最后更新：**2026-10-01 上午（第二轮体检 + 品牌名统一，11:12 已推送并上线）**。
+> 本批做完 5 件事：① 修容器内脚本重复注册监听 ② 清 9 处死代码 ③ 收构建期重复开销
+> （构建 5~7s → 4.14s）④ 修卫生项（`lang` 合法 BCP47、CSS 重复声明、图标按钮无障碍名、tsconfig）
+> ⑤ 品牌名统一为「亦林 YILIn」。**线上 = GitHub = 本地三方一致，版本 V0.1.20。**
+> 还有 4 项他已点头、下次开场直接开工的，见第一节「还挂着的事 4.3」。
 
 ---
 
 ## 一、下次会话第一件事
 
-> 🎯 **下次继续做「功能扩展」**（用户 2026-09-30 下班时明确交代）。候选就在下面
-> 「还挂着的事 1. 与 3.」。动手前照旧：先扒 firefly.cuteleaf.cn / CuteLeaf/Firefly 的实现
-> （**扒结构必须看原始 markup，别剥标签——今天就是这么把图标看没了**），
+> 🎯 **下次开场先做「已批准的 4 件工程项」**（2026-10-01 用户勾的，清单与注意事项在
+> 下面「还挂着的事 4.3」：删 schema 6 个死字段 / 抽 `onReinit(fn)` / 装 `@astrojs/check` /
+> 文档里服务器信息脱敏）。**其中抽 `onReinit` 那件务必按 AGENTS 十-11/十-12 的办法做回归**，
+> 那块正是 09-30 出事故的地方。
+>
+> 再往后仍是**「功能扩展」**这个大方向（用户 09-30 交代）。候选见「还挂着的事 1.」。
+> 动手前照旧：先扒 firefly.cuteleaf.cn / CuteLeaf/Firefly 的实现
+> （**扒结构必须看原始 markup，别剥标签——那次就是这么把图标看没了**），
 > 再走 brainstorming（这类多属 Bounded → 短设计 → 等批准），不要直接写代码。
 >
 > **dev server 已停**（收尾时停的），要开发先 `npm run dev`（:4321，冷启动约 33~40s）。
@@ -22,17 +28,18 @@
 > ⚠️ **交互类缺陷在 dev 下大多测不出来**（dev 的组件脚本是外部 module、不会被重新求值），
 > 复现与验证一律走 `npm run build` + `npm run preview`，别在 dev 里下结论。
 
-### ✅ 交付状态：**本地领先 4 笔，未推送、未部署**（2026-10-01 上午）
+### ✅ 交付状态：本地 = GitHub = 线上，三方一致（2026-10-01 11:12 上线）
 
-- 工作区干净；`origin/main` 与线上都还是 09-30 收尾那一版（`88b43a5`），本地其后多了四笔：
-  `16df19d` 容器内脚本幂等 / `377f47f` 清死代码 / `3e6eb6d` 构建期重复开销 / `89fbf00` 卫生项。
-  现查：`git rev-list --count origin/main..HEAD`。
-- **推不推、上不上线等用户说**（AGENTS 六节铁律：上线默认他本人执行，授权一次只对那一次有效）。
-  真要上线就重跑 `npm run build` 再走第六节流程——本地 dist 已是含全部改动的最新构建。
-- 推送有个已知**假信号**：第一次 `git push` 可能报 `remote: fatal error in commit_refs` 被拒，
-  **原样重推即过**（GitHub 侧瞬时故障，不是 remote/凭据问题，别去改配置）。
-- 09-30 那批的公网验收结论仍有效（RSS 26 条链接全 200、`og:image` 本站 200、相册 20 张 3.46MB、
-  375px 分类「更多」可展开、第13天 demo 重插后仍可点），本批没动这些路径。
+- 本批 7 笔全部已推送并部署：**线上首页与本地 `dist/index.html` 逐字节相同（172770B）**。
+  现查：`git rev-parse --short HEAD` / `git rev-list --count origin/main..HEAD`（应为 0）。
+- 公网逐路径验收全 200：`/` `/rss.xml` `/pagefind/pagefind.js` `/api/dynamic.json` `/og-image.jpg`
+  `/dynamic/` `/gallery/` `/archive/` 与中文文章 URL；缓存头未被本次改动破坏
+  （HTML `no-cache, must-revalidate`、`/pagefind/` `no-cache`）。
+- **线上浏览器实测**（这次改的是评论初始化路径，风险最高，所以在线上而不是只在 preview 验）：
+  硬刷新文章页 `#twikoo` 挂载成功；**连着两次软导航进文章，评论区仍挂载**；
+  单次 `swup:contentReplaced` 触发的随机列表重渲染由旧构建的 **2 次降到 1 次**。控制台 0 报错。
+- 站点信息卡对外版本已随发版抬到 **V0.1.20**（`package.json` 的 `version` 就是展示口径，AGENTS 五-29）。
+- 部署本身没再遇到 `commit_refs`（那条重推即过的经验见记忆 github-network-workarounds，仍有效）。
 - 线上 dist = 本地 dist（**首页逐字节相同，173288B**），**18:13 部署**——这一次是我把用户下班那句
   「干完以上事情」当作授权执行的，严格说他没有明说上线；下次遇到这种含糊收尾指令，**先问再推生产**。
 - 此前 17:34 那批的公网验收仍有效：**RSS 26 条链接全部 200**（改前 26/26 → 404）、`pubDate` 年份只剩 2026、
@@ -55,7 +62,7 @@
    **需要他再看一眼确认观感**。
 5. 昨天遗留未验收的两项仍在：**新相册封面选图与顺序**、以及新封面观感。
 
-**2026-10-01 这批新增的要你肉眼过一下**（都在本地 dist，未上线；`npm run preview` 就能看）：
+**2026-10-01 这批新增的要你肉眼过一下**（**已上线**，直接看 http://47.108.230.220/ 即可）：
 
 6. **评论区两条路径**（本批改了 init 的注册方式，这是唯一有回归风险的地方）：
    ① 直接刷新一篇 `/posts/…/` 文章页要出评论；② 从首页点进文章也要出评论。
@@ -72,7 +79,7 @@
    做前按 AGENTS 第一节先扒参考实现再走 brainstorming。
    ⚠️ 三项里凡是**要深链到某一条动态**的，都会撞同一堵墙：feed 条目是客户端从 `<template>` 克隆的、
    **没有锚点可指**（`DynamicItemTemplate.astro` 不设 id + `SwupManager.astro:77` 无条件回顶），要先补三处。
-2. **服务器回滚资产 19 个 `dist_backup_*` + `dist.old` ≈ 528M**（今天五次部署各 +1）。
+2. **服务器回滚资产 20 个 `dist_backup_*` + `dist.old` ≈ 558M**（09-30 五次 + 10-01 这次各 +1）。
    **必须用户明确说才删**，我不会自己动。
 3. **2026-09-30 那批「报了但没做」的清单——2026-10-01 已清掉大半，剩下的都在下面**
    （别重新扫一遍，直接从这里挑）：
@@ -104,21 +111,27 @@
      （模板写死的 `collapsedHeight: 7.5rem`）；`/site.webmanifest` 的 Content-Type 是
      `application/octet-stream`（nginx mime.types 缺 webmanifest，要修得改服务器）。
 
-4. **🔴 等用户拍板（2026-10-01 体检剩下的都是这类，属设计/取舍，不该我替他定）**
+4. **🔴 需要他决定或给信息的（2026-10-01 已拍掉一大半，剩下的见各条标注）**
    1. **✅ 品牌名已统一（2026-10-01，用户拍板「亦林 YILIn」）**：规则与"只改哪里"见 AGENTS 五-32。
       产物实测：首页 `<title>`/`<h1>` = 亦林 YILIn，5 个列表页后缀改 `-亦林`，全 dist 旧拼法 0 命中。
       ⚠️ 仍待他决定的一件事：**文章页/相册页/about 的 title 是裸标题不带后缀**（历史行为，没动）；
       要全站带后缀就会改到 26 页 title，属 SEO 决策。
    2. **meCard 三个社交按钮的真实地址**：QQ / 微信 / GitHub 现在仍 `href="/"`（点了跳首页）。
       RSS 那个已改好。给我地址我就填；微信一般是二维码，那要换成交互不是链接。
-   3. **frontmatter 那 6 个零消费字段删不删**（`lang` `author` `sourceLink` `licenseName` `licenseUrl`
-      `passwordHint`，全部 26 篇没写过、代码里也没有一个消费方）。留着是"将来想做 CC 署名/加密"的话，
-      就顺手把消费方补上，否则删掉更干净。
-   4. **要不要抽 `onReinit(fn)`** 替掉 30 处手抄的"导航后重 init"脚手架（延迟 100/200/220/500ms 各处不同）。
-      收益是一致性与以后少踩坑，代价是碰 18 个文件、且这块正是昨天出事故的地方。
-   5. **要不要装 `@astrojs/check`**：现在 `npx tsc --noEmit` 已经零错误，但它**根本不查 `.astro`/`.svelte`**，
-      所以类型覆盖是假的。装它是新依赖（AGENTS 约定先问）。
-   6. **公开仓库里的服务器信息要不要脱敏**（安全代理扫过的结论见下一节）。
+   3. **✅ 已批准待做（2026-10-01 用户点头，下次开场可直接开工）——四件**：
+      - **删 frontmatter 那 6 个零消费字段**（`lang` `author` `sourceLink` `licenseName` `licenseUrl`
+        `passwordHint`；26 篇全没写过、代码零消费方）。改 `src/content.config.ts`；
+        ⚠️ 删字段后 `npm run new:post` 的脚手架模板要同步（它写的是全量 frontmatter，见五-26）。
+      - **抽 `onReinit(fn)`** 统一 30 处"导航后重 init"脚手架（18 个文件：幂等标志 3 + 带延迟 13 +
+        不带延迟 14；延迟 100/200/220/500ms 各处不同）。⚠️ 这块正是 09-30 出事故的地方，
+        改完必须按 AGENTS 十-11 那条「数一次点击/一次导航引发几次」的办法回归，别只看构建通过。
+      - **装 `@astrojs/check`** 补组件类型检查（现 `npx tsc --noEmit` 零错误但完全不查 `.astro`/`.svelte`）。
+        属新依赖，已获准；装完按 AGENTS 九节走一次干净 `npm ci` + build。
+      - **AGENTS/HANDOFF 里的服务器信息脱敏**（`root@IP`、`/www/wwwroot/...`、vhost 与 extension 文件名、
+        `/root/*.conf` 备份名）。⚠️ **只改当前版本，不改历史**——历史重写要 `git filter-repo` + 强推，
+        他没批准那一步。改完要保证部署流程仍可执行：这些值是流程要用的，脱敏后改成本地私密记录，
+        并确认下次会话还能拿到（别让流程变成"下次找不到路径"）。
+   7. **仍要他给信息才能做**：meCard 的 QQ / 微信 / GitHub 真实地址（见上面第 2 条）。
 5. **公开仓库暴露面（2026-10-01 安全代理全历史扫过）**：**零凭据泄露**——零私钥块、零密码/token 值、
    零 `.env`、零面板地址/端口/安全入口、零手机号/身份证、提交信息干净、6 个 dangling commit 也查了。
    但 `AGENTS.md` 第六节与 `HANDOFF.md` 里有 **root@IP、`/www/wwwroot/...` 路径、vhost 配置文件名、
@@ -321,21 +334,21 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-09-30 傍晚实测）
+## 三、当前状态快照（2026-10-01 11:12 上线后实测）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 今天 22 笔（起点 `47543a4`）之后又追加了本表的 HANDOFF 更正笔，**所以别拿这里写过的 SHA 当准，下次开场现查 `git rev-parse --short HEAD`**。今天分五批：① 两条移动端缺陷 + 竖条 + 卸 scripts-plugin ② 站点信息卡 ③ 体检五缺陷 + 卸 dayjs + Nginx 缓存文档 ④ README 重写 ⑤ 卡片间距修正（`2f608e8`）+ HANDOFF 收尾 |
-| 与远端 | ✅ **已推送**，`origin/main` == 本地 HEAD，0 笔未推送。（第一次 `git push` 被 `fatal error in commit_refs` 拒，重推即过——见第一节交付状态那条） |
-| 线上站点 | ✅ **18:13 已部署到最新**（备份 `dist_backup_20260930_181312` + `dist.old`，属主 `root:root`，22M）。验收证据：**线上首页与本地 `dist/index.html` 逐字节相同（173288B）**、CSS 里展开区 `max-height:20rem` 已在产物中、`/` `/dynamic/` `/gallery/` `/rss.xml` 全 200。上一批（17:34）结论仍有效：RSS 26 条链接逐条 200、`og:image` 本站 200、相册 20 张 3.46MB 且旧 `.jpg` 已 404、375px 分类「更多」可展开、第13天 demo 重插后仍可点 |
-| 服务器配置 | ✅ 新增 `/www/server/panel/vhost/nginx/extension/chenblog.com/cache.conf`（缓存策略，详见 AGENTS 第六节）。vhost 原件备份在 `/root/chenblog_vhost.bak_20260930_163914.conf`；`nginx -t` 通过后才 reload。**这是今天唯一动过的服务器配置** |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里写过的 SHA）。10-01 这批分七笔：① 容器内脚本幂等 ② 清死代码 ③ 构建期重复开销 ④ 卫生项 ⑤ 文档落盘 ⑥ 杀进程自伤坑 ⑦ 品牌名统一 + 发版 V0.1.20 |
+| 与远端 | ✅ 已推送，`origin/main` == 本地 HEAD == 线上（三方一致）。10-01 两次 `git push` 都一次过 |
+| 线上站点 | ✅ **11:12 部署到最新**（属主 `root:root`，dist 22M）。验收证据：**线上首页与本地 `dist/index.html` 逐字节相同（172770B）**、`<title>` 与 sr-only `<h1>` = 亦林 YILIn、`lang="zh-Hans-CN"`、站点卡显示 V0.1.20、产物里 `firefly` / `swup:pageView` / 旧拼法 0 命中；`/` `/rss.xml` `/pagefind/pagefind.js` `/api/dynamic.json` `/og-image.jpg` `/dynamic/` `/gallery/` `/archive/` 与中文文章 URL 全 200；HTML 仍是 `no-cache, must-revalidate`、`/pagefind/` 仍 `no-cache`。线上浏览器实测：硬刷与两次软导航后评论区都挂载，单次导航随机列表重渲染 2→1 次，控制台 0 报错 |
+| 服务器配置 | ✅ 未动（本批只换 dist）。09-30 加的缓存策略文件仍在：`…/vhost/nginx/extension/chenblog.com/cache.conf`，vhost 原件备份在 `/root/` |
 | 构建时间戳 | ⚠️ 站点信息卡把**构建时间写进了 HTML**，所以「线上 == 本地 dist 逐字节」只在部署后立刻比成立；隔一会儿重新 build 再比必然差那 2 处时间戳（已实测两次连续构建只差时间戳），别据此判定没部署成功 |
-| 本地构建 | `npm run build` 退出码 0：**42 页 / dist 335 文件 / 20.3MB**（比昨天 28MB 小 7.7MB，就是相册压缩的功劳；文件数 +1 是 `og-image.jpg`）。干净 `npm ci` 退出码 0 |
-| 依赖 | 今天卸了两个：`@swup/scripts-plugin`（AGENTS 十-11）、`dayjs`（RSS 改用原生 Date 后源码零引用，lockfile 里剩的是 mermaid/sanitize-html 的传递依赖）。`allowScripts` 仍只有 `esbuild@0.28.2`；`npm audit`（官方源）0 vulnerabilities |
-| dev server | **已停止**（收尾时按命令行精确匹配杀掉，端口 4321 已释放）。⚠️ 两件事：① 今天这些缺陷在 dev 下大多**测不出来**，要复现必须 build + preview；② **dev 与 build 共用 `node_modules/.vite/`**，dev 跑着时反复 build 会让 dev 的预打包依赖失效（症状是切页动画消失、`window.swup` 为 undefined、依赖 URL 返回 504）→ 见 AGENTS 五-21 |
-| 服务器回滚资产 | `dist.old` + **19 个 `dist_backup_*`**，合计 **528M**（今天五次部署各 +1）。全部保留，**删需用户明确同意** |
-| 临时文件 | **收尾已全部清理**：本地 `%TEMP%` 的 tar 包 / 构建与安装日志 / 原图对比导出 / 截图裁切图，服务器 `/tmp` 的上传包（复查 `grep -ci chenblog` = 0），浏览器探针 iframe 全部移除，`public/gallery` 无 `.try.` 残留 |
-| 排查方法类坑位 | **不在本节复述**——已全部固化：AGENTS 第十节 11（MutationObserver 数监听器）/ 第十节 2（状态机样式随 head 缺失）/ 五-21（dev 与 build 共用 .vite）/ 五-25（隐藏页 transition 不推进）/ 五-29（图标集合边界）/ 第六节（Nginx 缓存两条踩坑）/ 第九节（grep 假阴性、preview 孤儿进程）；记忆补了第五类假阴性（隐藏页 lazy 图不发请求）与"剥标签取证会连图标一起丢" |
+| 本地构建 | `npm run build` 退出码 0：**42 页 / dist 335 文件 / 20.3MB**，热缓存耗时 **4.14s**（09-30 是 5~7s，差值来自 10-01 收掉的重复渲染）。`npx tsc --noEmit` **退出码 0**（10-01 起可用；⚠️ 只覆盖 `.ts`，不查 `.astro`/`.svelte`）。干净 `npm ci` 上次验证是 09-30 |
+| 依赖 | 10-01 **未增未减**。09-30 卸了两个：`@swup/scripts-plugin`（AGENTS 十-11）、`dayjs`（RSS 改用原生 Date 后源码零引用，lockfile 里剩的是 mermaid/sanitize-html 的传递依赖）。`allowScripts` 仍只有 `esbuild@0.28.2`；`npm audit`（官方源）0 vulnerabilities。待装：`@astrojs/check`（已获准，属新依赖） |
+| dev / preview server | **都已停止**，端口 4321 已释放。⚠️ 三件事：① 这批缺陷在 dev 下大多**测不出来**，复现与验证必须 build + preview；② **dev 与 build 共用 `node_modules/.vite/`**（AGENTS 五-21）；③ 杀进程要钉在「可执行文件路径 + 尾参数」上，**拿项目名 + 关键词宽匹配会把自己的 bash 包装进程和 PowerShell 本体一起杀掉**（10-01 实测自伤，见 AGENTS 九节坑③） |
+| 服务器回滚资产 | `dist.old` + **20 个 `dist_backup_*`**，合计 **约 558M**（09-30 五次 + 10-01 一次）。全部保留，**删需用户明确同意** |
+| 临时文件 | 10-01 已清：本地 `/tmp/chenblog_dist.tar.gz`、服务器 `/tmp` 同名包（部署脚本尾部 `rm -f`）、`%TEMP%` 下本次体检写的 4 个只读脚本（清单/产物/顺序/行尾重放）。**仓库 `scripts/` 无残留**——体检脚本一开始被我放进了 `scripts/`，已移出到 TEMP，`git status` 干净 |
+| 排查方法类坑位 | **不在本节复述**——已全部固化。09-30：AGENTS 十-11（MutationObserver 数监听器）/ 十-2（状态机样式随 head 缺失）/ 五-21（dev 与 build 共用 .vite）/ 五-25（隐藏页 transition 不推进）/ 五-29（图标集合边界）/ 第六节（Nginx 缓存两条踩坑）/ 第九节（grep 假阴性、preview 孤儿进程）。10-01 新增：**十-12（容器内脚本注册全局监听必带幂等标志 + 怎么数一次导航触发几次）/ 十-13（`twikoo.init()` 吃掉挂载点，故第二遍 init 必然空转）/ 五-30（构建期记忆化只在 PROD + 消费方不得就地 sort）/ 五-31（改 `lang` 必做搜索 A/B）/ 五-32（品牌名只改 siteConfig.siteMeta.name）/ 三节（`npx tsc --noEmit` 的覆盖边界）/ 七节（Edit 工具会整片翻行尾 + 撤销提交后要看 `git diff HEAD`）/ 九节坑③（宽匹配杀进程会自伤）**；记忆补了第七类假阴性（**自造选择器 → 两个空集合比出假"一致"**）与行尾纪律的两条新形态 |
 | 体检未做项 | **全部列在第一节「还挂着的事 3.」**，下次要动从那里挑，别重扫一遍。含：用户看过选择不做的性能两项、卫生 P1 一批、模块化 P1 一批、我核后降级的两条、以及三条待核实 |
 | 既存小坑 | `--radius-large` / `--panel-border-color` 已查清（AGENTS 五-16）；`tsconfig.json` react jsx 残留无影响；`src/content/posts/images/` 空目录；文章页分类栏无 `data-active` 高亮（线上同样如此）；分类卡只有 1 个分类时收起态比展开态高；`/site.webmanifest` 的 Content-Type 是 octet-stream（要修得动 nginx mime.types） |
 

@@ -881,6 +881,12 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
        一律先按命令行精确查一边 `astro` 相关进程，别信 TaskStop 的 summary。
      → 顺序：`Get-CimInstance Win32_Process` 按 `CommandLine -like '*chenBlog*'` 精确定位 PID 后逐个 `Stop-Process`
        （**别批量杀 node.exe**，Qoder 自身和一堆 MCP server 都是 node 进程）；确认残留为 0 再 `npm ci`。
+       ⚠️ **但 `-like '*chenBlog*'` 这一条本身也不够精确**（2026-10-01 实测自伤）：包装 shell 的命令行里
+       带着我发出去的那条命令**全文**，于是 `chenBlog` + `preview`/`astro` 这种宽条件会把
+       自己的 bash 包装进程和 PowerShell 本体一起吃掉（命令自己把自己杀了，退出码变 4294967295）。
+       → 匹配条件要钉在**可执行文件路径 + 尾参数**上，例如
+         `$_.Name -eq 'node.exe'` 且 `$_.CommandLine -like '*astro\bin\astro.mjs*preview*'`，
+         杀完再用同一条件复查计数为 0；不要拿"项目名 + 关键词"当过滤器。
        万一已经失败了，先 `npm install`（增量、不删目录）把项目救回来，再重试干净安装。
   → 另：`npm ci` / `npm install` 后面接 `| tail -20` 会把**退出码换成 tail 的**，
      失败也会显示成"成功"。依赖类命令要拿真实退出码就 `> 文件 2>&1; echo $?`，别信管道后的 `$?`。

@@ -1,22 +1,19 @@
 # AGENTS.md — 项目长期指令
 
 > 陈俊亦的个人博客。每次对话开始时自动读取本文件作为上下文。
-> 最后更新：**2026-10-01 晚（四件工程项 + 用户报的横幅标题 bug 全部做完，21:20 已上线 V0.1.21）**。
-> 本批新落盘：**十-14 「导航后重 init」唯一实现 = `public/assets/js/reinit.js` 的
-> `window.onReinit(key,fn,opts)` / `window.reinitOnce(key,fn)`**（34 处散装脚手架收编，12 个文件；
-> 顺带查出两条真漏：分类栏横滚监听按页累加、悬浮目录 `setupAutoClose` 每页多包一层 `history.pushState`）、
-> 十-12 与五-16 改指向该 helper、**三节把 `npx tsc` 那条升级为 `npm run check`（`@astrojs/check` 已装，
-> 首跑查出 4 个类型问题，见九节新小节）**、五-5 删字段后的 schema 清单 + **纠正「列表卡有锁图标」这句假事实**、
-> 四节补 `reinit.js` 与 `src/modules.d.ts` 两个位置、
-> **六节整节的 SSH 登录目标 / 服务器绝对路径 / 宝塔配置文件名已脱敏成占位符**
-> （真实值 + 展开版部署命令在本地私密记录 `reference-deploy-targets.md`，见六节开头）、
-> **十-15 「内容随页面变、但位置在 Swup 容器外的 chrome，必须自己登记成 container」**
-> （= 用户报的横幅标题 bug 的根因与修法；含"登记前先查有没有代码把实例句柄挂在该元素属性上"这条通则）。
-> 代码侧：schema 删 6 个零消费字段、`PostMeta.className` 改可选、删 `[...page]` 死变量、
-> 每页多一个 head 同步脚本（**3.6KB**，`/assets/js/reinit.js`）、`SwupManager` 的 `containers` 增列
-> `#banner-overlay-container`（`Cover.astro` 把 post-meta 层移进该容器）、打字机实例改模块级统一销毁。
-> 基线：42 页 / **336** 文件 / 22M / 构建约 **4.0s**（+ Pagefind 0.2s）；`npm run check` 与 `npx tsc --noEmit` 均 **0 error**。
-> ⚠️ 上一批（十-12/十-13/五-30/五-31/五-32 + 9 处死代码清理，构建 5~7s→4.14s）已于 11:12 上线，版本 V0.1.20。
+> 最后更新：**2026-10-07 下午（首篇「工具」类文章 `/posts/ccnewtools-manual/` 已写好并本地验完，未上线）**。
+> 本批（2026-10-07）新落盘：**八节补 4 条发稿规矩**——图片必须 `/images/` 绝对路径 + ASCII 文件名 + 自己转 webp、
+> `category` 现有两值、**正文不要写 `#` 一级标题**、**宽表格必须自己包 `.horizontal-scroll-container`**；
+> **九节新小节记两条同族病：从参考站照抄的东西改名后不报错、只是静默不生效**——
+> ① 文章图片的 Fancybox 因 `Markdown.astro` 把 `custom-md` 写成 `custom-markdown` 而从未生效（**已修**）；
+> ② `propse-base` 拼错（**故意没动**，补上会改全站正文排版）。第8天的宽表仍被裁，等他点头。
+> 代码侧：新增 `src/content/posts/ccnewtools-manual.md` 与 `public/images/ccnewtools/` 11 张 webp、
+> `FancyboxManager.astro` 两处选择器补 `.custom-markdown img`。
+> 基线：**43 页 / 350 文件 / 22M** / 构建约 4.0s（+ Pagefind 0.2s）；文章 **27 篇**；
+> `npm run check` 与 `npx tsc --noEmit` 均 **0 error**（check 剩 2 条故意留的 hint）。
+> ⚠️ 上一批（2026-10-01：上午批准的四件工程项 + 用户报的横幅标题 bug。落了 **十-14 重 init helper**、
+> **十-15 容器登记通则**、六节脱敏成占位符、`npm run check` 成为组件类型入口、五-5 纠正「锁图标」假事实、
+> 三节/四节/五-9 同步）已于当日 21:20 上线 **V0.1.21**，细节在九节与十-14/十-15，此处不复述。
 
 ## 📌 开始工作前先读 [`HANDOFF.md`](./HANDOFF.md)
 
@@ -33,7 +30,8 @@ https://firefly.cuteleaf.cn/ 与 https://github.com/CuteLeaf/Firefly 。
 个人博客，**纯静态站点**（Astro SSG），部署在阿里云 + 宝塔面板 + Nginx 上。
 
 - 线上地址：http://47.108.230.220/ （目前是 IP，**没有域名**）
-- 文章 26 篇，UI 和提交信息全部为中文
+- 文章 27 篇（26 篇中文 URL 的 CSS100Day/CodePen + 1 篇 ASCII slug 的 `/posts/ccnewtools-manual/`），
+  UI 和提交信息全部为中文
 
 ### 参考源（用户说"参考"时，默认指这两个）
 
@@ -114,7 +112,7 @@ src/config/siteConfig.ts    # 站点总开关：分页数、图片格式、页�
 src/config/navBarConfig.ts  # 顶部菜单项（含「文章」子菜单）——改菜单只改这里
 src/config/                 # 另有 backgroundWallpaper / commentConfig / galleryConfig（相册清单，见五-28）
 public/gallery/<id>/        # 相册图片本体，按 1.jpg 2.jpg 序号命名；与 galleryConfig 的 id 一一对应
-src/content/posts/          # 26 篇文章（24 .md + 2 .mdx）；images/ 是空的历史遗留目录
+src/content/posts/          # 27 篇文章（25 .md + 2 .mdx）；images/ 是空的历史遗留目录
 src/content/spec/           # 单页内容（about 等）
 src/content/dynamic/        # 动态（说说）：一条一个 md，文件名 YYYY-MM-DD-HHMMSS.md 即条目 id
 src/pages/                  # 路由：about / archive / categories / tags / series / dynamic / guestbook / gallery / posts/[...slug] / [...page]
@@ -189,16 +187,19 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
    导致整个页面（含首页）渲染失败。Astro 6 容忍、Astro 7 报错。
    → 已于 2026-09-20 从 `src/pages/[...page].astro` 移除一处。要么写内容，要么整行删掉，别留空标签。
 
-9. 构建产物基线（**2026-10-01 下午实测**：加了 `public/assets/js/reinit.js` 之后）：
-   **42 个页面 / dist 336 个文件 / 22MB**，其中 `_astro/` 211 个（自动封面 4 张 × 5 档响应式 = 20 个）、
-   `pagefind/` 42 个（28 个 fragment / 索引 28 页）、`gallery/` 26 个（20 张照片共 3.46MB）。
+9. 构建产物基线（**2026-10-07 实测**：加首篇工具类文章 + 11 张截图之后）：
+   **43 个页面 / dist 350 个文件 / 22MB**，其中 `_astro/` 211 个（自动封面 4 张 × 5 档响应式 = 20 个）、
+   `pagefind/` 44 个（**29 个 fragment / 索引 29 页**）、`gallery/` 26 个（20 张照片共 3.46MB）、
+   `images/` **12 个**（1 张历史 jpg + `images/ccnewtools/` 的 11 张 webp，共 0.33MB）。
    热缓存 `npm run build` 约 **4.0s** + 索引 0.2s（2026-10-01 起；此前 5~7s，差值来自五-30 那批重复渲染的消除）。
    （体积历史：28M → 09-30 相册 webp 化后 **20.3M**（−7.7M）→ 10-01 下午 **22M**。
    文件数历史：307（09-28 接 Pagefind）→ 334（09-29 新相册）→ 335（09-30 加 `public/og-image.jpg`）→
-   **336**（10-01 下午加 `public/assets/js/reinit.js`，十-14）。
+   **336**（10-01 下午加 `public/assets/js/reinit.js`，十-14）→
+   **350**（10-07 加 1 篇文章页 + 11 张 webp + 2 个 pagefind 产物）。
    页历史：37 → 09-24 加 `/categories/` 38 → 09-28 加 `/series/` `/tags/` 40 → 09-29 加 `/dynamic/` 41 →
-   09-29 加第 5 个相册 `/gallery/wlh-concert-2026/` 42。**每加一个相册页数就 +1**，它走 `getStaticPaths`。
-   ⚠️ 两批数字不可直接对比，核基线前先看清是哪一批之后的数。）
+   09-29 加第 5 个相册 `/gallery/wlh-concert-2026/` 42 → **10-07 加首篇工具类文章 43**。
+   **每加一个相册页数就 +1**（它走 `getStaticPaths`），**每加一篇文章也 +1**。
+   ⚠️ 两批数字不可直接对比，核基线前先看清是哪一批之后的数。
    Pagefind 提示 `doesn't support stemming for the language zh-hans-cn` —— 中文没有词干还原，**属正常**，不影响命中。
    （五-31 已把 `<html lang>` 从非法的 `zh-cmn` 改成 `zh-Hans-CN`，所以这条提示的语言名跟着变，
    **不是回归**；改这个必须重新构建并做搜索 A/B，见五-31。）
@@ -285,8 +286,10 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
       该篇没写 `series` 时返回 `null`）。**序号判空必须用 `!== undefined`**，否则 `seriesOrder: 0` 会被排到最后。
     - `/series/` 是**单页手风琴**，Firefly 没有 `/series/<slug>/` 详情页，我们也没做；
       `/tags/` 是标签总览 + Top 10 排行，点具体标签仍跳 `/archive/?tag=xx`（沿用 `getTagUrl()`，归档页没改）。
-    - 现有 26 篇：25 篇 `series: "CSS100Day"`（`seriesOrder` = 天数，第 2~28 天，**缺 5 和 11**），
-      1 篇 `series: "CodePen"`（`边框炫彩和模糊炫彩特效.md`）序号 1。系列名跟标题前缀 `CSS100Day(N)-` 保持一致，
+    - 现有 27 篇：**25 篇** `series: "CSS100Day"`（`seriesOrder` = 天数，第 2~28 天，**缺 5 和 11**）、
+      **1 篇** `series: "CodePen"`（`边框炫彩和模糊炫彩特效.md`）序号 1、
+      **1 篇不归入任何系列**（`ccnewtools-manual.md`，非系列就不写 `series`/`seriesOrder`）。
+      系列名跟标题前缀 `CSS100Day(N)-` 保持一致，
       **与 tag 的 `CSS100天` 是两套写法**，改的时候别混。
     - 新页面记得给 `Layout` 传 `title`（后缀用 `-亦林`，见五-32），区块标题从 `h2` 起（见第十三项）。
 
@@ -528,6 +531,40 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
     - 文章页 / 相册页 / about 的 title 是裸标题、不带后缀（历史行为，本次未动）。
       要给全站统一后缀 = 改 26 页 title 的 SEO 决策，需另问。
 
+33. ⚠️ **本站是纯静态（SSG 无 SSR），任何"靠 URL 查询串驱动"的功能都必须走客户端，且组件必须带时间指令**
+    （2026-10-07 查出并修复归档页筛选，两条病同时存在所以症状是"完全没反应、也不报错"）：
+    - **① `Astro.url.searchParams` 在构建期恒空。** 构建时 Astro 请求的 URL 就是 `/archive/`，**不带查询串**；
+      访客浏览器里的 `?category=工具` 永远不会回到服务端。所以
+      `const tagFilters = Astro.url.searchParams.getAll("tag")` 这种写法**只能当 SSR 那一遍的初值**，
+      真实值必须在组件里读 `window.location.search`（见 `ArchivePannel.svelte` 的 `resolveFilters()`）。
+      → 全站只有两处读 `Astro.url`，另一处 `CategoryBar.astro` 是**对的**，因为它读的是
+        `new URL(window.location.href)`（客户端活 URL），别跟着它一起怀疑。
+    - **② 框架组件不写 `client:*` 就只出静态 HTML、客户端零 JS。**
+      `<ArchivePannel sortedPosts={…} />` 没有时间指令 → Astro 不输出水合岛，
+      组件里写什么都不会跑。**判据别看"HTML 里有没有内容"**（静态渲染照样有），
+      要数产物里的岛：`node -e` 抓 `<astro-island>` 的 `component-url`，
+      修复前后归档页从「只有 `Search` 一个岛」变成「`Search` + `ArchivePannel`」。
+    - **两条一起成立的后果**：筛选逻辑代码完全正确、构建退出码 0、页面渲染正常、控制台 0 报错，
+      但 `?category=` / `?tag=` / `?uncategorized=` **三种入口全部恒显示全部 27 篇**。
+      引入点是 `da68cd4`（09-24「归档时间线改服务端渲染：去掉 client:only 的水合空窗」）——
+      那笔为了消掉水合空白，把组件里 `new URLSearchParams(window.location.search)` 那行删了、
+      又把 `client:only="svelte"` 改成无指令。**修症状时把功能一起关掉了。**
+    - **现在的口径**：`client:load` + 组件内 `resolveFilters()`。
+      SSR 那一遍仍输出完整时间线（所以普通 `/archive/` 没有水合空窗，09-24 的目标没丢），
+      带查询串时水合后立即收窄。代价是 props 把 27 篇 `{id,data}` 序列化进岛属性，
+      归档页 146925B → **177779B（+30.8KB）**、多一个 5KB 的 `ArchivePannel` chunk；
+      `getSortedPostsList()` 已经剔过 `post.body`，再瘦得改共享 util，**当前判定不值当**。
+    - **验证必须两条路径都测**（只测一条会漏，同十-15 的教训）：
+      ① **硬加载** `iframe` 直接开 `/archive/?category=工具` → 期望 1 条；
+      ② **软导航**（真实用户点分类胶囊的路径）——在 iframe 里先开 `/archive/`，
+        然后 **`history.pushState` 改 URL → 换 `#swup-container` 的 innerHTML → 重插容器内 script**，
+        期望从 27 收窄到 1。⚠️ 仿真**必须连 URL 一起改**：我第一次只换了内容没换 URL，
+        于是组件读到"无筛选"、**差点把已修好的东西报成没修好**。
+      实测五项全对：`/archive/` 27、`?category=设计灵感` 26、`?category=工具` 1、
+      `?uncategorized=true` 0、`?tag=CSS100天` 25，且筛选头文案（"分类 / 工具 1 篇文章"）正确出现。
+    - **数行数要数在岛内部**：页面里本来就有 1 个卡片外的 `/posts/` 链接（侧栏那块），
+      拿整页 `a[href^="/posts/"]` 计数会得出"设计灵感 27 条 / 未分类 1 条"这种**自相矛盾的假异常**。
+
 ## 六、部署
 
 > 🔒 **本节的主机登录目标、服务器绝对路径、宝塔配置文件名一律写成占位符**（2026-10-01 脱敏，
@@ -745,7 +782,7 @@ curl -s -o /dev/null -w "%{http_code}\n" \
 
 ### 现状
 
-26 篇文章 = 24 `.md` + 2 `.mdx`（只有第2、3天用 mdx），**无草稿**，与 `dist/posts` 的 26 个路由一一对应。
+27 篇文章 = 25 `.md` + 2 `.mdx`（只有第2、3天用 mdx），**无草稿**，与 `dist/posts` 的 27 个路由一一对应。
 `src/content/posts/images/` 是个**空目录**，历史遗留、git 也不跟踪空目录。
 新文章用 `.md`（主流选择），只有需要嵌组件时才用 `.mdx`。
 **文件名一律 ASCII slug，且用 `npm run new:post` 生成**（规则与理由见第五节 26）。
@@ -761,11 +798,46 @@ curl -s -o /dev/null -w "%{http_code}\n" \
    猜错就是永久错地址、脚本也不做中文音译（五-26），这一项不能替他假设。
 3. **图片要文件本身**：他给 `C:\Users\…\xxx.png` 这种本地路径我读不到（跨工具路径还不通用，见七节）。
    要么拿文件放进 `public/images/` 并写成 `/images/xxx.png`（上面表格里唯一正确写法），要么用 URL。
-4. **`description` 不给我就从开头提一版草稿让他改**；`category` 沿用「设计灵感」（全站只这一个值，
-   **要新增分类值先确认**——它直接进顶部导航）；tag 写「CSS100天」、series 写「CSS100Day」（五-17）。
+   - **相对路径不行**：`![](截图/a.png)` 会解析成 `/posts/<slug>/截图/a.png` → 404。**中文文件名也不行**，
+     要改成 ASCII；一组图放一个子目录里（`public/images/ccnewtools/01-home.webp`），目录名做命名空间，
+     文件名保留 `NN-语义` 两段以便与正文顺序对上。
+   - **`public/` 不走 Astro 图片优化**（同五-28 相册那条），所以 PNG 要自己转 webp 再放。
+     2026-10-07 首次实测：11 张 1600×900 UI 截图 PNG 1.67MB → `sharp .webp({quality:88,effort:6})` **0.33MB（−80%）**，
+     逐像素 MAE < 1.1/255。**判清晰度要拿原图对比**：那批图里的高斯模糊是他自己打的码，
+     我差点把"原图就有"的东西当成压缩毛刺报上去。
+4. **`description` 不给我就从开头提一版草稿让他改**；tag 写「CSS100天」、series 写「CSS100Day」（五-17）。
+   `category` **现有两个值**：系列文与站内文章用「设计灵感」，非站类内容用「工具」（2026-10-07 新增，
+   首篇 = `/posts/ccnewtools-manual/`）。**再新增分类值要先确认**——分类是从文章聚合出来的
+   （`content-utils.ts` 无硬编码清单），新值会**立刻**出现在顶部分类栏、`/categories/`、归档页筛选里。
 5. ⚠️ **上线每次都要新的授权**，不能因为"上次替他上过"就默认（第六节铁律）。
    固定流程：`new:post` → 填 frontmatter → `npm run build` → 逐项核产物（列表页封面、标题层级、
    列表顺序、搜索命中）→ 把自测结论给他看 → 他点头 → 走第六节部署 + 公网逐项验收。
+6. ⚠️ **正文里不要写 `# 一级标题`**（五-13：`Layout.astro` 已在 `#swup-container` 内注入 sr-only `<h1>`，
+   文章可见标题另有横幅那层）。从别处迁移来的 markdown **第一件要删的就是它**，否则一页两个 h1。
+   小节从 `##` 起正好接在 sr-only h1 下面，`astro check` 与标题层级审计都过。
+7. ⚠️ **宽表格必须自己包一层 `.horizontal-scroll-container`**（2026-10-07 查出并首次使用）：
+   `markdown.css` 给文章表格写的是 `table { width: max-content; min-width: 100% }` + `th,td { min-width: 120px }`
+   → **表格永远按最大内容宽排、不随窄视口回流**，而文章页那层包裹
+   （`src/pages/posts/[...slug].astro:61` 的 `relative mb-4 flex w-full flex-col overflow-hidden`）
+   是 `overflow-x: hidden`，所以 375px 下超出的部分**既不出滚动条也看不见 = 内容直接丢失**
+   （实测第二张表 726px 塞进 295px 容器）。
+   模板其实自带解法：`.custom-markdown .horizontal-scroll-container { max-width:100%; overflow-x:auto;
+   -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain }`（`markdown.css:113`，
+   与 `.katex-display-container` 同一套约定），**但要作者手动包**，全站此前零使用。
+   写法（已验证能产出正确嵌套，remark 的 HTML 块在空行处结束）：
+   ```markdown
+   <div class="horizontal-scroll-container">
+
+   | 参数 | 说明 |
+   |---|---|
+   | … | … |
+
+   </div>
+   ```
+   实测：375px 下容器 295px、`scrollWidth` 528/726、可横向拖动、页面零横向溢出；
+   **1440px 下表格仍是 728px 铺满、不出现滚动条 = 桌面观感零变化**。
+   ⚠️ **既存未修**：`css100天-第8天.md` 那张表（375px 下 653px）同样被裁，**属改名之前就有的缺陷**，
+   已报告用户；它那张表缩进在列表项内，包 div 要连带改列表结构 → 等他点头再动。
 
 ### frontmatter
 
@@ -795,12 +867,13 @@ schema 里剩下 3 个（`pinned` `comment` `password`）零使用。
 
 | 写法 | 结论 |
 |---|---|
-| `![说明](/images/xxx.jpg)`，文件放 `public/images/` | ✅ **唯一正确写法**，全站只有 1 篇用对（第6天:26） |
+| `![说明](/images/xxx.jpg)`，文件放 `public/images/` | ✅ **唯一正确写法**，2026-10-07 前全站只有 1 篇用对（第6天:26）；现 2 篇（另一篇 = `/posts/ccnewtools-manual/`，11 张图走 `/images/ccnewtools/*.webp`） |
 | `<img src="./xxx.svg">` **写在正文里** | ❌ 真坏：解析成 `/posts/<slug>/xxx.svg`，文件不存在就 404 |
 | `<img src="./xxx.svg">` **写在 ` ``` ` 围栏里** | ✅ **无害**：只是示例代码文本，浏览器不发请求（见第九节"heart.svg 误判"） |
 | `src="https://100dayscss.com/..."` | ⚠️ 依赖他人服务器，对方开防盗链或关站会集体裂图。2026-09-28 实测 12 个真实请求的资源全部 200 |
 
-**封面**：`image` 字段 26 篇**全为空**（10 处写了但值是 `""`）。
+**封面**：`image` 字段至今**没有一篇有真值**（历史 10 篇写了但值是 `""`；2026-10-07 那篇干脆不写这个键——
+schema 里它是可选的，不写等同于空，列表页同样走 `getPostCover()` 兜底）。
 > ⚠️ **2026-09-29 更正**：此前这里写的是"所以列表页封面统一是兜底图 `loadingfalse.png`"——**错的**。
 > 核 `dist/index.html`：10 张卡片是 10 个 `post-card-enter-btn`，**一张封面图都没有**；
 > `loadingfalse.png` 在 `CoverImage.astro` 里只在**封面 src 是远程 URL 且加载失败**时才被加载
@@ -825,7 +898,41 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
   也就是说 `src/plugins/rehype-component-github-card.mjs` **是活代码不是摆设** ——
   它注入的是**浏览器端脚本**，改完必须按第五节 21 清内容层缓存才看得到变化。
 
-## 九、待办与未决（最近一次更新：2026-10-01 下午）
+## 九、待办与未决（最近一次更新：2026-10-07 下午）
+
+### 2026-10-07：首篇「工具」类文章 `/posts/ccnewtools-manual/`，顺带查出**两条同类病**
+
+用户把自己另一个项目（CCNewTools，离线测试文档生成工具）的使用手册交进来发博客。
+发稿流程（八节）第一次真跑，**分工证明是对的**：他只给 MD + 一句"分类是工具"，
+我扫语法、提 description、定标签，**唯一回问的是归位 slug**（他选 `ccnewtools-manual`）。
+手册零 Mermaid / 零 KaTeX / 零 callout / 零图片网格，所以八节那份"零实战验证"清单**没有被消耗掉，仍然全空**。
+但查出两条**同族病：从参考站照抄的东西，改名或裁剪之后不报错、只是静默不生效**：
+
+1. ✅ **文章图片的 Fancybox 灯箱一直是死的**（已修，`FancyboxManager.astro` 两处选择器）。
+   根因链条完整可复述：`Markdown.astro` 把正文容器类名写成 **`custom-markdown`**，
+   而参考站 firefly.cuteleaf.cn 是 **`custom-md`**（2026-10-07 实测它的文章 HTML 与
+   `FancyboxManager…js` 原文：绑的正是 `".custom-md img, #post-cover img, .moment-images img"`，
+   与我们这份**逐字相同**）→ 我们照抄了选择器却改了类名，于是
+   `hasElements` 守卫永远为 false、`setup()` 直接 `return`，**连 Fancybox 本体 chunk 都不请求**。
+   影响面：27 篇文章 60+ 张正文图，含 `/about/` 与 `/guestbook/`（它们也走 `<Markdown>`）。
+   → 修法只加类名不改现有 CSS：`".custom-md img, .custom-markdown img, …"`（两个都留，
+   `.custom-md` 仍是动态页模板在用）。**别改成把 `Markdown.astro` 的类名换回 `custom-md`**——
+   `markdown.css` 全部规则都挂在 `.custom-markdown` 下，那会整片丢样式。
+   → 取证办法（比"点一下看有没有弹窗"可靠，因为这个浏览器 surface 里合成 click 被 Fancybox 挡了）：
+   **数 Fancybox 本体 chunk 有没有被请求**。修后 `/posts/css100天-第13天/`（6 张正文图）**加载** `dist.*.js`，
+   `/series/`（0 张）**不加载** —— 一前一后就是因果证据，且顺带证明没给无图页面白拉这个包。
+   ⚠️ 仍未做的：真人点击是否真弹出大图，**我在本环境没法验**，要他自己在 preview 里点一张确认。
+2. ⚠️ **宽表格在 375px 下丢内容**（新规矩见八节 7）。本批**只修了自己这篇**（两张表都包了
+   `.horizontal-scroll-container`，桌面观感零变化），**`css100天-第8天.md` 那张表仍被裁**——
+   它缩进在列表项内，包 div 要连带动列表结构，属既存缺陷且要改他的旧文章 → **已报告，等他点头**。
+
+**同一批查出的第三条，故意没动**：`Markdown.astro` 里写的是 **`propse-base`**（参考站是 `prose-base`），
+Tailwind 的 `prose-base` 拼错 → 该工具类从未生效。它正好是 `prose` 的默认字号，**所以现在看不出任何异常**，
+补上会改全站 27 篇文章的正文排版 → 属视觉决策，**别顺手"修 typo"**，要改先做前后对比再问他。
+
+**本批基线变化**：文章 26 → **27 篇**（25 .md + 2 .mdx）、页面 42 → **43**、dist 文件 336 → **350**
+（+1 文章页 +11 webp +2 pagefind 产物）、Pagefind 索引 28 → **29 页**、`public/images/` 1 → **12** 个文件。
+分类值 1 → **2**（设计灵感 / 工具）。
 
 ### 2026-10-01 上午批准的四件工程项：全部完成（细节见对应条目）
 
@@ -846,7 +953,8 @@ Mermaid、KaTeX 公式、`:::` callout 提示框、图片网格 ——
 
 1. **新文章走 ASCII slug**，已有 26 篇中文 URL 不动 → 见第五节 26。
 2. **列表页自动配封面**（按 `seriesOrder` 轮播 4 张技术感矢量图，不是原计划的"按分类"——
-   因为 26 篇 `category` 全是同一个值 `"设计灵感"`，按分类分配等于全站一张图，没有区分度）→ 见第五节 25。
+   当时 26 篇 `category` 全是同一个值 `"设计灵感"`，按分类分配等于全站一张图，没有区分度。
+   2026-10-07 加了第二个分类值「工具」，但只有 1 篇，**按分类分配仍然没有区分度，这条结论不变**）→ 见第五节 25。
 3. **文章脚手架 `npm run new:post`** → 见第五节 26。
 
 余下的内容类待办：**首篇用到 Mermaid / KaTeX / callout / 图片网格 的文章仍未写**，

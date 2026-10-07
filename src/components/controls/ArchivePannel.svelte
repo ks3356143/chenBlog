@@ -21,11 +21,28 @@
         values: string[]
     }
 
-    // 筛选条件由 archive.astro 从 Astro.url 解析后传入，组件本身不碰 window，保持可服务端渲染
+    // props 只是服务端那一遍的初值。归档页是**纯静态产物**，构建期 Astro.url 永远不带查询串，
+    // 所以真实筛选值必须在客户端从 window.location.search 读——
+    // 2026-09-24 那笔「去掉 client:only 水合空窗」把这行删了，导致 ?category / ?tag / ?uncategorized 全部恒空
     export let tags: string[] = []
     export let categories: string[] = []
     export let uncategorized: boolean = false
     export let sortedPosts: Post[] = []
+
+    function resolveFilters(): { tags: string[]; categories: string[]; uncategorized: boolean } {
+        if (typeof window === "undefined") return { tags, categories, uncategorized }
+        const params = new URLSearchParams(window.location.search)
+        if (!params.has("tag") && !params.has("category") && !params.has("uncategorized")) {
+            return { tags, categories, uncategorized }
+        }
+        return {
+            tags: params.getAll("tag"),
+            categories: params.getAll("category"),
+            uncategorized: params.has("uncategorized"),
+        }
+    }
+
+    const { tags: activeTags, categories: activeCategories, uncategorized: activeUncategorized } = resolveFilters()
 
     function formatDate(date: Date) {
         const month = (date.getMonth() + 1).toString().padStart(2, "0")
@@ -52,19 +69,19 @@
 
     const currentFilters: ActiveFilter[] = []
 
-    if (categories.length > 0) {
-        currentFilters.push({ label: "分类", values: categories })
+    if (activeCategories.length > 0) {
+        currentFilters.push({ label: "分类", values: activeCategories })
     }
 
-    if (uncategorized) {
+    if (activeUncategorized) {
         currentFilters.push({
             label: "分类",
             values: ["未分类"],
         })
     }
 
-    if (tags.length > 0) {
-        currentFilters.push({ label: "标签", values: tags })
+    if (activeTags.length > 0) {
+        currentFilters.push({ label: "标签", values: activeTags })
     }
 
     const activeFilters: ActiveFilter[] = currentFilters
@@ -75,19 +92,19 @@
 
     let filteredPosts: Post[] = sortedPosts
 
-    if (tags.length > 0) {
+    if (activeTags.length > 0) {
         filteredPosts = filteredPosts.filter(
-            (post) => Array.isArray(post.data.tags) && post.data.tags.some((tag) => tags.includes(tag)),
+            (post) => Array.isArray(post.data.tags) && post.data.tags.some((tag) => activeTags.includes(tag)),
         )
     }
 
-    if (categories.length > 0) {
+    if (activeCategories.length > 0) {
         filteredPosts = filteredPosts.filter(
-            (post) => post.data.category && categories.includes(post.data.category),
+            (post) => post.data.category && activeCategories.includes(post.data.category),
         )
     }
 
-    if (uncategorized) {
+    if (activeUncategorized) {
         filteredPosts = filteredPosts.filter((post) => !post.data.category)
     }
 

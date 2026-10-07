@@ -7,7 +7,8 @@ import ArchivePannel from "@/components/controls/ArchivePannel.svelte"
 
 const sortedPostList = await getSortedPostsList()
 
-// 筛选条件在服务端解析，归档时间线随 HTML 一起输出，避免客户端水合前的空白
+// 这三个值在纯静态构建下**恒为空**（Astro.url 构建期不带查询串），只当服务端那一遍的初值用；
+// 真实筛选由 ArchivePannel 在客户端读 window.location.search。见该组件 resolveFilters() 的注释。
 const searchParams = Astro.url.searchParams
 const tagFilters = searchParams.getAll("tag")
 const categoryFilters = searchParams.getAll("category")
@@ -15,10 +16,13 @@ const uncategorizedFilter = searchParams.has("uncategorized")
 ---
 
 <Layout title="归档-亦林">
+	<!-- client:load 是必需的：没有时间指令的框架组件只出静态 HTML、客户端零 JS，筛选就永远跑不起来。
+	     SSR 那一遍仍输出完整时间线，所以普通 /archive/ 没有水合空窗；带查询串时水合后立即收窄。 -->
 	<ArchivePannel
 		sortedPosts={sortedPostList}
 		tags={tagFilters}
 		categories={categoryFilters}
 		uncategorized={uncategorizedFilter}
+		client:load
 	/>
 </Layout>

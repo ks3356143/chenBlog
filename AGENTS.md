@@ -815,7 +815,15 @@ curl -s -o /dev/null -w "%{http_code}\n" \
 6. ⚠️ **正文里不要写 `# 一级标题`**（五-13：`Layout.astro` 已在 `#swup-container` 内注入 sr-only `<h1>`，
    文章可见标题另有横幅那层）。从别处迁移来的 markdown **第一件要删的就是它**，否则一页两个 h1。
    小节从 `##` 起正好接在 sr-only h1 下面，`astro check` 与标题层级审计都过。
-7. ⚠️ **宽表格必须自己包一层 `.horizontal-scroll-container`**（2026-10-07 查出并首次使用）：
+7. ⚠️ **正文里成对的英文直引号 `"xxx"` 必须改写成中文 `“xxx”`**（2026-10-07 实测）：
+   markdown 管线会把 `"` 转成智能引号，而**紧跟中文、前面没有空白时它被判定成后引号**，
+   于是 `"可疑"` 渲染成 `”可疑”`——**两个都是后引号**。站内其余 26 篇用「」或已正确的 `“”`，
+   所以全站只有迁移来的手册踩到（首版 19 处）。
+   → 改法：正文里成对替换为 `“”`。**改之前先把 `` `code span` `` 与 ``` 围栏保护掉**，
+   并且**绝对不要动 frontmatter**——`description: "…"` 外层那对引号是 YAML 定界符，
+   换成 `“”` 会让 schema 解析直接失败。
+   → 核法：扫 `dist/posts/*` 里 `/^”[^“”\n]{1,15}”$/` 形状的串，**期望 0 处**。
+8. ⚠️ **宽表格必须自己包一层 `.horizontal-scroll-container`**（2026-10-07 查出并首次使用）：
    `markdown.css` 给文章表格写的是 `table { width: max-content; min-width: 100% }` + `th,td { min-width: 120px }`
    → **表格永远按最大内容宽排、不随窄视口回流**，而文章页那层包裹
    （`src/pages/posts/[...slug].astro:61` 的 `relative mb-4 flex w-full flex-col overflow-hidden`）

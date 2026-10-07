@@ -8,8 +8,10 @@ import "@/styles/fancybox-custom.css"
     let Fancybox: any
 
     async function setup() {
+        // 两个类名都要：.custom-md 是参考站原文（动态页模板仍在用），.custom-markdown 是本项目
+        // Markdown.astro 实际输出的类名——改名时这条绑定曾静默失效，文章图片全都不能点看大图
         const selectors = [
-            ".custom-md img, #post-cover img, .moment-images img",
+            ".custom-md img, .custom-markdown img, #post-cover img, .moment-images img",
             ".moment-images a[data-fancybox]",
             "[data-fancybox]:not(.moment-images a)",
         ]
@@ -62,7 +64,7 @@ import "@/styles/fancybox-custom.css"
         }
 
         // 绑定图片
-        Fancybox.bind(".custom-md img, #post-cover img, .moment-images img", {
+        Fancybox.bind(".custom-md img, .custom-markdown img, #post-cover img, .moment-images img", {
             ...commonOptions,
             groupAll: true,
             Carousel: {

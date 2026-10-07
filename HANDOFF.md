@@ -3,7 +3,7 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-07 下午（本批三件事全部做完并本地验完；他已说「干完就推送和部署」= 本次上线授权已给）**。
+> 最后更新：**2026-10-07 下午（本批三件事全部做完，已提交、已推送、已上线 V0.1.22 并从公网验收）**。
 > 用户把他另一个项目 CCNewTools（离线测试文档生成工具）的**使用手册**交进来发博客，分类「工具」。本批产出：
 > 1. 新文章 `src/content/posts/ccnewtools-manual.md`（永久 URL `/posts/ccnewtools-manual/`）
 >    + `public/images/ccnewtools/` 11 张 webp（1.67MB PNG → **0.33MB**，逐像素 MAE < 1.1）。
@@ -281,14 +281,15 @@
     ① 在 `<CACHE_CONF>` 里给它加一条 `no-cache`（属服务器配置改动，要用户授权）；
     ② 代码侧改成带内容哈希的引用（如 `reinit.js?v=<8位hash>`，BaseLayout 构建期算），无需动服务器。
     倾向 ②（不碰服务器、自动跟着内容变）。**已报告用户，等他选。**
-11. 🔴 **本批新文章在他验收之前一行都没上线**（AGENTS 六节铁律：上线每次要新授权）。
-    他要做的事：开 `http://localhost:4321/posts/ccnewtools-manual/`（preview 还开着）看 11 张截图清晰度、
-    两张表在手机上能不能横向拖动、以及**随手点一张图看灯箱弹不弹得开**（这条我在本环境验不了，见 12.）。
-    他点头后才 commit + push + 走第六节部署。
-12. ⚠️ **文章图片灯箱"真人点击能否弹出"未经验证**：本会话的浏览器 surface 顶层视口 0×0，
-    合成 `click` 又被 Fancybox 挡了，所以我只证明了**因果链成立**——
-    修复后 `/posts/css100天-第13天/`（6 张正文图）会请求 Fancybox 本体 chunk `dist.*.js`，
-    而 `/series/`（0 张）不请求。这不等于"点了真能开"。**要他亲手点一次确认。**
+11. ⬜ **本批已上线 V0.1.22，程序化验收全过，但还欠他一次肉眼验收**（直接看 http://47.108.230.220/ ）：
+    ① 新文章 11 张截图的清晰度，**尤其手机上 295px 宽够不够看**（不满意可指定回退成原分辨率 PNG，
+    原图在他项目目录里没删）；② 两张表在手机上横向拖动是否顺手；
+    ③ 我删掉了他原手册里 **8 条 `---` 小节分隔线**（prose 的 h2 间距已够，且这是全站第一次真用到 `hr`），
+    要保留分隔感一句话就能加回；④ 顶部分类栏多出「工具」胶囊的位置对不对。
+12. ⚠️ **文章图片灯箱"真人点击能否弹出"仍未验证**（本批唯一没闭环的一项）。
+    本会话的浏览器 surface 顶层视口 0×0，合成 `click` 又被 Fancybox 挡了，所以我只证明了**因果链成立**：
+    修复后有正文图的页面会请求 Fancybox 本体 chunk（线上实测 `/posts/ccnewtools-manual/` **有加载** `dist.*.js`，
+    无正文图的 `/archive/` **不加载**）。这不等于"点了真能开"。**要他亲手点一次确认。**
 13. 🆕 **`css100天-第8天.md` 的宽表在 375px 下仍被裁**（2026-10-07 查出，**既存缺陷、非本批引入**，等他点头）。
     那张表 375px 下 653px 宽，被 `[...slug].astro:61` 那层 `overflow-x: hidden` 裁掉 = 内容看不见也拖不动。
     解法就是本批新立的八节 7 规矩（包 `.horizontal-scroll-container`），但它**缩进在列表项内**，
@@ -581,18 +582,18 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `4a6d317`（与 `origin/main` 齐平、0 领先）。⚠️ **本批改动全部未提交**：已改 `AGENTS.md` / `HANDOFF.md` / `FancyboxManager.astro` / `src/pages/archive.astro` / `src/components/controls/ArchivePannel.svelte`，未跟踪 `src/content/posts/ccnewtools-manual.md` + `public/images/ccnewtools/` 11 张 webp。**他已授权「干完就推送和部署」** → 分三笔：① 新文章+图 ② Fancybox 选择器修复 ③ 归档筛选修复（文档并入各笔） |
-| 工作区 | ❌ 5 改 + 12 新，零提交（截至写这行时）。提交后逐笔 `git show --stat` 核对，再 push、再走第六节部署 |
-| 线上站点 | ⚠️ **落后本地一整批**：线上 = 10-01 21:20 的 **V0.1.21**（当时首页与本地 dist 逐字节相同 172716B、13 条路径全 200、控制台 0 报错）。**本批新文章在线上 `/posts/ccnewtools-manual/` 现在会 404**，直到他授权上线 |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。本批 **5 笔已全部推送**：① 新文章 + 11 张 webp ② Fancybox 选择器修复 ③ 归档筛选修复 ④ 文档（五-33 等）⑤ 发版 0.1.21 → 0.1.22 |
+| 工作区 | ✅ 干净，与 `origin/main` 齐平 0 领先 |
+| 线上站点 | ✅ **2026-10-07 16:1x 部署到最新，V0.1.22**（351 文件 / 22M，走第六节原子替换，`dist.old` + 时间戳备份都留）。**公网逐字节比对：线上首页 == 本地 `dist/index.html`（md5 `a7ed6b40…`，175581B）**。15 条路径全 200（含新文章页、两张 webp、`/archive/?category=工具`、RSS、pagefind、sitemap）。缓存头未破坏（HTML `no-cache, must-revalidate`、`/pagefind/` `no-cache`、`/_astro/` immutable、带 `If-None-Match` 仍 **304**）。**他报的归档筛选已在线上实测五项全对**：`/archive/` 27、`?category=工具` 1、`?category=设计灵感` 26、`?uncategorized=true` 0、`?tag=CSS100天` 25，筛选头文案正确。新文章页线上实测：11 张图零破图全加载、`h1` 恰好 1、2 张表都包在滚动容器里、Fancybox 本体 chunk **有加载**（= 灯箱绑定生效）、零横向溢出、站点信息卡显示 **V0.1.22**、控制台 0 error 0 warn |
 | 服务器配置 | 未动（本批只换 dist）。缓存策略文件与 vhost 备份位置见 AGENTS 六节（值已脱敏，展开版在私密记录里）。⚠️ 新发现一条缓存隐患见「还挂着的事 10.」 |
 | 本地构建 | `npm run build` 退出码 0：**43 页 / dist 351 文件 / 22M**，约 4s + Pagefind 0.2s。较 10-01 基线 **+1 页 +15 文件** = 1 篇文章页 + 11 张 webp + 2 个 pagefind 产物 + 1 个 `ArchivePannel` chunk；**Pagefind 索引 28 → 29 页**（新文章正文已进索引，gunzip 分片实测命中）。`_astro/` 212、`gallery/` 仍 26、`images/` 1 → 12。**`npm run check` 与 `npx tsc --noEmit` 均退出码 0**（check 剩 2 条故意留的 hint，见 AGENTS 三节）。归档页因新增 `client:load` 从 146925B → **177779B**（props 序列化 27 篇，见五-33） |
 | 依赖 | 本批**零改动**（没装/卸/升任何东西）。基线仍是 `@astrojs/check@0.9.10` devDep、`allowScripts` 钉 `esbuild@0.28.2`、干净 `npm ci` 695 包 |
-| dev / preview server | ⚠️ **`npm run preview` 在跑，占 :4321**（10-07 为验新文章起的，服务本地 dist）。停法：按 `node.exe` + `astro\bin\astro.mjs` + `preview` 尾参数精确杀，别信 `TaskStop` 的 summary（AGENTS 九节坑③：宽匹配会把自己的 shell 一起吃掉）。dev 未起 |
-| 内容层缓存 | 本批**不需要**清 `node_modules/.astro/data-store.json`：没动 `src/plugins/**` 也没动 `astro.config.mjs` 的 markdown 链，新增内容文件按哈希自然失效（AGENTS 五-21 的触发条件不成立） |
+| dev / preview server | ✅ **都已停，:4321 空闲**（本批收尾时按 `node.exe` + `astro\bin\astro.mjs` 精确杀，复查残留 = 0）。要再看就 `npm run preview`（服务本地 dist）或直接看线上 |
+| 服务器回滚资产 | `dist.old` + **22 个 `dist_backup_*`**（本批 +1），合计 **23 个**。全部保留，**删需用户明确同意** |
 | 服务器回滚资产 | `dist.old`（22M）+ **21 个 `dist_backup_*`**。全部保留，**删需用户明确同意** |
 | 临时文件 | ✅ 本批已清：`%TEMP%` 下 4 个 `chenblog-verify*.mjs` + `chenblog-wrap-tables.mjs` 探针脚本、`/tmp/chenblog_{build,build2,build3,check,preview}.log`、扒参考站时落在**仓库根**的 `.ref-firefly-post.html`（仓库公开，这类文件绝不能留）。服务器 `/tmp` 本批未动（没部署），10-01 已核过无残留。仓库内 `git status` 只剩本批的真实改动 |
 | 排查方法类坑位 | 10-07 新增（细节都在 AGENTS 九节新小节 + 八节 3/4/6/7，此处只留索引）：**「照抄参考站的选择器，改名后不报错、只是静默不生效」这一族** —— 验绑定有没有装上要看**本体 chunk 有没有被请求**，别用"点了有没有反应"；**宽表格必须自己包 `.horizontal-scroll-container`**；**迁移来的 markdown 第一件要删的是正文 `#` H1**；**行尾转换永远别过字符串**（我这次 utf8 读 + binary 写，把整篇中文逐字符截成单字节、991 个 U+FFFD，正确做法是字节级 `0x0A→0x0D 0x0A`）。两次靠控制组兜住的误判：截图里的高斯模糊是他自己打的码、引用块竖条"深色没变"是隐藏标签页 transition 假信号。10-01 那批的坑位索引见 AGENTS 十-14 / 十-15 / 三节 / 五-5 / 五-9 / 九节 |
-| 待用户拍板 | ① **本批新文章的验收 + 上线授权**（最要紧，见「还挂着的事 11.」；没点头就不 commit 不 push 不上线）② 第8天的宽表要不要一起包（13.）③ `propse-base` 拼错要不要补（14.，补了会改全站 27 篇正文排版）④ 侧栏卡片不随软导航更换（9.）⑤ `reinit.js` 的 12h 缓存怎么解（10.）⑥ PostCard 加密文章锁图标要不要补（4.4）⑦ 全站 title 带不带后缀（SEO）⑧ meCard 三个社交按钮真实地址 |
+| 待用户拍板 | ① 本批三项的**肉眼验收**（截图清晰度 / 手机拖表 / 删掉的 8 条分隔线要不要加回 / 灯箱真人点击，见「还挂着的事 11. 与 12.」）② 第8天的宽表要不要一起包（13.）③ `propse-base` 拼错要不要补（14.，补了会改全站 27 篇正文排版）④ 侧栏卡片不随软导航更换（9.）⑤ `reinit.js` 的 12h 缓存怎么解（10.，**本次没改 helper 所以还无害**）⑥ PostCard 加密文章锁图标要不要补（4.4）⑦ 全站 title 带不带后缀（SEO）⑧ meCard 三个社交按钮真实地址 |
 | 既存小坑 | `--radius-large` / `--panel-border-color` 未定义（AGENTS 五-16）——**顺带一条本批实测到的后果**：表格那行 `border-radius: calc(var(--radius-large) - .5rem)` 因此整条无效，表格实际是直角，**正好符合站内"面板一律直角"的口径，别当缺陷去补变量**；`tsconfig.json` react jsx 残留无影响；`src/content/posts/images/` 空目录；单分类时分类卡收起态反而更高（**现在已有第二个分类，这条要复验是否还成立**）；`/site.webmanifest` 的 Content-Type 缺 webmanifest 映射（要动 nginx mime.types）；**首页 10 张封面里 2 张的加载遮罩在图片已解码后仍未褪**（线上旧构建同样，属 `CoverImage` 状态机那块，五-25 / 十-2）；重复 id `announcement`/`cardTags`（九节已判定降级：无脚本查询、无死控件） |
 
 ---

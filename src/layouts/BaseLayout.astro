@@ -1,4 +1,6 @@
 ---
+import { createHash } from "node:crypto"
+import { readFileSync } from "node:fs"
 import "@/styles/global.css" // tailwind覆盖所有
 import "@/styles/main.css"
 import "@/styles/transitions.css"
@@ -29,6 +31,16 @@ const { title } = Astro.props
 // 首页（含 /2/ 这类分页）横幅用高的一套高度变量，切页时做高矮过渡，见 layout-style.css
 const pathname = Astro.url.pathname
 const isHome = pathname === "/" || /^\/\d+\/$/.test(pathname)
+
+// reinit.js 是「稳定文件名 + 内容会变」的脚本，而 Nginx 给它的是宝塔默认 js/css 的 max-age=43200（12h）：
+// 改了 helper 之后回访用户会带着旧 helper 跑新 HTML（正是六节给 /pagefind/ 设 no-cache 要防的错位）。
+// 用内容哈希当查询串，改一次文件就换一次 URL，不动服务器配置也能让改动立刻生效。
+// ⚠️ 路径按 process.cwd() 拼，别用 import.meta.url：预渲染阶段这个模块在 dist/.prerender/chunks/ 里，
+//    相对它去找 ../../public/ 会指到 dist/public/（实测直接 ENOENT 把构建打挂）。
+const reinitVersion = createHash("sha256")
+    .update(readFileSync(`${process.cwd()}/public/assets/js/reinit.js`))
+    .digest("base64url")
+    .slice(0, 10)
 ---
 
 <!doctype html>
@@ -48,7 +60,7 @@ const isHome = pathname === "/" || /^\/\d+\/$/.test(pathname)
         <title>{title || siteConfig.siteMeta.name}</title>
         <SEO {...Astro.props} />
         <!-- 「导航后重 init」注册表：必须在 body 之前同步执行——容器内的 is:inline 脚本在解析期就要拿到 window.onReinit -->
-        <script is:inline src="/assets/js/reinit.js"></script>
+        <script is:inline src={`/assets/js/reinit.js?v=${reinitVersion}`}></script>
         <script is:inline>
             const setTheme = () => {
                 const theme = (() => {

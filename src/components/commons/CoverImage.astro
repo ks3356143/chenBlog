@@ -116,7 +116,7 @@ const remoteReferrerPolicy = !isLocal && shouldAddNoReferrer(isPublic ? url(src)
 			<div class="fallback-image absolute inset-0 hidden">
 				<Picture
 					src={fallbackImg}
-					alt="Fallback cover"
+					alt=""
 					class={imageClass}
 					style={imageStyle}
 					width={preview ? 400 : 1200}
@@ -137,7 +137,7 @@ const remoteReferrerPolicy = !isLocal && shouldAddNoReferrer(isPublic ? url(src)
 			<div class="fallback-image absolute inset-0 hidden">
 				<img
 					src={url(fallbackPath)}
-					alt="Fallback cover"
+					alt=""
 					class={imageClass}
 					style={imageStyle}
 					loading="lazy"
@@ -202,15 +202,13 @@ const remoteReferrerPolicy = !isLocal && shouldAddNoReferrer(isPublic ? url(src)
 				container.setAttribute("data-loading", "false")
 			}
 
-			const showError = () => {
-				container.setAttribute("data-loading", "false")
-				container.setAttribute("data-error", "true")
-			}
-
-			// 统一的错误处理
+			// 出错时**必须先摘掉加载态**，否则遮罩 + 转圈会永远盖在上面（既不报错也不消失）。
+			// 原先这里对非远程图直接 return，于是本地封面一旦 load 失败就无限转圈；
+			// data-error 仍只给远程图设——它驱动的是"换成回退图 + 藏掉坏图"那套远程专属表现。
 			const onError = () => {
+				hideLoading()
 				if (img.dataset.remote !== "true") return
-				showError()
+				container.setAttribute("data-error", "true")
 			}
 
 			if (img.complete) {

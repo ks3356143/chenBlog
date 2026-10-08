@@ -65,12 +65,14 @@ const randomSubtitle = getRandomSubtitle()
 		class="relative h-full w-full"
 	>
 		<!-- 默认渲染第一张，其他放入template给客户端切换：未使用样式banner-image-slot -->
+		<!-- 壁纸是纯装饰图，alt 必须留空：首屏有 Ken Burns scale(1→1.1)，图未解码时
+		     Chromium 会把 alt 文本画在正在缩放的框里，看起来就是一行字在飘（2026-10-07 线上实测） -->
 		{
 			backgroundImages.images.length > 0 && (
 				<div class="banner-image-slot absolute inset-0">
 					<ImageWrapper
 						id="banner"
-						alt="background paper of the blog"
+						alt=""
 						class="h-full object-cover"
 						src={backgroundImages.images[0]}
 						position={backgroundWallpaper.position}
@@ -89,7 +91,7 @@ const randomSubtitle = getRandomSubtitle()
 				<template class="banner-tpl">
 					<ImageWrapper
 						id="banner"
-						alt="background paper of the blog"
+						alt=""
 						class="h-full object-cover"
 						src={src}
 						position={backgroundWallpaper.position}

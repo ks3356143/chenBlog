@@ -33,7 +33,10 @@
 	}
 
 	// 是否正处在一次软导航中途：Swup 在 visit 期间给 <html> 挂 is-changing，
-	// 容器内脚本的重新求值就发生在这段窗口里，紧接着 runAll 一定会跑，所以此时注册不该立即再跑一次。
+	// 容器内脚本的重新求值就发生在这段窗口里。
+	// ⚠️ 只对「已存在的 key」成立：那一趟的 runAll 已经跑过它了，注册时不该再跑一次。
+	// 对「全新的 key」不成立（它没被 runAll 跑到，见下面 onReinit 里的注释）——这条区分是
+	// 2026-10-08 修「文章页 F5 → 点主页，封面永远转圈」时补上的。
 	// 关掉页面过渡（prefers-reduced-motion）时不会有 is-changing，注册即跑，行为与整页加载一致。
 	function navigating() {
 		return document.documentElement.classList.contains("is-changing")
@@ -61,8 +64,23 @@
 			}
 			return
 		}
-		entry = entries[key] = { fn: fn, delay: opts.delay || 0, timer: 0, runs: 0, ranFor: token }
-		if (opts.immediate !== false && !navigating()) schedule(entry, false)
+		// 全新的 key 一定没被「这一趟」的 runAll 算进过：Astro 的组件脚本是 type="module"，插进容器后
+		// 要到下一个宏任务才求值，而 runAll 在 content:replace 当趟就派发完了。这条区分是
+		// 2026-10-08 修「文章页 F5 → 点主页，封面永远转圈」时补的（线上实测 runs 恒 0、10 张封面卡死）。
+		// 但同步执行的经典脚本会在 runAll 之前就把 key 注册好，所以这里不能立即跑，否则一趟导航跑两遍
+		// （实测 recommended-post 会 +2）。做法：让出这一拍，下一拍发现自己仍然没被跑过才自己补一次，
+		// 同步/异步两种注册都恰好跑一次；ranFor 从 -1 起，page:view 的 catchUp 也照样能兜住它。
+		entry = entries[key] = { fn: fn, delay: opts.delay || 0, timer: 0, runs: 0, ranFor: -1 }
+		if (opts.immediate !== false) {
+			if (navigating()) {
+				var fresh = entry
+				setTimeout(function () {
+					if (fresh.ranFor === -1) schedule(fresh, false)
+				}, 0)
+			} else {
+				schedule(entry, false)
+			}
+		}
 	}
 
 	/**

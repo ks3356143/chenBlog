@@ -1,18 +1,26 @@
 # AGENTS.md — 项目长期指令
 
 > 陈俊亦的个人博客。每次对话开始时自动读取本文件作为上下文。
-> 最后更新：**2026-10-08 上午（修掉用户报的两条首屏图片问题：装饰图 alt 会被画出来 + 本地封面加载失败无限转圈，已上线 V0.1.25）**。
-> 新落盘 **五-34（装饰图 alt 必须空串，且 `ImageWrapper` 的 `alt || "图片"` 兜底会把空串填回文字——只改调用方等于白改）**
-> 与 **五-35（`CoverImage` 任何终态都要摘 `data-loading`；判真 bug 的公式；以及"手机那条只修掉一个成因、不等于现象已消失"）**。
-> ⚠️ 两条都不是 Edge 的问题，共同特征是"只有第一次进首页才有"（刷新走缓存快路径）。
-> 本批（2026-10-07）新落盘：**八节补 4 条发稿规矩**——图片必须 `/images/` 绝对路径 + ASCII 文件名 + 自己转 webp、
-> `category` 现有两值、**正文不要写 `#` 一级标题**、**宽表格必须自己包 `.horizontal-scroll-container`**；
-> **九节新小节记两条同族病：从参考站照抄的东西改名后不报错、只是静默不生效**——
-> ① 文章图片的 Fancybox 因 `Markdown.astro` 把 `custom-md` 写成 `custom-markdown` 而从未生效（**已修**）；
-> ② `propse-base` 拼错（**故意没动**，补上会改全站正文排版）。第8天的宽表仍被裁，等他点头。
-> 代码侧：新增 `src/content/posts/ccnewtools-manual.md` 与 `public/images/ccnewtools/` 11 张 webp、
-> `FancyboxManager.astro` 两处选择器补 `.custom-markdown img`。
-> 基线：**43 页 / 350 文件 / 22M** / 构建约 4.0s（+ Pagefind 0.2s）；文章 **27 篇**；
+> 最后更新：**2026-10-08 下午（修掉用户当天报的两条：框选/点击正文时文字跳一下 + 文章页 F5 后点主页封面永远转圈，已上线 V0.1.26）**。
+> 新落盘 **五-36（inline 元素的 `border-bottom` 会撑高行盒 → hover 态画下划线绝不能用 border；
+> 以及"`::selection` 不背这个锅"：他说的框选实际触发条件是 hover/active）**
+> 与 **五-37（`animation-fill-mode: forwards` 把 `to` 帧的 transform 永久留在元素上 = 常驻合成层；
+> 换 `backwards` 就必须同时删基础 `opacity: 0`，否则动画一结束正文隐形）**。
+> 🔴 **十-14 补了一条真洞**：`navigating()` 的假设只对「已存在的 key」成立——Astro 组件脚本是
+> `<script type="module">`，插进容器要到**下一个宏任务**才求值，赶不上 `content:replace` 当趟的 `runAll`，
+> 而 `ranFor` 被初始化成当前 token 又让 `catchUp` 以为跑过了 → **该 key 一次都不跑**。
+> 触发条件 = 「本文档第一次进这个页型」+「注册发生在软导航途中」，所以只有**文章页起步 → 首页**这条坏；
+> 手机 Edge 那条"第一次进首页永远转圈"（五-35）**极可能就是这个**，不是 Edge、也不是懒加载被中止。
+> ⚠️ 修第一版"注册即跑"是错的：同步脚本那一路会变成一趟 +2（实测 `recommended-post`）。
+> 顺带把 `reinit.js` 的引用改成带内容哈希（它原本吃 Nginx 的 `max-age=43200`，改动会留给回访用户 12h）——
+> **哈希路径必须按 `process.cwd()` 拼**，用 `import.meta.url` 在预渲染阶段指到 `dist/public/` 会 ENOENT 打挂构建。
+> 同一批：九节 item 4 的旧结论被推翻（那条 hover `border-bottom` 正是 09-29 补上 `--primary` 才活过来、
+> 进而撑高行盒的元凶），五-9 基线口径改成可复现的 `find`/`du` 两条命令。
+> 上午那批（V0.1.25：装饰图 alt + 本地封面 load 失败收遮罩）细节只在 **五-34 / 五-35** 讲，此处不复述。
+> 2026-10-07 那批（发稿规矩 4 条 + 两条"照抄改名后静默失效"同族病）细节在 **八节 / 九节**，也不复述。
+> 代码侧本批：`public/assets/js/reinit.js`、`src/layouts/BaseLayout.astro`、`src/styles/markdown.css`、
+> `src/styles/transitions.css`。
+> 基线：**43 页 / 351 文件 / `du -sh` 22M（字节 20.99MB）** / 构建约 4.0s（+ Pagefind 0.2s）；文章 **27 篇**；
 > `npm run check` 与 `npx tsc --noEmit` 均 **0 error**（check 剩 2 条故意留的 hint）。
 > ⚠️ 上一批（2026-10-01：上午批准的四件工程项 + 用户报的横幅标题 bug。落了 **十-14 重 init helper**、
 > **十-15 容器登记通则**、六节脱敏成占位符、`npm run check` 成为组件类型入口、五-5 纠正「锁图标」假事实、
@@ -190,15 +198,22 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
    导致整个页面（含首页）渲染失败。Astro 6 容忍、Astro 7 报错。
    → 已于 2026-09-20 从 `src/pages/[...page].astro` 移除一处。要么写内容，要么整行删掉，别留空标签。
 
-9. 构建产物基线（**2026-10-07 实测**：加首篇工具类文章 + 11 张截图之后）：
-   **43 个页面 / dist 350 个文件 / 22MB**，其中 `_astro/` 211 个（自动封面 4 张 × 5 档响应式 = 20 个）、
+9. 构建产物基线（**2026-10-08 下午实测**，V0.1.26）：
+   **43 个页面 / dist 351 个文件 / `du -sh` 22M（字节合计 20.99 MB）**，
+   ⚠️ **量数字要连着方法一起报**：`du -sh` 按 4K 分块算（351 个文件就白涨 ~0.7M），字节合计才可比；
+   文件数用 `find dist -type f | wc -l`，页数用 `find dist -name index.html | wc -l`。
+   上一条记的"350 个文件"与今天的 351 差 1，**不是本批引入的回归**：`_astro/` 同步从 211 涨到 212，
+   时间上唯一夹在中间的是 10-08 上午那批改 `Cover.astro` / `ImageWrapper.astro` / `CoverImage.astro`
+   的提交（多切出一个 chunk 属正常），**具体归因没逐笔核过，只当口径说明用**。
+   其中 `_astro/` 212 个（自动封面 4 张 × 5 档响应式 = 20 个）、
    `pagefind/` 44 个（**29 个 fragment / 索引 29 页**）、`gallery/` 26 个（20 张照片共 3.46MB）、
    `images/` **12 个**（1 张历史 jpg + `images/ccnewtools/` 的 11 张 webp，共 0.33MB）。
    热缓存 `npm run build` 约 **4.0s** + 索引 0.2s（2026-10-01 起；此前 5~7s，差值来自五-30 那批重复渲染的消除）。
    （体积历史：28M → 09-30 相册 webp 化后 **20.3M**（−7.7M）→ 10-01 下午 **22M**。
    文件数历史：307（09-28 接 Pagefind）→ 334（09-29 新相册）→ 335（09-30 加 `public/og-image.jpg`）→
    **336**（10-01 下午加 `public/assets/js/reinit.js`，十-14）→
-   **350**（10-07 加 1 篇文章页 + 11 张 webp + 2 个 pagefind 产物）。
+   **350**（10-07 加 1 篇文章页 + 11 张 webp + 2 个 pagefind 产物）→
+   **351**（10-08 下午复核，多出那 1 个见上面的口径说明）。
    页历史：37 → 09-24 加 `/categories/` 38 → 09-28 加 `/series/` `/tags/` 40 → 09-29 加 `/dynamic/` 41 →
    09-29 加第 5 个相册 `/gallery/wlh-concert-2026/` 42 → **10-07 加首篇工具类文章 43**。
    **每加一个相册页数就 +1**（它走 `getStaticPaths`），**每加一篇文章也 +1**。
@@ -594,6 +609,41 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
       真 bug 的判据是 **`complete === true && naturalWidth > 0 && data-loading !== "false"`**（图已解码却不褪）。
     → 仍未做：超时兜底（比如 8s 强制收遮罩）。因为**弱网下懒加载被中止会表现出一模一样的症状**，
       在没有他设备上的新证据前先不加，免得用兜底把真实成因盖住。
+      ⚠️ **但这条次日就被更深的根因取代了**：他后来给的复现路径「文章详情页 F5 → 点主页 → 列表图永远转圈」
+      指向的是**软导航途中新注册的 reinit key 从来没跑过**（见十-14 末条），
+      那个才是这条症状的主因；本条修的只是"本地封面 load 失败"这一种成因。
+
+36. ⚠️ **inline 元素的 `border` 会撑高行盒 → hover 态画"下划线"绝不能用 `border-bottom`**
+    （2026-10-08 修用户报的「框选/点击文章文字时文字会跳一下」）：
+    - `markdown.css` 给正文链接的 `:hover/:active` 写着 `border-bottom: 1px dashed`。inline 盒子的 border
+      **不改自己的位置，但参与行盒计算**：线上 1440 实测同一行 Range 高度 `21.333 → 22.095`（+0.762px），
+      标题尾部那个隐形 `a.anchor` 同样中招（`36 → 36.762`），而 `.anchor` 带 `transition: all` →
+      是 **150ms 渐进撑开**，鼠标一进一出，下方整段文字跟着跳。
+    - **逐条隔离才能定位**：三条 hover 声明里只有 `border-bottom` 有布局增量（`background`、
+      `text-decoration: none` 都是 0），改用 `text-decoration` 画虚线也是 0。
+      → 现口径：**hover 只加底色**，虚线由基态的 `decoration-dashed decoration-1 underline-offset-4` 画，
+        顺带消掉了原来"hover 瞬间线从 4px 偏移跳到贴字底"的变化。
+    - ⚠️ **`::selection` 不背这个锅**：全站只有两条 selection 规则、都只设 `background-color`
+      （`main.css:3` + `MobileMenu.astro:86`），真造一个选区实测 `Range` 矩形与 `scrollY` **零变化**。
+      用户说的"框选"实际触发条件是 hover/active —— **别照着字面去查 selection 样式**。
+    - 排查手法：在定宽 `iframe` 里用 `document.createRange()` 量目标行，再用
+      `el.style.cssText` **手动施加 hover 那组声明**复测差值（`:hover` 无法用 JS 触发，只能这样等价验证）。
+
+37. ⚠️ **`animation-fill-mode: forwards` 会把 `to` 帧的 `transform` 永久留在元素上 = 常驻合成层**
+    （2026-10-08，同批）：`.onload-animation`（`transitions.css` 的入场淡入上移）原先是
+    `opacity: 0` + `animation: .12s ease-out forwards fade-in-up`，而 `to` 帧写着 `transform: translateY(0)`，
+    于是 `#content-wrapper` 与文章正文容器 `.markdown-content` **永久**带着一个 identity transform
+    （实测 computed `transform: matrix(1,0,0,1,0,0)`、`getAnimations()` 仍有对象）。
+    → 危害：非 `none` 的 transform 提升图层，文字与其**选区高亮的绘制**都可能被带偏
+      （这是"选中文字时看着跳一下"查完布局/滚动/JS 之后剩下的唯一站点侧可疑点；属绘制层，
+        本环境拿不到像素证据，所以只当**候选**报，不当结论），而且白占一个常驻合成层。
+    → 现改成 `animation: .12s ease-out backwards fade-in-up` 并**同时删掉 `opacity: 0`**：
+      `backwards` 保证各 `nth-child` 的 delay 期照旧显示 0% 帧（实测新插入元素在 delay 中
+      `opacity: 0 / translateY(32px)`），终态回落到元素自身样式（实测 `transform: none`、`opacity: 1`、
+      `getAnimations().length === 0`），观感不变。
+      ⚠️ **`forwards` 与基础 `opacity: 0` 是一对**：只去掉 forwards 不删 `opacity: 0`，动画一结束全站正文就隐形。
+    → 通则：**入场动画的 `forwards` 要逐个核 `to` 帧的属性**——只要写的是 transform / opacity / filter
+      这类会提升图层的值，就优先考虑 `backwards` + 把终态做成元素默认样式。
 
 ## 六、部署
 
@@ -1066,7 +1116,10 @@ Tailwind 的 `prose-base` 拼错 → 该工具类从未生效。它正好是 `pr
 4. ✅ **文章链接 hover 的虚下划线从未出现**：`markdown.css` 的 `border-bottom: 1px dashed var(--link-hover)`
    和 `decoration-(--link-underline)` **两个变量都不存在**。后者换成 `--primary` 是**等价替换、零视觉变化**
    （原本 `text-decoration-color` 无效 → 回落到 `currentColor`，而链接色就是 `--primary`）；
-   前者补成 `var(--primary)` 后 hover 会**新增**一条绿色虚线（作者原意是"下划线换成描边"，此前只有底色没有线）。
+   ⚠️ **前半句的结论已被推翻**（2026-10-08）：当时把 `border-bottom` 补成 `var(--primary)` 让这条线**真的生效了**，
+   但 `border-bottom` 写在 inline 链接上会**撑高行盒**（实测 +0.762px、带 transition 是 150ms 渐进撑开），
+   用户报的「框选/点击文字时文字跳一下」正是它。现在 hover 只加底色、虚线交回基态的 `underline`，
+   细节与取证见**五-36**。
 5. ✅ **`--shodow-md` 拼写错已改名为 `--panel-shadow`**（`global.css` + `MobileMenu.astro` + `DropdownMenu.astro` 三处同步）。
    ⚠️ **别图省事改名成 `--shadow-md`**：Tailwind v4 的 `theme.css` 里 `--shadow-md` 是**utility 命名空间的 token**，
    在 `:root` 覆盖它会连带改掉全站 `shadow-md` 工具类的值（本项目当前没人用 `shadow-md`，所以是**潜伏**的坑，不是当下报错）。
@@ -1385,14 +1438,46 @@ Tailwind 的 `prose-base` 拼错 → 该工具类从未生效。它正好是 `pr
       `FancyboxManager` 听 Swup 4 原生名并在 `visit:start` 里 `close+unbind` 配对；
       `BaseLayout` 的 `astro:after-swap` → `setTheme`（head 内，一文档一次）；
       `Calender` 与 `RecommendedPost` 各一份 `__allPostMetaCache` fetch（五-30 已明确不抽）。
-    - ⚠️ **改 `reinit.js` 之前先处理缓存**：它在 `public/assets/js/` 下，文件名稳定，
-      而 Nginx 给它的是宝塔自带 js/css 规则的 **`max-age=43200`（12h）**——不是第六节那套
-      （extension 只覆盖了 `/_astro/*`、`/pagefind/*`、gallery 图片与兜底 HTML）。
-      「稳定名 + 内容会变 + 长缓存」正是第六节给 `/pagefind/` 设 `no-cache` 要防的错位：
-      改了 helper 之后回访用户可能带着旧 helper 跑新 HTML。
-      → 二选一：给 `<CACHE_CONF>` 加一条 `no-cache`（**属服务器配置改动，要用户授权**），
-        或在 `BaseLayout` 里改成带内容哈希的引用（`reinit.js?v=<hash>`，构建期算，不碰服务器，**倾向这个**）。
-      → 通则：**往 `public/` 下新增会被 HTML 直接引用的稳定名文件，都要顺手核一遍它拿到什么 `Cache-Control`。**
+    - ✅ **改 `reinit.js` 之前先处理缓存 —— 2026-10-08 已按"倾向那个"落地**：它在 `public/assets/js/` 下、
+      文件名稳定，而 Nginx 给它的是宝塔自带 js/css 规则的 **`max-age=43200`（12h）**（实测响应头），
+      不是第六节那套（extension 只覆盖 `/_astro/*`、`/pagefind/*`、gallery 图片与兜底 HTML）。
+      「稳定名 + 内容会变 + 长缓存」= 改了 helper 之后回访用户带着旧 helper 跑新 HTML。
+      → 现做法：`BaseLayout` 里引用 `reinit.js?v=<内容哈希>`（构建期 `sha256(...).base64url` 取 10 位），
+        **没碰服务器配置**，所以不需要额外授权；改一次文件换一次 URL，12h 长缓存从此无害。
+      ⚠️ **哈希要按 `process.cwd()` 拼路径读，别用 `import.meta.url`**：预渲染阶段这段代码住在
+        `dist/.prerender/chunks/*.mjs` 里，相对它找 `../../public/` 会指到 `dist/public/` →
+        `ENOENT` 直接把构建打挂（本次实测第一条就死在这）。
+      → 通则：**往 `public/` 下新增会被 HTML 直接引用的稳定名文件，都要顺手核一遍它拿到什么 `Cache-Control`；
+        没做哈希引用的那些（`assets/js/twikoo.nocss.js` 等）仍带着 12h 陈旧风险。**
+
+    - ⚠️ **`navigating()` 的假设只对「已存在的 key」成立，对「全新的 key」不成立**
+      （2026-10-08 用户报的「文章详情页 F5 → 点主页 → 列表封面永远转圈」就是这个洞）：
+      · 原注释写的是"容器内脚本重新求值时紧接着 runAll 一定会跑"，但 **Astro 组件脚本编译成
+        `<script type="module">`，插进容器后要到下一个宏任务才求值**，而 `swup:contentReplaced`
+        （→ `runAll`）是在 `content:replace` 当趟同步派发完的 → 新 key 赶不上那一趟；
+        偏偏 `ranFor` 又被初始化成当前 token，于是紧随的 `astro:page-load` → `catchUp()`
+        判定"这一趟已经跑过了"，**两次机会全部错过，`fn` 一次都没执行**。
+      · 线上取证（47.108.230.220，包一层 `window.onReinit` 记录注册时机）：
+        `register cover-image | is-changing=true | runsBefore=-1` → 之后没有 RUN，
+        `reinitRuns('cover-image') === 0`、10 张封面 `data-initialized` 数为 **0**、
+        `data-loading="true"` 数为 **10**（其中 8 张 `complete && naturalWidth>0` 早就解码了）
+        → 按五-35 的判据这是真 bug，不是懒加载正常态。补一次 `runAll` 后立刻 10/10 绑上。
+      · **触发条件 = 「该 key 在本文档里第一次出现」+「注册发生在软导航途中」**，
+        所以只有"从别的页型第一次进某页"才犯：全站首页↔文章页两种入口顺序，只有
+        **文章页起步 → 首页** 这条会永远坏；`recommended-post` / `twikoo` 同理（它们的脚本是
+        同步执行的经典 `<script>`，赶得上 runAll，所以历史上没暴露）。
+      · 修法（`public/assets/js/reinit.js`）：`ranFor` 初始化成 **-1**，且导航途中注册的新 key
+        **让出一个宏任务后自查**（`setTimeout(0)` 里发现 `ranFor` 仍是 -1 才自己跑一次）。
+        ⚠️ 第一版直接改成"注册即跑"是**错的**：同步脚本那一路会变成
+        注册跑一次 + runAll 再跑一次 = **一趟 +2**（实测 `recommended-post` 就 +2 了）。
+      · 回归判据（preview / 线上各跑一遍，都要求 **每趟导航每个 key 恰好 +1**）：
+        首页起步 → 文章页 → 首页 两趟之后 `cover-image 3 / twikoo 2 / recommended-post 3 /
+        site-status 4（其中解析期双挂载占 2）/ 其余 3`；文章页起步 → 首页那一趟
+        `cover-image` 从 -1 变 **1**、`data-initialized` 10/10、五-35 判据 0 命中。
+      · ⚠️ **隐藏标签页里 `setTimeout` 被节流到 ≥1s**（本次两条验证脚本因此 15s 超时），
+        要做逐帧/多次导航的探针，先注入
+        `*{animation-duration:0s!important;transition-duration:0s!important}`
+        让 Swup 的动画等待立刻落地，否则 visit 卡在 `is-changing` 里出不来（十-1/十-10 的老面孔）。
 
 15. ⚠️ **凡是"内容随页面变、但位置在 Swup 容器外"的 chrome，必须自己登记成 Swup 的 container**
     （2026-10-01 用户报的横幅标题 bug，根因与修法）。

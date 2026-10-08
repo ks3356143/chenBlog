@@ -3,39 +3,48 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-08 上午（修掉他报的两条首屏图片问题，已上线 V0.1.25）**。
-> 他先报"小米17 + 手机 Edge 首次进首页图片一直转圈、刷新或切回来就好"，追问后又报"桌面端首次进首页
-> 逐渐变大的图片上有一行字在飘"。**两条都不是 Edge 的问题**，根因都在我们自己代码里，
-> 且共用同一个"首访才有、刷新就没"的特征（刷新后走缓存快路径）：
-> ① 横幅壁纸与列表封面是装饰图却带着没本地化的英文 alt，图未解码时 Chromium 把 alt 画在图框里，
->    而横幅首屏有 Ken Burns `scale(1→1.1)`，于是那行字跟着飘 → 全部改 `alt=""`；
->    ⚠️ 只改调用方会白改，`ImageWrapper.astro` 里 `alt={alt || "图片"}` 这个兜底会把空串重新填成"图片"，已一并修掉。
-> ② `CoverImage` 的 `onError` 对非远程图直接 return → 本地封面一旦 load 失败遮罩永不褪（无限转圈）
->    → 改成一律先摘 `data-loading`，`data-error` 仍只给远程图设。
-> ⚠️ **手机那条只算"修掉了一个确定的成因"，不等于他设备上现象已消失**——懒加载图被中止会表现出一模一样的症状。
-> **要他在 Edge 上再走一次首屏**；仍转圈就按之前说的加超时兜底（见「还挂着的事 12.」）。
+> 最后更新：**2026-10-08 下午（他当天报的两条都修完并已上线 V0.1.26）**。
 >
-> 📌 **下次开场**：等两件回话——① 手机 Edge 首屏是否还转圈 ② 新文章的肉眼验收（见 11./12.）。
-> 其余待拍板见 9.～15.。大方向仍是**功能扩展**（候选见「还挂着的事 1.」）。
+> **① 「框选/点击正文时文字会往上移动一下」→ 不是 `::selection`，是 hover/active 的布局位移。**
+> 全站只有两条 `::selection` 规则且都只设 `background-color`；真造一个选区实测 Range 矩形与 `scrollY` **零变化**。
+> 真元凶 = `markdown.css` 给正文链接 `:hover/:active` 写的 `border-bottom: 1px dashed`——
+> **inline 元素的 border 会撑高行盒**：线上实测同一行 `21.333 → 22.095px`，标题尾部那个**隐形** `a.anchor`
+> 一样中招（`36 → 36.762`），而 `.anchor` 带 `transition: all` 所以是 **150ms 渐进撑开** → 鼠标一进一出下方整段文字跟着跳。
+> ⚠️ **这条是我 2026-09-29 那次"补上失效变量"带出来的回归**（九节 item 4 的旧结论已就地推翻）。
+> 现改成 hover 只加底色、虚线交回基态 underline，实测行盒增量归 0。
+> 同批还摘掉了 `.onload-animation` 因 `forwards` 永久留在正文容器上的 identity transform（常驻合成层，
+> 属"选中时看着跳"剩下的唯一候选，**绘制层的事我这边拿不到像素证据，只当候选报**）。细节 **五-36 / 五-37**。
+>
+> **② 「文章详情页 F5 → 点主页 → 列表图片永远转圈，刷新才好」→ 已定位并修好，不是 Edge 的锅。**
+> `reinit.js` 有个洞：`navigating()` 那句"注册后 runAll 一定会跑到"只对**已存在的 key**成立——
+> Astro 组件脚本是 `<script type="module">`，插进容器要到**下一个宏任务**才求值，赶不上 `content:replace`
+> 当趟派发的 `runAll`；而 `ranFor` 被初始化成当前 token，又让紧随的 `catchUp()` 以为已经跑过 →
+> **那个 key 一次都没执行**。线上取证：`register cover-image | is-changing=true | runsBefore=-1` 之后没有 RUN，
+> `reinitRuns=0`、10 张封面 `data-initialized` **0**、`data-loading="true"` **10**（其中 8 张早已解码）。
+> 触发条件 = 「本文档第一次进这个页型」+「注册发生在软导航途中」→ 只有**文章页起步 → 首页**这条会坏。
+> 🔴 **所以他昨天那条"手机 Edge 首次进首页一直转圈"极可能一直是这个洞**，
+> 不是 Edge、不是懒加载被中止、也不是上午修的 `onError`（那个只在 load 真失败时才犯）。
+> 现 preview 与线上都实测到：`runs -1 → 1`、`data-initialized 10/10`、五-35 真 bug 判据 **0 命中**。
+> 顺带：`reinit.js` 改成引用 `?v=<内容哈希>`（它原先吃 Nginx 的 `max-age=43200`，改动会留给回访用户 12h），
+> **没碰服务器配置**。细节 **十-14 末两条**。
+> ⚠️ 修的第一版"注册即跑"是错的：同步脚本那一路会变成一趟 +2（实测 `recommended-post`），已改成
+> 让出一拍自查；回归判据「每趟导航每个 key 恰好 +1」在两趟导航上全部成立。
+>
+> 📌 **下次开场**：等他两句回话——① 手机 Edge / 桌面从文章页点主页，封面是否还转圈
+> ② 框选/点击正文时文字是否还跳。其余待拍板见 9.～15.，大方向仍是**功能扩展**（候选见 1.）。
 > 🔁 协作规矩（2026-10-07 起）：**改完就提交 + 推送 + 部署，不再每次问**；
 > 但必须先跑完 build 与核验并报出结果；**改服务器配置 / 强推重写历史 / 删回滚资产仍要当次点头**。
 > ⚠️ 一笔已发布提交的消息写错了：`90a38e5` 只改 HANDOFF 却写成"文章：同步…标题改为…"。
 > 改它要 `--amend` + 强推（属上面第②类），他没点头所以**留着没动**。
-> 用户把他另一个项目 CCNewTools（离线测试文档生成工具）的**使用手册**交进来发博客，分类「工具」。本批产出：
-> 1. 新文章 `src/content/posts/ccnewtools-manual.md`（永久 URL `/posts/ccnewtools-manual/`）
->    + `public/images/ccnewtools/` 11 张 webp（1.67MB PNG → **0.33MB**，逐像素 MAE < 1.1）。
-> 2. 修**文章图片灯箱从来没绑上**：`Markdown.astro` 把参考站的 `custom-md` 写成 `custom-markdown`，
->    而 `FancyboxManager` 的选择器是逐字照抄的 → 27 篇 60+ 张图受影响。
-> 3. 修**归档页筛选从来没生效**（他当场报的）：`?category=` / `?tag=` / `?uncategorized=` 三种入口
->    全部恒显示 27 篇。根因是**两条叠加**（AGENTS 五-33）：纯静态站里 `Astro.url.searchParams` 构建期恒空，
->    且 `<ArchivePannel>` **没写 `client:*` 指令所以压根没水合**。引入点 = 09-24 的 `da68cd4`
->    （那笔为消水合空白把客户端读 URL 那行删了）。**本地基线 43 页 / 351 文件 / 27 篇。**
-> ⚠️ 本批查出**三条同族病**（照抄/改名/修症状把功能关掉 → 不报错只是不生效），已修两条，
-> 剩两条挂着等他拍：见「还挂着的事 11.（第8天宽表被裁）」「12.（`propse-base` 拼错）」。
 >
-> 📌 **下次开场**：先确认上线后的公网验收结果与本批三项是否都过；
-> 大方向仍是**功能扩展**（候选见「还挂着的事 1.」）。
-> 上一批（10-01）遗留的两条待拍板（侧栏卡片不随软导航换、`reinit.js` 12h 缓存）**他还没回话**，见 9./10.。
+> —— 以下为本月早前两批的存档（细节已沉淀进 AGENTS，只留索引）——
+> 2026-10-08 上午批（V0.1.25）：装饰图 alt 会被画出来 + 本地封面 load 失败遮罩永不褪 → 见 **五-34 / 五-35**。
+> 2026-10-07 批：CCNewTools 手册发稿 + 修灯箱从未绑上 + 修归档页筛选从未生效 → 见 **五-33 / 八节 / 九节**。
+> 产出：`src/content/posts/ccnewtools-manual.md`（URL `/posts/ccnewtools-manual/`）+
+> `public/images/ccnewtools/` 11 张 webp（1.67MB PNG → **0.33MB**，逐像素 MAE < 1.1）；
+> 分类值 1 → **2**（设计灵感 / 工具）。
+> ⚠️ 那批查出的两条"照抄改名后静默失效"里，`第8天宽表被裁` 与 `propse-base 拼错` 仍挂着等他拍：
+> 见「还挂着的事 11./12.」。
 
 ---
 
@@ -49,7 +58,7 @@
 >
 > 📝 **他手上有一篇新文章要发**（流程见 AGENTS 第八节「发稿协作流程」）：他**只给 MD 正文**，
 > 特殊语法我自己扫、默认值我自己填，**别发前置问卷挡他**；唯一必须问的是归位（永久 URL）。
-> 图片要拿到文件本身，本地路径我读不到。上线每次重新授权。
+> 图片要拿到文件本身，本地路径我读不到。**改完就提交+推送+部署，不用每次问**（2026-10-07 起的规矩）。
 >
 > ⚠️ **本批之后新增的一条硬规矩：以后写「导航后重 init」只能调
 > `window.onReinit(key, fn, opts)` / `window.reinitOnce(key, fn)`**（实现在 `public/assets/js/reinit.js`，
@@ -57,11 +66,11 @@
 > `document.addEventListener("swup:contentReplaced"/"astro:page-load", …)` 做重初始化**——
 > 规则、判据、坑与验证办法全在 **AGENTS 十-14**。
 >
-> **`npm run preview` 当前在跑，占着 :4321**（10-07 为验新文章起的，服务本地 `dist`，
-> 新文章就在 `http://localhost:4321/posts/ccnewtools-manual/`）。dev 未起。
-> 收尾或要动 `node_modules` 前，按「可执行文件路径 + 尾参数」精确杀掉它，复查残留 = 0
-> （宽匹配会把自己的 shell 一起吃掉，见 AGENTS 九节依赖坑③）。
-> 下次要用先 `npm run dev` 或 `npm run preview`，二者抢同一端口，换着用之前先精确停掉另一个。
+> **`npm run preview` 与 dev 当前都已停，:4321 空闲**（本批用它做完验证后按 `node.exe` +
+> `astro\bin\astro.mjs` + `preview` 精确杀掉并复查残留 = 0）。
+> 下次要复现本批那两条判据，直接 `npm run build && npm run preview`，或者干脆在**线上**跑
+> （本批的取证就是线上 + preview 各跑一遍、数字对得上才算数）。
+> 二者抢同一端口，换着用之前先精确停掉另一个（宽匹配会把自己的 shell 一起吃掉，见 AGENTS 九节依赖坑③）。
 > dev 下站内搜索必然不可用（Pagefind 索引只在 build 后存在），验搜索用 `npm run preview`。
 > ⚠️ **交互类缺陷在 dev 下大多测不出来**，复现与验证一律走 `npm run build` + `npm run preview`。
 > ⚠️ 隐藏标签页里 **Swup 动画不推进**：真实点击导航只能走一趟就卡在 `is-changing`，
@@ -71,7 +80,7 @@
 > 一律用**定宽 iframe**（1440/1280/375）量，读计算样式前先注入 `transition/animation: none !important`
 > （10-07 就是这条又差点让我把已随主题切换的引用块竖条报成缺陷）。
 
-### ✅ 本批（10-07 新文章）的自测结论（`npm run build` + `preview` 实测，**全部本地，线上未动**）
+### ✅ 本批（10-07 新文章）的自测结论（`npm run build` + `preview` 实测；**该批当日 17:20 已上线，现为 V0.1.26 的一部分**）
 
 - **构建**：退出码 0，**43 页 / 350 文件 / 22M**，Pagefind 索引 **29 页**（新文章正文 gunzip 分片实测命中）。
   `npm run check` 0 error / 0 warning / 2 hint（与 10-01 基线一致，没新增）。
@@ -95,7 +104,7 @@
 - ⚠️ **唯一没验成的**：灯箱"真人点击能不能弹出大图"。本环境合成 click 被 Fancybox 挡了，
   我只证明了修复后**有正文图的页面会请求 Fancybox 本体 chunk、无图的页面不请求**。要他亲手点。
 
-### ⬜ 本批要他肉眼过的（**还没上线，只能在本地看** `http://localhost:4321/posts/ccnewtools-manual/`）
+### ⬜ 本批要他肉眼过的（**已上线，直接看 http://47.108.230.220/posts/ccnewtools-manual/**；他还欠一次回话，见「还挂着的事 11.」）
 
 1. **11 张截图的清晰度**（本批唯一有画质取舍的地方）：尤其 05/03/06 这几张表格密的，
    以及**手机上 295px 宽能不能看清**。不满意就说要哪几张回退成原分辨率 PNG（原图在他项目目录里，没删）。
@@ -290,14 +299,13 @@
      **当初选静态渲染而非岛的理由**，改成 container 会让那条论证过期，要一并重写。
    - 要做的话：加 container（两个子树都考虑）→ 重跑十-14 那套探针（双挂载卡的 `reinitRuns`、
      内联脚本重新求值后的监听计数）→ 1440/375 两档 iframe 核卡片内容与顺序。**别顺手就改，先问。**
-10. 🆕 **`/assets/js/reinit.js` 被缓存 12h**（`Cache-Control: max-age=43200`，来自宝塔自带的 js/css 规则；
-    我写的 extension 只覆盖了 `/_astro/*`、`/pagefind/*`、gallery 图片与兜底 HTML）。
-    **文件名稳定 + 内容会变 + 12h 缓存**正是 AGENTS 六节当初给 `/pagefind/` 设 `no-cache` 要防的那类错位：
-    下次改 helper 后，回访用户可能带着旧 helper 跑新 HTML。
-    **今天无害**（文件是全新的，没人缓存过旧版），但**下次改 `reinit.js` 之前必须二选一**：
-    ① 在 `<CACHE_CONF>` 里给它加一条 `no-cache`（属服务器配置改动，要用户授权）；
-    ② 代码侧改成带内容哈希的引用（如 `reinit.js?v=<8位hash>`，BaseLayout 构建期算），无需动服务器。
-    倾向 ②（不碰服务器、自动跟着内容变）。**已报告用户，等他选。**
+10. ✅ **`/assets/js/reinit.js` 的 12h 缓存已解决**（2026-10-08 下午，选了当时倾向的 ②，**没碰服务器配置**）：
+    `BaseLayout` 现在引用 `reinit.js?v=<sha256 前 10 位>`，构建期算内容哈希，改一次文件换一次 URL。
+    ⚠️ 落地时踩到一条：路径**必须按 `process.cwd()` 拼**——预渲染阶段这段代码住在
+    `dist/.prerender/chunks/*.mjs` 里，用 `import.meta.url` 相对去找 `../../public/` 会指到 `dist/public/`，
+    `ENOENT` 直接把构建打挂。细节与响应头实测见 **AGENTS 十-14 末条**。
+    → 同类未做：`assets/js/twikoo.nocss.js` 等其他 `public/` 下稳定名文件仍吃 `max-age=43200`，
+      只有在**将来要改它们内容**时才需要同样处理，现在不必。
 11. ⬜ **新文章（含 16:24 那次同步与改名）已上线 V0.1.23，程序化验收全过，但还欠他一次肉眼验收**
     （直接看 http://47.108.230.220/posts/ccnewtools-manual/ ）：
     ① 11 张截图的清晰度，**尤其手机上 295px 宽够不够看**（不满意可指定回退成原分辨率 PNG，
@@ -321,6 +329,21 @@
     他的 `E:\Chentools项目\CCNewTools\使用手册\使用手册.md` 第 3 行三次漏改（正文升到 1.1.3/1.1.4，
     那行还是 v1.1.0）。现已改成与实际一致，**源手册与博客文章两边零差异**。
     → 下次同步前仍要先核：`grep -n "v1\.1\.[0-9]" 使用手册.md` 若出现两个不同值就先问再动。
+16. ⬜ **等他复测两条（V0.1.26，线上已改）**：
+    ① **文章详情页 F5 → 点主页**，首页列表封面是否还永远转圈（这条是新定位的根因，见顶部 ② 与 十-14；
+      顺带说明**他昨天报的手机 Edge 那条很可能一直是它**，不是 Edge）。
+      若**仍然**转圈，再回到五-35 那条"超时兜底"的讨论，并且要先拿到手机端可读的诊断证据，
+      别用兜底把真实成因盖住。
+    ② **框选 / 点击正文文字**（尤其中文里带链接、或鼠标经过标题尾部那个隐形 `#`）时是否还跳。
+      我这边实测行盒增量已从 +0.762px 归 0；**剩下唯一没排掉的是"选中高亮画偏"这类绘制层问题
+      （已摘掉正文上的常驻合成层 `transform`），而我这个 surface 没有像素证据可拿**，
+      所以他一句"还在跳"我就会继续往合成层/`will-change` 那侧查。
+17. 🆕 **本会话新增的一条工具性坑（值得记）**：隐藏标签页里 **`setTimeout` 被节流到 ≥1s**，
+    所以"逐帧/多趟导航"的浏览器探针脚本会**直接 15s 超时**（本会话连撞两次）。
+    做这类探针要先注入 `*{animation-duration:0s!important;transition-duration:0s!important}`
+    让 Swup 的动画等待立刻落地（同时 visit 也就不会卡在 `is-changing`），
+    或者干脆改成**直接驱动 `el.getAnimations()[0].currentTime`** 这种不依赖时间的读法
+    （本次验 `backwards` 在 delay 期的表现就是这么测的）。
 
 ### 🔧 常用操作（都已验证可用）
 
@@ -334,7 +357,47 @@
 
 ## 二、历次会话做了什么
 
-### 2026-10-07 下午：把 CCNewTools 使用手册发成首篇「工具」类文章（**未 commit、未上线**）
+### 2026-10-08 全天：上午两条首屏图片问题（V0.1.25）+ 下午他复报后挖到真根因（V0.1.26）
+
+**上午**（V0.1.25，已上线已推送）：他报"手机 Edge 首次进首页图片一直转圈"与"桌面首次进首页逐渐变大的图片上有一行字在飘"，
+当场查掉两条成因（装饰图 alt 会被画出来 + `ImageWrapper` 的 `alt || "图片"` 兜底；`CoverImage.onError`
+对本地图直接 return 导致遮罩永不褪）→ 落 **五-34 / 五-35**。报给他时明确说了"手机那条只算修掉一个成因"。
+
+**下午**（V0.1.26，本批 4 笔 + 文档，已推送已上线）：他带着**新的精确复现路径**回来
+（"文章详情页 F5 → 点主页 → 列表图片一直转圈，刷新正常"，以及"框选/点击正文时文字往上移动一下"），
+两条都重新走了一遍"先定位根因再动手"：
+
+1. 🔴 **封面转圈的真根因在 `reinit.js`，不在 `CoverImage`**：`navigating()` 那句"紧接着 runAll 一定会跑"
+   只对**已存在的 key**成立。Astro 组件脚本编译成 `<script type="module">`，插进容器要到下一个宏任务才求值，
+   而 `swup:contentReplaced`（→ `runAll`）在 `content:replace` 当趟就同步派发完；
+   `ranFor` 又被初始化成当前 token，紧随的 `astro:page-load` → `catchUp()` 判定"跑过了" → **一次都没跑**。
+   线上用「包一层 `window.onReinit` 记录注册时机」取证：`register cover-image | is-changing=true | runsBefore=-1`
+   之后没有 RUN，`reinitRuns=0`、`data-initialized` 0/10、`data-loading="true"` 10/10（8 张已解码）；
+   手动补一次 `runAll` → 立刻 10/10 绑上 = 因果闭环。
+   ⚠️ **第一版修法（"新 key 注册即跑"）是错的**：同步脚本那一路变成注册跑一次 + runAll 再跑一次 =
+   一趟 **+2**（实测 `recommended-post`）。最终改成 `ranFor: -1` + 导航途中注册时让出一个宏任务后自查。
+   回归判据「每趟导航每个 key 恰好 +1」在两趟导航上全部成立（`site-status` 那个 4 含解析期双挂载 2 次）。
+   → 这也解释了**他昨天手机那条**（第一次进首页就转圈 = 从文章页软导航进首页），不是 Edge。
+2. **文字跳：`::selection` 是清白的，元凶是 hover 态的 `border-bottom`**。全站只有两条 selection 规则且只设
+   `background-color`；真造选区实测 Range 矩形与 `scrollY` 零变化 → **排除布局/滚动/JS 三类**。
+   逐条隔离三条 hover 声明后定位到 `border-bottom: 1px dashed` 有 **+0.762px 行盒增量**
+   （标题尾部那个 `opacity:0` 却仍可命中的隐形 `a.anchor` 同样中招，且它 `transition: all` 是渐进撑开）。
+   ⚠️ **这条是我 09-29 那次"把失效的 `var(--link-hover)` 补成 `--primary`"让它真正生效而带出的回归** →
+   九节 item 4 的旧结论已就地推翻。现 hover 只加底色，实测增量归 0。
+   同批把 `.onload-animation` 的 `forwards`（把 `translateY(0)` 永久留在正文容器上 = 常驻合成层）改成 `backwards`
+   并删掉配套的基础 `opacity: 0`；实测 delay 期仍 `opacity:0 / translateY(32px)`、终态 `transform:none / opacity:1`。
+   ⚠️ 这条属"剩下的唯一候选"，**绘制层的问题我这边拿不到像素证据**，报给他时按候选口径说。
+3. **配套做的**：`reinit.js` 引用改成构建期内容哈希（它吃 Nginx `max-age=43200`，否则这次改动会留给回访用户 12h）；
+   **没碰服务器配置**。踩到一条：哈希路径必须 `process.cwd()` 拼，用 `import.meta.url` 在预渲染阶段指向
+   `dist/.prerender/chunks/` → 找 `../../public/` 变 ENOENT、**构建直接挂**（这也是"先构建再吹"救回来的一次）。
+4. **工具性坑（新）**：隐藏标签页里 `setTimeout` 被节流到 ≥1s → 我的两条多趟导航探针连续 15s 超时；
+   改用**直接驱动 `getAnimations()[0].currentTime`** 做不依赖时间的读法。`:hover` 无法用 JS 触发 →
+   只能"手动施加同一组声明"做等价验证。AGENTS 里另有 375px/0×0 视口那套 iframe 量法本批继续全程在用。
+
+**验证与交付**：`npm run build` 退出码 0、`npm run check` 0 error / 2 hint（基线未变）；preview 与本批两条
+判据全部达标后才推；**线上实测数字与 preview 一致**（详见第三节快照行）。回滚资产 27 个全留。
+
+### 2026-10-07 下午：把 CCNewTools 使用手册发成首篇「工具」类文章（**已 commit、已上线 V0.1.23→0.1.24**）
 
 开场是上一批的收尾（他一句「关闭开发服务器 下班，提交推送部署」）——收尾时核出**线上就是本地那份 dist**
 （首页 md5 相同、`011cdb5..HEAD` 只动过两份 md 文档、零构建输入），所以**没有可部署的增量，我没动线上**，
@@ -601,22 +664,22 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-10-07 下午实测；**线上仍是 10-01 21:20 那版 V0.1.21，本批一行都没上线**）
+## 三、当前状态快照（2026-10-08 下午实测；**线上 = V0.1.26，与本批 HEAD 一致**）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。本批共 **9 笔，全部已推送**：新文章+图 / Fancybox 修复 / 归档筛选修复 / 文档 / 发版 0.1.22 / 手册同步+改名+引号 / 发版 0.1.23 / 手册 v1.1.4 同步 / 发版 0.1.24 |
-| 工作区 | ✅ 干净，与 `origin/main` 齐平 0 领先 |
-| 线上站点 | ✅ **2026-10-07 17:20 部署到最新，V0.1.24**（351 文件 / 22M，走第六节原子替换）。**逐字节比对：线上首页与新文章页均 == 本地 `dist`**（首页 175597B）。8 条路径全 200、HTML 仍 `no-cache, must-revalidate`。**线上浏览器实测 1440 与 375 两档全绿**：`v1.1.4` 8 处、旧版本值零残留、"默认浏览器自动打开"到位、旧说法"不会自动打开"已清、控制台示例 5 行、11 张图零破图零溢出、FAQ 13 条、引号方向 0 错、`h1` 恰好 1、展示版本 V0.1.24、控制台 0 error 0 warn。归档筛选（上一笔修的）线上仍实测五项全对 |
-| 服务器配置 | 未动（本批只换 dist）。缓存策略文件与 vhost 备份位置见 AGENTS 六节（值已脱敏，展开版在私密记录里）。⚠️ 一条缓存隐患仍未处理见「还挂着的事 10.」 |
-| 本地构建 | `npm run build` 退出码 0：**43 页 / dist 351 文件 / 22M**，约 4s + Pagefind 0.2s。较 10-01 基线 **+1 页 +15 文件** = 1 篇文章页 + 11 张 webp + 2 个 pagefind 产物 + 1 个 `ArchivePannel` chunk；**Pagefind 索引 28 → 29 页**。`_astro/` 212、`gallery/` 仍 26、`images/` 1 → 12。**`npm run check` 与 `npx tsc --noEmit` 均退出码 0**（check 剩 2 条故意留的 hint）。归档页因新增 `client:load` 从 146925B → **177811B**（props 序列化 27 篇，见五-33） |
-| 依赖 | 本批**零改动**（没装/卸/升任何东西）。基线仍是 `@astrojs/check@0.9.10` devDep、`allowScripts` 钉 `esbuild@0.28.2`、干净 `npm ci` 695 包 |
-| dev / preview server | ✅ **都已停，:4321 空闲**（按 `node.exe` + `astro\bin\astro.mjs` 精确杀，复查残留 = 0）。要再看就 `npm run preview`（服务本地 dist）或直接看线上 |
-| 服务器回滚资产 | `dist.old` + **24 个 `dist_backup_*`**（本批三次部署各 +1），合计 **25 个**。全部保留，**删需用户明确同意** |
-| 临时文件 | ✅ 已清：本地与服务器 `/tmp` 的 `chenblog_dist.tar.gz`（服务器侧部署脚本尾部 `rm -f`，本地手动补删并复查为空）、`/tmp/chenblog_*.log`、`%TEMP%` 下本批 5 个探针/改写脚本、扒参考站时落在**仓库根**的 `.ref-firefly-post.html`。⚠️ 记一次工具性坑：**node 读不了 bash 的 `/tmp`**（解析成 `E:\tmp` 直接 ENOENT），跨工具传临时文件要用 `process.env.TEMP`——本批就因此白跑了一次验收脚本 |
-| 排查方法类坑位 | 10-07 新增（细节都在 AGENTS 九节新小节 + 八节 3/4/6/7/8，此处只留索引）：**「照抄参考站的选择器，改名后不报错、只是静默不生效」这一族**（验绑定要看**本体 chunk 有没有被请求**，别用"点了有没有反应"）；**静态站的 URL 查询串必须客户端读**（五-33）；**宽表格必须自己包 `.horizontal-scroll-container`**（八-8）；**正文成对英文直引号会变两个后引号**（八-7）；**迁移来的 markdown 第一件要删的是正文 `#` H1**（八-6）；**行尾转换永远别过字符串**（utf8 读 + binary 写把整篇中文截成单字节）。三次靠控制组兜住的误判：截图模糊是他自己打的码、引用块竖条是 transition 假信号、归档"设计灵感 27 条"是探针数了卡片外的链接 |
-| 待用户拍板 | ① 新文章的**肉眼验收**（手机截图清晰度 / 手机拖表 / 删掉的 8 条分隔线要不要加回 / **灯箱真人点击**，见「还挂着的事 11. 与 12.」）② 第8天的宽表要不要一起包（13.）③ `propse-base` 拼错要不要补（14.）④ 侧栏卡片不随软导航更换（9.）⑤ `reinit.js` 的 12h 缓存怎么解（10.，本批没改 helper 所以仍无害）⑥ PostCard 加密文章锁图标要不要补（4.4）⑦ 全站 title 带不带后缀（SEO）⑧ meCard 三个社交按钮真实地址 |
-| 既存小坑 | `--radius-large` / `--panel-border-color` 未定义（AGENTS 五-16）——**顺带一条本批实测到的后果**：表格那行 `border-radius: calc(var(--radius-large) - .5rem)` 因此整条无效，表格实际是直角，**正好符合站内"面板一律直角"的口径，别当缺陷去补变量**；`tsconfig.json` react jsx 残留无影响；`src/content/posts/images/` 空目录；单分类时分类卡收起态反而更高（**现在已有第二个分类，这条要复验是否还成立**）；`/site.webmanifest` 的 Content-Type 缺 webmanifest 映射（要动 nginx mime.types）；**首页 10 张封面里 2 张的加载遮罩在图片已解码后仍未褪**（线上旧构建同样，属 `CoverImage` 状态机那块，五-25 / 十-2）；重复 id `announcement`/`cardTags`（九节已判定降级：无脚本查询、无死控件） |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。本批 **4 笔已全部推送**：reinit 新 key 洞修复 / reinit 引用带哈希 / 两处 CSS 修复 / 发版 0.1.26（外加本笔文档） |
+| 工作区 | 提交后应 `git status` 干净并与 `origin/main` 齐平 |
+| 线上站点 | ✅ **2026-10-08 16:2x 部署 V0.1.26**（走第六节原子替换）。**逐字节比对：线上首页 == 本地 `dist`**（175419B）；`assets/js/reinit.js` 线上与本地**内容一致且含新逻辑**。5 条路径全 200；HTML 仍 `no-cache, must-revalidate`、`/pagefind/` `no-cache`、`reinit.js` 仍是 `max-age=43200`（**现在无害了：URL 带内容哈希**）。**线上浏览器实测**：文章页 F5 → 点主页 → `cover-image` 由 -1 变 **1**、10 张封面 `data-initialized` **10/10**、五-35 真 bug 判据 **0 命中**；正文链接/标题 hover 行盒增量 **0**、`.markdown-content` `transform: none` `opacity: 1`、真造选区 Range 与 `scrollY` **零变化**。展示版本 **V0.1.26** |
+| 服务器配置 | **未动**（只换 dist；没碰 Nginx / 宝塔）。缓存策略文件与 vhost 备份位置见 AGENTS 六节（值已脱敏，展开版在私密记录里）。原先那条 `reinit.js` 12h 缓存隐患已用**构建期哈希**解掉，无需改服务器 |
+| 本地构建 | `npm run build` 退出码 0：**43 页 / 351 文件 / `du -sh` 22M（字节 20.99MB）**，约 4s + Pagefind 0.2s。**Pagefind 索引 29 页 / 29 fragment**。`_astro/` 212、`gallery/` 26、`images/` 12。**`npm run check` 与 `npx tsc --noEmit` 均退出码 0**（check 剩 2 条故意留的 hint）。⚠️ 口径见 AGENTS 五-9：`find dist -type f` 数文件、字节合计才算体积 |
+| 依赖 | 本批**零改动**。基线仍是 `@astrojs/check@0.9.10` devDep、`allowScripts` 钉 `esbuild@0.28.2`、干净 `npm ci` 695 包 |
+| dev / preview server | 本批起了 `npm run preview`（:4321）做验证，**收尾时按「`node.exe` + `astro\bin\astro.mjs` + `preview`」精确杀掉并复查残留 = 0**（宽匹配会把自己的 shell 吃掉，见 AGENTS 九节依赖坑③） |
+| 服务器回滚资产 | `dist.old` + **26 个 `dist_backup_*`** = **27 个**（最老 `20260920_234618`，最新 `20261008_162456`）。全部保留，**删需用户明确同意** |
+| 临时文件 | 本地与服务器的 `chenblog_dist.tar.gz`（服务器侧部署脚本尾部自动 `rm -f`）、`%TEMP%` 下本会话的 `live_index.html` / `live_reinit.js`、`/tmp/chenblog_*.txt` 都要清；⚠️ `/tmp` 是**Windows 共享临时目录**，只删自己产生的、别 broad clean。⚠️ 老坑本批又踩一次：**node 读不了 bash 的 `/tmp`**（解析成 `E:\tmp` → ENOENT），跨工具传文件用 `process.env.TEMP` |
+| 排查方法类坑位 | 本批新增三条，细节都在 **AGENTS 五-36 / 五-37 / 十-14**，此处只留索引：**`:hover` 态画下划线不能用 `border-bottom`（inline border 撑高行盒）**、**`forwards` 把 transform 永久留在元素上 = 常驻合成层**、**`navigating()` 的假设对全新 key 不成立（module 脚本晚一个宏任务）**。另有两条工具性坑：隐藏标签页 `setTimeout` 节流到 ≥1s（探针会 15s 超时，改用 `getAnimations().currentTime` 驱动）、`:hover` 不能用 JS 触发所以只能"手动施加同组声明"做等价验证 |
+| 待用户拍板 | ① **本批两条复测**（手机/桌面：文章页→主页的封面；框选/点击文字是否还跳，见「还挂着的事 16.」）② 新文章肉眼验收（11.）③ **灯箱真人点击**（12.）④ 第8天宽表要不要一起包（13.）⑤ `propse-base` 拼错要不要补（14.）⑥ 侧栏卡片不随软导航更换（9.）⑦ PostCard 加密文章锁图标要不要补（AGENTS 五-5）⑧ 全站 title 带不带后缀（SEO）⑨ meCard 三个社交按钮真实地址 |
+| 既存小坑 | `--radius-large` / `--panel-border-color` 未定义（AGENTS 五-16）——表格那行 `border-radius` 因此整条无效、实际直角，**正好符合站内"面板一律直角"口径，别当缺陷补变量**；`tsconfig.json` react jsx 残留无影响；`src/content/posts/images/` 空目录；`/site.webmanifest` 的 Content-Type 缺 webmanifest 映射（要动 nginx mime.types）；重复 id `announcement`/`cardTags`（九节已判定降级：无脚本查询、无死控件）；单分类时分类卡收起态反而更高（**现在已有第二个分类，这条要复验是否还成立**） |
 
 ---
 

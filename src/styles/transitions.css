@@ -75,8 +75,12 @@ html.is-page-transitioning #header-waves {
     }
 }
 .onload-animation {
-    opacity: 0;
-    animation: 0.12s ease-out forwards fade-in-up;
+    /* 用 backwards 不用 forwards：forwards 会把 to 帧的 transform: translateY(0) 永久留在元素上，
+       等于给每页正文（文章正文容器就挂这个类）常驻一个合成层，选中文本时的绘制会被它带偏；
+       而且基础规则里的 opacity: 0 是配 forwards 才成立的兜底，去掉 forwards 必须一起删。
+       backwards 的效果：等待期（各 nth-child 的 animation-delay）显示 0% 帧 = 依旧不可见，
+       动画结束回到元素本身的样式（opacity 1 / transform none），观感与原来一致。 */
+    animation: 0.12s ease-out backwards fade-in-up;
 }
 .onload-animation:first-child {
     animation-delay: 0s;

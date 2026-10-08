@@ -33,10 +33,12 @@
 
         &:hover,
         &:active {
-            @apply decoration-transparent;
+            /* 只用底色表达 hover。原先这里还写了 border-bottom: 1px dashed + text-decoration: none，
+               但 inline 元素的 border 会把行盒撑高（线上实测 21.333 → 22.095px），而 .anchor 带
+               transition:all 所以是 150ms 渐进撑开 → 鼠标一进一出，标题下方整段文字跟着跳，
+               看起来就是「框选/点击时文字移动」（2026-10-08 用户报）。
+               虚线仍由上面基态的 decoration-dashed 画，位置也不再在 hover 瞬间跳一次。 */
             background: var(--btn-plain-bg-hover);
-            border-bottom: 1px dashed var(--primary);
-            text-decoration: none;
         }
     }
 

@@ -3,9 +3,16 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-10 傍晚（第三趟：波纹带高度对齐参考站，已上线 V0.1.33）**。
+> 最后更新：**2026-10-10 傍晚（第四趟：二维码浮层动效 + 只留码体，已上线 V0.1.34）**。
 >
-> 本趟一句话：`#header-waves` 写的是 `max-h-12.5`（Tailwind v4 = 50px 上限），参考站是
+> 本趟两条来自他看完 V0.1.33 后的反馈：① 「打开没有动效」——根因是 JS 用 `pop.hidden` 切 `display`，
+> **`display:none` 上没有可插值属性，CSS 过渡压根不会启动**；改成只由按钮 `aria-expanded` 驱动
+> `opacity/visibility/transform` 三条 0.18s 过渡（细则 **AGENTS 五-41**）；② 「只显示二维码、去掉头像等」——
+> 从原来那张整块白色卡片图（940×1392）里按深色模块边界重裁出**只含码体**的 750×750 无损 webp（**63.3KB**，比原来还小）。
+>
+> —— 以下为同日第三趟（波纹高度 / V0.1.33）的记录 ——
+>
+> 那趟一句话：`#header-waves` 写的是 `max-h-12.5`（Tailwind v4 = 50px 上限），参考站是
 > `max-h-37.5 min-h-12.5`（150px 上限 / 50px 下限）→ **波纹带一直比参考站矮约 2.7 倍**。
 > 改成一个类的替换，实测三档高度 135 / 80 / 150px 与参考站逐档一致，横幅文字（底边 331px）
 > 离波纹顶（452px）很远、没被压到，零横向溢出。核法与"照抄数值抄漏"这条通病见 **AGENTS 一·参考源用法第 5 条**。
@@ -238,7 +245,7 @@
   `f97e8d0` 文档（新规矩 + 脱敏）/ `f0c2e77` 文档（交付记录 + 挂起两条）。
   现查：`git rev-list --count origin/main..HEAD`（收尾实测 = **0**）。
 - 部署走 AGENTS 第六节流程（本地 build → tar → scp → 解压到 `dist.new` → 校验 → `chown root:root` → 原子 `mv`）。
-  **线上 336 文件 / 22M**；`dist.old` 与时间戳备份保留（服务器上现有 **21 个 `dist_backup_*`**，删要用户明确同意）。
+  **线上 336 文件 / 22M**；`dist.old` 与时间戳备份保留（**当前数量只在第三节那张表维护，别在这里抄一份**）。
 - **公网逐路径全 200**：`/` `/rss.xml` `/pagefind/pagefind.js` `/api/dynamic.json` `/og-image.jpg`
   `/assets/js/reinit.js` `/dynamic/` `/gallery/` `/archive/` `/series/` `/categories/` `/tags/` `/about/` 与中文文章 URL。
 - **线上首页与本地 `dist/index.html` 逐字节相同（172716B）**；`<title>` = 亦林 YILIn；
@@ -286,7 +293,7 @@
    做前按 AGENTS 第一节先扒参考实现再走 brainstorming。
    ⚠️ 三项里凡是**要深链到某一条动态**的，都会撞同一堵墙：feed 条目是客户端从 `<template>` 克隆的、
    **没有锚点可指**（`DynamicItemTemplate.astro` 不设 id + `SwupManager.astro:77` 无条件回顶），要先补三处。
-2. **服务器回滚资产 20 个 `dist_backup_*` + `dist.old` ≈ 558M**（09-30 五次 + 10-01 这次各 +1）。
+2. **服务器回滚资产**：个数与占用是**会变的状态**，只在第三节那行维护（AGENTS 运维条也是这个口径）。
    **必须用户明确说才删**，我不会自己动。
 3. **2026-09-30 那批「报了但没做」的清单——2026-10-01 已清掉大半，剩下的都在下面**
    （别重新扫一遍，直接从这里挑）：
@@ -427,6 +434,30 @@
 ---
 
 ## 二、历次会话做了什么
+
+### 2026-10-10 傍晚：二维码浮层加开合动效 + 二维码只留码体（**已上线 V0.1.34**）
+
+- **① 「打开没有动效」的根因**：JS 里写的是 `pop.hidden = !on` → `display:none ↔ block` 之间**没有可插值的属性**，
+  所以浏览器根本不会生成过渡，点开就是瞬间出现。
+  → 改成**状态只由按钮的 `aria-expanded` 表达**：CSS 用 `.me-wechat-btn[aria-expanded="true"] + .me-qr-pop`
+  驱动 `opacity` / `visibility` / `transform` 三条 0.18s 过渡，闭合态 `visibility:hidden + pointer-events:none`
+  （移出无障碍树与命中区，等价于原来 `hidden` 的可访问性表现），`prefers-reduced-motion` 下撤掉过渡。
+  JS 侧只剩 `setAttribute("aria-expanded", …)`，`isOpen()` 改读该属性。**规则见 AGENTS 五-41。**
+  ⚠️ 顺手确认的一件事：Tailwind **v4** 的 `-translate-x-1/2` 编译到 `translate` 属性、与动画用的 `transform` 互不覆盖，
+  所以居中不会被缩放吃掉（**v3 不成立**，别照搬）。
+- **② 二维码重裁**：他发的原图是手机截图，站内第一版是从白色卡片整块裁的（940×1392，含头像 + 昵称 + 地区 + 提示语）。
+  这次只留码体：**按深色模块的像素边界程序化定位**（先扫行找 QR 带 → 再在该带内扫列 → 得 610×610 正方形），
+  四周补 70px 静区（≈3.8 个模块）→ **750×750 无损 webp 63.3KB**（比原来 98.1KB 还小）。
+  ⚠️ 裁切踩坑：第一版列扫描把**卡片外圈的深色边框**也算进去了（得出 `x0=0` 的整宽假框），
+  必须先把扫描范围限制在卡片内部（x 20..919）；另外行剖面上 y=0..5 / y=1385..1391 那几条 900+ 的"实心行"就是那圈边框，别当 QR。
+  ⚠️ 二维码**仍走无损 webp**（有损会把模块边缘糊掉、扫不出来）。
+- **验收**（build 0 / `npm run check` 0 error 4 hint / preview + 线上各一遍，定宽定高 iframe）：
+  点击后 `getAnimations()` 列出 **3 条 CSSTransition（opacity / transform / visibility）**，
+  闭合态计算值 `opacity:0 / visibility:hidden / matrix(0.96,0,0,0.96,0,-6)`、打开态 `opacity:1 / transform:none`；
+  浮层 192×192、图 `naturalWidth 750` 已解码、1440 与 375 两档都横向不出界、`scrollWidth-clientWidth=0`；
+  线上 `/assets/wechat-qr.webp` 200 / **64848B** / `image/webp` / `no-cache`，首页 markup 已是 `width="750" height="750"` 且浮层不再带 `hidden`，版本 `0.1.34`。
+- ⚠️ 判据教训（写进五-41）：**别用"等 200ms 再读 opacity"验过渡**——隐藏标签页里过渡不推进，
+  要么读 `getAnimations()` 证明它启动了，要么 `anim.finish()` 强制落终态再读计算值。
 
 ### 2026-10-10 傍晚：波纹带高度对齐参考站（**已上线 V0.1.33**）
 
@@ -821,18 +852,18 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-10-10 傍晚实测；**线上 = V0.1.33，与本批 HEAD 一致**）
+## 三、当前状态快照（2026-10-10 傍晚实测；**线上 = V0.1.34，与本批 HEAD 一致**）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。今日三笔连发：**动态 + 发版 0.1.31 / 文档 / meCard 社交按钮 + CopyShare 剪贴板退路 + 发版 0.1.32 / 文档 / 波纹高度 + 发版 0.1.33** |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。今日四笔连发：**动态 0.1.31 / meCard 社交按钮 0.1.32 / 波纹高度 0.1.33 / 二维码浮层动效 + 只留码体 0.1.34**（每笔各带一条文档提交） |
 | 工作区 | 提交后应 `git status` 干净并与 `origin/main` 齐平 |
-| 线上站点 | ✅ **2026-10-10 傍晚部署 V0.1.33**（第六节原子替换；部署前只读确认 `pwd` = `/www/wwwroot/chenBlog`，同机并存 `lobe-chat` / `testplantAI` 不碰；替换前 `grep -qF` 断言 `max-h-37.5` 与 `0.1.33` 必须在）。线上首页已见 `class="waves absolute -bottom-px h-[10vh] max-h-37.5 min-h-12.5 w-full md:h-[15vh]"`、版本 `0.1.33` 无 `0.1.32` 残留。⬅️ 上一趟（V0.1.32 meCard）线上实测：`/assets/wechat-qr.webp` 200 / `image/webp` / **`no-cache`**（走兜底 HTML 规则，以后换二维码访客立刻拿到新的）、占位 `href="/"` 残留 0、GitHub 外链带 `target="_blank" rel="me noopener"`。更早两趟的核验结论在第二节与顶部归档块里 |
+| 线上站点 | ✅ **2026-10-10 傍晚部署 V0.1.34**（第六节原子替换；替换前 `grep -qF` 断言 `width="750" height="750"` 与 `0.1.34` 必须在）。线上实测：`/assets/wechat-qr.webp` 200 / **64848B** / `image/webp` / `no-cache`，首页浮层 markup 已无 `hidden`、图 `750×750`，1440 与 375 两档点击都列出 **3 条 `CSSTransition`**、`scrollWidth-clientWidth = 0`。⬅️ 上一趟（V0.1.33 波纹）线上首页 class 已见 `max-h-37.5 min-h-12.5`；再上一趟（V0.1.32 meCard）`/assets/` 走兜底 `no-cache`（以后换二维码访客立刻拿到新的）、占位 `href="/"` 残留 0、GitHub 外链带 `target="_blank" rel="me noopener"`。更早的核验结论在第二节与顶部归档块里 |
 | 服务器配置 | **未动**（只换 dist；没碰 Nginx / 宝塔）。缓存策略文件与 vhost 备份位置见 AGENTS 六节（值已脱敏，展开版在私密记录里）。原先那条 `reinit.js` 12h 缓存隐患已用**构建期哈希**解掉，无需改服务器 |
 | 本地构建 | `npm run build` 退出码 0：**43 页 / 352 文件 / `du -sh` 22M**，约 4s + Pagefind 0.2s。**Pagefind 索引 29 页 / 2836 词**（文件数 +1 = 新增的 `public/assets/wechat-qr.webp`，页数不变）。⚠️ **动态加一条不动这些数字**（条目在 `/api/dynamic.json` 里，不进 HTML 也不进索引，见五-24）。**`npm run check` 本批跑了：0 error / 4 hint**（新增两条 `document.execCommand` deprecated，故意留的，见三节）；上次基线 0 error。⚠️ 口径见 AGENTS 五-9：`find dist -type f` 数文件、字节合计才算体积 |
 | 依赖 | 本批**零改动**。基线仍是 `@astrojs/check@0.9.10` devDep、`allowScripts` 钉 `esbuild@0.28.2`、干净 `npm ci` 695 包 |
 | dev / preview server | 本批起了 `npm run preview`（:4321）做验证，**收尾时按「`node.exe` + `astro\bin\astro.mjs` + `preview`」精确杀掉并复查残留 = 0**（宽匹配会把自己的 shell 吃掉，见 AGENTS 九节依赖坑③）。当前 dev 与 preview **都已停，:4321 空闲** |
-| 服务器回滚资产 | `dist.old` + **31 个 `dist_backup_*`** = **32 个**（最老 `20260920_234618`，今日三笔新增 `20261010_162726` / `20261010_171053` / `20261010_171834`；其中一个是一次校验主动中止留下的空跑，无影响）。全部保留，**删需用户明确同意** |
+| 服务器回滚资产 | `dist.old` + **32 个 `dist_backup_*`** = **33 个**（最老 `20260920_234618`，今日四笔新增 `20261010_162726` / `_171053` / `_171834` / `_173510`；其中一个是一次校验主动中止留下的空跑，无影响）。全部保留，**删需用户明确同意** |
 | 临时文件 | 本地与服务器的 `chenblog_dist.tar.gz`（服务器侧部署脚本尾部自动 `rm -f`）、`%TEMP%` 下本会话的 `live_index.html` / `live_reinit.js`、`/tmp/chenblog_*.txt` 都要清；⚠️ `/tmp` 是**Windows 共享临时目录**，只删自己产生的、别 broad clean。⚠️ 老坑本批又踩一次：**node 读不了 bash 的 `/tmp`**（解析成 `E:\tmp` → ENOENT），跨工具传文件用 `process.env.TEMP` |
 | 排查方法类坑位 | 本批新增三条，细节都在 **AGENTS 五-36 / 五-37 / 十-14**，此处只留索引：**`:hover` 态画下划线不能用 `border-bottom`（inline border 撑高行盒）**、**`forwards` 把 transform 永久留在元素上 = 常驻合成层**、**`navigating()` 的假设对全新 key 不成立（module 脚本晚一个宏任务）**。另有两条工具性坑：隐藏标签页 `setTimeout` 节流到 ≥1s（探针会 15s 超时，改用 `getAnimations().currentTime` 驱动）、`:hover` 不能用 JS 触发所以只能"手动施加同组声明"做等价验证 |
 | 待用户拍板 | ① 他 `截图/` 里 10-08 重拍的那 11 张要不要换进站内（**现在正文数值与「v1.1.0 截图说明」是按旧图对齐的，换图必须连带复核八-9**）② 文章里那句「获取工具 → CCNewTools 仓库」他手册没有，留还是删 ③ **V0.1.26 两条复测**（文章页→主页的封面；框选/点击文字是否还跳，见 16.）④ 新文章肉眼验收（11.）⑤ **灯箱真人点击**（12.）⑥ 第8天宽表要不要一起包（13.）⑦ `propse-base` 拼错要不要补（14.）⑧ 侧栏卡片不随软导航更换（9.）⑨ PostCard 加密文章锁图标（AGENTS 五-5）⑩ 全站 title 带不带后缀（SEO）；⑪ **meCard 那排的真人反馈**（手机扫二维码能不能扫上、QQ 复制在他自己浏览器里的提示条观感）——我这边只能证明图解码正常、退路走得到 |

@@ -1,10 +1,13 @@
 # AGENTS.md — 项目长期指令
 
 > 陈俊亦的个人博客。每次对话开始时自动读取本文件作为上下文。
-> 最后更新：**2026-10-10 傍晚（第三趟：波纹带高度对齐参考站，已上线 V0.1.33）**。
-> 本趟一句话：`#header-waves` 的 `max-h-12.5`（50px 上限）改成参考站的 `max-h-37.5 min-h-12.5`（150/50），
+> 最后更新：**2026-10-10 傍晚（第四趟：二维码浮层加开合动效 + 二维码只留码体，已上线 V0.1.34）**。
+> 本趟一句话：浮层原先用 `pop.hidden` 切 `display`，**`display:none` 上没有可插值属性 → 根本不会有过渡**；
+> 改成只由按钮 `aria-expanded` 驱动 `opacity/visibility/transform` 三条 0.18s 过渡（**五-41**），
+> 二维码同时从整张白色卡片（940×1392）按深色模块边界重裁成**只含码体**的 750×750 无损 webp（63.3KB）。
+> 上一趟（同日第三趟：波纹带高度对齐参考站 / V0.1.33）一句话：`#header-waves` 的 `max-h-12.5`（50px 上限）改成参考站的 `max-h-37.5 min-h-12.5`（150/50），
 > 一条 Tailwind 尺寸类走样导致波纹一直比参考站矮 2.7 倍——**这类"照抄时数值抄漏"的核法见一·参考源用法第 5 条**。
-> 上一趟（同日第二趟：修 meCard 那排社交按钮 / V0.1.32）要点：① **meCard 的 QQ / 微信 / GitHub 三个按钮原先写的是占位 `href="/"`**——
+> 再上一趟（同日第二趟：修 meCard 那排社交按钮 / V0.1.32）要点：① **meCard 的 QQ / 微信 / GitHub 三个按钮原先写的是占位 `href="/"`**——
 > 在首页点等于「同 URL 点击」，被 `SwupManager` 的回顶拦截接走，所以看着点了没反应（不是交互坏了）。
 > 现照参考站改成：GitHub 真外链（`target="_blank" rel="me noopener"`）、QQ 点击复制、微信弹二维码、RSS 补 `target="_blank"`；
 > ② 顺带查出 **`CopyShare` 的「复制链接」在线上一直是静默失败的**（纯 HTTP 没有 `navigator.clipboard`），已补 execCommand 退路；
@@ -686,8 +689,20 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
     → 通则：**`is:inline` 脚本只能写纯 JS**；要用 TS 就得去掉 `is:inline`（但那样 `define:vars` 的用法就变了，见十-3）。
     → 代价：两处 `document.execCommand` 的 ts(6387) deprecated hint **保留**，基线从 2 条变 4 条，见三节。
 40. ⚠️ **藏在 `hidden` 浮层里的图不要标 `loading="lazy"`**（2026-10-10 实测）：meCard 的微信二维码浮层默认 `hidden`，标了 lazy 之后 iframe 探针读到 `complete=false / naturalWidth=0`——**懒加载按视口判定，隐藏浮层里的图不会被提前拉**，用户点开那一瞬才发请求，本地都会白一下，弱网更明显。
-    → 现改成 eager（那张图是无损 webp，**98KB / 940×1392**，本来就该直接下）。
+    → 现改成 eager（那张图现在是无损 webp，**63.3KB / 750×750 只含码体**，本来就该直接下）。
+      ⚠️ 这条与下面 41 是同批：浮层已从 `hidden` 改成 `visibility` 驱动，**但结论仍然成立**——
+      `visibility:hidden` 里的图同样不会被懒加载提前拉。
     → 判据：**`naturalWidth === 0` 在隐藏浮层里不等于"坏图"**，要先撤掉 `hidden` 再测；与五-35 那条"懒加载图在视口外本就该留着遮罩"是同一族假信号。
+41. ⚠️ **点击开合的浮层不要靠 `hidden` / `display` 切换——`display:none` 上没有可插值属性，CSS 过渡根本不会跑**
+    （2026-10-10 他报 meCard 二维码浮层「打开没有动效」的根因）。原先 JS 写 `pop.hidden = !on`，就是瞬间切换。
+    - 现口径（与站内桌面下拉同一套思路）：**开合状态只由按钮的 `aria-expanded` 表达**，CSS 用相邻兄弟选择器
+      `.me-wechat-btn[aria-expanded="true"] + .me-qr-pop` 驱动 **`opacity` / `visibility` / `transform`** 三条过渡（0.18s），
+      闭合态配 `visibility:hidden + pointer-events:none` 把它移出无障碍树与命中区；`prefers-reduced-motion` 下撤掉过渡。
+      JS 里**不再碰 `hidden`/`display`**，只 `setAttribute("aria-expanded", …)`。
+    - ⚠️ Tailwind **v4** 的 `-translate-x-1/2` 编译到 **`translate` 属性**上，和这里动画用的 **`transform` 是两个属性**、
+      互不覆盖，所以居中不会被动画吃掉。**v3 不成立**（v3 把 translate 合成进 `transform`），别把这套照搬回 v3 项目。
+    - 取证：点击后读 **`el.getAnimations()`**，应列出 3 条 `CSSTransition`；**别用"等 200ms 再读 opacity"当判据**——
+      隐藏标签页里过渡不推进（五-25 老坑），要 `anim.finish()` 强制落到终态再读计算值。
 
 ## 六、部署
 

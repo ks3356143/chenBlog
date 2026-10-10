@@ -3,7 +3,16 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-10 下午（发了一条动态；已上线 V0.1.31）**。
+> 最后更新：**2026-10-10 傍晚（修 meCard 那排社交按钮，已上线 V0.1.32）**。
+>
+> 本批一句话：`meCard` 的 QQ / 微信 / GitHub 三个按钮原先写的是**占位 `href="/"`**，在首页点 = 同 URL 点击 →
+> 被 `SwupManager` 的回顶拦截接走，所以看着「点了没反应」（**不是交互坏了，是地址从来没填过**）。
+> 现照参考站改成：GitHub 真外链 + `target="_blank" rel="me noopener"`、QQ 点击复制、微信弹二维码、RSS 补 `target="_blank"`。
+> 三条坑落在 **AGENTS 五-38 / 五-39 / 五-40**，其中 **顺带查出 `CopyShare` 的「复制链接」在线上一直静默失败**
+> （纯 HTTP 没有 `navigator.clipboard`），同批补了 `execCommand` 退路。
+> ⚠️ `npm run check` 的 hint 基线 **2 → 4 条**（两条 execCommand deprecated，故意留的）。
+>
+> —— 以下为同日 16:2x 那趟（发了一条动态 / V0.1.31）的记录 ——
 >
 > 本批很薄，只有 `src/content/dynamic/2026-10-10-162300.md` 一条 + 发版 0.1.31。
 > **加一条动态既不增页数也不增文件数**（仍 43 页 / 351 文件），因为条目走 `/api/dynamic.json` 由客户端填模板（AGENTS 五-24）。
@@ -413,6 +422,43 @@
 
 ## 二、历次会话做了什么
 
+### 2026-10-10 傍晚：meCard 那排社交按钮改成能用的（**已上线 V0.1.32**）
+
+- **他报的是「点击这一排按钮没效果」**。查下来根因是 `src/components/card/meCard.astro:18-20`
+  三个 `<a href="/">` 占位从没填过地址；在首页点 = 同 URL 点击 → 被 `SwupManager.astro:63-79` 那条
+  「点当前页自身链接 → 平滑回顶」的 capture 监听接走，所以既不去别处也不报错，看着就是死的。
+  （RSS 那个 `href="/rss.xml"` 本来就是真链接，能跳。）
+- **先扒了参考站**（`firefly.cuteleaf.cn/about/` 原始 markup，未剥标签）：它这排是
+  `<a rel="me" aria-label="GitHub" href="https://github.com/CuteLeaf" target="_blank" class="btn-regular rounded-lg h-10 w-10 active:scale-90">`，
+  四项为 **GitHub / Email / RSS / Atom** —— **参考站没有 QQ 和微信**，所以那两个按业界常规另做（已在他面前明说）。
+  按压反馈 `active:scale-90` 我们的 `.btn-regular` 已自带（`mainSingles.css:9`），**差的只是真实 href 和 target**。
+- **四项落地**：① GitHub → `https://github.com/ks3356143`（他选的，与 `/about/` 里那条链接一致）；
+  ② QQ → **点击复制** `314298729`（他给的号，与 `/about/` 那个 `314298729@qq.com` 对得上），
+  复制失败时提示条直接把号码显示出来；③ 微信 → **点一下弹二维码浮层**（Esc / 点外部都能关，`aria-expanded` 同步）；
+  ④ RSS → 加 `target="_blank"`（他勾的），顺带让 Swup 不去解析 XML。
+  ⚠️ 带 `target` 的链接会被 `SwupManager:70` 主动跳过，所以外链不会走软导航 —— 这是选 `target="_blank"` 的第二个理由。
+- **二维码图**：他发的是手机截图（1220×2656 JPEG 492KB），**按「白色卡片像素边界」程序化裁出** 940×1392
+  （先扫亮像素行找连续段 → 再按该 y 区间扫列 → 各留 6px 白边），存 `public/assets/wechat-qr.webp`
+  = **sharp 无损 webp（`{lossless:true, effort:6}`）98.1KB**。⚠️ **二维码不能走有损压缩**（模块边缘糊了就扫不出来），
+  所以没沿用八节那条 `quality:88` 的常规做法。
+- **顺带修的同族真缺陷**：`CopyShare.astro` 的「复制链接」在线上**一直是静默失败的**——
+  站点是裸 IP + 纯 HTTP，`navigator.clipboard` 在非安全上下文里压根不存在，那句 `await navigator.clipboard.writeText()`
+  第一帧就抛 TypeError、被自己的 catch 吃掉，只往控制台打一行。**preview 是 localhost = 安全上下文，本地永远测不出来。**
+  两处都改成「先判 `navigator.clipboard && window.isSecureContext`，否则 `textarea + document.execCommand("copy")`」。
+- **`astro check` 抓出来的两个真问题**（这趟值得装它）：① `setOpen(pop.hidden)` 报 ts(2345)——
+  TS 新 DOM 库里 `hidden` 是 `boolean | "until-found"`，改成 `Boolean(pop.hidden)`；
+  ② 我给 `CopyShare` 的 `is:inline` 脚本写了 TS 断言 → **ts(8016)，而且 `is:inline` Astro 不转译，
+  断言会原样进 HTML 变成浏览器语法错误**（详见 AGENTS 五-39）。
+- **验收**（`npm run build` 退出码 0、`npm run check` 0 error / 4 hint、preview + 定宽 iframe 1440/375）：
+  四个按钮 40×40、`aria-label` 齐；GitHub 产物里 `target="_blank" rel="me noopener"`、RSS `target="_blank"`；
+  占位 `href="/"` **残留 0 处**；点微信按钮 → `hidden=false` / `aria-expanded=true` / `display:block`，
+  浮层 192×276（图 174×258，`naturalWidth 940` 已解码），点外部与 Esc 都能关；
+  强制 `isSecureContext=false` 后点 QQ → 走退路、提示条显示 `QQ：314298729`（合成点击无用户激活，属预期降级）；
+  两档 `scrollWidth-clientWidth` 均为 **0**；控制台 0 报错。
+- ⚠️ 两处探针踩坑（都记在 AGENTS 五-40 / 一节的 iframe 口径里）：顶层 surface 视口 **0×0**（第一次量出「104px 横向溢出」是假的）；
+  以及**用 `offsetParent` 判浮层可见性必然为 null**（它默认 `hidden`），要拿按钮那份实例再取兄弟节点。
+- **他还没验的**：真人手机上点二维码浮层能不能扫出来（我这边只能证明图解码正常），以及 QQ 复制在他自己浏览器里的实际反馈。
+
 ### 2026-10-10 下午：发了一条动态（**已 commit `1e277f8`、已推送、已上线 V0.1.31**）
 
 - 他给的原话是「最近正在做CCNewTools，以及Chenmeridian，加油」，**落盘时在中文与拉丁名之间补了空格**
@@ -751,21 +797,21 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-10-10 下午实测；**线上 = V0.1.31，与本批 HEAD `1e277f8` 一致**）
+## 三、当前状态快照（2026-10-10 傍晚实测；**线上 = V0.1.32，与本批 HEAD 一致**）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。近三日 **17 笔已推送**：… 发版 0.1.28 / 文档 / 手册同步 v1.3.2 / 发版 0.1.29 / 手册同步 v1.3.3 / 发版 0.1.30 / 文档 / **动态一条 + 发版 0.1.31** |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。近三日 **20 笔已推送**：… 手册同步 v1.3.3 / 发版 0.1.30 / 文档 / 动态一条 + 发版 0.1.31 / 文档 / **meCard 社交按钮 + CopyShare 剪贴板退路 + 发版 0.1.32** |
 | 工作区 | 提交后应 `git status` 干净并与 `origin/main` 齐平 |
-| 线上站点 | ✅ **2026-10-10 16:27 部署 V0.1.31**（第六节原子替换；部署前只读确认 `nginx -T` 的 root 与被替换目录都是 `/www/wwwroot/chenBlog/dist`，替换后 `test -f index.html` + `test -f api/dynamic.json` 双校验）。线上实测：`/api/dynamic.json` **2 条**（新条目居首，正文与本地逐字同）、首页含新文案 4 处、展示版本 `0.1.31` 无 `0.1.30` 残留、`/` `/dynamic/` `/api/dynamic.json` 均 200 且 `Cache-Control: no-cache, must-revalidate`、`pagefind-entry.json` 200（`no-cache`）。⬅️ **上一批（10-09 / V0.1.30）的核验结论**在顶部归档块里：文章页线上 == 本地 `dist` 逐字节一致、11 张配图未换、八-9 两处故意偏离仍在 |
+| 线上站点 | ✅ **2026-10-10 傍晚部署 V0.1.32**（第六节原子替换；部署前只读确认 `nginx -T` 的 root = `/www/wwwroot/chenBlog/dist`，同机并存 `lobe-chat` / `testplantAI` 不碰）。线上实测：`/assets/wechat-qr.webp` 200 / 98.1KB、首页那排按钮里 **占位 `href="/"` 残留 0 处**、GitHub 外链带 `target="_blank" rel="me noopener"`、RSS 带 `target="_blank"`、展示版本 `0.1.32` 无 `0.1.31` 残留。⬅️ 上一趟（同日 16:2x / V0.1.31 动态）与 10-09（V0.1.30）的核验结论在顶部归档块与第二节里 |
 | 服务器配置 | **未动**（只换 dist；没碰 Nginx / 宝塔）。缓存策略文件与 vhost 备份位置见 AGENTS 六节（值已脱敏，展开版在私密记录里）。原先那条 `reinit.js` 12h 缓存隐患已用**构建期哈希**解掉，无需改服务器 |
-| 本地构建 | `npm run build` 退出码 0（本批跑了两次：加动态、改版本号后各一次）：**43 页 / 351 文件 / `du -sh` 22M（字节 20.99MB）**，约 4s + Pagefind 0.2s。**Pagefind 索引 29 页 / 2836 词**。⚠️ **动态加一条不动这些数字**（条目在 `/api/dynamic.json` 里，不进 HTML 也不进索引，见五-24）。`npm run check` 本批**未跑**（只加内容文件，零代码改动）；上次基线仍是 0 error + 2 条故意留的 hint。⚠️ 口径见 AGENTS 五-9：`find dist -type f` 数文件、字节合计才算体积 |
+| 本地构建 | `npm run build` 退出码 0：**43 页 / 352 文件 / `du -sh` 22M**，约 4s + Pagefind 0.2s。**Pagefind 索引 29 页 / 2836 词**（文件数 +1 = 新增的 `public/assets/wechat-qr.webp`，页数不变）。⚠️ **动态加一条不动这些数字**（条目在 `/api/dynamic.json` 里，不进 HTML 也不进索引，见五-24）。**`npm run check` 本批跑了：0 error / 4 hint**（新增两条 `document.execCommand` deprecated，故意留的，见三节）；上次基线 0 error。⚠️ 口径见 AGENTS 五-9：`find dist -type f` 数文件、字节合计才算体积 |
 | 依赖 | 本批**零改动**。基线仍是 `@astrojs/check@0.9.10` devDep、`allowScripts` 钉 `esbuild@0.28.2`、干净 `npm ci` 695 包 |
 | dev / preview server | 本批起了 `npm run preview`（:4321）做验证，**收尾时按「`node.exe` + `astro\bin\astro.mjs` + `preview`」精确杀掉并复查残留 = 0**（宽匹配会把自己的 shell 吃掉，见 AGENTS 九节依赖坑③）。当前 dev 与 preview **都已停，:4321 空闲** |
 | 服务器回滚资产 | `dist.old` + **29 个 `dist_backup_*`** = **30 个**（最老 `20260920_234618`，本批新增 `20261010_162726`；其中一个是一次校验主动中止留下的空跑，无影响）。全部保留，**删需用户明确同意** |
 | 临时文件 | 本地与服务器的 `chenblog_dist.tar.gz`（服务器侧部署脚本尾部自动 `rm -f`）、`%TEMP%` 下本会话的 `live_index.html` / `live_reinit.js`、`/tmp/chenblog_*.txt` 都要清；⚠️ `/tmp` 是**Windows 共享临时目录**，只删自己产生的、别 broad clean。⚠️ 老坑本批又踩一次：**node 读不了 bash 的 `/tmp`**（解析成 `E:\tmp` → ENOENT），跨工具传文件用 `process.env.TEMP` |
 | 排查方法类坑位 | 本批新增三条，细节都在 **AGENTS 五-36 / 五-37 / 十-14**，此处只留索引：**`:hover` 态画下划线不能用 `border-bottom`（inline border 撑高行盒）**、**`forwards` 把 transform 永久留在元素上 = 常驻合成层**、**`navigating()` 的假设对全新 key 不成立（module 脚本晚一个宏任务）**。另有两条工具性坑：隐藏标签页 `setTimeout` 节流到 ≥1s（探针会 15s 超时，改用 `getAnimations().currentTime` 驱动）、`:hover` 不能用 JS 触发所以只能"手动施加同组声明"做等价验证 |
-| 待用户拍板 | ① 他 `截图/` 里 10-08 重拍的那 11 张要不要换进站内（**现在正文数值与「v1.1.0 截图说明」是按旧图对齐的，换图必须连带复核八-9**）② 文章里那句「获取工具 → CCNewTools 仓库」他手册没有，留还是删 ③ **V0.1.26 两条复测**（文章页→主页的封面；框选/点击文字是否还跳，见 16.）④ 新文章肉眼验收（11.）⑤ **灯箱真人点击**（12.）⑥ 第8天宽表要不要一起包（13.）⑦ `propse-base` 拼错要不要补（14.）⑧ 侧栏卡片不随软导航更换（9.）⑨ PostCard 加密文章锁图标（AGENTS 五-5）⑩ 全站 title 带不带后缀（SEO）⑪ meCard 三个社交按钮真实地址 |
+| 待用户拍板 | ① 他 `截图/` 里 10-08 重拍的那 11 张要不要换进站内（**现在正文数值与「v1.1.0 截图说明」是按旧图对齐的，换图必须连带复核八-9**）② 文章里那句「获取工具 → CCNewTools 仓库」他手册没有，留还是删 ③ **V0.1.26 两条复测**（文章页→主页的封面；框选/点击文字是否还跳，见 16.）④ 新文章肉眼验收（11.）⑤ **灯箱真人点击**（12.）⑥ 第8天宽表要不要一起包（13.）⑦ `propse-base` 拼错要不要补（14.）⑧ 侧栏卡片不随软导航更换（9.）⑨ PostCard 加密文章锁图标（AGENTS 五-5）⑩ 全站 title 带不带后缀（SEO）；⑪ **meCard 那排的真人反馈**（手机扫二维码能不能扫上、QQ 复制在他自己浏览器里的提示条观感）——我这边只能证明图解码正常、退路走得到 |
 | 既存小坑 | `--radius-large` / `--panel-border-color` 未定义（AGENTS 五-16）——表格那行 `border-radius` 因此整条无效、实际直角，**正好符合站内"面板一律直角"口径，别当缺陷补变量**；`tsconfig.json` react jsx 残留无影响；`src/content/posts/images/` 空目录；`/site.webmanifest` 的 Content-Type 缺 webmanifest 映射（要动 nginx mime.types）；重复 id `announcement`/`cardTags`（九节已判定降级：无脚本查询、无死控件）；单分类时分类卡收起态反而更高（**现在已有第二个分类，这条要复验是否还成立**） |
 
 ---

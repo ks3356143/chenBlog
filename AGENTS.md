@@ -1,8 +1,14 @@
 # AGENTS.md — 项目长期指令
 
 > 陈俊亦的个人博客。每次对话开始时自动读取本文件作为上下文。
-> 最后更新：**2026-10-10 下午（发了一条动态；已上线 V0.1.31）**。
-> 本批要点：① **发动态的流程跑通了一遍**（`node` 取时间 → 建 `src/content/dynamic/YYYY-MM-DD-HHMMSS.md` 带 `+08:00`
+> 最后更新：**2026-10-10 傍晚（第二趟：修 meCard 那排社交按钮，已上线 V0.1.32）**。
+> 本批（第二趟）要点：① **meCard 的 QQ / 微信 / GitHub 三个按钮原先写的是占位 `href="/"`**——
+> 在首页点等于「同 URL 点击」，被 `SwupManager` 的回顶拦截接走，所以看着点了没反应（不是交互坏了）。
+> 现照参考站改成：GitHub 真外链（`target="_blank" rel="me noopener"`）、QQ 点击复制、微信弹二维码、RSS 补 `target="_blank"`；
+> ② 顺带查出 **`CopyShare` 的「复制链接」在线上一直是静默失败的**（纯 HTTP 没有 `navigator.clipboard`），已补 execCommand 退路；
+> ③ 三条坑落在 **五-38（非安全上下文剪贴板）/ 五-39（`is:inline` 不转译、不能写 TS 断言）/ 五-40（隐藏浮层里的图别标 lazy）**；
+> ④ `npm run check` 的 hint 基线 **2 条 → 4 条**（两条 execCommand deprecated，故意留的，见三节）。
+> 上一趟（同日 16:2x，发了一条动态 / V0.1.31）要点：① **发动态的流程跑通了一遍**（`node` 取时间 → 建 `src/content/dynamic/YYYY-MM-DD-HHMMSS.md` 带 `+08:00`
 > → build → 核 `dist/api/dynamic.json` + 定宽 iframe 验 `/dynamic/` 与侧栏两处挂载 → 提交推送部署），
 > **加一条动态既不增页数也不增文件数**（条目走客户端填模板，五-24），也**不进搜索索引**（别为此改配置）；
 > ② 新记一条工具坑见七节末：**Git Bash 里 `TZ=Asia/Shanghai date` 不生效**，取时间一律用 `node`。
@@ -33,8 +39,8 @@
 > 2026-10-07 那批（发稿规矩 4 条 + 两条"照抄改名后静默失效"同族病）细节在 **八节 / 九节**，也不复述。
 > 代码侧本批：`public/assets/js/reinit.js`、`src/layouts/BaseLayout.astro`、`src/styles/markdown.css`、
 > `src/styles/transitions.css`。
-> 基线：**43 页 / 351 文件 / `du -sh` 22M（字节 20.99MB）** / 构建约 4.0s（+ Pagefind 0.2s）；文章 **27 篇**；
-> `npm run check` 与 `npx tsc --noEmit` 均 **0 error**（check 剩 2 条故意留的 hint）。
+> 基线：**43 页 / 352 文件 / `du -sh` 22M** / 构建约 4.0s（+ Pagefind 0.2s）；文章 **27 篇**；
+> `npm run check` 与 `npx tsc --noEmit` 均 **0 error**（check 剩 4 条故意留的 hint，见三节）。
 > ⚠️ 上一批（2026-10-01：上午批准的四件工程项 + 用户报的横幅标题 bug。落了 **十-14 重 init helper**、
 > **十-15 容器登记通则**、六节脱敏成占位符、`npm run check` 成为组件类型入口、五-5 纠正「锁图标」假事实、
 > 三节/四节/五-9 同步）已于当日 21:20 上线 **V0.1.21**，细节在九节与十-14/十-15，此处不复述。
@@ -110,14 +116,16 @@ npm run new:post -- --day 29 --title "标题"   # 文章脚手架（ASCII slug +
 ```
 
 `package.json` 里**没有** lint / test 脚本，也没有部署脚本。验证手段就是 `dev` 看效果 + `build` 确认能构建通过
-+ **`npm run check` 查类型**（当前基线：**0 error**，剩 2 条 hint，见下）。
++ **`npm run check` 查类型**（当前基线：**0 error**，剩 4 条 hint，见下）。
 > **`npm run check`（= `astro check`，`@astrojs/check` 0.9.10，devDep）是 2026-10-01 装的**，
 > 它补上了 `npx tsc --noEmit` 的盲区——**tsc 只查 `src/**/*.ts`，`.astro` 与 `.svelte` 完全不在射程内**。
 > 装它的当场就查出 4 个真问题（见第九节「astro check 首跑」）。
 > ⚠️ 它比 tsc 慢得多（首次约 20~30s，冷启动要起 language server），别每次改一行都跑。
-> ⚠️ 两条既存 hint 别当 error 追：① `PostCard.astro:39` `password` 声明未读（= 五-5 那条「锁图标其实是空的」）；
+> ⚠️ **四条既存 hint 别当 error 追**：① `PostCard.astro:39` `password` 声明未读（= 五-5 那条「锁图标其实是空的」）；
 >   ② `SiteStatus.astro:123` `siteStartDate` 找不到（那是 `define:vars` 注入的，**tsc 看不到但运行时真有**，
->   和五-22 那条 `--collapsedHeight` 是同一个道理）。
+>   和五-22 那条 `--collapsedHeight` 是同一个道理）；
+>   ③④ `meCard.astro` 与 `CopyShare.astro` 各一条 `document.execCommand` 的 ts(6387) deprecated——
+>   **故意留的**：纯 HTTP 下没别的出路（五-38），且 `CopyShare` 那条脚本是 `is:inline`，**不能写 TS 断言去压**（五-39）。
 > `src/modules.d.ts` 里那条 `declare module "@rehype-callouts-theme"` 是给它准备的——
 > 那个名字是 `astro.config.mjs:64` 的 **vite alias**，tsc/Volar 不解析 alias，删了这行 check 报 ts(2882)。
 > 老的 `npx tsc --noEmit -p tsconfig.json` 仍应退出码 0（它快，适合随手核）。
@@ -211,8 +219,8 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
    导致整个页面（含首页）渲染失败。Astro 6 容忍、Astro 7 报错。
    → 已于 2026-09-20 从 `src/pages/[...page].astro` 移除一处。要么写内容，要么整行删掉，别留空标签。
 
-9. 构建产物基线（**2026-10-08 下午实测**，V0.1.26）：
-   **43 个页面 / dist 351 个文件 / `du -sh` 22M（字节合计 20.99 MB）**，
+9. 构建产物基线（**2026-10-10 傍晚实测**，V0.1.32）：
+   **43 个页面 / dist 352 个文件 / `du -sh` 22M**，
    ⚠️ **量数字要连着方法一起报**：`du -sh` 按 4K 分块算（351 个文件就白涨 ~0.7M），字节合计才可比；
    文件数用 `find dist -type f | wc -l`，页数用 `find dist -name index.html | wc -l`。
    上一条记的"350 个文件"与今天的 351 差 1，**不是本批引入的回归**：`_astro/` 同步从 211 涨到 212，
@@ -226,7 +234,8 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
    文件数历史：307（09-28 接 Pagefind）→ 334（09-29 新相册）→ 335（09-30 加 `public/og-image.jpg`）→
    **336**（10-01 下午加 `public/assets/js/reinit.js`，十-14）→
    **350**（10-07 加 1 篇文章页 + 11 张 webp + 2 个 pagefind 产物）→
-   **351**（10-08 下午复核，多出那 1 个见上面的口径说明）。
+   **351**（10-08 下午复核，多出那 1 个见上面的口径说明）→ **352**（10-10 傍晚加 `public/assets/wechat-qr.webp`，见五-40）。
+   ⚠️ **加一条动态不会动这些数字**（条目在 `/api/dynamic.json` 里，不进 HTML 也不进索引，见五-24）。
    页历史：37 → 09-24 加 `/categories/` 38 → 09-28 加 `/series/` `/tags/` 40 → 09-29 加 `/dynamic/` 41 →
    09-29 加第 5 个相册 `/gallery/wlh-concert-2026/` 42 → **10-07 加首篇工具类文章 43**。
    **每加一个相册页数就 +1**（它走 `getStaticPaths`），**每加一篇文章也 +1**。
@@ -657,6 +666,20 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
       ⚠️ **`forwards` 与基础 `opacity: 0` 是一对**：只去掉 forwards 不删 `opacity: 0`，动画一结束全站正文就隐形。
     → 通则：**入场动画的 `forwards` 要逐个核 `to` 帧的属性**——只要写的是 transform / opacity / filter
       这类会提升图层的值，就优先考虑 `backwards` + 把终态做成元素默认样式。
+
+38. ⚠️ **本站是裸 IP + 纯 HTTP，`navigator.clipboard` 在访客浏览器里压根不存在**（非安全上下文，`window.isSecureContext === false`）。2026-10-10 做 meCard 的「复制 QQ 号」时查出：
+    - **`CopyShare.astro` 的「复制链接」从上线起就是静默失败的**——它写的是 `try { await navigator.clipboard.writeText(url) } catch { console.error(...) }`，在 HTTP 下第一句就抛 TypeError，被自己的 catch 吃掉，**只往控制台打一行、界面上毫无反应**。
+      （本地 `npm run preview` 是 localhost = 安全上下文，**测不出这个病**，得上线或用 `Object.defineProperty(window,'isSecureContext',{value:false})` 模拟才能验。）
+    - 现口径：**先判 `navigator.clipboard && window.isSecureContext`，否则退回 `textarea + document.execCommand("copy")`**（该 API 虽标废弃，Chromium/Edge/Firefox 至今仍可用，且**在非安全上下文里是唯一出路**）。`CopyShare` 与 `meCard` 两处都留了退路。
+    - 失败要**可见**：meCard 的提示条在复制失败时直接把号码显示出来（`QQ：314298729`），而不是只报个错——用户至少能自己选中复制。
+    - ⚠️ 将来上了 HTTPS 这条退路仍要留着（旧浏览器、以及仍走裸 IP 的访问路径），别当历史包袱删。
+39. ⚠️ **`<script is:inline>` 里的代码 Astro 不转译，写 TS 断言会原样进 HTML 变成语法错误**（2026-10-10 差点犯）：给 `CopyShare.astro`（它的脚本是 `is:inline define:vars`）加 execCommand 退路时，我先写了 `(document as unknown as {...}).execCommand("copy")` 去挡 deprecated 提示。
+    → `npm run check` 当场报 **ts(8016) "Type assertion expressions can only be used in TypeScript files"**——Volar 把 `is:inline` 块按 JS 处理，而**浏览器更会直接语法报错**，整段复制功能报废。
+    → 通则：**`is:inline` 脚本只能写纯 JS**；要用 TS 就得去掉 `is:inline`（但那样 `define:vars` 的用法就变了，见十-3）。
+    → 代价：两处 `document.execCommand` 的 ts(6387) deprecated hint **保留**，基线从 2 条变 4 条，见三节。
+40. ⚠️ **藏在 `hidden` 浮层里的图不要标 `loading="lazy"`**（2026-10-10 实测）：meCard 的微信二维码浮层默认 `hidden`，标了 lazy 之后 iframe 探针读到 `complete=false / naturalWidth=0`——**懒加载按视口判定，隐藏浮层里的图不会被提前拉**，用户点开那一瞬才发请求，本地都会白一下，弱网更明显。
+    → 现改成 eager（那张图是无损 webp，**98KB / 940×1392**，本来就该直接下）。
+    → 判据：**`naturalWidth === 0` 在隐藏浮层里不等于"坏图"**，要先撤掉 `hidden` 再测；与五-35 那条"懒加载图在视口外本就该留着遮罩"是同一族假信号。
 
 ## 六、部署
 

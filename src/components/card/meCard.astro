@@ -4,6 +4,12 @@ import { Icon } from "astro-icon/components"
 import ImageWrapper from "@/components/commons/ImageWrapper.astro"
 
 const isDev = import.meta.env.DEV
+
+// 社交入口。照参考站 firefly.cuteleaf.cn 的 me-card：外链一律 target="_blank" + rel="me noopener"
+// （带 target 会被 SwupManager 的 capture 监听跳过，不会被软导航接管）
+const githubUrl = "https://github.com/ks3356143"
+const qq = "314298729"
+const wechatQr = "/assets/wechat-qr.webp"
 ---
 
 <div class="card-base p-3">
@@ -15,10 +21,88 @@ const isDev = import.meta.env.DEV
 		<div class="mx-auto mb-2 h-1 w-8 bg-(--primary) transition"></div>
 		<div class="mb-2.5 text-center text-neutral-400 transition">Hello, I'm Juyial.</div>
 		<div class="mb-1 flex flex-wrap justify-center gap-2">
-			<a href="/" aria-label="QQ" class="btn-regular h-10 w-10"><Icon name="qq" /></a>
-			<a href="/" aria-label="Wechat" class="btn-regular h-10 w-10"><Icon name="wechat" /></a>
-			<a href="/" aria-label="Github" class="btn-regular h-10 w-10"><Icon name="github" /></a>
-			<a href="/rss.xml" aria-label="RSS 订阅" class="btn-regular h-10 w-10"><Icon name="rss" /></a>
+			<span class="relative inline-flex">
+				<button type="button" class="btn-regular me-qq-btn relative h-10 w-10" data-qq={qq} aria-label="复制 QQ 号">
+					<Icon name="qq" />
+				</button>
+				<span class="me-qq-tip" role="status"></span>
+			</span>
+			<span class="relative inline-flex">
+				<button type="button" class="btn-regular me-wechat-btn h-10 w-10" aria-label="显示微信二维码" aria-expanded="false">
+					<Icon name="wechat" />
+				</button>
+				<div class="me-qr-pop" hidden>
+					<img src={wechatQr} width="940" height="1392" alt="微信二维码，扫码添加我为好友" decoding="async" />
+				</div>
+			</span>
+			<a href={githubUrl} target="_blank" rel="me noopener" aria-label="GitHub" class="btn-regular h-10 w-10"><Icon name="github" /></a>
+			<a href="/rss.xml" target="_blank" rel="noopener" aria-label="RSS 订阅" class="btn-regular h-10 w-10"><Icon name="rss" /></a>
 		</div>
 	</div>
 </div>
+
+<!-- 本组件在 #swup-container 外面（左栏 + 移动端底部堆各一份），脚本每文档只跑一次，
+	 所以用普通监听、不走 onReinit（同 Header 系），但必须逐节点绑定，见 AGENTS 五-29 -->
+<script>
+	// 站点走裸 IP + 纯 HTTP，非安全上下文里 navigator.clipboard 直接不存在，必须留 execCommand 退路
+	async function copyText(text: string): Promise<boolean> {
+		try {
+			if (navigator.clipboard && window.isSecureContext) {
+				await navigator.clipboard.writeText(text)
+				return true
+			}
+		} catch {
+			/* 落到下面的退路 */
+		}
+		try {
+			const ta = document.createElement("textarea")
+			ta.value = text
+			ta.setAttribute("readonly", "")
+			ta.style.cssText = "position:fixed;top:-9999px;opacity:0"
+			document.body.appendChild(ta)
+			ta.select()
+			// 纯 HTTP 下这是唯一退路，故意用被废弃的 API（deprecated hint 已登记在 AGENTS 三节）
+			const ok = document.execCommand("copy")
+			document.body.removeChild(ta)
+			return ok
+		} catch {
+			return false
+		}
+	}
+
+	document.querySelectorAll<HTMLButtonElement>(".me-qq-btn").forEach(btn => {
+		const tip = btn.parentElement?.querySelector<HTMLElement>(".me-qq-tip")
+		if (!tip) return
+		let timer = 0
+		btn.addEventListener("click", async () => {
+			const ok = await copyText(btn.dataset.qq || "")
+			tip.textContent = ok ? "QQ 号已复制" : `QQ：${btn.dataset.qq}`
+			tip.classList.add("is-on")
+			clearTimeout(timer)
+			timer = window.setTimeout(() => tip.classList.remove("is-on"), 1800)
+		})
+	})
+
+	document.querySelectorAll<HTMLButtonElement>(".me-wechat-btn").forEach(btn => {
+		const pop = btn.parentElement?.querySelector<HTMLElement>(".me-qr-pop")
+		if (!pop) return
+		const setOpen = (on: boolean) => {
+			pop.hidden = !on
+			btn.setAttribute("aria-expanded", String(on))
+		}
+		btn.addEventListener("click", e => {
+			e.stopPropagation()
+			// astro check 抓出来的：TS 的 DOM 库里 hidden 是 boolean | "until-found"，要收成 boolean
+			setOpen(Boolean(pop.hidden))
+		})
+		document.addEventListener("click", e => {
+			if (!pop.hidden && !pop.contains(e.target as Node)) setOpen(false)
+		})
+		document.addEventListener("keydown", e => {
+			if (e.key === "Escape" && !pop.hidden) {
+				setOpen(false)
+				btn.focus()
+			}
+		})
+	})
+</script>

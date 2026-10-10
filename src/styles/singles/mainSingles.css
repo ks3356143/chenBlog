@@ -228,3 +228,18 @@
         transition: none;
     }
 }
+
+/* meCard 社交按钮：QQ 复制提示 + 微信二维码浮层。组件在左栏与移动底部堆各渲染一份、
+   且都在 #swup-container 外面，样式必须全局（同十-2 / 五-29 那条）*/
+.me-qq-tip {
+    @apply pointer-events-none absolute -top-8 left-1/2 z-50 -translate-x-1/2 whitespace-nowrap border border-(--line-divider) bg-(--card-bg) px-2 py-0.5 text-xs opacity-0 shadow-xs transition-opacity duration-150;
+}
+.me-qq-tip.is-on {
+    @apply opacity-100;
+}
+.me-qr-pop {
+    @apply absolute left-1/2 top-full z-50 mt-2 w-48 -translate-x-1/2 border border-(--line-divider) bg-(--card-bg) p-2 shadow-xs;
+}
+.me-qr-pop img {
+    @apply block h-auto w-full;
+}

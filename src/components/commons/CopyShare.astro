@@ -92,7 +92,21 @@ const siteUrl = siteConfig.site_url
 		if (isCopying) return
 		// 复制到粘贴板
 		try {
-			await navigator.clipboard.writeText(currentUrl)
+			// 站点是裸 IP + 纯 HTTP：非安全上下文里 navigator.clipboard 压根不存在，必须留 execCommand 退路
+			if (navigator.clipboard && window.isSecureContext) {
+				await navigator.clipboard.writeText(currentUrl)
+			} else {
+				const ta = document.createElement("textarea")
+				ta.value = currentUrl
+				ta.setAttribute("readonly", "")
+				ta.style.cssText = "position:fixed;top:-9999px;opacity:0"
+				document.body.appendChild(ta)
+				ta.select()
+				// 纯 HTTP 下这是唯一退路。本脚本是 is:inline，Astro 不转译，所以这里绝不能写 TS 断言
+				const ok = document.execCommand("copy")
+				document.body.removeChild(ta)
+				if (!ok) throw new Error("execCommand copy failed")
+			}
 			switchCopyTextDisplay()
 		} catch (err) {
 			console.error("复制失败:", err)

@@ -3,11 +3,17 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-10 傍晚（修 meCard 那排社交按钮，已上线 V0.1.32）**。
+> 最后更新：**2026-10-10 傍晚（第三趟：波纹带高度对齐参考站，已上线 V0.1.33）**。
 >
-> 本批一句话：`meCard` 的 QQ / 微信 / GitHub 三个按钮原先写的是**占位 `href="/"`**，在首页点 = 同 URL 点击 →
+> 本趟一句话：`#header-waves` 写的是 `max-h-12.5`（Tailwind v4 = 50px 上限），参考站是
+> `max-h-37.5 min-h-12.5`（150px 上限 / 50px 下限）→ **波纹带一直比参考站矮约 2.7 倍**。
+> 改成一个类的替换，实测三档高度 135 / 80 / 150px 与参考站逐档一致，横幅文字（底边 331px）
+> 离波纹顶（452px）很远、没被压到，零横向溢出。核法与"照抄数值抄漏"这条通病见 **AGENTS 一·参考源用法第 5 条**。
+>
+> —— 以下为同日第二趟（meCard 社交按钮 / V0.1.32）的记录 ——
+>
+> 那批一句话：`meCard` 的 QQ / 微信 / GitHub 三个按钮原先写的是**占位 `href="/"`**，在首页点 = 同 URL 点击 →
 > 被 `SwupManager` 的回顶拦截接走，所以看着「点了没反应」（**不是交互坏了，是地址从来没填过**）。
-> 现照参考站改成：GitHub 真外链 + `target="_blank" rel="me noopener"`、QQ 点击复制、微信弹二维码、RSS 补 `target="_blank"`。
 > 三条坑落在 **AGENTS 五-38 / 五-39 / 五-40**，其中 **顺带查出 `CopyShare` 的「复制链接」在线上一直静默失败**
 > （纯 HTTP 没有 `navigator.clipboard`），同批补了 `execCommand` 退路。
 > ⚠️ `npm run check` 的 hint 基线 **2 → 4 条**（两条 execCommand deprecated，故意留的）。
@@ -422,6 +428,24 @@
 
 ## 二、历次会话做了什么
 
+### 2026-10-10 傍晚：波纹带高度对齐参考站（**已上线 V0.1.33**）
+
+- 他拿参考站的截图说「我的波纹没有它那么大」。扒 `firefly.cuteleaf.cn` 首页产物那行 markup：
+  `<div class="waves absolute -bottom-px h-[10vh] max-h-37.5 min-h-12.5 w-full md:h-[15vh] md:block" id="header-waves">`
+  —— 我们 `Waves.astro` 是同一行**但写的是 `max-h-12.5`、且没有 `min-h`**。
+  Tailwind v4 里 `12.5` = `calc(var(--spacing)*12.5)` = **50px**，`37.5` = **150px** → 桌面 `md:h-[15vh]`（900 高时 135px）
+  被我们那个 50px 上限**整个夹掉**，所以波纹一直矮 2.7 倍。
+- 改动就是 `src/components/headers/Waves.astro:7` 一处：`max-h-12.5` → `max-h-37.5 min-h-12.5`。
+  **没跟着加 `md:block`**——那是他们家波浪可关闭（`localStorage.wavesEnabled` + `data-waves-enabled`）才需要的，
+  我们没有那套开关，加了是空类。
+- 也确认过我们这边**没有别处再钉高度**：`src/styles/waves.css` 的 `#header-waves` / `.waves` 只有
+  `isolation/contain/z-index/transform` 与动画，唯一的尺寸类是 <1024px 的 `.waves svg{min-height:60px}`（保留）。
+- **验收**（build 退出码 0 + preview + 定宽定高 iframe；`vh` 必须给 iframe 真实高度才准）：
+  1440×900 → **135px**（改前 50）、375×800 → **80px**（改前 50）、1920×1080 → **150px**（撞 `max-h-37.5` 上限），
+  与参考站的类换算逐档吻合；横幅标题底边 303 / 打字机底边 331，**都在波纹顶 452 之上、没被压住**；
+  三档 `scrollWidth-clientWidth` 均为 0；线上产物已能 `grep -qF "max-h-37.5"`，版本 `0.1.33`、无 `0.1.32` 残留。
+- ⚠️ 这类病的通名与核法已写进 **AGENTS 一·参考源用法第 5 条**（照抄时尺寸类最容易漏，光比源码字符串会漏掉 `--spacing` 换算）。
+
 ### 2026-10-10 傍晚：meCard 那排社交按钮改成能用的（**已上线 V0.1.32**）
 
 - **他报的是「点击这一排按钮没效果」**。查下来根因是 `src/components/card/meCard.astro:18-20`
@@ -797,18 +821,18 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-10-10 傍晚实测；**线上 = V0.1.32，与本批 HEAD 一致**）
+## 三、当前状态快照（2026-10-10 傍晚实测；**线上 = V0.1.33，与本批 HEAD 一致**）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。近三日 **20 笔已推送**：… 手册同步 v1.3.3 / 发版 0.1.30 / 文档 / 动态一条 + 发版 0.1.31 / 文档 / **meCard 社交按钮 + CopyShare 剪贴板退路 + 发版 0.1.32** |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。今日三笔连发：**动态 + 发版 0.1.31 / 文档 / meCard 社交按钮 + CopyShare 剪贴板退路 + 发版 0.1.32 / 文档 / 波纹高度 + 发版 0.1.33** |
 | 工作区 | 提交后应 `git status` 干净并与 `origin/main` 齐平 |
-| 线上站点 | ✅ **2026-10-10 傍晚部署 V0.1.32**（第六节原子替换；部署前只读确认 `nginx -T` 的 root = `/www/wwwroot/chenBlog/dist`，同机并存 `lobe-chat` / `testplantAI` 不碰）。线上实测：`/assets/wechat-qr.webp` 200 / 98.1KB、首页那排按钮里 **占位 `href="/"` 残留 0 处**、GitHub 外链带 `target="_blank" rel="me noopener"`、RSS 带 `target="_blank"`、展示版本 `0.1.32` 无 `0.1.31` 残留。⬅️ 上一趟（同日 16:2x / V0.1.31 动态）与 10-09（V0.1.30）的核验结论在顶部归档块与第二节里 |
+| 线上站点 | ✅ **2026-10-10 傍晚部署 V0.1.33**（第六节原子替换；部署前只读确认 `pwd` = `/www/wwwroot/chenBlog`，同机并存 `lobe-chat` / `testplantAI` 不碰；替换前 `grep -qF` 断言 `max-h-37.5` 与 `0.1.33` 必须在）。线上首页已见 `class="waves absolute -bottom-px h-[10vh] max-h-37.5 min-h-12.5 w-full md:h-[15vh]"`、版本 `0.1.33` 无 `0.1.32` 残留。⬅️ 上一趟（V0.1.32 meCard）线上实测：`/assets/wechat-qr.webp` 200 / `image/webp` / **`no-cache`**（走兜底 HTML 规则，以后换二维码访客立刻拿到新的）、占位 `href="/"` 残留 0、GitHub 外链带 `target="_blank" rel="me noopener"`。更早两趟的核验结论在第二节与顶部归档块里 |
 | 服务器配置 | **未动**（只换 dist；没碰 Nginx / 宝塔）。缓存策略文件与 vhost 备份位置见 AGENTS 六节（值已脱敏，展开版在私密记录里）。原先那条 `reinit.js` 12h 缓存隐患已用**构建期哈希**解掉，无需改服务器 |
 | 本地构建 | `npm run build` 退出码 0：**43 页 / 352 文件 / `du -sh` 22M**，约 4s + Pagefind 0.2s。**Pagefind 索引 29 页 / 2836 词**（文件数 +1 = 新增的 `public/assets/wechat-qr.webp`，页数不变）。⚠️ **动态加一条不动这些数字**（条目在 `/api/dynamic.json` 里，不进 HTML 也不进索引，见五-24）。**`npm run check` 本批跑了：0 error / 4 hint**（新增两条 `document.execCommand` deprecated，故意留的，见三节）；上次基线 0 error。⚠️ 口径见 AGENTS 五-9：`find dist -type f` 数文件、字节合计才算体积 |
 | 依赖 | 本批**零改动**。基线仍是 `@astrojs/check@0.9.10` devDep、`allowScripts` 钉 `esbuild@0.28.2`、干净 `npm ci` 695 包 |
 | dev / preview server | 本批起了 `npm run preview`（:4321）做验证，**收尾时按「`node.exe` + `astro\bin\astro.mjs` + `preview`」精确杀掉并复查残留 = 0**（宽匹配会把自己的 shell 吃掉，见 AGENTS 九节依赖坑③）。当前 dev 与 preview **都已停，:4321 空闲** |
-| 服务器回滚资产 | `dist.old` + **30 个 `dist_backup_*`** = **31 个**（最老 `20260920_234618`，本批两笔新增 `20261010_162726` / `20261010_171053`；其中一个是一次校验主动中止留下的空跑，无影响）。全部保留，**删需用户明确同意** |
+| 服务器回滚资产 | `dist.old` + **31 个 `dist_backup_*`** = **32 个**（最老 `20260920_234618`，今日三笔新增 `20261010_162726` / `20261010_171053` / `20261010_171834`；其中一个是一次校验主动中止留下的空跑，无影响）。全部保留，**删需用户明确同意** |
 | 临时文件 | 本地与服务器的 `chenblog_dist.tar.gz`（服务器侧部署脚本尾部自动 `rm -f`）、`%TEMP%` 下本会话的 `live_index.html` / `live_reinit.js`、`/tmp/chenblog_*.txt` 都要清；⚠️ `/tmp` 是**Windows 共享临时目录**，只删自己产生的、别 broad clean。⚠️ 老坑本批又踩一次：**node 读不了 bash 的 `/tmp`**（解析成 `E:\tmp` → ENOENT），跨工具传文件用 `process.env.TEMP` |
 | 排查方法类坑位 | 本批新增三条，细节都在 **AGENTS 五-36 / 五-37 / 十-14**，此处只留索引：**`:hover` 态画下划线不能用 `border-bottom`（inline border 撑高行盒）**、**`forwards` 把 transform 永久留在元素上 = 常驻合成层**、**`navigating()` 的假设对全新 key 不成立（module 脚本晚一个宏任务）**。另有两条工具性坑：隐藏标签页 `setTimeout` 节流到 ≥1s（探针会 15s 超时，改用 `getAnimations().currentTime` 驱动）、`:hover` 不能用 JS 触发所以只能"手动施加同组声明"做等价验证 |
 | 待用户拍板 | ① 他 `截图/` 里 10-08 重拍的那 11 张要不要换进站内（**现在正文数值与「v1.1.0 截图说明」是按旧图对齐的，换图必须连带复核八-9**）② 文章里那句「获取工具 → CCNewTools 仓库」他手册没有，留还是删 ③ **V0.1.26 两条复测**（文章页→主页的封面；框选/点击文字是否还跳，见 16.）④ 新文章肉眼验收（11.）⑤ **灯箱真人点击**（12.）⑥ 第8天宽表要不要一起包（13.）⑦ `propse-base` 拼错要不要补（14.）⑧ 侧栏卡片不随软导航更换（9.）⑨ PostCard 加密文章锁图标（AGENTS 五-5）⑩ 全站 title 带不带后缀（SEO）；⑪ **meCard 那排的真人反馈**（手机扫二维码能不能扫上、QQ 复制在他自己浏览器里的提示条观感）——我这边只能证明图解码正常、退路走得到 |

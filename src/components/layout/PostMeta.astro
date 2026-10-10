@@ -39,7 +39,7 @@ const className = Astro.props.className
 		<div class="meta-icon-regular meta-icon">
 			<Icon name="material-symbols:calendar-today-outline-rounded" class="text-xl" />
 		</div>
-		<span class="text-50 text-sm font-medium">{formatDateTimeToYYYYMMDDHHmm(published, "date")}</span>
+		<span class="px-1.5 text-50 text-sm font-medium">{formatDateTimeToYYYYMMDDHHmm(published, "date")}</span>
 	</div>
 
 	<!-- 更新时间 -->
@@ -49,7 +49,7 @@ const className = Astro.props.className
 				<div class="meta-icon-regular meta-icon">
 					<Icon name="material-symbols:edit-calendar-outline-rounded" class="text-xl" />
 				</div>
-				<span class="text-50 text-sm font-medium">{formatDateTimeToYYYYMMDDHHmm(updated, "date")}</span>
+				<span class="px-1.5 text-50 text-sm font-medium">{formatDateTimeToYYYYMMDDHHmm(updated, "date")}</span>
 			</div>
 		)
 	}

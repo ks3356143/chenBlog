@@ -239,7 +239,25 @@
 }
 .me-qr-pop {
     @apply absolute left-1/2 top-full z-50 mt-2 w-48 -translate-x-1/2 border border-(--line-divider) bg-(--card-bg) p-2 shadow-xs;
+    /* 开合走 opacity + transform，状态只由按钮的 aria-expanded 表达（JS 不再碰 hidden）。
+       Tailwind v4 的 -translate-x-1/2 落在 translate 属性上，和这里的 transform 是两个属性、互不覆盖 */
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-6px) scale(0.96);
+    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0.18s;
+}
+.me-wechat-btn[aria-expanded="true"] + .me-qr-pop {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
 }
 .me-qr-pop img {
     @apply block h-auto w-full;
+}
+@media (prefers-reduced-motion: reduce) {
+    .me-qr-pop {
+        transition: none;
+    }
 }

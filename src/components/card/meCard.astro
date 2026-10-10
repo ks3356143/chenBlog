@@ -31,8 +31,8 @@ const wechatQr = "/assets/wechat-qr.webp"
 				<button type="button" class="btn-regular me-wechat-btn h-10 w-10" aria-label="显示微信二维码" aria-expanded="false">
 					<Icon name="wechat" />
 				</button>
-				<div class="me-qr-pop" hidden>
-					<img src={wechatQr} width="940" height="1392" alt="微信二维码，扫码添加我为好友" decoding="async" />
+				<div class="me-qr-pop">
+					<img src={wechatQr} width="750" height="750" alt="微信二维码，扫码添加我为好友" decoding="async" />
 				</div>
 			</span>
 			<a href={githubUrl} target="_blank" rel="me noopener" aria-label="GitHub" class="btn-regular h-10 w-10"><Icon name="github" /></a>
@@ -86,20 +86,18 @@ const wechatQr = "/assets/wechat-qr.webp"
 	document.querySelectorAll<HTMLButtonElement>(".me-wechat-btn").forEach(btn => {
 		const pop = btn.parentElement?.querySelector<HTMLElement>(".me-qr-pop")
 		if (!pop) return
-		const setOpen = (on: boolean) => {
-			pop.hidden = !on
-			btn.setAttribute("aria-expanded", String(on))
-		}
+		// 开合状态只由 aria-expanded 表达，CSS 靠它做过渡，JS 不再碰 hidden/display
+		const isOpen = () => btn.getAttribute("aria-expanded") === "true"
+		const setOpen = (on: boolean) => btn.setAttribute("aria-expanded", String(on))
 		btn.addEventListener("click", e => {
 			e.stopPropagation()
-			// astro check 抓出来的：TS 的 DOM 库里 hidden 是 boolean | "until-found"，要收成 boolean
-			setOpen(Boolean(pop.hidden))
+			setOpen(!isOpen())
 		})
 		document.addEventListener("click", e => {
-			if (!pop.hidden && !pop.contains(e.target as Node)) setOpen(false)
+			if (isOpen() && !pop.contains(e.target as Node)) setOpen(false)
 		})
 		document.addEventListener("keydown", e => {
-			if (e.key === "Escape" && !pop.hidden) {
+			if (e.key === "Escape" && isOpen()) {
 				setOpen(false)
 				btn.focus()
 			}

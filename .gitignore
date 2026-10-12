@@ -17,6 +17,9 @@ pnpm-debug.log*
 .env
 .env.production
 
+# 本地私密记录（部署目标真实值 / 展开版部署命令）——绝不入库
+AGENTS.local.md
+
 # macOS-specific files
 .DS_Store
 

@@ -380,7 +380,8 @@ Twikoo 无 `defer`（589KB × 27 页）· 横幅 srcset 缺 750w 档 · 每页�
 |---|---|
 | 自动注入的指令 | `~/.dsh/AGENTS.md`（当前不存在）→ `AGENTS.md` → `AGENTS.local.md`，**合计封顶 65536 字节**。⚠️ `HANDOFF.md` 与 `docs/agents/*` **不会自动注入，要自己 Read**。 |
 | 上一任的跨会话记忆 | **本 harness 没有记忆功能** → 已全部落盘进 `docs/agents/harness.md` + `AGENTS.local.md`。**仓库文件是唯一载体，别再往任何外部记忆系统写。** |
-| 浏览器验证 | 本环境**没有内置 browser 工具**。可用通道：`npm run probe`（全局 `@playwright/test` + 本机已缓存的 **headless** Chromium 1243，已实测跑通线上首页探针）。DSH 的 browser-use 插件**尚未安装**；装它有三个坑（证据见 harness.md C 节）：**裸包名会被版本闸门拒**（要写 `@0.2.0-rc.2`）、**装 ≠ 启用**（三包都无 `dsh.bundle`，必须手改 profile 的 bundles + `cordis.patch.yml`）、README 明写**不接管已活动的 Session**（要新会话才有工具，是否需重启进程未实测）→ 只在用户点头后做，且**先把手上活交付完**。 |
+| 浏览器验证 | **2026-10-12 已装 DSH 的 playwright browser-use provider**（在 `~\.dsh\profiles\desktop\`，不在仓库内）。⚠️ **但本会话仍无工具** —— provider 不接管已活动 Session，**要新建/恢复 Session** 才出现 `mcp__playwright-mcp__*`。在那之前用 `npm run probe`（已实测跑通线上页截图与探针）。⚠️ **别改成 `headless: false`**：本机无完整版 `chromium-1243`，而 README 写「启动失败会**拒绝 Session 创建**」→ 会让新会话起不来。回滚备份 `~\.dsh\browser-plugin-profile-backup\`。细节见 `harness.md` C-1。 |
+| 右侧「浏览器」面板 | 桌面 profile **默认已启用**（用户按 **Ctrl+T**）。⚠️ 它**不给模型任何工具**（README：用户侧呈现状态），且与我经 MCP 起的浏览器**互不共享状态** → **别承诺"我帮你打开右侧浏览器"**，做不到；要两边看同一页面需改 `mode: attach`（未做）。 |
 | 停止后台任务 | `job_kill`：**同样只杀外壳、node 子进程照残留** → 九节的精确匹配流程原样适用。 |
 | 长时间命令 | `pwsh` + `run_in_background` → `job_output`/`job_kill`；退出码看 `[exit code: N]`；长输出会被截尾并落盘。 |
 | 设计类流程 | 上一任的 `superpowers:brainstorming` **在这里没有同名技能**。语义照旧：**先扒参考实现 → 出短设计 → 停下等批准 → 再写代码**。可用 skill：`ui-ux-pro-max` / `frontend-design` / `design-taste-frontend` / `tailwind-4-docs` / `gsap-*`。 |

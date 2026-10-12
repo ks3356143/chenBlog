@@ -168,6 +168,18 @@ B-1 写的就是"不许在没有运行成功的情况下声称已完成"。但�
 > → 通则（A-1 的新形态）：**"零命中"有两种成因 —— 方法坏了 / 东西真不在。必须用控制组区分，
 >   不许直接挑一个解释写进文档。** 与 A-1 第 7 类（空集合比出假一致）是同一族的镜像。
 
+### B-18 🔴 读 asar 内容时**连错两次查找域**，差点把"我找不到"写成"没有"
+
+要给 provider 读 README，我先在 asar 里搜 `browser-use` 得 0 命中，又按 `node_modules/...` 相对路径精确取文件得「目标命中: 0」。
+两次我都差点据此下"这包没带 README / 没装成功"的结论。**实情**：
+① **装进 profile 的包不在 asar 里**（asar 只含随附核心包，这俩是刚 pnpm 装进 `~\.dsh\profiles\desktop\node_modules\` 的）；
+② asar 内真实路径**带 `/dsh/` 前缀**（`/dsh/node_modules/@deepseek-ai/...`），按无前缀路径精确匹配必然落空。
+> **铁律：搜不到之前先确认"搜的是哪一片存储"**（asar / profile node_modules / 用户目录 / 全局 npm）与**路径前缀形状**。
+> 判法：先「列全部条目 + 模糊过滤」确认真实路径长什么样，再做精确匹配。
+> asar 的正确解法已固化：`headerSize = buf.readUInt32LE(12)` → `JSON.parse(buf.subarray(16, 16+headerSize))` →
+> 文件字节 = `buf.subarray(16 + headerSize + Number(meta.offset), … + meta.size)`。
+> 这是 A-1 第 7 类（自造选择器空集合）在**存储定位层面**的同族形态。
+
 ---
 
 ## A. 继承自上一任的纪律（22 份记忆文件压缩落盘，卸载 Qoder 后仍有效）
@@ -283,15 +295,15 @@ B-1 写的就是"不许在没有运行成功的情况下声称已完成"。但�
 |---|---|
 | 项目指令注入 | `AGENTS.md` + `AGENTS.local.md` 自动注入，**合计封顶 65536 字节**；`~/.dsh/AGENTS.md` 当前不存在 |
 | 跨会话记忆 | **无此功能** → 一切落盘进仓库文件 |
-| 浏览器 | **无内置 browser 工具**。可用：`npm run probe -- <url> <宽度>`（`scripts/probe.mjs`，全局 Playwright + 已缓存 headless Chromium） |
-| DSH 浏览器插件 | **存在但未安装**（2026-10-12 实测：`profiles/desktop` 的 bundles 里没有 browser 项、`node_modules` 里连 `@deepseek-ai` 目录都没有）。当前 GUI 跑的是 **desktop** profile（端口 19387 → PID 的命令行第 4 个参数就是 `profiles\desktop`，环境变量亦有 `DSH_PROFILE=desktop`）。装它的三个坑见下 C-1 |
+| 浏览器（模型侧） | **2026-10-12 已装 playwright provider**，但 ⚠️ **本会话没有工具**（provider 不接管已活动 Session）→ 要**新建/恢复 Session** 才出现 `mcp__playwright-mcp__*`。当前可用通道：`npm run probe -- <url> <宽> <高> [--also <宽> <高>] [--sel <css>]`（全局 Playwright + headless Chromium 1243） |
+| 浏览器（用户侧面板） | 右侧 Sidebar 的「浏览器」tab，**桌面 profile 默认已启用**（用户按 Ctrl+T 开）。⚠️ 它**不给模型任何工具**，且与我经 MCP 起的浏览器**互不共享状态** → 详见 C-1b |
 | 后台任务 | `pwsh run_in_background` → `job_output` / `job_kill`；**`job_kill` 只杀外壳，node 子进程照残留**（AGENTS 九节的精确匹配流程适用） |
 | 子代理 | `subagent` / `subagent_fork`（后台默认）、`workflow`（大规模编排）、`send_message` / `interrupt_agent` |
 | 技能 | `ui-ux-pro-max` / `frontend-design` / `design-taste-frontend` / `tailwind-4-docs` / `gsap-*` / office 系列等；**无 `superpowers:brainstorming` 同名技能**（语义见 AGENTS 文末附表） |
 | MCP | 未接入 Context7 / GitHub（上一任在 Qoder 内配的，已随卸载失效） |
 | 交付展示 | `present`（把产物文件作为卡片交给用户） |
 
-### C-1 若要装 DSH 的 browser-use 插件（子代理 2026-10-12 调研，标注了实测 vs 推论）
+### C-1 DSH 的 browser-use 插件：**已于 2026-10-12 装好并挂载**（含装前证据与回滚位）
 
 `dsh-browser-use` 是**插座**（零 dependencies、"Exclusive named provider registration"），**单装它得不到任何工具**；
 真正的 provider 是 `dsh-experimental-browser-use-playwright-mcp`（依赖 `@playwright/mcp`）或 `…-chrome-devtools-mcp`（依赖 `chrome-devtools-mcp`），**exclusive 注册 → 推断只能挂一个**（未实测同挂的报错行为）。
@@ -301,18 +313,49 @@ B-1 写的就是"不许在没有运行成功的情况下声称已完成"。但�
    装完还**必须手改两处**：`profiles/desktop/package.json` 的 `dsh.profile.bundles` + `cordis.patch.yml` 追加条目（`mode: launch` **必填无默认**，`headless` 默认 true；**没有 `enabled` 开关**）。
    且 `dsh-browser-use` **不随 asar 附带**（实测 find 命中 0）、profile 又 `autoInstallPeers: false` → **那个插座必须自己装**。
 3. ⚠️ **本会话拿不到工具**：provider README 原文「**加载或重新加载此提供方不会接管已经活动的 Session**」「在**创建或恢复 Session 前**挂载」→ 要**新会话**才有。
-   是否必须重启进程：**未实测**（HMR 文案说改 `bundles` 列表会触发重载并报 `applied`，但"仅依赖字段变化不触发重载"；**替换已安装包版本明确需要重启**）→ **按"会中断当前会话"预备，先交付再动**。
-4. 命令（`dsh` 不在 PATH，用全路径；`plugin` 只是 pnpm 转发器、`--profile` 必填）：
+   🔴 **同一条 README 的已知限制**：「**启动失败或取消会拒绝 Session 创建或恢复**，并触发客户端清理」→
+   所以 `mode: launch` + `headless: true` **不能改成 `headless: false`**（本机无完整版 `chromium-1243`，改了就**新会话直接创建失败**）。
+   是否必须重启进程：**未实测**（HMR 文案说改 `bundles` 列表会触发重载并报 `applied`，但"仅依赖字段变化不触发重载"；**替换已安装包版本明确需要重启**）。
+4. 实际执行过的命令（`dsh` 不在 PATH，用全路径；`plugin` 只是 pnpm 转发器、`--profile` 必填）：
    ```powershell
-   & "D:\programs\deepseek harness\dsh\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add "@deepseek-ai/dsh-browser-use@0.2.0-rc.2" "@deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp@0.2.0-rc.2"
+   & "D:\programs\deepseek harness\dsh\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add "@deepseek-ai/dsh-browser-use@0.2.0-rc.2" "@deepseek-ai/dsh-experimental-browser-use-playwright-mcp@0.2.0-rc.2"
    ```
-   ⚠️ CLI 源码提示要**先完全退出 app** 再动 desktop profile；且 `--dump-config` 之类对 desktop 被拒（Electron 保留）。**优先用 GUI 插件页**（它才做启用/装载）。
+   实测退出码 0、`+11 包`、lockfile 过供应链校验；两条 `declares no dsh.bundle` warning **实证了第 2 条**（装 ≠ 启用）。
+   ⚠️ 跑 CLI 时 app 仍在运行也成功了 → 源码里"先完全退出 app"那句是**建议而非硬闸**（未深究，别据此放宽第 3 条）。
 5. **浏览器可用性**（实测）：`@playwright/mcp@0.0.80` 钉 playwright-core `1.63.0-alpha-2026-08-31` → 要 **chromium rev 1243**。
    本机有 `chromium_headless_shell-1243` ✅、**没有完整版 `chromium-1243`** ❌ → `headless:true` **现在就能离线跑**（实测 launch 成功），`headless:false` **必失败**。
    要 headed：`node "<全局 @playwright/test>/node_modules/playwright/cli.js" install chromium`（已用 --dry-run 验证目标与 URL，未下载）。
    ⚠️ **别拿 `chromium.executablePath({headless:true})` 判可用性** —— 它不接 headless 参数、**恒返回不存在的路径**；要判就真 `launch()` 一次。
    本机**无任何 Google Chrome**（只有 Edge 155）；`chrome-devtools-mcp` 的 channel 选项全是 Chrome、上游 README 明说只官方支持 Chrome → **用它必须显式给 `executablePath` 指 Edge，属未支持路径**（未实跑）。
 6. **npmmirror 有全部所需包**（逐包实测）→ 装时不必换官方源；但 `npm view … readme` / `npm audit` **仍必须显式换官方源**（npmmirror 返回空 readme）。
+
+### C-1b 右侧「浏览器」面板（用户侧）与我的工具（模型侧）是两回事
+
+用户问"你能不能像 Codex / Qoder 那样自己打开内置右侧浏览器操作" —— **答：不能，且不是没装**。两条独立证据：
+
+- `@deepseek-ai/dsh-client-ui-sidebar-browser`（右侧 Sidebar 的浏览器 tab）README「模型体验」原文：
+  「**无。Browser tab 是用户侧呈现状态，不注册工具、prompt section 或 Session event**」→ 它**设计上就不给模型任何工具**。
+- 它的启用条件是 asar 里 `dsh-web-app/cordis.patch.yml` 的一行 JS：
+  `disabled: !!js "ctx.get('profileContext')?.name !== 'desktop'"` → **桌面 profile 默认已启用**，无需配置；
+  用户按 **Ctrl+T**（命令 `browser.new`，Windows 默认键）即可打开，工具栏有后退/前进/刷新/前往/系统浏览器打开。
+- ⚠️ **两边不共享状态**：面板那个 Electron `<webview>` 与我经 MCP 起的 Chromium 是**两个独立浏览器上下文**，
+  登录态 / Cookie / DOM 互不可见。面板上看到的 ≠ 我量到的，反之亦然。
+- 面板受 iframe 策略限制（很多站点拒绝嵌入）、**明确拒绝 `file:` URL** → 验本地产物仍要走 http（配合 B-13）。
+- → 本项目的分工：**我看数字用 `npm run probe`（新会话后可用 MCP 工具），人看观感用右侧面板**。
+  要"我操作 + 你同时看见同一个页面"，得用 `mode: attach` 指向一个带调试端口的浏览器，两边接同一个 —— 属另一件事，未做。
+
+### C-1c 安装落点与回滚
+
+- 装进 `~\.dsh\profiles\desktop\`（**不在项目仓库内**）：`dsh-browser-use@0.2.0-rc.2` +
+  `dsh-experimental-browser-use-playwright-mcp@0.2.0-rc.2`（连带 `runtime` 与 `@playwright/mcp@0.0.80`）。
+- 挂载写在 `~\.dsh\profiles\desktop\cordis.patch.yml` 末尾两条：`browser-use-socket`（**无 config**）+
+  `browser-use-playwright`（`mode: launch` / `headless: true`）。插座不需要 config 是**读源码定的**：
+  它的 `lib/index.js` 全文 1262 字符，只有一个 `BrowserUseRegistry` Service 与 `register(name)` 独占逻辑。
+- **装前 5 个 profile 文件已备份**（`package.json` / `cordis.patch.yml` / `cordis.yml` / `pnpm-lock.yaml` / `pnpm-workspace.yaml`，
+  SHA256 校验 5/5）：`C:\Users\31429\.dsh\browser-plugin-profile-backup\`。回滚 = 覆盖回去再重启。
+- `pnpm peers check` 报缺 `@deepseek-ai/cordis` 等：**与既有包同形**（`dshmarket`、`dsh-our-free-model` 报同样的缺），
+  因为核心包由 asar 随附供给、profile 的 `node_modules` 里根本没有 `@deepseek-ai` 顶层目录却能跑 → **该 WARN 不是新问题信号**。
+  但 `dsh-browser-use` **确实不在 asar 里**（实测该包名在 asar 内零命中）→ 必须显式装，这步是对的。
 
 ### C-2 本机环境快照
 

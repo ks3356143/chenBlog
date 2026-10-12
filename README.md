@@ -6,8 +6,8 @@
 
 ## 关于这个项目
 
-一个用来长期记录前端学习与生活的个人站，内容规模：**26 篇文章**（其中 25 篇属于 `CSS100Day` 系列）、
-**5 个相册图集**、**1 条动态**。整站没有后端、没有数据库、没有运行时 API——
+一个用来长期记录前端学习与生活的个人站，内容规模：**27 篇文章**（其中 25 篇属于 `CSS100Day` 系列）、
+**5 个相册图集**、**2 条动态**。整站没有后端、没有数据库、没有运行时 API——
 所有页面、搜索索引、动态数据端点都在 `npm run build` 时生成为静态文件，产物 `dist/` 可直接用任意静态服务器托管。
 
 模板基于 [Firefly](https://github.com/CuteLeaf/Firefly) 裁剪而来，但按自己的需求重做了大部分内容层：
@@ -60,6 +60,9 @@ npm install
 npm run dev       # 本地开发 http://localhost:4321
 npm run build     # 构建 + 生成 Pagefind 搜索索引，产物在 dist/
 npm run preview   # 预览构建产物（站内搜索只能在这里或线上验）
+npm run check     # astro check：类型检查，覆盖 .astro/.svelte（tsc 看不到这两类）
+npm run docs:check # 文档自检：AGENTS.md 注入预算 + 分册存在性 + 死引用
+npm run probe     # 定宽浏览器探针（Playwright），做视觉/响应式取证
 npm run icons     # 由 public/favicon.svg 重生成整套站点图标
 npm run covers    # 由 src/assets/postImages/covers/*.svg 重生成列表页自动封面
 npm run new:post -- --day 29 --title "标题"   # 文章脚手架（ASCII slug + 全量 frontmatter）
@@ -67,7 +70,8 @@ npm run new:post -- --day 29 --title "标题"   # 文章脚手架（ASCII slug +
 
 > ⚠️ **`npm run dev` 下站内搜索必然不可用**：Pagefind 索引是 `astro build` 之后才生成的，
 > dev 服务不认 `dist/pagefind/`。这是设计，不是 bug。
-> 仓库里**没有 lint / test 脚本**，验证手段就是 `dev` 看效果 + `build` 确认能构建通过。
+> 仓库里**没有 lint / test 脚本**，验证手段是 `dev` 看效果 + `build` 确认能构建通过 + `check` 查类型
+> + `probe` 做程序化视觉取证。
 
 ## 目录结构（关键位置）
 
@@ -107,6 +111,8 @@ frontmatter 常用字段：`title` `published` `updated` `description` `tags` `c
 - **`@astrojs/markdown-remark` 必须保持显式依赖**（见上表说明），删掉它整个 Astro 配置加载会失败、连 dev 都起不来。
 - 改了 `src/plugins/**` 或 `astro.config.mjs` 里的 markdown 处理链后，需要删 `node_modules/.astro/data-store.json`
   再构建——Astro 的内容层缓存在那里，插件源码变了它不失效。
+- **`mermaid` / `typescript` 的天花板见上；另外改 `.astro`/`.svelte` 后用 `npm run check` 查类型**（`tsc` 只看 `src/**/*.ts`）。
+- 改了 markdown 处理链要清 `node_modules/.astro/data-store.json`（见上一条），**build 退出码 0 不等于产物是新的**。
 - 依赖走 npmmirror 时 `npm audit` 会报 `404 NOT_IMPLEMENTED`，要审计得显式换官方源：
   `npm audit --registry=https://registry.npmjs.org`。
 
@@ -119,6 +125,8 @@ frontmatter 常用字段：`title` `published` `updated` `description` `tags` `c
 
 1. 404 页面设计
 2. 动态页二期剩余三项：搜索 / 年份筛选 / 图片画廊
+
+> 完整的待拍板清单与当前状态见 `HANDOFF.md`；长期规则与踩坑记录见 `AGENTS.md` 与 `docs/agents/`。
 
 ## 致谢
 

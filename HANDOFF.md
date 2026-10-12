@@ -3,7 +3,18 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-10 晚间（第八趟：手册同步到 v1.4.1，已上线 V0.1.39）**。
+> 最后更新：**2026-10-12（工具交接批：Qoder → DeepSeek Harness + 文档分层改造）**。
+>
+> **🔧 2026-10-12 交接批一句话**：上一任工具（Qoder）要卸载，它留在用户目录里的
+> **22 份跨会话记忆已全部落盘进仓库** → `docs/agents/harness.md`（15 条本会话新坑 B-1~B-15 +
+> 8 条继承纪律 A-1~A-8 + 能力清单 C）与 `AGENTS.local.md`（部署真实值，**不入库**）。
+> 并把 162KB 的 `AGENTS.md` 按 harness 的 **64KB 注入预算**拆成「常驻层 + 分册层」——
+> **原先第六~十节从来没进过任何会话的上下文**，这才是"每场会话重查同样的坑"的真根因。
+> 新增两份跑通过的东西：`scripts/probe.mjs`（Playwright 定宽探针，替代上一任内置浏览器）与
+> `scripts/check-docs.mjs`（`npm run docs:check`，核注入预算 + 死引用 + 分册存在性）。
+> ⚠️ 本批**零代码改动**（没动 `src/`、`public/`、`astro.config.mjs`），**版本号没 +1**。
+>
+> —— 以下为 2026-10-10 晚间（第八趟：手册同步到 v1.4.1，已上线 V0.1.39）的记录 ——
 >
 > 第八趟很小：v1.4.1 只动了「大纲追踪表按大纲内容自适应 7 列 / 9 列」这一处——正文 7 处版本号 + 七节表格里那一行 +
 > 7.2 新增一条要点；**截图只有 12 / 13 两张重拍**（其余 14 张重转后 md5 逐字节相同 → 没动，这是八-9 定的判据）。
@@ -153,6 +164,12 @@
 
 ## 一、下次会话第一件事
 
+> ⚠️ **2026-10-12 起本文件的读法变了**：`AGENTS.md` 只剩**常驻索引层**，原第五~十节全文搬到
+> `docs/agents/{config,deploy,collab,writing,todo,swup}.md`。**分册与本文件都不会被自动注入**
+> → 新会话开场要主动 Read：① 本文件第一节 ② 要动的那个主题对应的分册。
+> 条目编号（五-N / 八-N / 十-N）两层通用；改完 `AGENTS.md` / `AGENTS.local.md` 必须跑 `npm run docs:check`。
+> 工具差异（没有内置浏览器、没有跨会话记忆、`job_kill` 仍留孤儿子进程）见 `AGENTS.md` 文末附表。
+>
 > 🎯 **大方向仍是「功能扩展」**（用户 09-30 交代；10-01 已批的四件工程项本日做完）。
 > 候选清单在下面「还挂着的事 1.」（动态页二期三项）。
 > 动手前照旧：先扒 firefly.cuteleaf.cn / CuteLeaf/Firefly 的实现
@@ -372,7 +389,7 @@
       - **装 `@astrojs/check`** → AGENTS 三节 + 九节「`astro check` 首跑」：查出并修了 4 个类型问题，
         现在 `npm run check` = 0 error（2 条 hint 是故意留的）。
       - **文档服务器信息脱敏** → AGENTS 六节开头；真实值与展开版部署命令在本地私密记录
-        `reference-deploy-targets.md`。**只改了当前版本，历史没重写**（他从未批准 `git filter-repo` + 强推）。
+        `AGENTS.local.md`。**只改了当前版本，历史没重写**（他从未批准 `git filter-repo` + 强推）。
       ⚠️ **这四件已全部提交、推送并于 21:20 上线（V0.1.21）**，线上验收证据见第一节「交付状态」。
    4. **🆕 本批查出来、等他拍的（只有一条）**：**加密文章的锁图标其实从来没渲染过**——
       `PostCard.astro:39` 接了 `password` 但从不读（`astro check` 的 `ts(6133)` 抓到），
@@ -385,7 +402,7 @@
    零 `.env`、零面板地址/端口/安全入口、零手机号/身份证、提交信息干净、6 个 dangling commit 也查了）。
    **✅ 当天已按用户批准做完文档脱敏**：SSH 登录目标、服务器绝对路径、宝塔 vhost/extension 配置文件名
    从 `AGENTS.md` / `HANDOFF.md` 移出，改成占位符；真实值与展开版部署命令在本地私密记录
-   `reference-deploy-targets.md`（project memory，凭据本身哪份记录都不存）。
+   `AGENTS.local.md`（仓库根的本地私密记录，被 `.gitignore` + 全局 `*.local.md` 两层挡住；**凭据本身哪份记录都不存**）。
    ⚠️ **只改了当前版本，历史仍可读到旧值**（彻底清除要 `git filter-repo` 重写历史 + 强推，用户从未批准）。
    风险有限：密码登录已关、裸 IP 本就公开（它在 `siteConfig.ts` 与每页产物里）。
    仍未处理的一条：**Twikoo `envId` 是裸 `IP:8099`**，前端 JS 里公开，若该实例没设访问限制
@@ -640,7 +657,7 @@
   feed 实测 1440 与 375 两档都 2 条、时间显示 `2026-10-10 16:23`（**时区偏移正确**，五-23 那条差 8 小时的病没犯）、
   `.dynamic-pinned` 两处均 `hidden` + `display:none`（五-24 末尾那两条 `[hidden]` 规则在起作用）、
   两档 `scrollWidth - clientWidth` 均为 **0**。首页侧栏「最新动态」两处挂载都带上新条目（`dist/index.html` 里 4 处命中）。
-- 上线：部署前**只读**确认 `nginx -T` 的 root = `/www/wwwroot/chenBlog/dist`（同机并存 `lobe-chat` / `testplantAI`，不碰），
+- 上线：部署前**只读**确认 `nginx -T` 的 root = `<NGINX_ROOT>`（同机并存其他项目目录，不碰；真实值只在 `AGENTS.local.md`），
   再走第六节原子替换。线上 `dynamic.json` 2 条、首页含新文案、展示版本 `0.1.31` 且无 `0.1.30` 残留、
   `/` `/dynamic/` `/api/dynamic.json` 三个 200 且 `Cache-Control: no-cache, must-revalidate`。
 - ⚠️ 本会话浏览器 surface 顶层视口仍是 **0×0**，第一次直接量布局报的"104px 横向溢出"是假信号 ——
@@ -811,7 +828,7 @@
 - **过程中自己踩的两处**：`global.css` 被 Edit 整片翻成 CRLF（diff 5/4 炸成 64/63，从原 blob 重放修回）、
   node 又一次把 `/tmp` 当 `E:\tmp`，以及一次 iframe 探针因顶层页面还停在参考站而跨域读出空集合
   ——差点把"卡片不存在"当结论。
-- 卸载依赖前按第九节精确停进程：`TaskStop` 之后 **`astro preview` 的子进程确实仍存活**，
+- 卸载依赖前按第九节精确停进程：停后台任务（上一任的 `TaskStop` / 本 harness 的 `job_kill`，**行为相同**）之后 **`astro preview` 的子进程确实仍存活**，
   靠命令行匹配才找出来（这条已补进 AGENTS）。干净 `npm ci` 618 包 + build 退出码 0。
 - 部署三次（14:19 修 bug + 竖条、14:38 移动端动态卡、15:29 站点信息卡），都走第六节原子替换流程，
   每次都从公网核「线上首页 == 本地 dist 逐字节」+ 逐项核 CSS/JS 内容才报完成。
@@ -969,21 +986,24 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-10-10 晚间实测；**线上 = V0.1.39，与本批 HEAD 一致**）
+## 三、当前状态快照（2026-10-12 交接批实测；**线上 = V0.1.39**，本批纯文档/工具改动**未部署、版本号未 +1**）
 
 | 项 | 状态 |
 |---|---|
 | 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。今日九连发：**动态 0.1.31 / meCard 社交按钮 0.1.32 / 波纹高度 0.1.33 / 二维码浮层动效 0.1.34 / PostMeta 间距 0.1.35 / 手册同步 v1.4.0 0.1.36 / 暂无标签间距 0.1.37 / 顶部三平台说明 0.1.38 / 手册同步 v1.4.1 0.1.39**（每笔各带一条文档提交） |
-| 工作区 | 提交后应 `git status` 干净并与 `origin/main` 齐平 |
+| 工作区 | 本批改的**只有文档与脚本**：`AGENTS.md`（162KB → 常驻层）、`HANDOFF.md`、`README.md`、`.gitignore`、`package.json`（加两条 script），新增 `docs/agents/`（7 份分册）+ `scripts/probe.mjs` + `scripts/check-docs.mjs`，以及**不入库**的 `AGENTS.local.md`。**`src/` 与 `public/` 零改动** |
+| 文档分层 | `AGENTS.md` 57037 B + `AGENTS.local.md` 5029 B = **合计 62066 B < 65536 B 注入预算**（`npm run docs:check` 实测 0 error / 0 warn）。六份分册与原 `AGENTS.md` 第 196 行到末行**逐字节相同**（校验脚本带控制组：故意错位必须判 FAIL 才认） |
+| 上一任的记忆 | **已全部落盘进仓库**：`docs/agents/harness.md`（B-1~B-15 本会话新坑 / A-1~A-8 继承纪律 / C 能力清单与插件安装事实）+ `AGENTS.local.md`。原件备份在 `C:\Users\31429\.dsh\qoder-memories-backup\`（22 文件，SHA256 逐一比对通过）→ **卸载 Qoder 后仍可回查** |
+| 浏览器验证通道 | 本 harness **无内置浏览器工具**（上一任有）。已实测可用：`npm run probe -- <url> <宽> <高> [--also <宽> <高>] [--sel <css>]`，走全局 `@playwright/test` + 已缓存的 **headless Chromium 1243**。对线上首页与手册页各跑过一遍：`h1=1`、破图 0、`overflowX=0`、宽表容器 3 个都 `scrollable:true`（1029/726/1089 vs 容器 309）、10 张封面 `realBug:false`。⚠️ **别用 `file://` 验 dist**（根绝对路径会解析到盘符根 → 假破图 + 2193px 假溢出），见 harness.md B-13 |
 | 线上站点 | ✅ **2026-10-10 19:1x 部署 V0.1.39**（第六节原子替换；替换前 `grep -qF` 断言「自动加任务书两列变 9 列」必须在、`v1.4.0` 必须不在）。线上实测：文章页 title 已是「CCNewTools V1.4.1 使用手册」、正文 v1.4.0 零残留、`12-trace-home.webp` 200 / 28314B（新版）、展示版本 `0.1.39`。⬅️ 上一趟（V0.1.38 顶部平台行）线上 `<blockquote>` 4 段、第 2 段是平台说明；更早几趟的核验在第二节与顶部归档块里 |
 | 服务器配置 | **未动**（只换 dist；没碰 Nginx / 宝塔）。缓存策略文件与 vhost 备份位置见 AGENTS 六节（值已脱敏，展开版在私密记录里）。原先那条 `reinit.js` 12h 缓存隐患已用**构建期哈希**解掉，无需改服务器 |
-| 本地构建 | `npm run build` 退出码 0：**43 页 / 357 文件 / `du -sh` 22M**，约 4s + Pagefind 0.2s。**Pagefind 索引 29 页**（352 → 357 = 手册同步新增 5 张 webp；页数不变）。⚠️ **动态加一条不动这些数字**（条目在 `/api/dynamic.json` 里，不进 HTML 也不进索引，见五-24）。**`npm run check` 本批跑了：0 error / 4 hint**（新增两条 `document.execCommand` deprecated，故意留的，见三节）；上次基线 0 error。⚠️ 口径见 AGENTS 五-9：`find dist -type f` 数文件、字节合计才算体积 |
+| 本地构建 | ⚠️ **本批刻意没重跑 `npm run build`**：改动全在文档/脚本，`docs/` 与 `AGENTS.md` 都不进产物，重跑只会换掉侧栏「构建时间」、**毁掉「线上 == 本地 dist 逐字节相同」这个交付判据**，而零用户可见变化（同一判断 10-01 那批也做过并记在这儿）。所以版本号也**保持 0.1.39 未 +1**、未部署。上一次实测（10-10 晚）：`npm run build` 退出码 0：**43 页 / 357 文件 / `du -sh` 22M**，约 4s + Pagefind 0.2s。**Pagefind 索引 29 页**（352 → 357 = 手册同步新增 5 张 webp；页数不变）。⚠️ **动态加一条不动这些数字**（条目在 `/api/dynamic.json` 里，不进 HTML 也不进索引，见五-24）。**`npm run check` 本批跑了：0 error / 4 hint**（新增两条 `document.execCommand` deprecated，故意留的，见三节）；上次基线 0 error。⚠️ 口径见 AGENTS 五-9：`find dist -type f` 数文件、字节合计才算体积 |
 | 依赖 | 本批**零改动**。基线仍是 `@astrojs/check@0.9.10` devDep、`allowScripts` 钉 `esbuild@0.28.2`、干净 `npm ci` 695 包 |
 | dev / preview server | 本批起了 `npm run preview`（:4321）做验证，**收尾时按「`node.exe` + `astro\bin\astro.mjs` + `preview`」精确杀掉并复查残留 = 0**（宽匹配会把自己的 shell 吃掉，见 AGENTS 九节依赖坑③）。当前 dev 与 preview **都已停，:4321 空闲** |
 | 服务器回滚资产 | `dist.old` + **37 个 `dist_backup_*`** = **38 个**（最老 `20260920_234618`，今日八笔新增 `20261010_162726` 起到 `_19*`；其中一个是一次校验主动中止留下的空跑，无影响）。全部保留，**删需用户明确同意** |
 | 临时文件 | 本地与服务器的 `chenblog_dist.tar.gz`（服务器侧部署脚本尾部自动 `rm -f`）、`%TEMP%` 下本会话的 `live_index.html` / `live_reinit.js`、`/tmp/chenblog_*.txt` 都要清；⚠️ `/tmp` 是**Windows 共享临时目录**，只删自己产生的、别 broad clean。⚠️ 老坑本批又踩一次：**node 读不了 bash 的 `/tmp`**（解析成 `E:\tmp` → ENOENT），跨工具传文件用 `process.env.TEMP` |
 | 排查方法类坑位 | 本批新增三条，细节都在 **AGENTS 五-36 / 五-37 / 十-14**，此处只留索引：**`:hover` 态画下划线不能用 `border-bottom`（inline border 撑高行盒）**、**`forwards` 把 transform 永久留在元素上 = 常驻合成层**、**`navigating()` 的假设对全新 key 不成立（module 脚本晚一个宏任务）**。另有两条工具性坑：隐藏标签页 `setTimeout` 节流到 ≥1s（探针会 15s 超时，改用 `getAnimations().currentTime` 驱动）、`:hover` 不能用 JS 触发所以只能"手动施加同组声明"做等价验证 |
-| 待用户拍板 | ① **手册现在每节之间有一条分节线（10 条，照他手册原样同步；旧版站内只有 1 条）**——观感变了，要不要滤掉说一声 ② **V0.1.26 两条复测**（文章页→主页的封面；框选/点击文字是否还跳，见 16.）③ 新文章肉眼验收（11.）④ **灯箱真人点击**（12.）⑤ 第8天宽表要不要一起包（13.）⑥ `propse-base` 拼错要不要补（14.）⑦ 侧栏卡片不随软导航更换（9.）⑧ PostCard 加密文章锁图标（AGENTS 五-5）⑨ 全站 title 带不带后缀（SEO）⑩ **meCard 那排的真人反馈**（手机扫二维码能不能扫上、QQ 复制在他自己浏览器里的提示条观感）——我这边只能证明图解码正常、退路走得到；⑪ **列表卡上那句「暂无标签」是假的**（`PostCard.astro:81` 调 PostMeta 时不传 tags，而他 27 篇全都有标签）→ 要么把 tags 传进去显示、要么卡片不显示这一格（`showTags={false}`），等他定 |
+| 待用户拍板 | ⓪ **本批要不要也 build + 部署 + 版本号 +1**（我的判断：不要，理由见上面「本地构建」那行；他若要侧栏版本号动一下就说一句） ⓪a **要不要装 DSH 的 browser-use 插件**（实测当前 `desktop` profile **没装**；三个坑：裸包名被版本闸门拒（要写 `@0.2.0-rc.2`）、**装 ≠ 启用**（无 `dsh.bundle` 声明，得手改 profile 的 bundles + `cordis.patch.yml`）、README 明写**不接管已活动的 Session**。且本机只有 headless shell、无完整版 chromium → headed 要先下载。全部证据见 `docs/agents/harness.md` C-1。我这边 `npm run probe` 已够用） ⓪b **评论区 OwO 表情面板 21 张图没有 `alt` 属性**（按容器分组实测确认全是 `.OwO-item`，文章与站点内容图零缺失）→ 属第三方组件，**我没动代码** ① **手册现在每节之间有一条分节线（10 条，照他手册原样同步；旧版站内只有 1 条）**——观感变了，要不要滤掉说一声 ② **V0.1.26 两条复测**（文章页→主页的封面；框选/点击文字是否还跳，见 16.）③ 新文章肉眼验收（11.）④ **灯箱真人点击**（12.）⑤ 第8天宽表要不要一起包（13.）⑥ `propse-base` 拼错要不要补（14.）⑦ 侧栏卡片不随软导航更换（9.）⑧ PostCard 加密文章锁图标（AGENTS 五-5）⑨ 全站 title 带不带后缀（SEO）⑩ **meCard 那排的真人反馈**（手机扫二维码能不能扫上、QQ 复制在他自己浏览器里的提示条观感）——我这边只能证明图解码正常、退路走得到；⑪ **列表卡上那句「暂无标签」是假的**（`PostCard.astro:81` 调 PostMeta 时不传 tags，而他 27 篇全都有标签）→ 要么把 tags 传进去显示、要么卡片不显示这一格（`showTags={false}`），等他定 |
 | 既存小坑 | `--radius-large` / `--panel-border-color` 未定义（AGENTS 五-16）——表格那行 `border-radius` 因此整条无效、实际直角，**正好符合站内"面板一律直角"口径，别当缺陷补变量**；`tsconfig.json` react jsx 残留无影响；`src/content/posts/images/` 空目录；`/site.webmanifest` 的 Content-Type 缺 webmanifest 映射（要动 nginx mime.types）；重复 id `announcement`/`cardTags`（九节已判定降级：无脚本查询、无死控件）；单分类时分类卡收起态反而更高（**现在已有第二个分类，这条要复验是否还成立**） |
 
 ---

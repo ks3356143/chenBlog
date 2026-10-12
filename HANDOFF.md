@@ -6,8 +6,9 @@
 > 最后更新：**2026-10-12（工具交接批：Qoder → DeepSeek Harness + 文档分层改造）**。
 >
 > **🔧 2026-10-12 交接批一句话**：上一任工具（Qoder）**已彻底卸载并删净**（NSIS 静默卸载 +
-> 手工清 9 处数据目录，合计释放 **1264.5 MB**；文件系统 / 注册表 / 进程 / 快捷方式四项复查全部为零残留），
-> 它留在用户目录里的 22 份跨会话记忆**在删除前已全部落盘进仓库** → `docs/agents/harness.md`（15 条本会话新坑 B-1~B-17 +
+> 手工清 8 个数据目录与 1 个开始菜单快捷方式，合计释放 **1264.5 MB**；
+> 目录名 / 注册表（HKCU+HKLM 卸载项逐个读 DisplayName、App Paths、文件关联、自启、服务键）/ 进程 / 计划任务 / PATH / 快捷方式**六项复查全部零残留**），
+> 它留在用户目录里的 22 份跨会话记忆**在删除前已全部落盘进仓库** → `docs/agents/harness.md`（17 条本会话新坑 B-1~B-17 +
 > 8 条继承纪律 A-1~A-8 + 能力清单 C）与 `AGENTS.local.md`（部署真实值，**不入库**）。
 > 并把 162KB 的 `AGENTS.md` 按 harness 的 **64KB 注入预算**拆成「常驻层 + 分册层」——
 > **原先第六~十节从来没进过任何会话的上下文**，这才是"每场会话重查同样的坑"的真根因。
@@ -994,7 +995,7 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 | 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。今日九连发：**动态 0.1.31 / meCard 社交按钮 0.1.32 / 波纹高度 0.1.33 / 二维码浮层动效 0.1.34 / PostMeta 间距 0.1.35 / 手册同步 v1.4.0 0.1.36 / 暂无标签间距 0.1.37 / 顶部三平台说明 0.1.38 / 手册同步 v1.4.1 0.1.39**（每笔各带一条文档提交） |
 | 工作区 | 本批改的**只有文档与脚本**：`AGENTS.md`（162KB → 常驻层）、`HANDOFF.md`、`README.md`、`.gitignore`、`package.json`（加两条 script），新增 `docs/agents/`（7 份分册）+ `scripts/probe.mjs` + `scripts/check-docs.mjs`，以及**不入库**的 `AGENTS.local.md`。**`src/` 与 `public/` 零改动** |
 | 文档分层 | `AGENTS.md` 57037 B + `AGENTS.local.md` 5029 B = **合计 62066 B < 65536 B 注入预算**（`npm run docs:check` 实测 0 error / 0 warn）。六份分册与原 `AGENTS.md` 第 196 行到末行**逐字节相同**（校验脚本带控制组：故意错位必须判 FAIL 才认） |
-| 上一任的记忆 | **已全部落盘进仓库**：`docs/agents/harness.md`（B-1~B-17 本会话新坑 / A-1~A-8 继承纪律 / C 能力清单与插件安装事实）+ `AGENTS.local.md`。原件备份在 `C:\Users\31429\.dsh\qoder-memories-backup\`（记忆 22 文件 SHA256 逐一比对通过 + 4 个 Qoder 独有技能，共 37 文件）→ **Qoder 已删净，这份备份是唯一原件**，别清 |
+| 上一任的记忆 | **已全部落盘进仓库**：`docs/agents/harness.md`（B-1~B-17 本会话新坑 / A-1~A-8 继承纪律 / C 能力清单与插件安装事实）+ `AGENTS.local.md`。原件备份在 `C:\Users\31429\.dsh\qoder-memories-backup\`（记忆 22 文件 SHA256 逐一比对通过 + 4 个 Qoder 独有技能，共 37 文件；三层 `chenBlog` / `global` / `qoder-only-skills`）→ **Qoder 已删净，这份备份是唯一原件，别清** |
 | 浏览器验证通道 | 本 harness **无内置浏览器工具**（上一任有）。已实测可用：`npm run probe -- <url> <宽> <高> [--also <宽> <高>] [--sel <css>]`，走全局 `@playwright/test` + 已缓存的 **headless Chromium 1243**。对线上首页与手册页各跑过一遍：`h1=1`、破图 0、`overflowX=0`、宽表容器 3 个都 `scrollable:true`（1029/726/1089 vs 容器 309）、10 张封面 `realBug:false`。⚠️ **别用 `file://` 验 dist**（根绝对路径会解析到盘符根 → 假破图 + 2193px 假溢出），见 harness.md B-13 |
 | 线上站点 | ✅ **2026-10-10 19:1x 部署 V0.1.39**（第六节原子替换；替换前 `grep -qF` 断言「自动加任务书两列变 9 列」必须在、`v1.4.0` 必须不在）。线上实测：文章页 title 已是「CCNewTools V1.4.1 使用手册」、正文 v1.4.0 零残留、`12-trace-home.webp` 200 / 28314B（新版）、展示版本 `0.1.39`。⬅️ 上一趟（V0.1.38 顶部平台行）线上 `<blockquote>` 4 段、第 2 段是平台说明；更早几趟的核验在第二节与顶部归档块里 |
 | 服务器配置 | **未动**（只换 dist；没碰 Nginx / 宝塔）。缓存策略文件与 vhost 备份位置见 AGENTS 六节（值已脱敏，展开版在私密记录里）。原先那条 `reinit.js` 12h 缓存隐患已用**构建期哈希**解掉，无需改服务器 |

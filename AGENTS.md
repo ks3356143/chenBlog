@@ -123,7 +123,7 @@ npm run new:post -- --day 29 --title "标题"   # 文章脚手架（ASCII slug +
 ## 四、目录结构（关键位置）
 
 ```
-AGENTS.md             # 常驻规则层（本文件，注入预算 ≤50KB）
+AGENTS.md             # 常驻规则层（本文件；是否超注入预算由 npm run docs:check 判定，别在这里写死数字）
 AGENTS.local.md       # 🔒 私密层：部署目标真实值 + 展开版部署命令。已 .gitignore，绝不入库
 docs/agents/*.md      # 分册层：原 AGENTS 五~十节全文 + harness.md（不自动注入，按需 Read）
 docs/superpowers/     # 历史设计文档（上一任留的，含影响域分析），保留不动

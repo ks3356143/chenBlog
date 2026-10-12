@@ -31,7 +31,9 @@
 2. **多份文件共享同一个注入预算时要按总账算**，且优先级是**「先整份丢弃宽泛文件，最后才截断最具体的文件」**——
    本项目链条是 `~/.dsh/AGENTS.md` → `AGENTS.md` → `AGENTS.local.md`，**`AGENTS.local.md` 更具体所以先被保住**，
    于是**超出时牺牲的是 `AGENTS.md` 的尾部**。所以 `AGENTS.local.md` 的每一 KB 都在挤压 AGENTS.md 的尾部。
-   → 定量的口径：**AGENTS.md ≤ 57KB、AGENTS.local.md ≤ 6KB，合计留 ≥2KB 余量**（归属头也占字节）。
+   → **定量口径 = 判据本身**：注入链合计必须 ≤ **63488 B**（= 65536 − 2048 余量，归属头也占字节），
+     这正是 `scripts/check-docs.mjs` 的判定线。**别在文档里写死"当前多少 KB"这种会漂移的数字**，
+     当前实测值只记在 `HANDOFF.md` 第三节（易变状态的归属地）。
 3. **截断发生时没有报错**，唯一的可见证据是 harness 在下一轮注入时给出的
    `Workspace instruction budget N bytes: truncated X to Y bytes` 这句话。
    → **每次改完文档必须跑 `npm run docs:check`**（`scripts/check-docs.mjs`，它自己按同样的预算口径核算）。

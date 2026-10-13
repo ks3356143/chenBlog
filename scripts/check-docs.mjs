@@ -161,7 +161,9 @@ if (harnessIds.size === 0) {
 /* ---------- ⑥ Markdown 表格竖线一致性 ---------- */
 /* 实测踩过：HANDOFF 某行多一个 | → 整行渲染成多一个坏单元格，**不报错、只是看着怪**。
    这类静默排版损坏正是本项目最恨的一类，纳入门禁。代码块围栏内的竖线不算。 */
-const countPipes = (s) => (s.replace(/\\\|/g, "").match(/\|/g) || []).length;
+/* 数竖线：必须先剥掉「行内代码span」再数 —— `|` 写在反引号里在 Markdown 里不是分隔符。
+   （这是本闸自己的误报教训：B-20 表格里写了 `|` 就误报了一条，见 harness.md B-20 末条） */
+const countPipes = (s) => (s.replace(/`[^`]*`/g, "").replace(/\\\|/g, "").match(/\|/g) || []).length;
 for (const f of ["AGENTS.md", "HANDOFF.md", ...volumes.map((v) => `docs/agents/${v}.md`)]) {
   const p = join(root, f);
   if (!existsSync(p)) continue;

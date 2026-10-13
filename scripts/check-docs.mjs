@@ -64,6 +64,27 @@ if (total + MARGIN > BUDGET) {
       `常驻层余量只剩 ${headroom} B（< ${HEADROOM_WARN} B）：**下次往 AGENTS.md / AGENTS.local.md 加内容前，必须先下沉到 docs/agents/ 分册**。` +
         `超出预算会**静默截断**——不报错、不告警，只有下一轮注入时出现 truncated 字样，且被牺牲的总是 AGENTS.md 尾部（harness.md B-2）`
     );
+    /* 余量告急时顺手给出"该搬哪几条"的数据，省得下个会话重新量一遍（本脚本自己就是最省事的量法） */
+    const al = (readIf("AGENTS.md") || "").split("\n");
+    const secs = [];
+    let cur = { name: "(顶部)", bytes: 0 };
+    for (const l of al) {
+      const m = l.match(/^## (.+)$/);
+      if (m) { secs.push(cur); cur = { name: m[1].replace(/\*\*/g, "").slice(0, 22), bytes: 0 }; }
+      cur.bytes += Buffer.byteLength(l, "utf8") + 1;
+    }
+    secs.push(cur);
+    secs.sort((a, b) => b.bytes - a.bytes);
+    notes.push(
+      `余量告急 → 常驻层最大的三节：` +
+        secs.slice(0, 3).map((s) => `${s.name} ${s.bytes}B`).join(" / ") +
+        `（腾挪法：**细节下沉到对应分册、钩子与禁令留在常驻层**）`
+    );
+    const long = al
+      .map((l, i) => ({ i: i + 1, b: Buffer.byteLength(l, "utf8"), l }))
+      .sort((a, b) => b.b - a.b)
+      .slice(0, 3);
+    for (const r of long) notes.push(`  最长行候选 L${r.i}（${r.b}B）：${r.l.trim().slice(0, 44)}…`);
   }
 }
 

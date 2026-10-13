@@ -328,17 +328,14 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 - `expressive-code-language-badge` 有**假的 starlight peer**（上游写坏，dist 零 starlight 引用）→ 白装约 19 个包、**不进网站产物**。⚠️ **别用 `legacy-peer-deps` "解决"**（会全局关掉 peer 校验、掩盖真冲突）。
 - ⚠️ **prettier 全站格式不符是既存状态**（只有 `tabWidth:4`、没有 `useTabs:true`，源码全用制表符）→ **不要顺手跑 `prettier --write`**。`markdown-extend.styl` 是 Stylus、报 parse error 属正常。
 
-**✅ 已证伪的"已知缺陷"（别再当悬案重查、更别再"修"）**
-`heart.svg` 404（在 ``` 围栏内是示例文本，页面无 `<img>`）· "语言徽章与行号从未渲染"（徽章是 `[data-language]::before` **伪元素**、行号实际是 `div.gutter > div.ln`，当初拿臆想的 `ec-line-numbers` 去查）· "**`dark:` 无效**"（**差点据此把 20 个文件的 `dark:` 当死代码清掉，那是造事故**）· `CoverImage` 并没有 `import { Image }`（注释里的字样被当引用）· `--collapsedHeight` 是 `define:vars` 注入不是未定义 · "twikoo 尾斜杠分两个线程"（`getCurrentPath()` 无条件覆盖）· TypeMechine 是每次导航 6 次 init 且它 `hooks.on` **从来没注册上**（容器外，不累加，只是打字重放）。
-✅ 成立的一条：`rounded-(--radius-large)` 共 6 处引用而该变量**从未定义** → 全部按**直角**渲染。
-🔴 **通则：「文档说坏了」不等于坏了，也不等于「该怎么修」是对的。** 拿到待办先**按产物实际结构**逐条验证；取证用 DOM 解析器不用 grep（`<img>` 是 void element，"跳过 pre 子树"对 img 失效，要回到 markdown 源码按 ``` 围栏逐行判定；伪元素永远不在 HTML 文本里；**选择器必须先在产物里实测出来，不许臆想类名**）。
+**✅ 已证伪的"已知缺陷"（别再当悬案重查、更别再"修"）**：`heart.svg` 404 · 语言徽章与行号 · "`dark:` 无效" · `CoverImage` 的 `import { Image }` · `--collapsedHeight` · twikoo 尾斜杠 · TypeMechine 每趟 6 次 init（`hooks.on` 从没注册上）。✅ 成立一条：`rounded-(--radius-large)` 这个变量**从未定义** → 该处按**直角**渲染。
+🔴 **通则：「文档说坏了」≠ 坏了，也 ≠ 修法对**；取证用 DOM 解析器不用 grep、**选择器必须先在产物里实测出来**。
+📖 **完整措辞与"当初怎么查错的"在 `docs/agents/todo.md` 九·补③。**
 
-**⚠️ 用户看过选择不做 / 我判定降级（别当新发现重提）**
-Twikoo 无 `defer`（589KB × 27 页）· 横幅 srcset 缺 750w 档 · 每页两个 `<title>`（内容一致）· 重复 id `cardTags`/`announcement`/`banner`（无脚本查询）· `Calender` 与 `RecommendedPost` 各一份 `__allPostMetaCache` fetch · 配置里那四行"写了但没装"的假图标集 · Mermaid 专属的 2 个未定义变量故意留白 · 只有 1 个分类时分类卡收起态比展开后高（模板写死 `collapsedHeight`）· `/site.webmanifest` Content-Type 是 `application/octet-stream`（要修得改服务器）· `tsconfig.json` 的 `jsx`/`jsxImportSource` 是 React 模板残留。
+**⚠️ 用户看过选择不做 / 我判定降级（别当新发现重提）**：Twikoo 无 `defer` · 横幅 `srcset` 缺 750w 档 · 每页两个 `<title>` · 重复 id `cardTags`/`announcement`/`banner` · 两份 `__allPostMetaCache` fetch · 配置里那四行"写了但没装"的假图标集 · Mermaid 两个未定义变量 · 单分类卡收起态更高 · `/site.webmanifest` Content-Type · `tsconfig.json` 的 React jsx 残留。细节见 `todo.md` 九·补②。
 
-**🔴 安全与授权边界**
-全历史扫过 → **零凭据泄露**；文档已脱敏但**只改当前版本、历史未重写**（彻底清除要 `git filter-repo` + 强推，**他从未批准**）。风险有限：SSH 仅 publickey、裸 IP 本就公开。⚠️ 仍未处理：**Twikoo `envId` 是裸 `IP:8099`**，前端公开，若该实例没设访问限制可被垃圾评论写入（改同域反代属服务器改动，**要他拍**）。面板密码曾在对话明文出现，**他选择暂不改**；面板 IP 白名单未开。一笔已发布提交消息写错（`90a38e5`），改它要 `--amend` + 强推（属当次点头类），**他没点头所以留着没动**。
-**凭据纪律：面板密码 / SSH 私钥 / 任何 token 一律不得写入仓库或任何入库文件，也不要在对话里明文传递。**
+**🔴 安全与授权边界**：全历史 **零凭据泄露**；文档已脱敏但**历史未重写**（要 `git filter-repo` + 强推，**他没批准**）。仍未处理：**Twikoo `envId` 是裸 `IP:8099`**（改同域反代要他拍）、面板 IP 白名单未开、一笔已发布提交消息写错（`90a38e5`，当次点头类，没点头没动）。
+**凭据纪律：面板密码 / SSH 私钥 / 任何 token 一律不入库、不在对话里明文传递。** 全文见 `todo.md` 九·补①。
 
 ## 十、Swup 页面过渡的坑（**摘要** — 全文 `docs/agents/swup.md`）
 

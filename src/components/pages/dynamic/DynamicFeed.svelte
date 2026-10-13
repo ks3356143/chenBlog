@@ -239,57 +239,7 @@
 	{/if}
 {/if}
 
-<style>
-	.dynamic-filter-search,
-	.dynamic-filter-year {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		border: 1px solid var(--line-divider);
-		background: var(--card-bg);
-		padding: 0 0.75rem;
-		height: 2.25rem;
-		color: var(--btn-content);
-	}
+<!-- 样式说明：筛选栏的样式放在 src/styles/global.css（.dynamic-filter-*）。
+     不能写在本组件 <style> 里——Svelte 岛的 scoped CSS 会被 Astro 内联进 /dynamic/
+     单页的 head，Swup 软导航不换 head，从别的页点进来样式整块丢失。 -->
 
-	.dynamic-filter-search {
-		flex: 1 1 12rem;
-		min-width: 0;
-	}
-
-	.dynamic-filter-search input {
-		flex: 1;
-		min-width: 0;
-		background: transparent;
-		border: 0;
-		outline: 0;
-		font-size: 0.875rem;
-		color: var(--btn-content);
-	}
-
-	.dynamic-filter-search input::placeholder {
-		color: oklch(0.6 0 0);
-	}
-
-	.dynamic-filter-year {
-		position: relative;
-	}
-
-	.dynamic-filter-year select {
-		appearance: none;
-		background: transparent;
-		border: 0;
-		outline: 0;
-		font-size: 0.875rem;
-		color: var(--btn-content);
-		padding-right: 0.25rem;
-		cursor: pointer;
-	}
-
-	/* 下拉箭头盖在原生控件右侧，挡住浏览器自带的那个 */
-	.dynamic-filter-year > svg:last-child {
-		position: absolute;
-		right: 0.5rem;
-		pointer-events: none;
-	}
-</style>

@@ -88,6 +88,8 @@ const jsonLD = jsonLDGenerator({
 <meta property="og:site_name" content={siteConfig.siteMeta.name} />
 <meta property="og:description" content={description} />
 <meta property="og:url" content={url} />
+<!-- og:type：文章页 article、其余 website。2026-10-12 实测全站 43/43 页缺失这一条（社交卡片拿不到类型）。 -->
+<meta property="og:type" content={frontmatter ? "article" : "website"} />
 <meta property="og:image" content={image?.src} />
 <meta property="og:image:url" content={image?.src} />
 <meta property="og:image:secure_url" content={image?.src} />

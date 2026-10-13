@@ -7,12 +7,17 @@ import { join } from "node:path";
  * //   ① 注入预算：~/.dsh/AGENTS.md + AGENTS.md + AGENTS.local.md 合计必须 ≤ 64KB（超出被**静默截断**，见 harness.md B-2）
  * //   ② 分册存在性：AGENTS.md 里索引的 docs/agents/*.md 必须真的存在
  * //   ③ 编号引用完整性：AGENTS.md 里写的 五-N / 八-N / 十-N，分册里必须有同编号条目
- * //   ④ 死引用：文档里反引号包住的仓库内路径必须存在（我本会话制造过一次"引用了还不存在的文件"，harness.md B-10）
+ * //   ④ 死引用：文档里反引号包住的仓库内路径必须存在（上一任制造过一次"引用了还不存在的文件"，harness.md B-10）
+ * //   ⑤ A/B 编号引用：AGENTS.md 写「见 harness.md B-19」这类引用，harness.md 里必须有同编号小节
+ * //      （③ 只认中文数字 五-N，A/B 系列一直没人管 —— 2026-10-12 补）
+ * //   ⑥ 余量告警：常驻层快撑满时提前喊，而不是等下一次编辑被静默截断
+ * //   ⑦ 表格竖线一致性：某行多一个 | 会渲染出坏单元格，**不报错、只是看着怪**（2026-10-12 实测踩到）
  */
 
 const root = process.cwd();
 const BUDGET = 65536;
 const MARGIN = 2048; // 归属头（"Instructions from: …"等）也占字节
+const HEADROOM_WARN = 1024; // 常驻层余量低于此值就告警：再写一段就可能撑爆 → 静默截断
 const errors = [];
 const warns = [];
 const notes = [];
@@ -52,7 +57,14 @@ if (total + MARGIN > BUDGET) {
       `超出 ${total + MARGIN - BUDGET} B，必须下沉到 docs/agents/ 分册。`
   );
 } else {
-  notes.push(`注入链合计 ${total} B / 预算 ${BUDGET} B（含余量 ${MARGIN}，尚可用 ${BUDGET - MARGIN - total} B）`);
+  const headroom = BUDGET - MARGIN - total;
+  notes.push(`注入链合计 ${total} B / 预算 ${BUDGET} B（含余量 ${MARGIN}，尚可用 ${headroom} B）`);
+  if (headroom < HEADROOM_WARN) {
+    warns.push(
+      `常驻层余量只剩 ${headroom} B（< ${HEADROOM_WARN} B）：**下次往 AGENTS.md / AGENTS.local.md 加内容前，必须先下沉到 docs/agents/ 分册**。` +
+        `超出预算会**静默截断**——不报错、不告警，只有下一轮注入时出现 truncated 字样，且被牺牲的总是 AGENTS.md 尾部（harness.md B-2）`
+    );
+  }
 }
 
 /* ---------- ② 分册存在性 ---------- */
@@ -127,6 +139,57 @@ try {
   }
 } catch (e) {
   errors.push("package.json 解析失败: " + e.message);
+}
+
+/* ---------- ⑤ harness.md 的 A-N / B-N 引用完整性 ---------- */
+/* AGENTS.md 会写「见 harness.md B-19」这类引用，而 ③ 只认中文数字（五-N）。
+   本节正是 B-10「引用了还不存在的条目」那一族；控制组 = harness.md 必须能解析出小节。 */
+const harnessTxt = readIf("docs/agents/harness.md") || "";
+const harnessIds = new Set([...harnessTxt.matchAll(/^#{2,4}\s+(A-\d+|B-\d+)(?=\s|$)/gm)].map((m) => m[1]));
+const abRefs = new Set(
+  [...agentsMd.matchAll(/(?:^|[^A-Za-z0-9])([AB])-(\d{1,2})(?![0-9])/g)].map((m) => m[1] + "-" + m[2])
+);
+if (harnessIds.size === 0) {
+  errors.push("harness.md 里一个 A-N/B-N 小节都没解析出来 —— 提取方法失效（控制组失败），别把零告警当通过");
+} else {
+  notes.push(`harness.md 解析出 ${harnessIds.size} 个 A/B 小节（控制组通过），AGENTS.md 引用其中 ${[...abRefs].filter((r) => harnessIds.has(r)).length} / ${abRefs.size} 个`);
+  for (const r of [...abRefs].sort()) {
+    if (!harnessIds.has(r)) warns.push(`编号引用可能悬空：AGENTS.md 写了 ${r}，但 docs/agents/harness.md 里没有对应小节`);
+  }
+}
+
+/* ---------- ⑥ Markdown 表格竖线一致性 ---------- */
+/* 实测踩过：HANDOFF 某行多一个 | → 整行渲染成多一个坏单元格，**不报错、只是看着怪**。
+   这类静默排版损坏正是本项目最恨的一类，纳入门禁。代码块围栏内的竖线不算。 */
+const countPipes = (s) => (s.replace(/\\\|/g, "").match(/\|/g) || []).length;
+for (const f of ["AGENTS.md", "HANDOFF.md", ...volumes.map((v) => `docs/agents/${v}.md`)]) {
+  const p = join(root, f);
+  if (!existsSync(p)) continue;
+  const lines = readFileSync(p, "utf8").replace(/\r\n/g, "\n").split("\n");
+  const inFence = new Array(lines.length).fill(false);
+  let fence = false;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^\s*```/.test(lines[i])) { fence = !fence; inFence[i] = true; continue; }
+    inFence[i] = fence;
+  }
+  let tables = 0;
+  let badRows = 0;
+  for (let i = 0; i + 1 < lines.length; i++) {
+    if (inFence[i] || !/^\s*\|/.test(lines[i])) continue;
+    if (!/^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) continue; // 下一行不是分隔行 → 不是表头
+    const head = countPipes(lines[i]);
+    tables++;
+    let j = i + 2;
+    for (; j < lines.length && !inFence[j] && /^\s*\|/.test(lines[j]); j++) {
+      const n = countPipes(lines[j]);
+      if (n !== head) {
+        badRows++;
+        warns.push(`表格竖线数不一致：${f}:${j + 1} 有 ${n} 个竖线，表头 ${head} 个 → 该行会多出坏单元格（静默排版损坏）`);
+      }
+    }
+    i = j - 1;
+  }
+  if (tables) notes.push(`${f}: ${tables} 个表格已核竖线一致性${badRows ? `（${badRows} 行不一致）` : ""}`);
 }
 
 /* ---------- 输出 ---------- */

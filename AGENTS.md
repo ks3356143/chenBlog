@@ -84,7 +84,7 @@ harness 注入链 = `~/.dsh/AGENTS.md` → `AGENTS.md` → `AGENTS.local.md`，*
 | 页面过渡 | Swup **4.10.0**（脚本重执行改为自己写容器作用域钩子，**2026-09-30 弃用 `@swup/scripts-plugin`**，原因见第十节 11） |
 | 其他 | Fancybox 图库、astro-icon 1.2.0 + Iconify |
 
-> 2026-09-21 做过一次全量依赖升级，`npm audit` 从 21 个漏洞（2 critical）降到 **0**，
+> 2026-09-21 做过一次全量依赖升级，`npm audit` 从 21 个漏洞（2 critical）降到 **0**（**当时快照，非现状**），
 > 并通过干净 `npm ci` + 构建验证。升级中的坑与版本天花板全部记在第五、九节。
 
 **注意**：Tailwind 4 + Astro 7 + Svelte 5 都是较新的大版本，网上很多教程是旧版写法，改配置前先确认版本。
@@ -115,7 +115,7 @@ npm run new:post -- --day 29 --title "标题"   # 文章脚手架（ASCII slug +
 > 老的 `npx tsc --noEmit -p tsconfig.json` 仍应退出码 0（它快，适合随手核）。
 
 查漏洞要**显式换官方源**（默认 registry 是 npmmirror，它不实现 audit 接口，会报 `404 NOT_IMPLEMENTED` 而不是给结论）：
-`npm audit --registry=https://registry.npmjs.org`（实测 **0 vulnerabilities**）。
+`npm audit --registry=https://registry.npmjs.org` —— **每次现跑、别引用旧数字**（2026-10-12 实测 **23 条 / 退出码 1**；2026-09-21 那次是 0）。⚠️ **禁用 `npm audit fix --force`**（会把 mermaid 降级撞第九节天花板，细则见 `todo.md`）。
 
 ⚠️ **`dev` 下站内搜索一定不可用**：Pagefind 索引是 `astro build` 之后才生成的，dev 服务不认 `dist/pagefind/`，
 组件会显示"开发模式下没有搜索索引"——**这是设计，不是 bug**（参考站在 dev 下塞假结果，我们塞真提示）。
@@ -388,4 +388,5 @@ Twikoo 无 `defer`（589KB × 27 页）· 横幅 srcset 缺 750w 档 · 每页�
 | 部署类技能 | **仍用第六节那套手工流程**。上一任装过 `alibabacloud-ecs-code-deploy`（走 aliyun appmanager、要 AccessKey，与宝塔 + Nginx 手工配置可能冲突）；本环境没有它，也不需要。 |
 | MCP | 上一任配了 Context7（在线）与 GitHub（已禁用），都在 Qoder 内部；**本 harness 未接入**。扒 GitHub 用 `git clone --depth 1 --filter=blob:none --sparse` 只取所需目录。 |
 
-⚠️ **一条尚未验证**：上一任反复强调的"隐藏标签页里 transition 不推进 / `setTimeout` 被节流到 ≥1s"，成因是它那个浏览器 surface 处于隐藏态。Playwright 无头页 `visibilityState` 默认 `visible`、时序正常，**但这条我还没实测** → `harness.md` 里的取证纪律整体保留，**用之前先自测一次，别把它的结论当自己的结论**。
+✅ **原"一条尚未验证"已实测掉，且归因被推翻**：无头探针**造不出隐藏态**（`visibilityState` 恒 visible、开第二标签页不互藏、两种 CDP 覆盖分别被拒/无效）→ "隐藏标签页里 transition 不推进"在这里**不可能自然发生**。上一任看到的 `setTimeout` 拖到 ≥1s 是**真症状、错归因**：CPU 节流 20x 下定时器实测 752~4638ms，而 **transition 与 rAF 完全不受影响**。
+🔴 **通则：别拿"页面被隐藏"当默认解释**；判据与复现见 `harness.md` **B-19**。

@@ -231,6 +231,14 @@ Tailwind 的 `prose-base` 拼错 → 该工具类从未生效。它正好是 `pr
        万一已经失败了，先 `npm install`（增量、不删目录）把项目救回来，再重试干净安装。
   → 另：`npm ci` / `npm install` 后面接 `| tail -20` 会把**退出码换成 tail 的**，
      失败也会显示成"成功"。依赖类命令要拿真实退出码就 `> 文件 2>&1; echo $?`，别信管道后的 `$?`。
+- 🔴 **禁用 `npm audit fix`，尤其 `npm audit fix --force`**（2026-10-12 实测）：
+  本项目的 `fixAvailable` 指向 **`mermaid` 10.8.0 且 `isSemVerMajor: true`** ——
+  跑 `--force` 就是把 mermaid 从 **11.17.2 降级**到 10.8.0，一头撞进第九节的版本天花板（`astro-mermaid` peer 只收 `^10||^11`）；
+  `postcss-selector-parser` 那条 npm 自己标 **No fix available**；`dompurify` 由 mermaid 带入，跟着一起动。
+  → 漏洞只许**逐条看归属（prod / devDep / 有没有进 dist）与可达性**，不许把 `npm audit fix` 当默认动作。
+  与上面那条 `legacy-peer-deps` 禁令同族：**自动修复类工具在这个项目里会反向破坏**。
+  ⚠️ 附带：`npm audit --json > 文件` 会把 npm 自己的 `npm warn …` 行一起灌进文件头部 →
+  `JSON.parse` 直接 SyntaxError；要解析先剥掉 `^npm warn` 行。
 - **`expressive-code-language-badge` 有个假的 starlight peer**：1.1.0 与 2.0.0 都把
   `@astrojs/starlight` 声明为**非 optional** peer，但该包 dist 只 `import "@expressive-code/core"`、
   产物内零 starlight 引用（16K，README 也没提过）——纯属上游 `package.json` 写坏。
@@ -248,7 +256,9 @@ Tailwind 的 `prose-base` 拼错 → 该工具类从未生效。它正好是 `pr
 
 - ✅ **expressive-code 家族 peer 冲突已解决**：升到 0.44.2 后 `astro ^7` 被正式支持，硬冲突消失
   （`expressive-code-language-badge`→2.0.0、`expressive-code-collapsible`→1.0.0 两个 major 也一并升完）
-- ✅ **21 个 undici 漏洞（2 critical / 13 high）→ 0**
+- ✅ **21 个 undici 漏洞（2 critical / 13 high）→ 0**（⚠️ 这是 **2026-09-21 那次升级当时的快照，不是现状**：
+  漏洞库随时间增长，2026-10-12 现跑 `npm audit --registry=https://registry.npmjs.org` 是 **23 条、退出码 1**。
+  → **报告漏洞数一律现跑，别引用本文或 AGENTS 里的旧数字**。）
 - ✅ **代码块功能无回归**：拿线上旧构建（0.43.1）与新构建（0.44.2）做同一篇文章 A/B 对照，
   `ec-collapse*` 折叠类、`ec-line` 数量、复制按钮文案全部一致；108 行差异只有资源哈希、
   Astro 7.3 更紧的压缩空白、一个 HTML 注释

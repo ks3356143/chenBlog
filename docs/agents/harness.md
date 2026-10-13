@@ -93,8 +93,7 @@ PowerShell 管道会改编码并可能加 BOM，**拿它当"原始字节"来源�
 默认 `waitUntil: "load"` 在 30s 超时。**不是网络问题、不是代理问题**（本机系统代理虽配置了 `127.0.0.1:7897` 但 `ProxyEnable=0`）。
 > 探针脚本要**显式给 `waitUntil: "domcontentloaded"` 和 `timeout`**。
 > 「curl 通而 goto 超时」= 页面在等一个永不结束的 load（懒加载 / 长连接 / 第三方资源），**先改等待条件，别去查网络**。
-> 这条也说明：`AGENTS.md` 里"隐藏标签页里 transition 不推进 / `setTimeout` 被节流"那批纪律
-> **在没有头 Playwright 上不一定成立**（`visibilityState` 默认 `visible`）→ 用之前先自测，别把上一任的结论当自己的结论。
+> ✅ 这条当时顺带挂的"隐藏标签页那批纪律不一定成立、用之前先自测"**已于 B-19 实测完毕**（结论：本通道造不出隐藏态）。
 
 ### B-9 全局 `playwright` 包不在 `npm root -g` 顶层
 
@@ -180,6 +179,70 @@ B-1 写的就是"不许在没有运行成功的情况下声称已完成"。但�
 > 文件字节 = `buf.subarray(16 + headerSize + Number(meta.offset), … + meta.size)`。
 > 这是 A-1 第 7 类（自造选择器空集合）在**存储定位层面**的同族形态。
 
+### B-19 🔴 「隐藏标签页」在本探针通道**根本造不出来**（上一任那条"未验证"已验证完 → 对本通道失效）
+
+AGENTS 文末原先挂着"一条尚未验证"：上一任反复强调"隐藏标签页里 transition 不推进 / `setTimeout` 被节流到 ≥1s"，
+并自称成因是它那个浏览器 surface 处于隐藏态。本会话（2026-10-12）按它自己的规矩做了实测。
+
+**① 本通道拿不到隐藏态（五条独立证据，全部实测）**
+
+| 手段 | 结果 |
+|---|---|
+| 默认 `chromium.launch()` 新页面 | `visibilityState: "visible"`、`document.hidden: false`、`hasFocus(): true` |
+| 同 context 开第二标签页 + `bringToFront()` | **两个页面都仍 `visible`**（第一页 transition 照常 `transitionend`、rAF 1500ms 跑满 90 帧） |
+| JS 侧 `Object.defineProperty(document,'visibilityState')` 覆盖成 `hidden` | **只骗得到 JS 读值，骗不到引擎**：rAF 继续跑（39 帧），Chromium 自身不节流 |
+| CDP `Emulation.setVisibilityStateOverride` | **协议里不存在**：`Protocol error … 'Emulation.setVisibilityStateOverride' wasn't found`（换 `Page.setVisibilityStateOverride` / `Emulation.setPageVisibilityOverride` 同样 wasn't found → **不是方法名写错，是 headless shell 没实现这族命令**） |
+| CDP `Page.setWebLifecycleState{state:"frozen"}` | **接受但完全无效**：rAF 122 帧 / `setInterval(100)` 20 次，**与不发送的对照组逐位相同** → 是个 no-op，不是"冻结" |
+
+（`state:"hidden"` 报 `Unidentified lifecycle state`，只有 `frozen` 被认；`Browser.setWindowBounds` 被认但无头 shell 没有真窗口，无从生效。）
+根因与 C-1 第 5 条同源：**本机只有 `chromium_headless_shell-1243`（201.8MB），没有完整版 `chromium-1243`** →
+headless shell 是**专为快速渲染砍掉窗口/生命周期语义**的构建，天然不存在"被遮挡 / 被最小化 / 后台标签"这套状态机。
+
+**② 上一任看到的 `setTimeout` 拖到 ≥1s 是真症状、错归因**
+
+CPU 节流对照实验（同一份探针页，`Emulation.setCPUThrottlingRate`）：
+
+| | 不节流（对照） | 20x 节流 |
+|---|---|---|
+| `setTimeout` 每 50ms 自续 6 次的实际间隔 | 0 / 58 / 121 / 185 / 249 / 313 ms | **0 / 752 / 1497 / 1939 / 3230 / 4638 ms** |
+| 400ms 的 CSS `transition` 实际结束时刻 | 414 ms | **408 ms**（纹丝不动） |
+| rAF 帧数（1500ms 窗口） | 92 | **92**（纹丝不动） |
+
+→ **定时器被拖到秒级，而 transition 与 rAF 完全不受影响。** 这正是"**主线程被 JS 占满 → 宏任务排队**"的指纹，
+而"页面被隐藏"这条路径**同时**压 transition 与定时器；这里两者分离，所以隐藏态解释**不成立**。
+
+**③ 对本项目的直接后果（这是要用的部分，不是知识考古）**
+
+- 🔴 **判据**：探针里看到 `setTimeout` 慢 → **先读同一时刻的 `transitionend` 与 rAF 帧数**。
+  两者正常 = **主线程忙**（去查 JS：Twikoo 589KB、Mermaid、未节流的循环）；两者一起坏 = 才去怀疑渲染/可见性。
+  **别再默认写"因为标签页被隐藏"** —— 本通道它压根不可能发生。
+- ⚠️ **但真机用户侧仍然成立**（这是上一任观察的原现场景）：手机 Edge / 桌面浏览器的后台标签**确实**会被 Chromium 节流。
+  所以十-14 那条"数打字机每秒发起的 `setTimeout` 次数是否随导航递增"**判据照用**，
+  只是**它测的是重复绑定，不是节流**，结论不受本次推翻影响。**受影响的是解释文案，不是那条判据。**
+- → `scripts/probe.mjs` **不需要**为隐藏态做任何兼容，也别加 `headless:false` 去"复现隐藏"（C-1 已论证那样会打挂新会话）。
+- 复现要点（临时脚本，跑完即删，不入库）：`createRequire("%APPDATA%/npm/node_modules/@playwright/test/")("playwright")`
+  → `chromium.launch()` → `newCDPSession(page)` → 上面那五条命令逐条 `send` 并**打印完整 `e.message`，别截断**
+  （本轮一开始我把错误截到 90 字符，恰好把最能定位的 `wasn't found` 截掉了，是取证缺陷）。
+- 🔴 **顺带实测把 A-1 第 5 条的归因也修了**（那条原本写的是"隐藏标签页里懒加载图不发请求"）：
+  造一个 6000px 高的页面 + `example.invalid` 的假域名 + `page.on("request")` 全程计数，
+  结果 `visibilityState: "visible"`（本通道不可能有隐藏态）、视口高 720、懒加载图 `top = 6025px` 时
+  **`currentSrc` 为空、请求一条都没发**（`complete:false / naturalWidth:0`），滚到底后才发出（然后 FAILED）。
+  → **成因是「离视口远」不是「标签页隐藏」**，但**结论与那条禁令原样有效**：
+  `naturalWidth === 0` / `complete === false` 在本通道照样出现，**仍然不能当"文件缺失"的证据，判缺失只能直接打那个 URL**。
+  ⚠️ 同批控制组：`loading` 缺省的图和已在视口内的懒加载图，`complete:true` 但 `naturalWidth:0` —— **证明 `complete` 为真只说明"请求有终态"，不说明图是好的**。
+
+> **元教训（A-1 第 5 类的升级版）**：一条"环境结论"如果**测不出来**，那它就是**未验证假设**，
+> 写进文档时必须显式标"未验证"（上一任标了，这点是对的），
+> 而**我这次的动作是把它验证掉并公开推翻**，不是继续引用它。
+> 与 B-17 同一族：**"零命中/没变慢"有两种成因 —— 条件不存在 / 东西真没坏，必须做控制组区分。**
+
+⚠️ **本条只推翻"归因"，不推翻任何一条操作**。`config.md` 五-25 末条 / 五-21 附近 / L523 与
+`swup.md` 十-10、十-14 里那些"注入 `transition:none!important`、`animation-duration:0s!important`、
+别用连续两次 Swup 导航判断"的写法**全部照用**（它们防的是"读到过渡起点"，与可见性无关，本就成立）。
+那几处正文里的"隐藏标签页"字样是上一任在**它自己那个有窗口、会被遮挡的 surface** 里的现场描述，
+属历史记录，**不改写、不逐处加批注**（第七节去重规矩：结论只在本条讲一次）——
+读到它们时按本条理解即可。
+
 ---
 
 ## A. 继承自上一任的纪律（22 份记忆文件压缩落盘，卸载 Qoder 后仍有效）
@@ -197,7 +260,8 @@ B-1 写的就是"不许在没有运行成功的情况下声称已完成"。但�
    `#content-wrapper` 还挂着 `transition-leaving`。→ **导航后先 `document.querySelectorAll('*').length` 比量级，再 reload 复测。**
 4. **grep 类名 ≠ 元素存在**：命中的可能是 `<style>` 里的 CSS 文本或 `data-code` 属性。数 markup 要匹配标签形态或用解析器。
    附带：**规则文档会自我命中**（在 AGENTS.md 里 grep 乱码特征串，永远命中它自己那条规则）。
-5. **隐藏标签页里 `loading=lazy` 且未缓存的图根本不发请求** → 别拿 `img.complete` 当"文件缺失"的证据；
+5. **未进视口 / 未缓存的 `loading=lazy` 图根本不发请求**（上一任记的"隐藏标签页"在本通道不存在，见 B-19；
+   但结论照用 —— 视口外懒加载就足够复现）→ 别拿 `img.complete` 当"文件缺失"的证据；
    **判"资源缺失"只能 `curl`/`fetch` 直接打那个 URL。**
 6. **剥标签提取 HTML 结构 = 把图标和背景一起"提取"没了** → 描述 UI 结构必须看**原始 markup**。纯文本只够确认"有哪些字段"。
 7. **自造选择器命中 0 个 → 两边空数组比出假的"完全一致"** → 比对之前先断言探针非空；选择器要从源码读出来，不许凭印象。
@@ -213,7 +277,8 @@ B-1 写的就是"不许在没有运行成功的情况下声称已完成"。但�
   ⚠️ **量 `vh` / `%` 驱动的尺寸必须同时给宽和高**（只给 width 时高度按内容走，`h-[15vh]` 会算错），三档一起报。
   ⚠️ **iframe 的相对 `src` 按顶层文档的 origin 解析** → 跨环境验证一律写**完整 URL**，并在返回值里回读 `contentDocument.location.origin` 自证；顶层换过页面之后之前所有 iframe 结论**全部重跑**。
 - **读计算样式前必须先注入 `transition/animation: none !important`**（或读 `getAnimations()` 再 `finish()`）——
-  否则读到的是过渡起点；隐藏标签页里根本不推进。
+  否则读到的是过渡起点。（⚠️ 上一任加这条的另一半理由"隐藏标签页里根本不推进"**在本通道不成立**，见 B-19；
+  但"注入 none"这个动作照做 —— 导航途中 / 入场动画期间读到的仍是起点值。）
 - **反向判据：`getAnimations()` 为空 = 真的没有过渡**（`display:none ↔ block` 切换的开合就是这个症状）。
 - **读属性要读对属性**：Tailwind v4 的 `rotate-180` 写 `rotate` 属性、`-translate-x-1/2` 写 `translate` 属性，读 `transform` 会拿到 `none`。
 - **断点显隐要连父容器一起测**（自定义类可能盖掉工具类，见 AGENTS 五-20）。
@@ -277,6 +342,31 @@ B-1 写的就是"不许在没有运行成功的情况下声称已完成"。但�
 - ⚠️ **上一任的记忆目录（`.qoder-cn`）不再是任何记录的家**。已于 2026-10-12 逐处改掉：AGENTS 一节的"见记忆 `github-network-workarounds`" → 本文件 A-6；deploy.md 的私密记录路径 → `AGENTS.local.md`；todo.md 的 `TaskStop` → `job_kill`（并注明行为相同）；"Qoder 自身是 node 进程" → "harness 自身"。
   → **新增文档时别再写"见记忆 xxx"**；`npm run docs:check` 不检查这一条，靠自觉。
 - `docs/agents/harness.md` **不会被自动注入** → 需要它的会话必须主动 Read（`AGENTS.md` 的分册索引就是提示位）。
+
+### A-9 开放式体检 = 并行只读子代理，但**必须我自己逐条复核后才报**
+
+（本条来自上一任记忆 `parallel-audit-verify-before-reporting`。2026-10-12 分层时被漏掉，本次对账补回。
+它救过场事故：2026-09-30 那次三代理体检，代理挖出真 P0（RSS 26 条 `/post/undefined`、5 篇交互 demo 软导航必死、
+`site.json` 污染 42 页 og），**但同一份报告里有 2 条是假的、1 条方向说反**——说反的那条把"HTML 没有 `Cache-Control`"
+这个真根因列进了"确认没问题"，**照抄就会把真缺陷当已排除报给用户**。代理给的"相册 −94%"我复测是"−70%"。）
+
+**规程（四条，缺一条就会出事）：**
+
+1. **派代理时必须给三样**：项目是什么、**先完整读哪份约定文档**、"只读、不许改任何文件"。
+   并且硬性写明：**凡已被文档判定为故意的、或已列进「已知不做」清单的（AGENTS 七节的用户口味 + 九节的"用户看过选择不做"清单），一律不许报**。
+   不写这条，每次体检都会把那十条陈年"故意项"当新发现重提一遍。
+2. **要求输出带 `file:line` + 具体数字**，并强制附一节「**我查过但决定不报的**」——
+   那一节是我判断它**真扫过**而不是漏扫的唯一证据（没有这节，"没问题"和"没去看"输出完全一样）。
+3. **回来后我自己抽查，不照抄**：P0 逐条跑命令 / 开浏览器复现，P1/P2 抽代表性的几条。
+   代理自己标「待核实」的项，**我不升格成事实**。
+4. **汇报必须分三类标注**：✅ 我核实过 / ⚠️ 代理说但我没验 / ❌ 我核后判定不成立或降级。
+   用户就是按这个分类挑要做哪几项。**他否掉或未选的建议要立刻写进 AGENTS 九节那条"用户看过选择不做"清单**，
+   否则下次会被当新发现重提（与 `clean-doc-record-when-fixed` 是同一族的正反两面）。
+
+> 与 B-1 那条「每条结论标来源（我实测 / 子代理报告（未复核）/ 推测）」是同一纪律的**流程化版本**：
+> B-1 管**说出口时怎么标**，本条管**派活与回收时怎么做才有余地犯错**。
+> 本 harness 的对应工具：`subagent`（独立上下文，适合"审计某批文件"这类自包含任务）、
+> `subagent_fork`（继承本会话上下文，适合"基于我们刚讨论的东西再查一层"）、`workflow`（大批量扇出）。
 
 ### A-8 与外部工具/服务相关的裁决（继续生效）
 

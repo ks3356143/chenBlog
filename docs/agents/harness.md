@@ -314,9 +314,12 @@ CPU 节流对照实验（同一份探针页，`Emulation.setCPUThrottlingRate`�
 ③ **`renameSync` 会被运行中的进程 EPERM 挡住**（这是好事：它救了一次没写完的 315MB 文件）。
    替换前先 `Copy-Item` 备份 + 哈希比对。
 
-**修复状态**：补丁已写入 `resources/app.asar.inplace-new`（哈希 `DAA967F7…`，原盘 `7CCDCFFF…` 已备份为
-`app.asar.bak-before-pi-ai-fix-20261013_134330`），`node --check` 语法通过、目标区间外逐字节一致；
-**DSH 运行中占着 `app.asar`，需用户退出应用后替换并重启才生效**。
+**修复状态（2026-10-13 已重启生效，三项复检全过）**：
+① asar 里两个新守卫**字节级 5/5 PASS**（三项守卫在位 + 两处旧代码已消失），`node --check` 语法通过；
+② 与备份的全盘 diff **2100 字节、171 个区间全部落在这两个文件**（2034 B + 66 B），**其余 12965 个文件一字节未动**；
+③ 重启后新日志：补丁生效后的 9 条 assistant 消息 **0 条空 text 块**，唯一 error 仍是补丁之前 turn 17 那笔旧账。
+原盘备份 `app.asar.bak-before-pi-ai-fix-20261013_134330`（`7CCDCFFF…`），补丁盘哈希 `DAA967F7…`。
+⚠️ **DSH 升级会覆盖 asar → 补丁会丢**：跑 `npm run gateway:check` 一眼就能看出来（见 B-22 末段）。
 
 ### B-22 🔴 模型选择器里"思考强度"选不了的根因：**pi-ai 目录里没有这个模型的元数据**
 
@@ -336,15 +339,36 @@ CPU 节流对照实验（同一份探针页，`Emulation.setCPUThrottlingRate`�
 
 ```yaml
 reasoningEfforts:
-  off:            # 留空 = 发送时省略该参数（pi-ai 注释：off 的正确 dispatch 就是"不发"）
+  off: null        # 🔴 必须是显式的空值（不是省略整行、也不是空串）
   low: low
   high: high
   max: max
 ```
 
-`off` 必须**显式留空值**而不能省略整行（省略 = 用目录默认；给 `null` 只有 off 允许）。
-校验逻辑在 `resolveModelReasoning()`：**至少要声明一个非 off 档**，否则直接判配置错误。
-`claude-haiku-5.5` 走 Anthropic 协议，effort 由目录自管，**不要加**。
+🔴 **`off: null` 的确切语义（我第一版写错过，已按源码纠正）**：`resolveModelReasoning()` L580-585 遇到
+`wire === null` 时**不往 `thinkingLevelMap` 里放 `off` 这个键**（不是放 null）。于是 pi-ai 的
+`buildParams` L259 那句 `model.thinkingLevelMap?.off !== null` 对**缺席的键**求值成
+`undefined !== null` → **true** → 走 `params.reasoning = { effort: thinkingLevelMap.off ?? "none" }`，
+即**发 `effort: "none"`**。所以选 `off` = 明确告诉网关"别想"，**不是"不发 reasoning 字段"**。
+若把 `off` 整行省略 → `efforts.off === undefined` → `map.off = null` → L259 判 `null !== null` = false →
+**不发 reasoning 字段**（= 用网关自己的默认）。两者都是"不思考"，但发的字节不同，按网关是否强制要字段二选一。
+`claude-haiku-5.5` 走 `anthropic-messages` 协议，effort 由 pi-ai 安装目录自管，
+**在 cordis 里声明反而会被 `assertOfferedCompatFields` 判"no wire protocol declares"** → 别加。
+⚠️ 校验逻辑（`resolveModelReasoning()` L571/579）会**直接判配置错误**：空 dict、非 off 档给 null、
+以及"只有 off 没有别的档"三种写法都会让**整个 provider 从选择器里消失**。
+
+**生效验证（2026-10-13）**：改完配置**不用重启**，下一次请求就生效。日志 `model/selection` 里首次出现
+`{"provider":"opendesign","model":"deepseek-v4.1-flash","reasoningEffort":"max"}` ——
+**此前 8 条历史记录全是光秃秃的 `{provider, model}`**，这就是强度能选了的硬证据。
+`maxTokens` 也已从 256000 全降到 **64000**（8 个模型）：`cordis` 的这个值会一路传到 pi-ai 的
+`params.max_output_tokens`（`openai-responses.js` L230-231），顶太高等于把单回合输出预算贴到上下文边缘。
+
+**防回归的自检（`npm run gateway:check`，2026-10-13 新增，15 项全过）**：
+`scripts/gateway-check.mjs` 只读，**不发请求、不要 key** —— ① 每个模型有没有 `reasoningEfforts`
+（含 `claude-haiku-5.5` 例外）② `maxTokens` 是否还在 64000 以上 ③ asar 里三道空内容块守卫是否还在
+④ `app.asar` 哈希是补丁盘（`DAA967F7…`）还是原盘（`7CCDCFFF…`）。
+⚠️ 它是**自检不是门禁**：只报告、不改东西。但 **DSH 每次升级后跑一次**，就能立刻发现补丁被覆盖、
+或配置被谁改回去。
 
 ---
 

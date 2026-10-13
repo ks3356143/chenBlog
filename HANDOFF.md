@@ -3,7 +3,22 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-13（第三批：分页页 title 修复已上线 V0.1.42；DSH 自身两个缺陷已定位并修复，待重启生效）**。
+> 最后更新：**2026-10-13 晚间（第三批续：DSH 补丁已重启生效、三项复检全过；maxTokens 降档 + 新增 `gateway:check`）**。
+>
+> **🔧 2026-10-13 晚间续一句话**：① **DSH 补丁已重启生效，三项复检全过** —— asar 里两个新守卫
+> **字节级 5/5 PASS**；与备份的全盘 diff **2100 字节全部落在那两个文件**（其余 12965 个文件一字节未动）；
+> 重启后新日志里补丁生效后的 9 条 assistant 消息 **0 条空 text 块**，唯一 error 仍是补丁前 turn 17 那笔旧账。
+> ② **思考强度已真能选**：日志 `model/selection` 首次出现 `reasoningEffort:"max"`
+> （此前 8 条记录全是光秃秃的 `{provider, model}`）—— 这就是硬证据，**不用重启、下次请求即生效**。
+> ③ 按他要求把 8 个模型的 `maxTokens` **256000 → 64000**（该值一路传到 pi-ai 的 `max_output_tokens`，
+> 顶太高等于把单回合输出预算贴到上下文边缘）。
+> ④ 新增 **`npm run gateway:check`**（`scripts/gateway-check.mjs`，只读、不发请求、不要 key，15 项全过）：
+> 查 reasoningEfforts 完整性 / maxTokens 高位 / asar 三道守卫是否还在 / app.asar 哈希是补丁盘还是原盘
+> —— **DSH 每次升级后跑一次**，就能立刻发现补丁被覆盖。
+> ⑤ 纠正我在 `harness.md` B-22 里写错的一处：`off: null` 的确切语义是「**不放 `off` 键**」→
+> pi-ai 因此发 `effort: "none"`，**不是**"不发 reasoning 字段"（两者字节不同）。
+>
+> —— 以下为 2026-10-13 第三批（分页页 title 已上线 V0.1.42）的记录 ——
 >
 > **🔧 2026-10-13 第三批一句话**：① **修 F（分页页 title）** —— `/2/` `/3/` 的 `<title>` 此前与首页
 > 字节相同（全站 43 页只有 41 个不同 title）。改法收在最窄处：只动 `src/pages/[...page].astro`，
@@ -204,17 +219,17 @@
 > 条目编号（五-N / 八-N / 十-N）两层通用；改完 `AGENTS.md` / `AGENTS.local.md` 必须跑 `npm run docs:check`。
 > 工具差异（没有内置浏览器、没有跨会话记忆、`job_kill` 仍留孤儿子进程）见 `AGENTS.md` 文末附表。
 >
-> 🎯 **【最高优先·等他重启】DSH 自身的两个缺陷已修好，一个待重启生效**（2026-10-13 第三批）：
+> ✅ **【已解决·2026-10-13 晚间】DSH 自身的两个缺陷已修好并重启生效，三项复检全过**：
 > 用户反复报的"怎么老是断"真因是 **harness 自己的序列化缺陷**（不是模型、不是上下文太长）——
 > opendesign 走 BytePlus Responses 网关时，DSH 的 pi-ai 适配层会把 assistant 的**空 text 块**和
 > 空 system 折返出的空 user 消息原样发出去，网关按「message content must contain non-empty text」
 > **整条请求 400、该回合当场死**。三层根因与等长 patch 的三个硬教训见 `harness.md` **B-21**。
-> **待办**：补丁已写入 `D:\programs\deepseek harness\dsh\resources\app.asar.inplace-new`
-> （等长原地替换、`node --check` 通过、目标区间外逐字节一致），**DSH 运行中占着 `app.asar`**，
-> 需用户**退出 DeepSeek Harness** 后把 `.inplace-new` 覆盖成 `app.asar` 再启动。
-> 原盘已备份为 `app.asar.bak-before-pi-ai-fix-20261013_134330`（哈希 `7CCDCFFF…`），出问题覆盖回去即可。
-> 覆盖前先 `Get-Process "DeepSeek Harness"` 确认为 0。第二个缺陷（思考强度选不了）**改配置已即时生效**，
-> 重启后模型选择器里应出现 Low / High / Max 三档，见 `harness.md` **B-22**。
+> **复检结论**：asar 两个新守卫字节级 5/5 PASS；全盘 diff 2100 B 只落那两个文件（其余 12965 个文件未动）；
+> 补丁生效后 0 空块、0 新错（唯一 error 仍是补丁前 turn 17 那笔旧账）。
+> 思考强度（`harness.md` **B-22**）改 `cordis.patch.yml` 即生效，日志已见 `reasoningEffort:"max"`。
+> ⚠️ **遗留一条**：DSH 升级会覆盖 `app.asar` → 补丁会丢。跑 `npm run gateway:check` 一眼可辨
+> （会报「app.asar 补丁状态：还是未打补丁的原盘」）；被覆盖了就按 B-21 的记录重打。
+> 另：8 个模型的 `maxTokens` 已从 256000 降到 64000（该值直通 pi-ai 的 `max_output_tokens`）。
 >
 > 🎯 **大方向仍是「功能扩展」**（用户 09-30 交代；10-01 已批的四件工程项本日做完）。
 > 候选清单在下面「还挂着的事 1.」（动态页二期三项）。
@@ -1105,7 +1120,7 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 | 项 | 状态 |
 |---|---|
 | 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**本批一笔**：`a3818c9` 分页页补独立 title（V0.1.42）；**已推送，`HEAD == origin/main`**。今日更早：动态 0.1.31 / meCard 社交按钮 0.1.32 / 波纹高度 0.1.33 / 二维码浮层动效 0.1.34 / PostMeta 间距 0.1.35 / 手册同步 v1.4.0 0.1.36 / 暂无标签间距 0.1.37 / 顶部三平台说明 0.1.38 / 手册同步 v1.4.1 0.1.39 / SEO 元数据 0.1.40 / `og:type` 0.1.41 / 分页 title 0.1.42 |
-| 工作区 | 本批 `src/` **只动 1 个文件**：`pages/[...page].astro`（补 `第N页-亦林`，+4/-1）；加 `package.json`(+lock) 版本号 0.1.42。文档动 `HANDOFF.md` / `docs/agents/harness.md`（新增 **B-21 / B-22**）。**零脚本、零依赖、零 `public/` 改动**。⚠️ 本批还改了**仓库外**的 DSH：`~/.dsh/profiles/desktop/cordis.patch.yml`（补 7 个模型的 `reasoningEfforts`，**不入库**）与 `resources/app.asar` 的等长补丁（待重启生效，见 harness.md B-21） |
+| 工作区 | 本批 `src/` **只动 1 个文件**：`pages/[...page].astro`（补 `第N页-亦林`，+4/-1）；加 `package.json`(+lock) 版本号 0.1.42。文档动 `HANDOFF.md` / `docs/agents/harness.md`（新增 **B-21 / B-22**）。**零依赖改动**；新增 `scripts/gateway-check.mjs` + `package.json` 的 `gateway:check` 命令（本批，纯脚本、不进构建产物）。⚠️ 仓库外还改了 DSH：`~/.dsh/profiles/desktop/cordis.patch.yml`（补 7 个模型的 `reasoningEfforts` + 8 个模型 `maxTokens` 256000→64000，**不入库**，备份 `.bak-before-maxtokens-20261013_194212`）与 `resources/app.asar` 的等长补丁（**已重启生效**，见 harness.md B-21） |
 | 文档分层 | `AGENTS.md` **56548 B** + `AGENTS.local.md` 5029 B = **合计 61577 B < 65536 B**（`npm run docs:check` 实测 0 error / 0 warn，**尚可用 1911 B**）。⚠️ 第二条批曾把余量吃到 665 B（每次跑都告警），**本批靠"只往分册写、不往常驻层写"把它养回 1911 B** —— 往后加内容仍要优先下沉分册。六份分册与旧版 162KB `AGENTS.md`（`dfc013a`）**逐行比对**：`config`/`collab`/`writing`/`swup` **各 0 处未命中**；`deploy.md` 5 行 / `todo.md` 4 行未命中，逐条核实为**有意的脱敏与改名**（`.qoder-cn` 记忆路径 → `AGENTS.local.md`、`TaskStop` → `job_kill`、"Qoder 自身" → "harness 自身"）。⚠️ **头部原先那句"逐字节相同"不实**（与同一段"清掉上一任专属提法"自相矛盾），第二批已改准。`docs:check` 现有**七道闸**（含第二批补的 A/B 编号引用 / 表格竖线 / 余量告警，细节 `harness.md` **B-20**） |
 | 上一任的记忆 | **已全部落盘进仓库**：`docs/agents/harness.md`（B-1~**B-22** / A-1~**A-9** / C 能力清单）+ `AGENTS.local.md`。**3 个 Qoder 独有技能审定：不迁**（ts/CI/jq 套话、WordPress 关键词套路、React/CRA 模板，与本栈和口味冲突），但**反推出 4 条真缺陷**（`npm audit` 过期数字 / `audit fix --force` 会降 mermaid / SEO C / SEO D）。原件备份 `C:\Users\31429\.dsh\qoder-memories-backup\`（记忆 22 文件 + 技能 15 文件 = 37；**Qoder 已删净，别清**） |
 | 浏览器能力 | **2026-10-12 已装 DSH 的 playwright browser-use provider**（`~\.dsh\profiles\desktop\`，不在仓库内；装前 5 文件备份在 `~\.dsh\browser-plugin-profile-backup\`）。⚠️ **本会话仍无工具** —— provider 不接管已活动 Session，**要新建/恢复 Session** 才出现 `mcp__playwright-mcp__*`（约 70 个：navigate / snapshot / take_screenshot / evaluate / click…）。⚠️ **别改成 `headless: false`**：本机无完整版 `chromium-1243`，README 写「启动失败会拒绝 Session 创建」→ 新会话会起不来。右侧「浏览器」面板桌面 profile 默认已启用（用户 Ctrl+T），但**它不给模型任何工具**、与我的 MCP 浏览器**不共享状态**。当前可用通道：`npm run probe -- <url> <宽> <高> [--also <宽> <高>] [--sel <css>]`（已实测线上首页/手册页 + 三张截图：`h1=1`、破图 0、`overflowX=0`、宽表容器 3 个都 `scrollable:true`（1029/726/1089 vs 容器 309）、10 张封面 `realBug:false`）。⚠️ **别用 `file://` 验 dist**（根绝对路径解析到盘符根 → 假破图 + 2193px 假溢出），见 harness.md B-13 / C-1 / C-1b |
@@ -1118,7 +1133,7 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 | 服务器回滚资产 | `dist.old` + **39 个 `dist_backup_*`** = **40 个**（本批新增 `dist_backup_20261013_180610`；最老仍是 `20260920_234618`）。全部保留，**删需用户明确同意**。回滚一行：`cd /www/wwwroot/chenBlog && rm -rf dist && mv dist.old dist`（展开版命令在 `AGENTS.local.md`） |
 | 临时文件 | **本批已清并复查（本地 `cb*` = 0，服务器 `/tmp/cb*` = 0）**：本地 `%TEMP%` 下 `cb.tar.gz` + 4 个探查脚本（`cb_find_maxtokens.mjs` / `cb_models.mjs` / `cb_read_catalog.mjs` / `cb_shape.mjs`）；服务器 `/tmp/cb.tar.gz` + `/tmp/cb_deploy.sh`。⚠️ **回滚资产不算临时文件，不删**（`dist.old` / `dist_backup_*`）。⚠️ 老坑仍在：**node 读不了 bash 的 `/tmp`**（解析成 `E:\tmp` → ENOENT），跨工具传文件一律 `process.env.TEMP`。⚠️ 部署脚本的自我删除要放在**跑完之后**由外部执行——`bash` 边读边执行时删自己会读不到尾行。⚠️ 本批为查 DSH 缺陷在 `%TEMP%\chenblog_sess\` 留了一批**只读**分析脚本与 asar 读取器（`sess_dump.mjs` / `asar.mjs` / `inplace2.mjs` / `patches_final.json` 等），**它们是修 DSH 的作业凭据，重启验证通过前别删** |
 | 排查方法类坑位 | 本批新增三条，细节都在 **AGENTS 五-36 / 五-37 / 十-14**，此处只留索引：**`:hover` 态画下划线不能用 `border-bottom`（inline border 撑高行盒）**、**`forwards` 把 transform 永久留在元素上 = 常驻合成层**、**`navigating()` 的假设对全新 key 不成立（module 脚本晚一个宏任务）**。另有两条工具性坑：隐藏标签页 `setTimeout` 节流到 ≥1s（探针会 15s 超时，改用 `getAnimations().currentTime` 驱动）、`:hover` 不能用 JS 触发所以只能"手动施加同组声明"做等价验证 |
-| 待用户拍板 | ⓪c **【第二批 SEO 审计产物】**：~~**E** `og:type` 全站 0/43 缺失~~ → **已完成（V0.1.41）**；~~**F** 首页分页 `/2/` `/3/` 的 `<title>` 与首页完全相同~~ → **已完成（V0.1.42）**，全站 43 页 43 个不同 title。⚠️ **别与九节那条"每页两个 `<title>`（内容一致）"混为一谈**，那是重复标签、已列"看过选择不做"，这是两条不同的东西 ⓪e **【新·本批，等他操作】DSH 的 400 补丁要重启才生效**：`resources/app.asar.inplace-new` 已就位（等长替换、语法通过、区间外逐字节一致），**DSH 运行中占着 `app.asar`** → 需他**退出 DeepSeek Harness 后**把 `.inplace-new` 覆盖成 `app.asar` 再启动。原盘已备份 `app.asar.bak-before-pi-ai-fix-20261013_134330`（哈希 `7CCDCFFF…`），出问题覆盖回去即可。⚠️ 覆盖前先确认 DSH 进程真的退出（`Get-Process "DeepSeek Harness"` 为 0）。`reasoningEfforts` 那半是改 `cordis.patch.yml`，**下次请求即时生效、不用重启**（重启后模型选择器里应出现 Low / High / Max 三档）⓪d ~~常驻层预算怎么处理~~ → **已按 ① 轻量腾挪解决**（余量回到 1911 B，告警消失）。⓪a ~~要不要装 DSH 的 browser-use 插件~~ → **已装好并挂载完毕**（playwright provider）。**下一步在他手上：新建或恢复一个 Session**，实测 `mcp__playwright-mcp__browser_navigate` 等工具是否出现；若新会话创建失败，用 `~\.dsh\browser-plugin-profile-backup\` 覆盖回滚（大概率是 `headless` 被改成了 false）。⓪a2 **要不要改成"我和用户看同一个浏览器"** → 需把 config 换成 `mode: attach` 并自己起一个带调试端口的浏览器（Edge 可行但未实测）；不做则两边永远是两个独立上下文 ⓪b **评论区 OwO 表情面板 21 张图没有 `alt` 属性**（按容器分组实测确认全是 `.OwO-item`，文章与站点内容图零缺失）→ 属第三方组件，**我没动代码** ① **手册现在每节之间有一条分节线（10 条，照他手册原样同步；旧版站内只有 1 条）**——观感变了，要不要滤掉说一声 ② **V0.1.26 两条复测**（文章页→主页的封面；框选/点击文字是否还跳，见 16.）③ 新文章肉眼验收（11.）④ **灯箱真人点击**（12.）⑤ 第8天宽表要不要一起包（13.）⑥ `propse-base` 拼错要不要补（14.）⑦ 侧栏卡片不随软导航更换（9.）⑧ PostCard 加密文章锁图标（AGENTS 五-5）⑨ 全站 title 带不带后缀（SEO）⑩ **meCard 那排的真人反馈**（手机扫二维码能不能扫上、QQ 复制在他自己浏览器里的提示条观感）——我这边只能证明图解码正常、退路走得到；⑪ **列表卡上那句「暂无标签」是假的**（`PostCard.astro:81` 调 PostMeta 时不传 tags，而他 27 篇全都有标签）→ 要么把 tags 传进去显示、要么卡片不显示这一格（`showTags={false}`），等他定 |
+| 待用户拍板 | ⓪c **【第二批 SEO 审计产物】**：~~**E** `og:type` 全站 0/43 缺失~~ → **已完成（V0.1.41）**；~~**F** 首页分页 `/2/` `/3/` 的 `<title>` 与首页完全相同~~ → **已完成（V0.1.42）**，全站 43 页 43 个不同 title。⚠️ **别与九节那条"每页两个 `<title>`（内容一致）"混为一谈**，那是重复标签、已列"看过选择不做"，这是两条不同的东西 ⓪e ~~【新·本批，等他操作】DSH 的 400 补丁要重启才生效~~ → **已完成（2026-10-13 晚间）**：他已退出 DSH、覆盖 `app.asar` 并重启，**三项复检全过**（字节级守卫 5/5、diff 只落那两个文件、补丁生效后 0 空块 0 新错）。`reasoningEfforts` 配置**下次请求即生效**（日志已见 `reasoningEffort:"max"`）。**遗留一条**：⚠️ **DSH 升级会覆盖 asar → 补丁会丢**，跑 `npm run gateway:check` 可一眼看出（它会报「app.asar 补丁状态：还是未打补丁的原盘」）；若被覆盖，补丁构造记录全在 `harness.md` **B-21**（含三个硬教训），按它重打即可，原盘备份 `app.asar.bak-before-pi-ai-fix-20261013_134330` ⓪d ~~常驻层预算怎么处理~~ → **已按 ① 轻量腾挪解决**（余量回到 1911 B，告警消失）。⓪a ~~要不要装 DSH 的 browser-use 插件~~ → **已装好并挂载完毕**（playwright provider）。**下一步在他手上：新建或恢复一个 Session**，实测 `mcp__playwright-mcp__browser_navigate` 等工具是否出现；若新会话创建失败，用 `~\.dsh\browser-plugin-profile-backup\` 覆盖回滚（大概率是 `headless` 被改成了 false）。⓪a2 **要不要改成"我和用户看同一个浏览器"** → 需把 config 换成 `mode: attach` 并自己起一个带调试端口的浏览器（Edge 可行但未实测）；不做则两边永远是两个独立上下文 ⓪b **评论区 OwO 表情面板 21 张图没有 `alt` 属性**（按容器分组实测确认全是 `.OwO-item`，文章与站点内容图零缺失）→ 属第三方组件，**我没动代码** ① **手册现在每节之间有一条分节线（10 条，照他手册原样同步；旧版站内只有 1 条）**——观感变了，要不要滤掉说一声 ② **V0.1.26 两条复测**（文章页→主页的封面；框选/点击文字是否还跳，见 16.）③ 新文章肉眼验收（11.）④ **灯箱真人点击**（12.）⑤ 第8天宽表要不要一起包（13.）⑥ `propse-base` 拼错要不要补（14.）⑦ 侧栏卡片不随软导航更换（9.）⑧ PostCard 加密文章锁图标（AGENTS 五-5）⑨ 全站 title 带不带后缀（SEO）⑩ **meCard 那排的真人反馈**（手机扫二维码能不能扫上、QQ 复制在他自己浏览器里的提示条观感）——我这边只能证明图解码正常、退路走得到；⑪ **列表卡上那句「暂无标签」是假的**（`PostCard.astro:81` 调 PostMeta 时不传 tags，而他 27 篇全都有标签）→ 要么把 tags 传进去显示、要么卡片不显示这一格（`showTags={false}`），等他定 |
 | 既存小坑 | `--radius-large` / `--panel-border-color` 未定义（AGENTS 五-16）——表格那行 `border-radius` 因此整条无效、实际直角，**正好符合站内"面板一律直角"口径，别当缺陷补变量**；`tsconfig.json` react jsx 残留无影响；`src/content/posts/images/` 空目录；`/site.webmanifest` 的 Content-Type 缺 webmanifest 映射（要动 nginx mime.types）；重复 id `announcement`/`cardTags`（九节已判定降级：无脚本查询、无死控件）；单分类时分类卡收起态反而更高（**现在已有第二个分类，这条要复验是否还成立**） |
 
 ---

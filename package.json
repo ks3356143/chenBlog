@@ -11,6 +11,7 @@
     "covers": "node scripts/generate-covers.mjs",
     "new:post": "node scripts/new-post.mjs",
     "docs:check": "node scripts/check-docs.mjs",
+    "gateway:check": "node scripts/gateway-check.mjs",
     "probe": "node scripts/probe.mjs",
     "astro": "astro"
   },

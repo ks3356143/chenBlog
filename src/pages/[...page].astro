@@ -14,9 +14,12 @@ export const getStaticPaths = (async ({ paginate }) => {
 }) satisfies GetStaticPaths
 
 const { page } = Astro.props
+// 分页第 2 页起补「第N页」前缀：否则 /2/ /3/ 的 <title> 与首页字节相同
+// （全站 43 页只有 41 个不同标题）。命名跟归档 / 分类 / 标签等同一页型组，即 `X-亦林`。
+const paginationTitle = page.currentPage > 1 ? `第${page.currentPage}页-亦林` : undefined
 ---
 
-<Layout>
+<Layout title={paginationTitle}>
 	<PostPage page={page} />
 	<!-- 分页组件 -->
 	{page.total > page.size && <Pagination class="mx-auto" page={page} />}

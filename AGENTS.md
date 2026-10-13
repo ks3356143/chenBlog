@@ -19,7 +19,7 @@ harness 注入链 = `~/.dsh/AGENTS.md` → `AGENTS.md` → `AGENTS.local.md`，*
 - `collab.md` — 原第七节全文（收尾铁律 + 日常约定，含行尾与跨工具路径引号的全部细则）
 - `writing.md` — 原第八节全文（发稿流程 8 条 + **八-9 同步自检标准与「站内故意加」清单** + frontmatter + 图片规矩）
 - `todo.md` — 原第九节全文（历批记录 / 版本天花板 / 依赖坑 / 运维）
-- `swup.md` — 原第十节全文（Swup 过渡的坑 **1 ~ 15**）
+- `swup.md` — 原第十节全文（Swup 过渡的坑 **1 ~ 16**）
 - `harness.md` — **新增**：工具链纪律与验证取证办法（2026-10-12 从上一任的 22 份跨会话记忆里提炼）
 
 🔴 **条目编号（五-16 / 八-9 / 十-14）两层通用**。本文件每条只留"钩子 + 禁令"，**够判断要不要去读全文，不够动手**。
@@ -347,7 +347,7 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 🔴 **任何"切页后不生效 / 重复生效"的问题，先 Read 分册再动手。**
 
 - **1** `animationSelector` **必须收紧成 `[class*="transition-swup-"]`**。默认值会命中全站 Tailwind 的 `transition-*`，而 `display:none` 子树里**永不结束**的过渡被算进等待集合 → **visit 死锁在 `is-changing is-animating is-rendering`，之后所有导航静默失效（不报错、路径不变）**。
-- **2** ⚠️ **Swup 不替换 head，也默认不执行容器内新 script** → ① `slot="head"` 的脚本导航过去**永不执行**；② **组件的 scoped `<style>` 只存在于渲染了它的那一页的 head** → **只在部分页面渲染的组件，布局类与状态机类 CSS 必须进全局样式表**（两次真事故：PostCard 重叠 64px；`CoverImage` 遮罩规则缺失 → **图已下载解码、白遮罩永远盖着、转圈塌成 0px，看起来完全像"资源没加载"** → 排查顺序：**先读 `img.naturalWidth` 与遮罩的 `getComputedStyle().opacity`**，一个 >0 一个 =1 就一定是样式缺失，**别去查网络**）。
+- **2** ⚠️ **Swup 不替换 head，也默认不执行容器内新 script** → ① `slot="head"` 的脚本导航过去**永不执行**；② **组件的 scoped `<style>` 只存在于渲染了它的那一页的 head** → **只在部分页面渲染的组件，布局类与状态机类 CSS 必须进全局样式表**（两次真事故：PostCard 重叠 64px；`CoverImage` 遮罩规则缺失 → **图已下载解码、白遮罩永远盖着、转圈塌成 0px，看起来完全像"资源没加载"** → 排查顺序：**先读 `img.naturalWidth` 与遮罩的 `getComputedStyle().opacity`**，一个 >0 一个 =1 就一定是样式缺失，**别去查网络**；**Svelte 岛同罪且更隐蔽：其 scoped CSS 被内联进单页 head，见十-16**）。
 - **3** 别给 `<script>` 用 `define:vars` 传配置 → 会把脚本**内联进每一页**（曾重复嵌入 37 页）。配置在脚本里 `import`。
 - **4** **事件名三套并存，改前先 grep**：Swup4 原生 `swup:content:replace`；Swup3 旧名 `swup:contentReplaced`（12 个组件在听，Swup4 **不再派发**）；`astro:page-load`/`astro:after-swap`。SwupManager 统一桥接派发，消费组件一行未改。
 - **5** 过渡观感 = **1:1 照搬 blog.cuteleaf.cn 编译产物**。数值两边本来逐字节相同，**决定"跳不跳"的是挂载位置**。⚠️ **不要用 body/祖先元素的淡入淡出** → 实测 Swup 卡死 `is-rendering`、页面停在 opacity 0。

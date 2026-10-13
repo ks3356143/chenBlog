@@ -1,4 +1,4 @@
-# AGENTS 分册 · 第十节「Swup 页面过渡的坑」全文（第 1 ~ 15 条）
+# AGENTS 分册 · 第十节「Swup 页面过渡的坑」全文（第 1 ~ 16 条）
 
 > 本文件是 `AGENTS.md` 某一节的**全文**，2026-10-12 从 AGENTS.md 无损切出。
 > `AGENTS.md` 只留常驻结论与索引（受 harness 64KB 注入预算限制）；改到本节任何主题前先读本文件全文。
@@ -303,3 +303,30 @@
       日历翻月按钮在导航后仍工作（`2026年10月 → 2026年9月`）。
       ⚠️ 五-24 那条"侧栏在容器外正是选静态渲染而非岛的理由"**仍然成立**——本次只是让右栏参与
       Swup 替换，侧栏那几张卡（站点统计 / 最新动态 / 站点信息）依旧是构建期静态渲染。
+
+16. ⚠️ **Svelte 岛的 `<style>` 一样会踩十-2，而且形态更隐蔽：Astro 会把岛的小体积 CSS
+    内联进该页 HTML 的 `<style>` 标签（不是外链 chunk）**（2026-10-13 用户报"动态页筛选栏
+    组件和样式都没有"）。
+    - **症状**：`DynamicFeed.svelte` 的筛选栏结构在、JS 在跑（搜索/过滤都灵），
+      但**所有 scoped 样式整块丢失**——图标与输入框竖着堆叠、`<select>` 露出原生箭头。
+      硬加载 `/dynamic/` 完全正常，**只有从别的页软导航进来才坏**。
+    - **取证顺序**：① 全部产物 CSS 里 `grep` 作用域类（`.dynamic-filter-search`）→ 不在任何
+      `_astro/*.css`；② 页面 HTML → 发现它以 `<style>.dynamic-filter-search.svelte-srte4c{…}`
+      形式**内联在 `/dynamic/index.html` 的 head 里**；③ JS chunk 里也没有注入串 →
+      结论：样式只存在于"渲染了该岛的哪一页"的 head，Swup 不换 head → 软导航必丢。
+    - **修法**：scoped 样式整块搬进 `src/styles/global.css`（每页 head 都挂，软导航安全），
+      组件里留一行注释说明**为什么不能写回组件 `<style>`**。全站排查：另一个带 `<style>` 的
+      `Search.svelte` 挂在 Header（每页都渲染）→ 安全，不用动。
+    - **通则**：**只渲染在部分页面的 Svelte 岛，样式一律进全局样式表**；岛内元素仍会带上
+      `svelte-xxx` 作用域类，但它不再承担任何样式职能，别拿它当选择器依据。
+    - **验证**：软导航 首页 → 动态 与 硬加载 `/dynamic/` 两路的计算样式必须一致
+      （本次探针：`display:flex` / 边框 `1px solid` / 高 `36px` / `appearance:none`，
+      两路逐项相同）。
+    - **同族追加（同日）**：年份下拉从原生 `<select>` 改成自定义面板（OS 画的展开列表
+      改不了样式与动画）。交互照 `headers/DropdownMenu.astro` 的全站模式：
+      `aria-expanded` 驱动 `opacity + translate + visibility` 过渡（0.2s cubic-bezier(0,0,0.2,1)）、
+      箭头展开转 180°、面板用 `--panel-bg` + `1px var(--line-divider)` + `--panel-shadow` + 直角、
+      选项 hover/选中走 `--btn-plain-bg-hover` + `--primary`；点击外部/Escape 收起、
+      ↑↓ 在选项间移动焦点。面板样式同样放 global.css（`.dynamic-year-*`）。
+      ⚠️ `focus-ring-inset` 在全站**没有任何定义**（只有 DropdownMenu 在用，是死类）——
+      下拉的键盘焦点样式用 `.dynamic-year-item:focus-visible` 自己给。

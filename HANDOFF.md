@@ -3,7 +3,21 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-13 深夜（第四批：四条 BUG 全修 + 动态页二期三项 + 横幅波浪三处，已上线 V0.1.43）**。
+> 最后更新：**2026-10-13 深夜续（第五批：动态页筛选栏软导航丢样式 + 年份下拉全站化，已上线 V0.1.44）**。
+>
+> **🔧 2026-10-13 深夜续一句话**：① **筛选栏样式整块丢失是他截图报的**（结构在、搜索图标和
+> 输入框竖着堆叠、select 露原生箭头）。根因 = **十-16 新坑**：Svelte 岛的 scoped `<style>` 被 Astro
+> **内联进 `/dynamic/` 单页的 head**（不在任何 `_astro/*.css`），Swup 软导航不换 head → 从别的页点进来
+> 样式必丢（硬加载正常）。修法 = 样式搬 `global.css`，组件留注释说明为什么不能写回去。
+> ② **年份下拉从原生 `<select>` 改成自定义面板**（他要"动画跟全站统一"）：交互照
+> `DropdownMenu.astro`——`aria-expanded` 驱动 `opacity+translate+visibility` 0.2s 过渡、箭头转 180°、
+> 面板 `--panel-bg`+直角+阴影、选项 hover/选中 `--btn-plain-bg-hover`+`--primary`、
+> 点击外部/Escape 收起、↑↓ 移焦点。顺带发现 `focus-ring-inset` 全站无定义（死类）。
+> ③ 门禁：`build` 0 / `check` 0 error 3 hint / `docs:check` 0 error（余量 174 B）；preview 软导航探针
+> 与**线上**探针均 PASS（面板开合 opacity 0→1、选项 2 个、选中「2026」后计数「筛选出 2 / 2 条」）。
+> ④ 本批两个提交 `cadc58f`（样式修）+ `65aeb8a`（下拉全站化），一次部署，回滚资产 42 个。
+>
+> —— 以下为 2026-10-13 深夜（第四批：四条 BUG 全修 + 动态页二期三项 + 横幅波浪三处，已上线 V0.1.43）的记录 ——
 >
 > **🔧 2026-10-13 深夜一句话**：① **四条候选缺陷先取证再动手，三条是真 BUG、一条证伪** ——
 > 侧栏不随软导航更换（✅ 实锤：软导航进文章页 `navs:1` 而右栏仍 35 格日历）、
@@ -1164,24 +1178,24 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-10-13 深夜实测；**线上 = V0.1.43**，`src/` 动了 8 个文件、已部署）
+## 三、当前状态快照（2026-10-13 深夜实测；**线上 = V0.1.44**，`src/` 累计 10 个文件、已部署）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**本批一笔**：四条 BUG + 动态页二期三项 + 横幅波浪三处（V0.1.43）；**已推送，`HEAD == origin/main`**。今日更早：动态 0.1.31 / meCard 社交按钮 0.1.32 / 波纹高度 0.1.33 / 二维码浮层动效 0.1.34 / PostMeta 间距 0.1.35 / 手册同步 v1.4.0 0.1.36 / 暂无标签间距 0.1.37 / 顶部三平台说明 0.1.38 / 手册同步 v1.4.1 0.1.39 / SEO 元数据 0.1.40 / `og:type` 0.1.41 / 分页 title 0.1.42 |
-| 工作区 | 本批 `src/` 动 **8 个文件**：`SwupManager.astro`（containers 加 `#right-sidebar` + 脚本重跑选择器覆盖所有 container）、`Layout.astro`（`top-[30vh]` → `.content-panel`）、`layout-style.css`（`.content-panel` 起点 + 切页过渡）、`Waves.astro`（四层 `x` 相位 + `#wallpaper-gradient`）、`PostCard.astro`（补锁图标）、`SiteInfo.astro`（改 `onReinit` + 每轮先解绑）、`SiderBarToc.astro`（popstate/hashchange 哨兵）、`global.d.ts`（两个 window 字段类型）；内容动 `css100天-第8天.md`（宽表移出列表项 + 包容器）；动态页动 `DynamicFeed.svelte` / `DynamicItemTemplate.astro` / `api/dynamic.json.ts` / `dynamic-utils.ts`（+`searchText`）。`package.json`(+lock) 版本号 0.1.43。**零依赖改动**。文档动 `AGENTS.md`（五-5/五-11/五-24/十-15 改准 + 新增五-43/五-44）与 `HANDOFF.md` |
-| 文档分层 | `AGENTS.md` + `AGENTS.local.md` 合计 < 65536 B（`npm run docs:check` 实测 0 error，**1 条余量提醒：常驻层只剩 1000 B** —— 本轮往常驻层加了五-43/五-44 两条，**下次加内容前必须先下沉到 `docs/agents/` 分册**）。六份分册与旧版 162KB `AGENTS.md`（`dfc013a`）**逐行比对**：`config`/`collab`/`writing`/`swup` **各 0 处未命中**；`deploy.md` 5 行 / `todo.md` 4 行未命中，逐条核实为**有意的脱敏与改名** |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**本批两笔**：`cadc58f` 筛选栏样式搬全局（V0.1.44）+ `65aeb8a` 年份下拉全站化；**已推送，`HEAD == origin/main`**。上一批：四条 BUG + 动态页二期三项 + 横幅波浪三处（V0.1.43）。今日更早：动态 0.1.31 / meCard 社交按钮 0.1.32 / 波纹高度 0.1.33 / 二维码浮层动效 0.1.34 / PostMeta 间距 0.1.35 / 手册同步 v1.4.0 0.1.36 / 暂无标签间距 0.1.37 / 顶部三平台说明 0.1.38 / 手册同步 v1.4.1 0.1.39 / SEO 元数据 0.1.40 / `og:type` 0.1.41 / 分页 title 0.1.42 |
+| 工作区 | 本批 `src/` 动 **2 个文件**：`DynamicFeed.svelte`（筛选栏样式注释化 + 年份下拉组件化：`yearOpen`/`yearBox`/`yearTrigger` 状态、`setYear`/`onWindowClick`/`onTriggerKeydown`/`onItemKeydown`、`<svelte:window>` 点外收起）、`global.css`（`.dynamic-filter-*` 与 `.dynamic-year-*` 全部规则，样式必须进全局 = 十-16）。`package.json` 版本号 0.1.44。文档动 `docs/agents/swup.md`（新增 **十-16** Svelte 岛 scoped CSS 内联坑 + 下拉交互规格）、`AGENTS.md`（十-2 加十-16 指针、计数 1~16）、`HANDOFF.md`。**零依赖改动** |
+| 文档分层 | `AGENTS.md` + `AGENTS.local.md` 合计 < 65536 B（`npm run docs:check` 实测 0 error，**1 条余量提醒：常驻层只剩 174 B** —— 十-16 的细节已沉进 `swup.md`，常驻层只加了一句指针，**下次加内容前必须先下沉到 `docs/agents/` 分册**） |
 | 浏览器能力 | **2026-10-12 已装 DSH 的 playwright browser-use provider**（`~\.dsh\profiles\desktop\`，不在仓库内）。⚠️ **本会话仍无工具** —— provider 不接管已活动 Session，**要新建/恢复 Session** 才出现 `mcp__playwright-mcp__*`。⚠️ **别改成 `headless: false`**。当前可用通道：`npm run probe -- <url> <宽> <高>` + 本地 `astro preview`（**别用 `file://` 验 dist**，见 harness.md B-13） |
-| 线上站点 | ✅ **2026-10-13 深夜部署 V0.1.43**（第六节原子替换 + 替换前断言）。**从本机打公网 IP 实测**：首页 `/` `/2/` `/3/` `/archive/` `/posts/ccnewtools-manual/` 全 200；站点信息卡 `V0.1.43`；content-panel top 首页 **529** / 非首页 **349**（= 参考站同公式「横幅高 − 3.5rem」）；渐变带 548–609 高 61px；波浪四层 `x` = `-42.000,2.641,48.944,92.468`；五个页 `overflowX=0` / `h1=1` / 破图 0 |
-| 本地构建 | 本批跑了 **3 次** `npm run build`（每轮修复后一次）：退出码 0，**43 页 / 357 文件**，Pagefind 索引 **29 页**。产物核验：375px 下第 8 天宽表容器 309 / 表 654 / `overflowX:auto` / `scrollable:true` / 页面 `overflowX=0`；`/api/dynamic.json` 含 `searchText` 字段；`npm run check` **0 error / 3 hint** |
-| 文档自检 | `npm run docs:check` = **0 error / 1 条提醒**（常驻层余量 1000 B，见上） |
+| 线上站点 | ✅ **2026-10-13 深夜部署 V0.1.44**（第六节原子替换 + 替换前断言：`dynamic-year-panel` / `dynamic-filter-search` 必须在 `dist.new/_astro/`、`V0.1.44` 必须在、`V0.1.43` 必须不在）。**从本机打公网 IP 用浏览器实测（复现他的路径：首页软导航进动态页）**：面板收起 `opacity:0/visibility:hidden`、展开 `opacity:1/visible/translate:0`、边框 `1px solid`、箭头 `rotate(180°)`、选项「全部年份/2026」、选中 2026 后触发器文案变「2026」且计数「筛选出 2 / 2 条」→ **PASS**；`/` `/2/` `/archive/` `/posts/ccnewtools-manual/` 全 200；站点信息卡 `V0.1.44` |
+| 本地构建 | 本批 `npm run build` 退出码 0，**43 页 / 357 文件**，Pagefind 正常。产物核验：`Layout.Caf-QmPj.css` 含 `.dynamic-filter-search` 与 `.dynamic-year-*`（每页 head 都挂 → 软导航安全）；`/dynamic/` 页**不再**有内联的 `.dynamic-filter-search.svelte-*`；`npm run check` **0 error / 3 hint** |
+| 文档自检 | `npm run docs:check` = **0 error / 1 条提醒**（常驻层余量 174 B，见上） |
 | 服务器配置 | **未动**（只换 dist；没碰 Nginx / 宝塔） |
 | 依赖 | 本批**零改动**。基线仍是 `@astrojs/check@0.9.10` devDep、`allowScripts` 钉 `esbuild@0.28.2` |
-| dev / preview server | 本批起了 `astro preview --port 4399 --host 127.0.0.1` 做验证，**收尾时按「`node.exe` + `astro\bin\astro.mjs` + `preview`」精确杀掉并复查残留 = 0**。当前 dev 与 preview **都已停** |
-| 服务器回滚资产 | `dist.old` + **40 个 `dist_backup_*`** = **41 个**（本批新增 1 个）。全部保留，**删需用户明确同意**。回滚一行：`cd /www/wwwroot/chenBlog && rm -rf dist && mv dist.old dist` |
-| 临时文件 | **本批已清并复查**：本地 `scripts/_tmp_*.mjs`（9 个取证脚本）+ `scripts/_tmp_home.png`、`%TEMP%` 下 `fly_dynamic.html` / `fly_home.html` / `fly_df.js`；服务器 `/tmp/index.html`（10-08 的探测残留，175KB）。⚠️ **回滚资产不算临时文件，不删** |
-| 待用户拍板 | ⓪c **【第二批 SEO 审计产物】**：~~**E** `og:type`~~ → **已完成（V0.1.41）**；~~**F** 分页 title~~ → **已完成（V0.1.42）**。⓪e ~~DSH 400 补丁要重启~~ → **已完成（2026-10-13 晚间）**，**遗留一条**：DSH 升级会覆盖 asar → 补丁会丢，跑 `npm run gateway:check` 可辨，重打流程见 `harness.md` **B-21**。⓪d ~~常驻层预算~~ → **已解决**（但本轮又吃到 1000 B，见上）。⓪a ~~要不要装 browser-use 插件~~ → **已装好并挂载完毕**，**下一步在他手上：新建或恢复一个 Session** 实测 `mcp__playwright-mcp__*` 是否出现。⓪a2 要不要改成"我和用户看同一个浏览器"（需 `mode: attach`）。⓪b **评论区 OwO 表情面板 21 张图没有 `alt`**（第三方组件，我没动代码）① **手册每节之间的分节线**（10 条，照他手册原样同步；旧版站内只有 1 条）——观感变了，要不要滤掉说一声 ② **V0.1.26 两条复测**（文章页→主页的封面；框选/点击文字是否还跳，见 16.）③ 新文章肉眼验收（11.）④ **灯箱真人点击**（12.）~~⑤ 第8天宽表要不要包~~ → **已完成（V0.1.43）** ~~⑥ `propse-base` 拼错要不要补~~ → **证伪、不改**（实测 16px 与裸 `.prose` 一致，改了零视觉变化）~~⑦ 侧栏卡片不随软导航更换~~ → **已完成（V0.1.43）** ~~⑧ PostCard 加密文章锁图标~~ → **已完成（V0.1.43）**（零篇用到 → 无可见影响）⑨ 全站 title 带不带后缀（SEO）⑩ **meCard 那排的真人反馈**（手机扫二维码能不能扫上、QQ 复制提示条观感）⑪ **列表卡上那句「暂无标签」是假的**（`PostCard.astro` 调 PostMeta 时不传 tags，而他 27 篇全都有标签）→ 要么把 tags 传进去显示、要么卡片不显示这一格，等他定 |
-| 既存小坑 | `--radius-large` / `--panel-border-color` 未定义（AGENTS 五-16）——表格那行 `border-radius` 因此整条无效、实际直角，**正好符合站内"面板一律直角"口径，别当缺陷补变量**；`tsconfig.json` react jsx 残留无影响；`src/content/posts/images/` 空目录；`/site.webmanifest` 的 Content-Type 缺 webmanifest 映射（要动 nginx mime.types）；重复 id `announcement`/`cardTags`（九节已判定降级） |
+| dev / preview server | 本批两轮 `npm run preview`（:4321）做验证，**收尾时按「`node.exe` + `astro\bin\astro.mjs` + `preview`」精确杀掉并复查残留 = 0**。当前 dev 与 preview **都已停** |
+| 服务器回滚资产 | `dist.old` + **41 个 `dist_backup_*`** = **42 个**（本批新增 1 个）。全部保留，**删需用户明确同意**。回滚一行：`cd /www/wwwroot/chenBlog && rm -rf dist && mv dist.old dist` |
+| 临时文件 | **本批已清并复查**：本地 `scripts/_tmp_*.mjs`（5 个探针/截图脚本）+ 截图 3 张 + `%TEMP%\chenblog_dist.tar.gz`；服务器 `/tmp` 部署包已删（`/tmp/cb*`/`chenblog*` = 0）。⚠️ **回滚资产不算临时文件，不删** |
+| 待用户拍板 | ⓪c ⓪d ⓪e 已结（见第二节）。⓪a browser-use 插件已装、**等他新建 Session 实测**。⓪a2 同浏览器 `mode: attach` 未做。⓪b OwO 表情 21 图无 `alt`（第三方组件）。① 手册分节线（10 条）观感要不要滤 ② V0.1.26 两条复测 ③ 新文章肉眼验收 ④ 灯箱真人点击 ⑨ 全站 title 带不带后缀（SEO）⑩ meCard 那排真人反馈 ⑪ 列表卡「暂无标签」假文案等他定。**【本批新增】图片画廊仍未实战验证**（两条动态都零图，`[data-dynamic-gallery]` 恒 hidden）→ 他发首条带图动态时逐项验（搬图/灯箱/整组翻页） |
+| 既存小坑 | `--radius-large` / `--panel-border-color` 未定义（AGENTS 五-16）——直角正好符合站内口径，别当缺陷补变量；`focus-ring-inset` 全站无定义（死类，只有 DropdownMenu 在用）；`tsconfig.json` react jsx 残留无影响；`/site.webmanifest` Content-Type 缺映射；重复 id `announcement`/`cardTags`（九节已判定降级） |
 
 | 项 | 状态 |
 |---|---|

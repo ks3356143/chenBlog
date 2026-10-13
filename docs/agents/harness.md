@@ -273,6 +273,79 @@ CPU 节流对照实验（同一份探针页，`Emulation.setCPUThrottlingRate`�
 > 这不是误报，是状态。消掉它只有两条路：把 AGENTS.md 里某几条**下沉进分册**，或**接受告警当常态**。
 > 两条都属"改文档结构"的决定 → 已记进 `HANDOFF.md` 待拍板，**别自己动手搬**（搬错了下个会话的常驻上下文就少一块）。
 
+### B-21 🔴🔴 opendesign（BytePlus Responses 网关）反复 400 的根因：**历史消息里的空内容块**
+
+2026-10-13，用户反复报"怎么老是断"。翻 `~/.dsh/sessions/<ws>/session-<id>/session.v4.jsonl.zstd`
+（**串联 zstd 帧，必须逐帧解**，见 B-18）拿到硬证据：`turn/end` 的 reason 是
+
+```
+{"kind":"error","error":{"message":"opendesign API error (400): {\"message\":\"[code=invalid_request_error]
+ BytePlus Responses message content must contain non-empty text or another supported content block\"…"}}
+```
+
+**根因链路（三层，全在 DSH 侧，不是模型问题）**：
+
+1. `dsh-llm-pi-ai/lib/index.js` → `foreignAssistant()`：把 assistant 消息的 text 块
+   **原样搬进 pi-ai 历史**，`text: ""` 也照搬（同文件 `userContent()` 有 `block.text.length > 0` 过滤，
+   **assistant 侧没有**）。本会话实测 314 条 assistant 消息里 **47 条带空 text 块**。
+2. 同文件 `appendSystemOrAssistant()`：把 `system` 消息折成 `{role:"user", content: ""}`（空 system 时）。
+3. `@earendil-works/pi-ai/dist/api/openai-responses-shared.js` → `convertResponsesMessages()`：
+   `typeof msg.content === "string"` 的 user 分支**直接 push、不查空串**；assistant 分支的
+   `output.length === 0` 只挡"整条消息没有任何块"，**挡不住 content 是空文本的 message 块**。
+   → 空 `output_text` 发到 BytePlus → 整条请求 400 → **该回合当场死掉**。
+
+**为什么"上下文一高就断"**：回合越长、步骤越多，历史里累积的空块越多，命中概率随请求体积线性上升。
+用户的原话直觉是对的（"上下高了就会这样"）。
+
+**已落地的修复（等长原地 patch `app.asar`，`size` 不变 → header 不动）**：
+
+| 文件 | 改动 |
+|---|---|
+| `pi-ai/dist/api/openai-responses-shared.js` | user 空串不再 push；`block.type === "text" && block.text` 才产出 message 块 |
+| `dsh-llm-pi-ai/lib/index.js` | `if (block.text) content.push(...)` |
+
+⚠️ **asar 等长 patch 的三个硬教训**（B-7 的延续）：
+① **别重新序列化 header**：原 asar 的 `sumSize(355MB) > 文件体积(121MB)`，因为
+   `libreoffice-kit.exe`(178MB)/`libvips-42.dll`(19MB)/`onnxruntime.dll`(17.8MB) 的 `offset` 是
+   `undefined` —— 它们是 `app.asar.unpacked/` 里的 unpacked 条目，asar 只留索引没有正文。
+   按 `size` 去 `subarray` 读它们 → 读越界 → 重打包出来 315MB（2.6 倍）。**只能原地替换字节区间**。
+② **同一 asar 的多个文件补丁必须叠在同一个工作副本上**，否则后一个覆盖前一个；校验时
+   "目标区间外字节一致"要**排除所有已声明区间**，否则误报 drift。
+③ **`renameSync` 会被运行中的进程 EPERM 挡住**（这是好事：它救了一次没写完的 315MB 文件）。
+   替换前先 `Copy-Item` 备份 + 哈希比对。
+
+**修复状态**：补丁已写入 `resources/app.asar.inplace-new`（哈希 `DAA967F7…`，原盘 `7CCDCFFF…` 已备份为
+`app.asar.bak-before-pi-ai-fix-20261013_134330`），`node --check` 语法通过、目标区间外逐字节一致；
+**DSH 运行中占着 `app.asar`，需用户退出应用后替换并重启才生效**。
+
+### B-22 🔴 模型选择器里"思考强度"选不了的根因：**pi-ai 目录里没有这个模型的元数据**
+
+`~/.dsh/.workbuddy-catalog.json` 里 `deepseek-v4.1-flash` 明明写着
+`supportedEfforts:["low","high","max"]`，但 UI 仍显示「当前模型未提供推理等级」。
+
+**根因**：`dsh-client-ui-model-selection/lib/client.js` 的 `effortChoices` 只在
+`model.reasoning !== undefined` 时有条目；而 `reasoning` 来自 `dsh-llm-pi-ai` 的
+`reasoningInfo()`，它只认两处数据 —— **pi-ai 已安装目录**（`@earendil-works/pi-ai` 自带的模型表）
+和 **`cordis.patch.yml` 里 profile 显式声明的 `reasoningEfforts`**。
+`opendesign` 这个 provider 是用户自己在 `~/.dsh/profiles/desktop/cordis.patch.yml` 里配的
+（`api: openai-responses` + `baseURL` + 8 个手写模型），**一个字都没提 reasoning** →
+`resolveModelReasoning()` 走 `efforts === undefined` → 继承 `base?.reasoning`（目录里没这个 id）→ `false`
+→ `reasoning: {}` → 空面板。`buddy/step-5-preview` 能选，正因为它是目录自带路由。
+
+**修法（零代码，改配置即可，即时生效）**：在 `cordis.patch.yml` 的每个模型下加
+
+```yaml
+reasoningEfforts:
+  off:            # 留空 = 发送时省略该参数（pi-ai 注释：off 的正确 dispatch 就是"不发"）
+  low: low
+  high: high
+  max: max
+```
+
+`off` 必须**显式留空值**而不能省略整行（省略 = 用目录默认；给 `null` 只有 off 允许）。
+校验逻辑在 `resolveModelReasoning()`：**至少要声明一个非 off 档**，否则直接判配置错误。
+`claude-haiku-5.5` 走 Anthropic 协议，effort 由目录自管，**不要加**。
+
 ---
 
 ## A. 继承自上一任的纪律（22 份记忆文件压缩落盘，卸载 Qoder 后仍有效）

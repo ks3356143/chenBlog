@@ -12,6 +12,7 @@
     "new:post": "node scripts/new-post.mjs",
     "docs:check": "node scripts/check-docs.mjs",
     "gateway:check": "node scripts/gateway-check.mjs",
+    "dsh:patch": "node scripts/dsh-patch.mjs scripts/dsh-pi-ai-patches.json",
     "probe": "node scripts/probe.mjs",
     "astro": "astro"
   },

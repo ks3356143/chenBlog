@@ -17,6 +17,13 @@
 > —— **DSH 每次升级后跑一次**，就能立刻发现补丁被覆盖。
 > ⑤ 纠正我在 `harness.md` B-22 里写错的一处：`off: null` 的确切语义是「**不放 `off` 键**」→
 > pi-ai 因此发 `effort: "none"`，**不是**"不发 reasoning 字段"（两者字节不同）。
+> ⑥ **回答他"更新之后是不是又不能使用 opendesign 了"**：**opendesign 照常用，但"断"会回来** ——
+> `reasoningEfforts` / `maxTokens` 在 `cordis.patch.yml`（用户配置）里，**升级保留**；
+> 空内容块守卫在 `app.asar`（程序代码）里，**升级会被覆盖**。已把重打做成一条命令：
+> `npm run dsh:patch`（`scripts/dsh-patch.mjs` + `dsh-pi-ai-patches.json`，等长原地补丁，**幂等**），
+> 并**实测从未打补丁的原盘重打的产物与线上补丁盘逐字节相同**（`daa967f7…`）。
+> 升级后的完整步骤：`npm run gateway:check`（会报「还是未打补丁的原盘」）→ 退出 DSH →
+> `npm run dsh:patch -- --apply` → 把 `app.asar.patched-new` 覆盖成 `app.asar` → 启动 → 再跑 `gateway:check` 确认。
 >
 > —— 以下为 2026-10-13 第三批（分页页 title 已上线 V0.1.42）的记录 ——
 >
@@ -227,8 +234,14 @@
 > **复检结论**：asar 两个新守卫字节级 5/5 PASS；全盘 diff 2100 B 只落那两个文件（其余 12965 个文件未动）；
 > 补丁生效后 0 空块、0 新错（唯一 error 仍是补丁前 turn 17 那笔旧账）。
 > 思考强度（`harness.md` **B-22**）改 `cordis.patch.yml` 即生效，日志已见 `reasoningEffort:"max"`。
-> ⚠️ **遗留一条**：DSH 升级会覆盖 `app.asar` → 补丁会丢。跑 `npm run gateway:check` 一眼可辨
-> （会报「app.asar 补丁状态：还是未打补丁的原盘」）；被覆盖了就按 B-21 的记录重打。
+> ⚠️ **遗留一条**：DSH 升级会覆盖 `app.asar` → 补丁会丢（`cordis.patch.yml` 里的配置不受影响）。
+> 跑 `npm run gateway:check` 一眼可辨（会报「app.asar 补丁状态：还是未打补丁的原盘」）；
+> 被覆盖了就按下面的步骤重打，**已实测重打产物与线上补丁盘逐字节相同**（`daa967f7…`）：
+> ① `npm run gateway:check` 确认补丁丢了 → ② **退出 DSH** → ③ `npm run dsh:patch -- --apply`
+> → ④ 把 `<DSH>\resources\app.asar.patched-new` 覆盖成 `app.asar` → ⑤ 启动 DSH
+> → ⑥ 再跑 `npm run gateway:check` 确认 16 项全过。
+> 补丁工具与补丁定义都在仓库里（`scripts/dsh-patch.mjs` + `scripts/dsh-pi-ai-patches.json`），
+> **幂等**（已打过会显示 `[skip]` 而不是报错）；三条等长 patch 硬教训见 B-21。
 > 另：8 个模型的 `maxTokens` 已从 256000 降到 64000（该值直通 pi-ai 的 `max_output_tokens`）。
 >
 > 🎯 **大方向仍是「功能扩展」**（用户 09-30 交代；10-01 已批的四件工程项本日做完）。

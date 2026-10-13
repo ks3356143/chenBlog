@@ -319,7 +319,24 @@ CPU 节流对照实验（同一份探针页，`Emulation.setCPUThrottlingRate`�
 ② 与备份的全盘 diff **2100 字节、171 个区间全部落在这两个文件**（2034 B + 66 B），**其余 12965 个文件一字节未动**；
 ③ 重启后新日志：补丁生效后的 9 条 assistant 消息 **0 条空 text 块**，唯一 error 仍是补丁之前 turn 17 那笔旧账。
 原盘备份 `app.asar.bak-before-pi-ai-fix-20261013_134330`（`7CCDCFFF…`），补丁盘哈希 `DAA967F7…`。
-⚠️ **DSH 升级会覆盖 asar → 补丁会丢**：跑 `npm run gateway:check` 一眼就能看出来（见 B-22 末段）。
+
+**🔴 DSH 升级会覆盖 `app.asar` → 补丁会丢 → 400 复发**（`electron-updater` 自动更新，
+安装目录里有 `dsh-latest-windows-x64.exe` 与 `app-update.yml`）。重打已是**一条命令**，别手抄字节：
+
+```
+npm run gateway:check                  # ① 会报「app.asar 补丁状态：还是未打补丁的原盘」
+# ② 退出 DeepSeek Harness（文件被进程占着，不退出写不进去）
+npm run dsh:patch -- --apply           # ③ 生成 <DSH>\resources\app.asar.patched-new
+# ④ 把 .patched-new 覆盖成 app.asar
+# ⑤ 启动 DSH
+npm run gateway:check                  # ⑥ 16 项全过即成功
+```
+
+`scripts/dsh-patch.mjs`（等长原地补丁器）+ `scripts/dsh-pi-ai-patches.json`（补丁定义）。
+⚠️ **它幂等**：已打过会打印 `[skip] 已是补丁后状态` 并以 0 退出，不会重复打坏。
+⚠️ **已实测可精确复现**：拿未打补丁的原盘重打，产物与线上补丁盘**逐字节相同**（`daa967f7…`）。
+⚠️ 升级后**源码本身也可能变**（`find` 片段对不上）→ 脚本会明确报
+「找不到目标片段，且也不是已打补丁的状态」并退出 4，此时要重新核对 `find`，别硬改长度。
 
 ### B-22 🔴 模型选择器里"思考强度"选不了的根因：**pi-ai 目录里没有这个模型的元数据**
 

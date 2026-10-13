@@ -125,7 +125,7 @@ for (const g of GUARDS) {
 	else bad(g.what, `守卫不在 ${g.file} —— 可能被更新覆盖了，需重打补丁`)
 }
 
-// ---------- ④ asar 哈希 ----------
+// ---------- ④ asar 哈希 + ⑤ 补丁资产 ----------
 try {
 	const { createHash } = await import("node:crypto")
 	const h = createHash("sha256").update(readFileSync(ASAR)).digest("hex").toUpperCase()
@@ -136,6 +136,15 @@ try {
 	else bad("app.asar 补丁状态", `哈希既不是补丁盘也不是原盘：${h.slice(0, 16)}…`)
 } catch (e) {
 	bad("app.asar 补丁状态", e.message)
+}
+
+// 补丁资产：DSH 升级覆盖 asar 后，靠这两份仓库文件重打（harness.md B-21）
+const PATCH_TOOL = join(process.cwd(), "scripts", "dsh-patch.mjs")
+const PATCH_DEF = join(process.cwd(), "scripts", "dsh-pi-ai-patches.json")
+if (existsSync(PATCH_TOOL) && existsSync(PATCH_DEF)) {
+	ok("补丁资产齐全", "scripts/dsh-patch.mjs + dsh-pi-ai-patches.json（升级后跑 npm run dsh:patch 重打）")
+} else {
+	bad("补丁资产齐全", `缺 ${!existsSync(PATCH_TOOL) ? "dsh-patch.mjs" : "dsh-pi-ai-patches.json"}`)
 }
 
 // ---------- 输出 ----------

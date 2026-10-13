@@ -27,6 +27,11 @@
 	let list = $state(null);
 	let keyword = $state("");
 	let year = $state("all");
+	let yearOpen = $state(false);
+	/** @type {HTMLElement | null} */
+	let yearBox = $state(null);
+	/** @type {HTMLButtonElement | null} */
+	let yearTrigger = $state(null);
 
 	/** @type {string[]} */
 	const years = $derived.by(() => {
@@ -35,6 +40,8 @@
 		);
 		return [...set].sort((a, b) => Number(b) - Number(a));
 	});
+	/** @type {string[]} */
+	const yearOptions = $derived(["all", ...years]);
 
 	const filtered = $derived.by(() => {
 		const kw = keyword.toLocaleLowerCase().trim();
@@ -70,6 +77,48 @@
 		void year;
 		page = 1;
 	});
+
+	// ---- 年份下拉（自定义，替代原生 <select>：OS 画的展开列表改不了样式与动画）----
+	// 交互与全站下拉同族（headers/DropdownMenu.astro）：aria-expanded 驱动开合，
+	// CSS 走 opacity + translate + visibility 过渡；箭头展开转 180°。
+	/** @param {string} v */
+	function setYear(v) {
+		year = v;
+		yearOpen = false;
+		yearTrigger?.focus();
+	}
+
+	/** @param {MouseEvent} e */
+	function onWindowClick(e) {
+		if (yearOpen && yearBox && !yearBox.contains(/** @type {Node} */ (e.target))) yearOpen = false;
+	}
+
+	/** @param {KeyboardEvent} e */
+	function onTriggerKeydown(e) {
+		if (e.key === "ArrowDown") {
+			e.preventDefault();
+			yearOpen = true;
+		} else if (e.key === "Escape") {
+			yearOpen = false;
+		}
+	}
+
+	/** @param {KeyboardEvent} e */
+	function onItemKeydown(e) {
+		const opts = yearBox ? [...yearBox.querySelectorAll(".dynamic-year-item")] : [];
+		const idx = opts.indexOf(/** @type {Element} */ (e.currentTarget));
+		if (e.key === "ArrowDown") {
+			e.preventDefault();
+			opts[(idx + 1) % opts.length]?.focus();
+		} else if (e.key === "ArrowUp") {
+			e.preventDefault();
+			opts[(idx - 1 + opts.length) % opts.length]?.focus();
+		} else if (e.key === "Escape") {
+			e.preventDefault();
+			yearOpen = false;
+			yearTrigger?.focus();
+		}
+	}
 
 	// 容器与状态块分开：命令式塞进去的节点不能和 Svelte 的 if 块共用父元素，
 	// 否则 Svelte 更新时会去删它不认识的孩子。
@@ -207,20 +256,41 @@
 				aria-label="搜索动态"
 			/>
 		</label>
-		<label class="dynamic-filter-year">
-			<svg width="1em" height="1em" viewBox="0 0 24 24" data-icon="material-symbols:calendar-month-rounded" aria-hidden="true">
-				<path fill="currentColor" d="M5 22q-.825 0-1.412-.587T3 20V6q0-.825.588-1.412T5 4h1V3q0-.425.288-.712T7 2t.713.288T8 3v1h8V3q0-.425.288-.712T17 2t.713.288T18 3v1h1q.825 0 1.413.588T21 6v14q0 .825-.587 1.413T19 22zm0-2h14V10H5zm7-6q-.425 0-.712-.288T11 13t.288-.712T12 12t.713.288T13 13t-.288.713T12 14m-4.712-.288Q7 13.426 7 13t.288-.712T8 12t.713.288T9 13t-.288.713T8 14t-.712-.288M16 14q-.425 0-.712-.288T15 13t.288-.712T16 12t.713.288T17 13t-.288.713T16 14m-4 4q-.425 0-.712-.288T11 17t.288-.712T12 16t.713.288T13 17t-.288.713T12 18m-4.712-.288Q7 17.426 7 17t.288-.712T8 16t.713.288T9 17t-.288.713T8 18t-.712-.288M16 18q-.425 0-.712-.288T15 17t.288-.712T16 16t.713.288T17 17t-.288.713T16 18"/>
-			</svg>
-			<select bind:value={year} aria-label="按年份筛选">
-				<option value="all">{allYearsText}</option>
-				{#each years as y (y)}
-					<option value={y}>{y}</option>
+		<div class="dynamic-filter-year" bind:this={yearBox}>
+			<button
+				type="button"
+				class="dynamic-year-trigger"
+				bind:this={yearTrigger}
+				aria-haspopup="listbox"
+				aria-expanded={yearOpen}
+				aria-label="按年份筛选"
+				onclick={() => (yearOpen = !yearOpen)}
+				onkeydown={onTriggerKeydown}
+			>
+				<svg width="1em" height="1em" viewBox="0 0 24 24" data-icon="material-symbols:calendar-month-rounded" aria-hidden="true">
+					<path fill="currentColor" d="M5 22q-.825 0-1.412-.587T3 20V6q0-.825.588-1.412T5 4h1V3q0-.425.288-.712T7 2t.713.288T8 3v1h8V3q0-.425.288-.712T17 2t.713.288T18 3v1h1q.825 0 1.413.588T21 6v14q0 .825-.587 1.413T19 22zm0-2h14V10H5zm7-6q-.425 0-.712-.288T11 13t.288-.712T12 12t.713.288T13 13t-.288.713T12 14m-4.712-.288Q7 13.426 7 13t.288-.712T8 12t.713.288T9 13t-.288.713T8 14t-.712-.288M16 14q-.425 0-.712-.288T15 13t.288-.712T16 12t.713.288T17 13t-.288.713T16 14m-4 4q-.425 0-.712-.288T11 17t.288-.712T12 16t.713.288T13 17t-.288.713T12 18m-4.712-.288Q7 17.426 7 17t.288-.712T8 16t.713.288T9 17t-.288.713T8 18t-.712-.288M16 18q-.425 0-.712-.288T15 17t.288-.712T16 16t.713.288T17 17t-.288.713T16 18"/>
+				</svg>
+				<span>{year === "all" ? allYearsText : year}</span>
+				<svg class="dynamic-year-arrow" width="1em" height="1em" viewBox="0 0 24 24" data-icon="material-symbols:arrow-drop-down-rounded" aria-hidden="true">
+					<path fill="currentColor" d="M11.475 14.475L7.85 10.85q-.075-.075-.112-.162T7.7 10.5q0-.2.138-.35T8.2 10h7.6q.225 0 .363.15t.137.35q0 .05-.15.35l-3.625 3.625q-.125.125-.25.175T12 14.7t-.275-.05t-.25-.175"/>
+				</svg>
+			</button>
+			<div class="dynamic-year-panel" role="listbox" aria-label="按年份筛选">
+				{#each yearOptions as y (y)}
+					<button
+						type="button"
+						class="dynamic-year-item"
+						class:is-current={year === y}
+						role="option"
+						aria-selected={year === y}
+						onclick={() => setYear(y)}
+						onkeydown={onItemKeydown}
+					>
+						{y === "all" ? allYearsText : y}
+					</button>
 				{/each}
-			</select>
-			<svg width="1em" height="1em" viewBox="0 0 24 24" data-icon="material-symbols:arrow-drop-down-rounded" aria-hidden="true">
-				<path fill="currentColor" d="M11.475 14.475L7.85 10.85q-.075-.075-.112-.162T7.7 10.5q0-.2.138-.35T8.2 10h7.6q.225 0 .363.15t.137.35q0 .05-.15.35l-3.625 3.625q-.125.125-.25.175T12 14.7t-.275-.05t-.25-.175"/>
-			</svg>
-		</label>
+			</div>
+		</div>
 		{#if isFiltering}
 			<span class="ml-auto text-sm text-black/30 dark:text-white/30">
 				筛选出 {filtered.length} / {items.length} 条
@@ -239,7 +309,10 @@
 	{/if}
 {/if}
 
-<!-- 样式说明：筛选栏的样式放在 src/styles/global.css（.dynamic-filter-*）。
+<!-- 点击面板外收起下拉。Svelte 卸载时自动清掉这个 window 监听（岛随软导航整体重建，不会累加） -->
+<svelte:window onclick={onWindowClick} />
+
+<!-- 样式说明：筛选栏与下拉面板的样式都在 src/styles/global.css（.dynamic-filter-* / .dynamic-year-*）。
      不能写在本组件 <style> 里——Svelte 岛的 scoped CSS 会被 Astro 内联进 /dynamic/
      单页的 head，Swup 软导航不换 head，从别的页点进来样式整块丢失。 -->
 

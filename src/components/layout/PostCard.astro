@@ -76,6 +76,19 @@ const hasCoverImage = image ? true : false
 		<!-- 链接 -->
 		<a href={url} class="link-primary group text-90 mb-3 block w-full text-2xl font-bold transition">
 			{title}
+			{
+				// 锁图标：password 一直传到这张卡，但从来没人读它 → 列表卡从来没显示过锁（AGENTS 五-5）。
+				// 当前零篇 password 文章，所以这是补一个缺失的 UI，不是修显示错误。
+				password && (
+					<span
+						class="ml-2 inline-flex translate-y-[-2px] items-center text-base text-neutral-400 dark:text-neutral-500"
+						title="加密文章"
+					>
+						<Icon name="material-symbols:lock-outline" aria-hidden="true" />
+						<span class="sr-only">加密文章</span>
+					</span>
+				)
+			}
 		</a>
 		<!-- 元数据 -->
 		<PostMeta published={published} category={category || undefined} />

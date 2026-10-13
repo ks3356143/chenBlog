@@ -204,9 +204,13 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
 - **42** ⚠️ 图标+文字间距靠**文字侧 `p-1.5`** 撑出（实测 14px vs 裸 span 8px）→ **量实际像素别只看 margin**；**要枚举全部子项 × 全部断点 × 走完空态分支**（本项目就是"只测第一条"漏了「暂无标签」）。
 
 **「看着不对其实是设计/有意为之」清单**（别再当缺陷查）
-- **5** ⚠️ **`password` 不是加密文章**（只隐藏评论区 + 猜你喜欢里排除）：**没有密码门 UI、没有解密逻辑，正文照常进 HTML 并进索引**。`PostCard` 接了但**从不读** → **列表卡从来没有锁图标**（待补的 UI 缺失，**不是现状**）。
+- **5** ⚠️ **`password` 不是加密文章**（只隐藏评论区 + 猜你喜欢里排除）：**没有密码门 UI、没有解密逻辑，正文照常进 HTML 并进索引**。列表卡锁图标已补（2026-10-13，当前零篇用到）。
 - **23** ⚠️ 带时分的日期**必须写 `+08:00`**（Astro YAML 按 UTC、`new Date(str)` 按本地 → **差 8 小时**）；展示端也要显式传 `timezone`。
-- **24** ⚠️ 动态 = 构建期 JSON + 客户端克隆 `<template>` → **条目不在 HTML 里、不进搜索索引**（别为此改配置）。侧栏「最新动态」是**构建期静态渲染（主动偏离参考站的岛）**，挂两处；**768–1279px 两处都不显示是参考站同款，别补**。条目**不做深链**。
+- **24** ⚠️ 动态 = 构建期 JSON + 客户端克隆 `<template>` → **条目不在 HTML 里、不进搜索索引**（别为此改配置）。侧栏「最新动态」是**构建期静态渲染（主动偏离参考站的岛）**，挂两处；**768–1279px 两处都不显示是参考站同款，别补**。2026-10-13 已补**搜索 / 年份筛选 / 图片画廊**。
+
+**横幅与波浪（2026-10-13 修三处；细节在 `config.md` 五-43 / 五-44）**
+- **43** ⚠️ 内容面板起点 = **横幅高 − 3.5rem**（`.content-panel`，切页时 `top` 跟着过渡）。写死 `top-[30vh]` 会比参考站高 99px → 内容压住波浪带、壁纸图与页面底色的硬切交界露出。
+- **44** ⚠️ 波浪四层 `<use>` 的 **`x` = `-42.000 / 2.641 / 48.944 / 92.468`**；全写同一个值 → 四条波重叠成一条平的。横幅底部必须有 **`#wallpaper-gradient`**。
 - **25** 自动封面 `getPostCover()`：手写 `image` 优先 → 按 `seriesOrder` 轮播 → 无序号按 id 稳定哈希。**只作用于列表卡片**（详情页 banner 与 `og:image` 读原始 `image`，**刻意收紧**）。⚠️ 别把 `.svg` 填进 `autoCoverPaths`（→ **静默不出图**）。卡片**所有断点都是右侧竖条** → **封面要按「无焦点、四角均匀」画**。
 - **27** ⚠️ markdown 结果转纯文本时**实体解码必须单趟做完**：`markdown-remark` 输出 **`&#x26;`/`&#x3C;`**（不是 `&amp;`/`&lt;`）→ 多趟 replace 一条都命中不了。**先去标签再一趟解实体**。
 - **28** 相册 = **改两处**（`public/gallery/<id>/1.jpg…` 序号命名 + `galleryConfig.albums`）；**每加一个相册页数 +1**；⚠️ **`public/` 原样拷进 dist、不走 Astro 图片优化**。不写 `cover` 时第一张就是封面。地点用间隔号写法（`中国·成都`）。
@@ -351,7 +355,7 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 - **7** 同 URL 点击被 capture 监听拦截 → 平滑滚顶、不走 visit。**8** `prefers-reduced-motion: reduce` → 不初始化 Swup。
 - **9** 首页↔非首页横幅高矮过渡：`visit:end` 后 **500ms 才摘** `is-wallpaper-transitioning`（过渡 450ms，早摘会撤掉 transition 属性、高度瞬间跳变）。**非首页横幅比首页矮是设计如此**。
 - **10** `client:load` 的岛**放容器内可用**（重新插入内联 module 即重新求值）。⚠️ 做这类实验**别用连续两次 Swup 导航判断**（动画时序会卡死，看起来像"岛坏了"）→ 用手动换 innerHTML 绕开。⚠️ **Astro 排除以 `_` 开头的文件** → 临时探针页别用下划线开头。
-- **11** ⚠️ **`@swup/scripts-plugin` 已于 2026-09-30 弃用卸载**：`{head:true,body:true}` 时 `getScope()` **直接返回 `document`** → 每次导航给**容器外永不被替换的元素**再叠监听（汉堡"一次点击=两次 toggle"净零；还抛 `Identifier 'setTheme' has already been declared`）。现只扫 `#swup-container script:not([data-swup-ignore-script])`。
+- **11** ⚠️ **`@swup/scripts-plugin` 已于 2026-09-30 弃用卸载**：`{head:true,body:true}` 时 `getScope()` **直接返回 `document`** → 每次导航给**容器外永不被替换的元素**再叠监听（汉堡"一次点击=两次 toggle"净零；还抛 `Identifier 'setTheme' has already been declared`）。现只扫各 container 内 `script:not([data-swup-ignore-script])`。
   → 🔴 **通用结论：「切页后某个开关点了没反应」先怀疑重复绑定，不是监听器丢了。** 判据 = **一次点击引发几次状态变更**（挂 `MutationObserver` 数 class 变更；1 监听 = 2 次），**别用"能不能打开"当判据**（叠成奇数个会诡异地"又好了"，那正是"有时候不灵"的来源）。
 - **12** ⚠️ 容器内脚本每次进该页仍重新求值 → 注册在 `document`/`window` 上的监听**按访问页数累加**。现由 `reinit.js` 从结构上消掉（见 14）。
 - **13** `twikoo.init()` 会吃掉挂载点：`#tcomment` 渲染后变成 `#twikoo`，**第二次 `getElementById("tcomment")` 必然 null**。查"评论没了"要看 `#twikoo` 在不在。
@@ -367,7 +371,9 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
   - ⚠️ **登记成 container 前先查有没有代码把实例句柄挂在元素属性上**（打字机 `el.__typewriterInstance`）→ 节点被换掉后再也 destroy 不到，**留下孤儿定时器链**。判据：**每秒由打字机回调发起的 setTimeout 次数是否随导航递增**（实测 1→3→2→3→3 有界 = 正常）；**别用"动画还在跑"当判据**。
   - **刻意没照搬参考站的** `#banner-dim-container` / `#left|right-sidebar-dynamic` / `#floating-toc-wrapper`（**侧栏与悬浮目录是本站刻意留在容器外的**）→ 有依据的偏离，**别当漏改补上**。
   - 验证**两向都要测**；核 overlay 容器在**全部 43 页**都存在；post-meta 是 `hidden lg:flex` → **375 下 `display:none` 属正常**。控制台 `[swup] No CSS animation duration…` 先确认**是不是自己探针注入了 `transition:none!important`**。
-  - ⚠️ **同族第二处已知未修**：侧栏卡片不随软导航更换（`RightSideBar.astro:33`，只有 ≥1280px 可见）→ **要不要改属设计决定，先问**。
+  - ⚠️ **同族第二处已修（2026-10-13）**：右栏卡片不随软导航更换（`isPostPage ? TOC : 日历`，≥1280px 可见）
+    → `containers` 加 `#right-sidebar`。**光加 container 不够**：脚本重跑选择器要覆盖**所有** container、
+    `SiteInfo` 要改 `onReinit` + 每轮先解绑、`SiderBarToc` 的 window 监听加哨兵。全文与实测数字在 `swup.md` 十-15 末段。
 
 ## 附：本 harness（DeepSeek Harness）与上一任工具的差异
 

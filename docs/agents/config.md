@@ -1,4 +1,4 @@
-# AGENTS 分册 · 第五节「必须知道的配置约定」全文（五-1 ~ 五-42）
+# AGENTS 分册 · 第五节「必须知道的配置约定」全文（五-1 ~ 五-44）
 
 > 本文件是 `AGENTS.md` 某一节的**全文**，2026-10-12 从 AGENTS.md 无损切出。
 > `AGENTS.md` 只留常驻结论与索引（受 harness 64KB 注入预算限制）；改到本节任何主题前先读本文件全文。
@@ -529,3 +529,32 @@
       它只在 `PostCard` 那种不传 `tags` 的调用里出现，见 `PostCard.astro:81`）；列表卡与文章页用的是同一个组件，一并修好。
     → 通则：**量间距要量"文字字形 → 色块右缘"的实际像素**（`Range` 取首字矩形），别只看 `margin` 声明值；
       这类改动要在文章页 1440 / 375 与首页列表卡三处都量一遍才算覆盖。
+
+43. ⚠️ **主内容面板的起点必须是「横幅高 − 3.5rem」，不能写死 `top-[30vh]`**（2026-10-13 修）
+    - 参考站的做法：`.content-panel { top: var(--content-top, 5.5rem); position: absolute }`，
+      而首页 `--content-top` 实测解析成 **`calc(65vh - 3.5rem)`**；1600×900 下 = **585 − 56 = 529px**。
+    - 我们原先在 `Layout.astro` 里写死 `top-[30vh]` = **430px**，**比参考站高 99px**。
+      后果：`#page-shell` 从 430 就开始，而波浪带只覆盖 452–587 → **内容压进波浪带上方**，
+      壁纸图与 `--page-bg` 的硬切交界整块露在内容底下，看着就是「**一块没有波浪的绿**」（用户报的原话）。
+    - 现改成 `.content-panel` 类 + CSS 变量：首页 `calc(var(--banner-height-home) - 3.5rem)`、
+      非首页 `body:not(.is-home)` 用 `calc(var(--banner-height-non-home) - 3.5rem)`。
+    - ⚠️ **切页期间 `top` 必须跟着横幅高度一起过渡**（`html.is-wallpaper-transitioning .content-panel { transition: top .45s … }`），
+      否则内容比横幅先到新高度、在波浪带边缘闪一下。
+    - 复测数字（1600×900）：首页 `content-panel.top = 529`、`banner.bottom = 585`；
+      非首页（归档 / 文章页）`349` / `405`。
+
+44. ⚠️ **波浪四层 `<use>` 的 `x` 必须错开，且横幅底部要有 `#wallpaper-gradient`**（2026-10-13 修）
+    - `Waves.astro` 里四层的 `x` 是**均匀铺开的起始相位**，参考站逐字为
+      **`-42.000` / `2.641` / `48.944` / `92.468`**（y 分别是 0 / 3 / 5 / 7）。
+      我们原先**四层全写 `x="48"`** → 四条波**完全重叠成一条平的**，
+      opacity 25/50/65/75 叠出来只是一块略深的纯色，看不出任何波纹。
+    - 参考站横幅里还有一层我们漏掉的：
+      ```html
+      <div class="wallpaper-gradient absolute bottom-0 left-0 w-full pointer-events-none md:block"
+           id="wallpaper-gradient" style="height: 10%; background: linear-gradient(to bottom, transparent, var(--page-bg));">
+      ```
+      它负责把**壁纸图的下缘溶进页面底色**。没有它时壁纸图直接硬切到 `--page-bg`，交界线特别明显。
+    - 复测数字（1600×900 首页）：渐变带 548–609（高 61px）、波浪四层 `x` 读出来是
+      `-42.000,2.641,48.944,92.468`。
+    - ⚠️ 别只比源码字符串：`h-[10vh] max-h-37.5 min-h-12.5` 这类**尺寸类**走样时不报错、不告警
+      （同一族坑见 AGENTS 一节「参考源用法」第 5 条那次波纹高度差 2.7 倍）。

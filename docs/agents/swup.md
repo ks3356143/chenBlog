@@ -276,10 +276,30 @@
       （本次实测 1→3→2→3→3，有界不增；递增才是漏）。别用"动画还在跑"当判据，孤儿链打在脱离文档的节点上，肉眼看不见。
       ⚠️ 控制台若出现 `[swup] No CSS animation duration defined on elements matching [class*="transition-swup-"]`，
       先确认**是不是自己探针注入了 `transition:none!important`**（本次就是，撤掉即消失），别去改 CSS。
-    - ⚠️ **同族第二处已知未修：侧栏卡片不随软导航更换**（2026-10-01 晚查出，**属既存缺陷不是本批引入**）。
-      `RightSideBar.astro:33` 是 `isPostPage ? <SiderBarToc/> : <Calender/>`，而侧栏在容器外又没登记成 container
-      → 线上实测：从首页软导航进文章页后 `#sidebar-toc` 不存在、侧栏里还是 35 格日历；硬刷新同一篇则正常。
-      **只有 ≥1280px 看得见**（`#right-sidebar` 是 `hidden xl:block`）。参考站靠 `#left/right-sidebar-dynamic`
-      两个 container 解决；我们**不能照抄了事**——侧栏卡片是双挂载（xl 右栏 + 移动底部堆，五-24/五-29），
-      且五-24 当初"侧栏在容器外"正是选静态渲染而非岛的理由，改了就得起重写那条论证。
-      **要不要改属设计决定，先问用户**；改则必须重跑十-14 那套探针 + 1440/375 两档核卡片内容与顺序。
+    - ✅ **同族第二处已修（2026-10-13，用户报"侧栏卡片不随软导航更换"）**。
+      `RightSideBar.astro` 是 `isPostPage ? <SiderBarToc/> : <Calender/>` 的二选一，而侧栏在容器外又没登记成
+      container → 线上实测：从首页软导航进文章页后 `#sidebar-toc` 不存在、侧栏里还是 35 格日历
+      （`navs:1` 而 `hasToc:false` / `hasCalendar:true` / 35 格）；硬刷新同一篇则正常。
+      **只有 ≥1280px 看得见**（`#right-sidebar` 是 `hidden xl:block`）。
+      **修法**：`containers` 加上 `#right-sidebar`（参考站对应的是 `#left/right-sidebar-dynamic`）。
+      ⚠️ **光加 container 不够，连带三件事都必须做**，否则修出来的洞比原缺陷更隐蔽：
+        ① **`SwupManager` 的脚本重跑选择器必须覆盖所有 container**。原先是写死的
+           `#swup-container script:not([data-swup-ignore-script])` → `SiderBarToc` 的 `type="module"`
+           脚本不被重新插入、它的 `onReinit("sidebar-toc")` 一次都没注册
+           → **软导航进文章页右栏只剩一个空的「目录」标题**。实测 `tocContentChildren=0`、
+           `reinitRuns("sidebar-toc") = -1`；改后 17 条（手册页）/ 6 条（第28天），
+           `reinitRuns` 每趟恰好 +1。
+        ② **`SiteInfo` 必须从"只跑一次"改成 `onReinit` + 每轮先解绑旧引用**。
+           它原来是裸 `querySelectorAll(...).forEach(bind)`、注释还写着"脚本只跑一次"——
+           现在会随容器替换被重新插入求值 → 每切一次页给每张卡多叠一层 click。
+           但**也不能用 `reinitOnce`**（十-14 的选型规则）：它整个文档生命周期只跑一次，
+           换过节点后新卡片永远绑不上、点不开。做法：`onReinit` + 每次进来先把上一轮闭包持有的
+           `btn.removeEventListener` 掉再重绑。实测点击 `false→true→false`、展开高度 0→266→0，
+           导航两趟后仍正常。
+        ③ **`SiderBarToc` 的 `popstate` / `hashchange` 两个 `window` 监听要加哨兵防叠**
+           （它也是 `type="module"`、同样会被重新插入求值）。判据同十-12。
+      **验证**（`build` + `preview` 或线上）：`reinitRuns` 每趟 +1；`SiteInfo` 点击一次只翻转一次；
+      监听增长与控制组同量级（本次 +4/+5 vs 线上旧构建 +4/+3 → 不是泄漏）；
+      日历翻月按钮在导航后仍工作（`2026年10月 → 2026年9月`）。
+      ⚠️ 五-24 那条"侧栏在容器外正是选静态渲染而非岛的理由"**仍然成立**——本次只是让右栏参与
+      Swup 替换，侧栏那几张卡（站点统计 / 最新动态 / 站点信息）依旧是构建期静态渲染。

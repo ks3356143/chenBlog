@@ -3,7 +3,27 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-13 晚间（第三批续：DSH 补丁已重启生效、三项复检全过；maxTokens 降档 + 新增 `gateway:check`）**。
+> 最后更新：**2026-10-13 深夜（第四批：四条 BUG 全修 + 动态页二期三项 + 横幅波浪三处，已上线 V0.1.43）**。
+>
+> **🔧 2026-10-13 深夜一句话**：① **四条候选缺陷先取证再动手，三条是真 BUG、一条证伪** ——
+> 侧栏不随软导航更换（✅ 实锤：软导航进文章页 `navs:1` 而右栏仍 35 格日历）、
+> 第 8 天宽表 375px 被裁（✅ 实锤：表宽 654、祖先容器 359、`clipped:true`、`rightEdgeVisible:false`）、
+> 列表卡锁图标从未渲染（⚠️ 部分真：`password` prop 从不读，但零篇用到 → 补的是缺失 UI）、
+> `propse-base` 拼写错（❌ **证伪**：实测正文 `p` = 16px 与裸 `.prose` 完全一致，`prose-base` 默认值就是 16px，
+> 补上拼写一个像素都不变 → **没改**）。
+> ② **动态页二期三项做完**（搜索 / 年份筛选 / 图片画廊），交互全部照 firefly.cuteleaf.cn 编译产物实现，
+> `searchText` 由端点构建期算好（客户端零解析），条目 id = `dynamic-<文件名>` 支持深链。
+> ③ **横幅波浪一次修三处**（用户报"一块没有波浪的绿"）：内容面板起点从写死 `top-[30vh]`
+> 改成「横幅高 − 3.5rem」（= 参考站的 `--content-top`，实测 529px vs 我们原 430px，**高 99px**）；
+> 波浪四层 `<use>` 的 `x` 从全 `48` 改成 `-42.000 / 2.641 / 48.944 / 92.468`（四层原本完全重叠成一条平的）；
+> 补上参考站的 `#wallpaper-gradient`（10% 高渐变压掉壁纸图与页面底色的硬切交界）。
+> ④ **修侧栏时连带踩到并修掉一个新洞**：`#right-sidebar` 登记成 Swup container 后，
+> `SwupManager` 的脚本重跑选择器仍只扫 `#swup-container` → `SiderBarToc` 的 `type="module"` 不被重新插入、
+> 软导航进文章页右栏只剩空「目录」标题（实测 `tocContentChildren=0`、`reinitRuns("sidebar-toc")=-1`）。
+> ⑤ 门禁：`npm run check` **0 error / 3 hint**（原 4 条里的 `password` 未读 hint 因真被读而消失）、
+> `docs:check` 0 error（1 条余量提醒：常驻层只剩 1000 B）、`build` 43 页 / 357 文件 / Pagefind 29 页。
+>
+> —— 以下为 2026-10-13 晚间续（DSH 补丁 + 分页 title，已上线 V0.1.42）的记录 ——
 >
 > **🔧 2026-10-13 晚间续一句话**：① **DSH 补丁已重启生效，三项复检全过** —— asar 里两个新守卫
 > **字节级 5/5 PASS**；与备份的全盘 diff **2100 字节全部落在那两个文件**（其余 12965 个文件一字节未动）；
@@ -245,10 +265,26 @@
 > 另：8 个模型的 `maxTokens` 已从 256000 降到 64000（该值直通 pi-ai 的 `max_output_tokens`）。
 >
 > 🎯 **大方向仍是「功能扩展」**（用户 09-30 交代；10-01 已批的四件工程项本日做完）。
-> 候选清单在下面「还挂着的事 1.」（动态页二期三项）。
+> 候选清单在下面「还挂着的事 1.」（动态页二期三项 **2026-10-13 深夜已全部做完**）。
 > 动手前照旧：先扒 firefly.cuteleaf.cn / CuteLeaf/Firefly 的实现
 > （**扒结构必须看原始 markup，别剥标签——那次就是这么把图标看没了**），
 > 再走 brainstorming（这类多属 Bounded → 短设计 → 等批准），不要直接写代码。
+>
+> ✅ **【已解决·2026-10-13 深夜】四条候选 BUG 全部处理完，三条真修一条证伪**：
+> - **侧栏卡片不随软导航更换**（≥1280px 可见）：`#right-sidebar` 登记成 Swup container，
+>   连带修 `SwupManager` 脚本重跑选择器（须覆盖**所有** container）、`SiteInfo` 改 `onReinit` + 每轮先解绑、
+>   `SiderBarToc` 的 popstate/hashchange 加哨兵。实测软导航进文章页 `hasToc:true` / `hasCalendar:false`、
+>   TOC 17 条内容、回首页日历 35 格回来；`reinitRuns` 每趟恰好 +1；监听增长与控制组同量级（+4/+5 vs +4/+3）。
+> - **`css100天-第8天.md` 宽表 375px 被裁**：表格从列表项里提到同级 + 包 `.horizontal-scroll-container`。
+>   实测 375px 下容器 309 / 表 654 / `overflowX:auto` / `scrollable:true` / 页面 `overflowX:0`。
+> - **列表卡锁图标**：`PostCard` 现在真读 `password`，补 `material-symbols:lock-outline` + sr-only 文案。
+>   零篇用到 → 无可见影响；`npm run check` 的 hint 从 4 降到 3（该 hint 随修复消失）。
+> - **`propse-base` 拼写错 → 不改**（实测正文 16px 与裸 `.prose` 一致，改了零视觉变化，纯洁癖）。
+>
+> ✅ **【已解决·2026-10-13 深夜】横幅「一块没有波浪的绿」**：三处一起修，全部与参考站对齐 ——
+> 内容面板起点「横幅高 − 3.5rem」（`top-[30vh]` 比参考站高 99px，内容压住波浪带）、
+> 波浪四层 `x` 相位错开（原先全 `48` = 四条波重叠成一条平的）、补 `#wallpaper-gradient`。
+> 实测 content-panel top 首页 **529** / 非首页 **349**，渐变带 548–609（高 61px）。
 >
 > 📝 **他手上有一篇新文章要发**（流程见 AGENTS 第八节「发稿协作流程」）：他**只给 MD 正文**，
 > 特殊语法我自己扫、默认值我自己填，**别发前置问卷挡他**；唯一必须问的是归位（永久 URL）。
@@ -411,11 +447,11 @@
 
 ### 🟡 还挂着的事
 
-1. **动态页二期还剩三项**：搜索、年份筛选、图片画廊（第四项「侧栏最新动态」已完成，
-   且 09-30 又补了移动端底部那一份，见 AGENTS 五-24）。
-   做前按 AGENTS 第一节先扒参考实现再走 brainstorming。
-   ⚠️ 三项里凡是**要深链到某一条动态**的，都会撞同一堵墙：feed 条目是客户端从 `<template>` 克隆的、
-   **没有锚点可指**（`DynamicItemTemplate.astro` 不设 id + `SwupManager.astro:77` 无条件回顶），要先补三处。
+1. **动态页二期三项已于 2026-10-13 深夜全部做完**（搜索 / 年份筛选 / 图片画廊）。
+   ⚠️ 仍**未实战验证**的一条：**图片画廊** —— 现有两条动态零图，所以画廊整块 `hidden`、一次都没显示过。
+   首条带图的动态要在 `dev` 逐项验：图搬进 `[data-gallery-grid]`、正文不再有裸图、
+   点缩略图弹 Fancybox、`data-fancybox` 同组能整组翻页。
+   （原先记的"深链撞墙"已一并解决：条目现在有 id `dynamic-<文件名>`，`#hash` 能直接定位。）
 2. **服务器回滚资产**：个数与占用是**会变的状态**，只在第三节那行维护（AGENTS 运维条也是这个口径）。
    **必须用户明确说才删**，我不会自己动。
 3. **2026-09-30 那批「报了但没做」的清单——2026-10-01 已清掉大半，剩下的都在下面**
@@ -1128,7 +1164,24 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-10-13 第三批实测；**线上 = V0.1.42**，`src/` 动了 1 个文件、已部署）
+## 三、当前状态快照（2026-10-13 深夜实测；**线上 = V0.1.43**，`src/` 动了 8 个文件、已部署）
+
+| 项 | 状态 |
+|---|---|
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**本批一笔**：四条 BUG + 动态页二期三项 + 横幅波浪三处（V0.1.43）；**已推送，`HEAD == origin/main`**。今日更早：动态 0.1.31 / meCard 社交按钮 0.1.32 / 波纹高度 0.1.33 / 二维码浮层动效 0.1.34 / PostMeta 间距 0.1.35 / 手册同步 v1.4.0 0.1.36 / 暂无标签间距 0.1.37 / 顶部三平台说明 0.1.38 / 手册同步 v1.4.1 0.1.39 / SEO 元数据 0.1.40 / `og:type` 0.1.41 / 分页 title 0.1.42 |
+| 工作区 | 本批 `src/` 动 **8 个文件**：`SwupManager.astro`（containers 加 `#right-sidebar` + 脚本重跑选择器覆盖所有 container）、`Layout.astro`（`top-[30vh]` → `.content-panel`）、`layout-style.css`（`.content-panel` 起点 + 切页过渡）、`Waves.astro`（四层 `x` 相位 + `#wallpaper-gradient`）、`PostCard.astro`（补锁图标）、`SiteInfo.astro`（改 `onReinit` + 每轮先解绑）、`SiderBarToc.astro`（popstate/hashchange 哨兵）、`global.d.ts`（两个 window 字段类型）；内容动 `css100天-第8天.md`（宽表移出列表项 + 包容器）；动态页动 `DynamicFeed.svelte` / `DynamicItemTemplate.astro` / `api/dynamic.json.ts` / `dynamic-utils.ts`（+`searchText`）。`package.json`(+lock) 版本号 0.1.43。**零依赖改动**。文档动 `AGENTS.md`（五-5/五-11/五-24/十-15 改准 + 新增五-43/五-44）与 `HANDOFF.md` |
+| 文档分层 | `AGENTS.md` + `AGENTS.local.md` 合计 < 65536 B（`npm run docs:check` 实测 0 error，**1 条余量提醒：常驻层只剩 1000 B** —— 本轮往常驻层加了五-43/五-44 两条，**下次加内容前必须先下沉到 `docs/agents/` 分册**）。六份分册与旧版 162KB `AGENTS.md`（`dfc013a`）**逐行比对**：`config`/`collab`/`writing`/`swup` **各 0 处未命中**；`deploy.md` 5 行 / `todo.md` 4 行未命中，逐条核实为**有意的脱敏与改名** |
+| 浏览器能力 | **2026-10-12 已装 DSH 的 playwright browser-use provider**（`~\.dsh\profiles\desktop\`，不在仓库内）。⚠️ **本会话仍无工具** —— provider 不接管已活动 Session，**要新建/恢复 Session** 才出现 `mcp__playwright-mcp__*`。⚠️ **别改成 `headless: false`**。当前可用通道：`npm run probe -- <url> <宽> <高>` + 本地 `astro preview`（**别用 `file://` 验 dist**，见 harness.md B-13） |
+| 线上站点 | ✅ **2026-10-13 深夜部署 V0.1.43**（第六节原子替换 + 替换前断言）。**从本机打公网 IP 实测**：首页 `/` `/2/` `/3/` `/archive/` `/posts/ccnewtools-manual/` 全 200；站点信息卡 `V0.1.43`；content-panel top 首页 **529** / 非首页 **349**（= 参考站同公式「横幅高 − 3.5rem」）；渐变带 548–609 高 61px；波浪四层 `x` = `-42.000,2.641,48.944,92.468`；五个页 `overflowX=0` / `h1=1` / 破图 0 |
+| 本地构建 | 本批跑了 **3 次** `npm run build`（每轮修复后一次）：退出码 0，**43 页 / 357 文件**，Pagefind 索引 **29 页**。产物核验：375px 下第 8 天宽表容器 309 / 表 654 / `overflowX:auto` / `scrollable:true` / 页面 `overflowX=0`；`/api/dynamic.json` 含 `searchText` 字段；`npm run check` **0 error / 3 hint** |
+| 文档自检 | `npm run docs:check` = **0 error / 1 条提醒**（常驻层余量 1000 B，见上） |
+| 服务器配置 | **未动**（只换 dist；没碰 Nginx / 宝塔） |
+| 依赖 | 本批**零改动**。基线仍是 `@astrojs/check@0.9.10` devDep、`allowScripts` 钉 `esbuild@0.28.2` |
+| dev / preview server | 本批起了 `astro preview --port 4399 --host 127.0.0.1` 做验证，**收尾时按「`node.exe` + `astro\bin\astro.mjs` + `preview`」精确杀掉并复查残留 = 0**。当前 dev 与 preview **都已停** |
+| 服务器回滚资产 | `dist.old` + **40 个 `dist_backup_*`** = **41 个**（本批新增 1 个）。全部保留，**删需用户明确同意**。回滚一行：`cd /www/wwwroot/chenBlog && rm -rf dist && mv dist.old dist` |
+| 临时文件 | **本批已清并复查**：本地 `scripts/_tmp_*.mjs`（9 个取证脚本）+ `scripts/_tmp_home.png`、`%TEMP%` 下 `fly_dynamic.html` / `fly_home.html` / `fly_df.js`；服务器 `/tmp/index.html`（10-08 的探测残留，175KB）。⚠️ **回滚资产不算临时文件，不删** |
+| 待用户拍板 | ⓪c **【第二批 SEO 审计产物】**：~~**E** `og:type`~~ → **已完成（V0.1.41）**；~~**F** 分页 title~~ → **已完成（V0.1.42）**。⓪e ~~DSH 400 补丁要重启~~ → **已完成（2026-10-13 晚间）**，**遗留一条**：DSH 升级会覆盖 asar → 补丁会丢，跑 `npm run gateway:check` 可辨，重打流程见 `harness.md` **B-21**。⓪d ~~常驻层预算~~ → **已解决**（但本轮又吃到 1000 B，见上）。⓪a ~~要不要装 browser-use 插件~~ → **已装好并挂载完毕**，**下一步在他手上：新建或恢复一个 Session** 实测 `mcp__playwright-mcp__*` 是否出现。⓪a2 要不要改成"我和用户看同一个浏览器"（需 `mode: attach`）。⓪b **评论区 OwO 表情面板 21 张图没有 `alt`**（第三方组件，我没动代码）① **手册每节之间的分节线**（10 条，照他手册原样同步；旧版站内只有 1 条）——观感变了，要不要滤掉说一声 ② **V0.1.26 两条复测**（文章页→主页的封面；框选/点击文字是否还跳，见 16.）③ 新文章肉眼验收（11.）④ **灯箱真人点击**（12.）~~⑤ 第8天宽表要不要包~~ → **已完成（V0.1.43）** ~~⑥ `propse-base` 拼错要不要补~~ → **证伪、不改**（实测 16px 与裸 `.prose` 一致，改了零视觉变化）~~⑦ 侧栏卡片不随软导航更换~~ → **已完成（V0.1.43）** ~~⑧ PostCard 加密文章锁图标~~ → **已完成（V0.1.43）**（零篇用到 → 无可见影响）⑨ 全站 title 带不带后缀（SEO）⑩ **meCard 那排的真人反馈**（手机扫二维码能不能扫上、QQ 复制提示条观感）⑪ **列表卡上那句「暂无标签」是假的**（`PostCard.astro` 调 PostMeta 时不传 tags，而他 27 篇全都有标签）→ 要么把 tags 传进去显示、要么卡片不显示这一格，等他定 |
+| 既存小坑 | `--radius-large` / `--panel-border-color` 未定义（AGENTS 五-16）——表格那行 `border-radius` 因此整条无效、实际直角，**正好符合站内"面板一律直角"口径，别当缺陷补变量**；`tsconfig.json` react jsx 残留无影响；`src/content/posts/images/` 空目录；`/site.webmanifest` 的 Content-Type 缺 webmanifest 映射（要动 nginx mime.types）；重复 id `announcement`/`cardTags`（九节已判定降级） |
 
 | 项 | 状态 |
 |---|---|

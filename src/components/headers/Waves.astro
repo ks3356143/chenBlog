@@ -1,7 +1,13 @@
 ---
-
+/*
+ * 波浪带。两处必须与参考站（firefly.cuteleaf.cn）逐字对齐，否则波纹是"死"的：
+ * ① 四层 <use> 的 x 是**均匀铺开的起始相位**（-42 / 2.641 / 48.944 / 92.468）。
+ *    原先四层全写 x="48" → 四条波完全重叠成一条平的，opacity 25/50/65/75 叠出来只是一块
+ *    略深的纯色，看着就是"一块没有波浪的绿"（2026-10-13 用户报，箭头指着横幅右下角）。
+ * ② #wallpaper-gradient：横幅壁纸图与 --page-bg 之间是硬切，这条 10% 高的渐变带负责过渡。
+ *    没有它时壁纸图下缘直接跳成页面底色，加上内容区又压在横幅上，交界处特别明显。
+ */
 ---
-
 <div
 	id="header-waves"
 	class="waves absolute -bottom-px h-[10vh] max-h-37.5 min-h-12.5 w-full md:h-[15vh]"
@@ -19,10 +25,20 @@
 			<path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v48h-352z"> </path>
 		</defs>
 		<g class="parallax">
-			<use xlink:href="#gentle-wave" x="48" y="0" class="fill-(--page-bg) opacity-25"></use>
-			<use xlink:href="#gentle-wave" x="48" y="3" class="fill-(--page-bg) opacity-50"></use>
-			<use xlink:href="#gentle-wave" x="48" y="5" class="fill-(--page-bg) opacity-65"></use>
-			<use xlink:href="#gentle-wave" x="48" y="7" class="fill-(--page-bg) opacity-75"></use>
+			<use xlink:href="#gentle-wave" x="-42.000" y="0" class="fill-(--page-bg) opacity-25"></use>
+			<use xlink:href="#gentle-wave" x="2.641" y="3" class="fill-(--page-bg) opacity-50"></use>
+			<use xlink:href="#gentle-wave" x="48.944" y="5" class="fill-(--page-bg) opacity-65"></use>
+			<use xlink:href="#gentle-wave" x="92.468" y="7" class="fill-(--page-bg) opacity-75"></use>
 		</g>
 	</svg>
+</div>
+
+<!-- 壁纸底边 → 页面底色的渐变过渡（参考站同款，id 与类名都照抄）。
+     高度取横幅的 10%，linear-gradient 从全透明到 --page-bg，把壁纸图的下缘溶进页面背景，
+     避免出现一条生硬的色界。pointer-events-none 保证不吃点击。 -->
+<div
+	id="wallpaper-gradient"
+	class="wallpaper-gradient pointer-events-none absolute bottom-0 left-0 w-full md:block"
+	style="height: 10%; background: linear-gradient(to bottom, transparent, var(--page-bg));"
+>
 </div>

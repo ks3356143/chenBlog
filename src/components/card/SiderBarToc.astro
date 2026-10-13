@@ -65,18 +65,24 @@ const { headings: _headings = [], class: className, style } = Astro.props
 	// 两个派发名压成一趟导航一次（原来两个监听都在，每次换页建两遍）
 	window.onReinit("sidebar-toc", initSidebarTOC, { delay: 100 })
 
-	// 下面两条不是「换页后重 init」，是浏览器前进后退与锚点跳转，保留
-	window.addEventListener("popstate", () => {
-		setTimeout(initSidebarTOC, 200)
-	})
+	// 下面两条不是「换页后重 init」，是浏览器前进后退与锚点跳转，保留。
+	// ⚠️ 必须走 reinitOnce：这个脚本是 type="module"，2026-10-13 起 #right-sidebar 也是
+	// Swup container，它会随软导航被重新插入求值 → 直接 addEventListener 会按访问页数
+	// 往 window 上叠监听（AGENTS 十-12 记的同类累加）。
+	if (typeof window.__sidebarTocNavListeners === "undefined") {
+		window.__sidebarTocNavListeners = true
+		window.addEventListener("popstate", () => {
+			setTimeout(initSidebarTOC, 200)
+		})
 
-	// 监听hashchange（但排除 TOC 内部导航）
-	window.addEventListener("hashchange", () => {
-		if (!window.tocInternalNavigation) {
-			setTimeout(initSidebarTOC, 100)
-		}
-		window.tocInternalNavigation = false
-	})
+		// 监听hashchange（但排除 TOC 内部导航）
+		window.addEventListener("hashchange", () => {
+			if (!window.tocInternalNavigation) {
+				setTimeout(initSidebarTOC, 100)
+			}
+			window.tocInternalNavigation = false
+		})
+	}
 
 	// 这里原有 password:decrypted 重初始化监听：本站无密码门 UI、事件无派发方，2026-09-30 删（见 AGENTS 五-5）
 </script>

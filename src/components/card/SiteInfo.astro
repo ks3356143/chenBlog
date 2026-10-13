@@ -110,18 +110,38 @@ const detailRows = [
 </div>
 
 <script>
-	// 本卡挂在侧栏（#swup-container 外面），脚本只跑一次，不需要幂等标志。
-	// 但它在页面上有**两份**（xl 右栏 + 移动底部堆），所以必须逐个绑定、各自记状态，
+	// 本卡在页面上有**两份**（xl 右栏 + 移动底部堆），必须逐个绑定、各自记状态，
 	// 用 getElementById 只会拿到第一份、第二份点不开。
-	document.querySelectorAll<HTMLElement>(".site-info-card").forEach(card => {
-		const btn = card.querySelector<HTMLButtonElement>(".site-info-toggle")
-		const detail = card.querySelector<HTMLElement>(".site-info-detail")
-		btn?.addEventListener("click", () => {
-			const open = card.getAttribute("data-open") === "true" // 点击**前**的状态
-			card.setAttribute("data-open", String(!open))
-			btn.setAttribute("aria-expanded", String(!open))
-			// 收起时才 inert：open 是旧状态，点完变成收起就意味着 open 为真
-			detail?.toggleAttribute("inert", open)
+	// ⚠️ 2026-10-13：#right-sidebar 登记成了 Swup container，卡片节点会随软导航被整片替换，
+	// 而这个脚本是 type="module"、会随容器一起被重新插入求值。所以：
+	// ① 用 onReinit 而不是 reinitOnce —— 后者整个生命周期只跑一次，换过节点后新卡点不开；
+	// ② 每次进来先把旧卡片上的引用抹掉再重新绑 —— 旧节点虽已脱离文档，但闭包还抓着它们，
+	//    不清的话每次导航都往同一批（已废弃的）监听器上叠。
+	// 判据见 AGENTS 十-14：一次点击只引发一次状态变更。
+	function bindSiteInfo() {
+		// 换节点前把上一轮闭包持有的引用全部释放
+		if (window.__siteInfoBound) {
+			for (const { card, btn, detail, handler } of window.__siteInfoBound) {
+				btn?.removeEventListener("click", handler)
+				void card
+				void detail
+			}
+		}
+		window.__siteInfoBound = [...document.querySelectorAll<HTMLElement>(".site-info-card")].map((card) => {
+			const btn = card.querySelector<HTMLButtonElement>(".site-info-toggle")
+			const detail = card.querySelector<HTMLElement>(".site-info-detail")
+			const handler = () => {
+				const open = card.getAttribute("data-open") === "true" // 点击**前**的状态
+				card.setAttribute("data-open", String(!open))
+				btn?.setAttribute("aria-expanded", String(!open))
+				// 收起时才 inert：open 是旧状态，点完变成收起就意味着 open 为真
+				detail?.toggleAttribute("inert", open)
+			}
+			btn?.addEventListener("click", handler)
+			return { card, btn, detail, handler }
 		})
-	})
+	}
+
+	if (typeof window.__siteInfoBound === "undefined") window.__siteInfoBound = null
+	window.onReinit("site-info-card", bindSiteInfo, { delay: 100 })
 </script>

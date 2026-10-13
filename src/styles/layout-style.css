@@ -10,11 +10,27 @@
 body:not(.is-home) #wallpaper-wrapper {
     height: var(--banner-height-non-home);
 }
+
+/* 主内容面板起点 = 横幅高 - 3.5rem（照 firefly.cuteleaf.cn 的 .content-panel，实测
+   首页 top = calc(65vh - 3.5rem) = 529px）。非首页横幅矮，起点跟着降。
+   ⚠️ 别改回写死的 top-[30vh]：那比参考站高约 99px，内容会压进波浪带上方，
+   把壁纸图与 --page-bg 的硬切交界露出来（2026-10-13 用户报"一块没有波浪的绿"）。 */
+.content-panel {
+    top: calc(var(--banner-height-home) - 3.5rem);
+}
+body:not(.is-home) .content-panel {
+    top: calc(var(--banner-height-non-home) - 3.5rem);
+}
 /* 只在切页期间开高度过渡，平时改高度（如改壁纸模式）不带动画 */
 html.is-wallpaper-transitioning #wallpaper-wrapper {
     transition:
         height 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94),
         opacity 0.4s;
+}
+/* 内容面板起点跟着横幅高度一起过渡：只有也过渡 top，切页时内容才不会比横幅先到新高度、
+   在波浪带边缘露出底色（参考站同一处理） */
+html.is-wallpaper-transitioning .content-panel {
+    transition: top 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 /* 移动端横幅优化 - 小屏手机 (320px - 480px) */

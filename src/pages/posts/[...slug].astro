@@ -55,7 +55,7 @@ const relatedPosts = await getRelatedPosts(post, 5)
 const seriesData = await getSeriesPosts(post)
 ---
 
-<Layout title={post.data.title} bannerPostMeta={bannerPostMeta} postSlug={post.id} headings={headings} frontmatter={remarkPluginFrontmatter}>
+<Layout title={post.data.title} description={post.data.description || undefined} bannerPostMeta={bannerPostMeta} postSlug={post.id} headings={headings} frontmatter={remarkPluginFrontmatter}>
     <!-- KaTeX加载css - 仅在文章页面 -->
     <KatexManager slot="head" />
     <div class="relative mb-4 flex w-full flex-col overflow-hidden">

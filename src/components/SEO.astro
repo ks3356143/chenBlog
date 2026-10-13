@@ -24,35 +24,48 @@ const {
     frontmatter, // 传入frontmatter
 } = Astro.props
 
+/* JSON-LD 生成：值一律交给 JSON.stringify，不再手工拼引号。
+   2026-10-12 实测（逐页 JSON.parse dist 产物）：27 篇 BlogPosting 的这段 script **全部是非法 JSON**
+   —— "updated" 那行末尾多一个尾逗号 → 富结果解析器按规范**整块丢弃**，结构化数据等于白写。
+   同一处 publish/updated 直接内插 Date 对象，输出 "Wed Oct 07 2026 08:00:00 GMT+0800 (中国标准时间)"，
+   不是 schema.org 要求的 ISO 8601。
+   属性名也改回规范名（publish→datePublished、updated→dateModified、tag→keywords、
+   category→articleSection、excerpt→abstract）：即便 JSON 合法，缺 datePublished 的 BlogPosting
+   仍拿不到富结果资格。空值交给 JSON.stringify 自动省略，不留 "":"" 这种噪声。 */
+function isoDate(value: unknown): string | undefined {
+    if (value instanceof Date) return Number.isNaN(value.getTime()) ? undefined : value.toISOString()
+    if (typeof value === "string" && value) {
+        const d = new Date(value)
+        return Number.isNaN(d.getTime()) ? undefined : d.toISOString()
+    }
+    return undefined
+}
+
 function jsonLDGenerator({ type, post, url }: any) {
     if (type === "post") {
-        return `<script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "BlogPosting",
-        "mainEntityOfPage": {
-          "@type": "WebPage",
-          "@id": "${url}"
-        },
-        "headline": "${post.title}",
-        "description": "${post.description}",
-        "image": "${typeof post.image === "string" && post.image ? post.image : ogImage}",
-        "tag": "${post.tags}",
-        "category":"${post.category}",
-        "excerpt":"${post.excerpt}",
-        "publish": "${post.published}",
-        "updated":"${post.updated}",
-      }
-    </script>`
+        const imageSrc = typeof post.image === "string" && post.image ? post.image : ogImage
+        const ld = {
+            "@context": "https://schema.org",
+            "@type": "BlogPosting",
+            mainEntityOfPage: { "@type": "WebPage", "@id": String(url) },
+            headline: post.title,
+            description: post.description || undefined,
+            image: new URL(imageSrc, Astro.site ?? siteConfig.site_url).href,
+            keywords: Array.isArray(post.tags) && post.tags.length ? post.tags.join(",") : undefined,
+            articleSection: post.category || undefined,
+            abstract: post.excerpt || undefined,
+            datePublished: isoDate(post.published),
+            dateModified: isoDate(post.updated ?? post.published),
+        }
+        return `<script type="application/ld+json">${JSON.stringify(ld)}</script>`
     }
-    return `<script type="application/ld+json">
-      {
-      "@context": "https://schema.org/",
-      "@type": "WebSite",
-      "name": "${siteConfig.siteMeta.name}",
-      "url": "${import.meta.env.SITE}"
-      }
-    </script>`
+    const websiteLD = {
+        "@context": "https://schema.org/",
+        "@type": "WebSite",
+        name: siteConfig.siteMeta.name,
+        url: import.meta.env.SITE,
+    }
+    return `<script type="application/ld+json">${JSON.stringify(websiteLD)}</script>`
 }
 
 const jsonLD = jsonLDGenerator({

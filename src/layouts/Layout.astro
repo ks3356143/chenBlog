@@ -43,7 +43,7 @@ interface Props extends PageSEO {
     }
 }
 
-const { title, contentHasH1, bannerPostMeta, postSlug, headings } = Astro.props
+const { title, contentHasH1, bannerPostMeta, postSlug, headings, description } = Astro.props
 
 // SEO所需内容
 const { frontmatter } = Astro.props
@@ -54,7 +54,7 @@ const isPostPage = !!postSlug
 const postCategory = isPostPage ? String((frontmatter as { category?: unknown } | undefined)?.category ?? "") : ""
 ---
 
-<BaseLayout title={title ?? siteConfig.siteMeta.name} frontmatter={frontmatter}>
+<BaseLayout title={title ?? siteConfig.siteMeta.name} description={description} frontmatter={frontmatter}>
     <slot slot="head" name="head" />
     <Header />
     <div id="progress-bar"></div>

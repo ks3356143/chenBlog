@@ -354,15 +354,24 @@
       加 `data-no-swup`；判据是**点击后 URL 有没有变**，不是"弹层有没有出现"。
       另一半通则：**任何"先扫页面元素、再决定要不要初始化"的第三方管理器，遇到客户端渲染的内容都会漏**
       （十-16 同族）→ 要么改成事件触发补扫，要么把初始化推迟到内容真正就绪之后。
-    - **验证**：`build` + `preview` 与**线上**两路都跑；量 `[data-gallery-grid]` 的
-      `display:grid` / `grid-template-columns` / `aspect-ratio` / `object-fit`，
-      点开灯箱读 `.fancybox__slide.is-selected img` 的 `src`，按 `ArrowRight` 确认整组翻页
-      （实测 00-toolset-home → 02-parsed）。
-    - **顺带补的第三件事**：画廊网格**当时一条 CSS 都没有**（图全宽竖着堆、看着跟正文图没区别）——
-      数值照参考站 `firefly.cuteleaf.cn` 的 `.page-gallery-*` 编译产物补齐（2 列 `minmax(0,1fr)`、
-      `data-count` 3/5 首图 `grid-row: span 2`、方图 `aspect-ratio:1` + `object-fit:cover`、
+    - ✅ **已升级为内联查看器（2026-10-14 V0.1.47，用户拍板"搬参考站新版查看器"）**：
+      参考站**新版**的动态页画廊不是"缩略图直开 Fancybox"，而是**就地展开一个内联查看器**
+      （`page-gallery-viewer`：工具栏「收起 / 查看大图 / N/M 计数」+ stage 大图 + 左右箭头），
+      只有点「查看大图」才进 Fancybox 全屏。本站已照此实现（`.dynamic-gallery-viewer` 等，样式进 global.css）。
+      → **顺带把上面那个 Swup 捕获陷阱从根上绕开了**：缩略图现在是 `<button>` 不是 `<a data-fancybox>`，
+      Swup 的 `linkSelector: a[href]` 根本不匹配 button，所以不再需要 `data-no-swup`，也不需要"渲染完补 setup"
+      的 `dynamic:gallery-rendered` 事件（那条监听已删）。「查看大图」走 `window.__fancyboxOpenImages(items, idx)`
+      —— FancyboxManager 暴露的**唯一**外部开灯箱入口（内部自己 `import("@fancyapps/ui")` 再 `Fancybox.show`，
+      不依赖 body 级 bind，所以客户端渲染的条目也不受"setup 早退"影响）。
+      ⚠️ 教训仍成立：**只要还往站内 `<a>` 上挂第三方委托点击，就必踩 Swup 捕获吃掉这一坑**；
+      能用 `<button>` + 主动 `Fancybox.show` 就别用 `<a data-fancybox>`。
+    - **验证**（内联查看器版）：点缩略图 → `[data-gallery-viewer]` 去 hidden、计数 `1 / N`、大图 src 对；
+      点 `[data-gallery-next]` 计数 +1 且换图、到末尾回绕到 1；点 `[data-gallery-lightbox]` →
+      `.fancybox__container` 出现、`.f-caption` 显示当前图 alt；点 `[data-gallery-collapse]` → 查看器重新 hidden。
+      ⚠️ 探针读 `<template>` 里的 markup 必须走 `template.content.querySelector`，
+      `document.querySelector` **不穿透 template**（会假报"markup 不存在"）。
+    - **网格样式**（缩略图网格，与查看器并存）：数值照参考站 `.page-gallery-*` 编译产物
+      （2 列 `minmax(0,1fr)`、`data-count` 3/5 首图 `grid-row: span 2`、方图 `aspect-ratio:1` + `object-fit:cover`、
       单图 `data-layout=single` 不裁切、超 6 张叠 `.dynamic-gallery-more` 的 "+N"）。
-      ⚠️ 参考站那条 `border-radius: calc(var(--radius-large) - .25rem)` 走的是本项目**从未定义**的变量
-      （五-16）→ 本站按直角写，**别补变量**。样式同样必须进 `global.css`（十-16）。
-      ⚠️ 参考站**新版已换成自带的内联查看器**（`page-gallery-viewer` + 工具栏 + 折叠 + 计数器），
-      不是 Fancybox；本站目前是**网格 + Fancybox 灯箱**，属有依据的偏离（少一套自研查看器）。
+      ⚠️ 参考站那些 `border-radius: calc(var(--radius-large) - .25rem)` 走的是本项目**从未定义**的变量
+      （五-16）→ 本站一律直角、**别补变量**；样式必须进 `global.css`（十-16）。

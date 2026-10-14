@@ -3,7 +3,28 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-13 深夜续（第六批：动态页图片画廊两处真缺陷，已上线 V0.1.45）**。
+> 最后更新：**2026-10-14（第七批：待拍板 1~6 全部处理，已上线 V0.1.47）**。
+>
+> **🔧 2026-10-14 一句话（用户"1~6 全部做了吧"）**：
+> ② **全站 title 带后缀** → `BaseLayout` 一处加「-亦林」（含"亦林"的不重复加，首页仍品牌全名）；
+> `og:title`/JSON-LD 仍是内容原标题。实测 43 页全带后缀、43 个唯一 title。
+> ③ **手册 10 条分节线** → 按用户拍板滤到只留顶部 1 条（字节级脚本删 9 条 + 9 空行，−18 行、零行尾翻转），
+> 并登记进八-9「站内规矩第五类」（下次同步必按此过滤，别当"漏了"补回）。
+> ⑤ **列表卡「暂无标签」假文案** → `PostCard` 的 `PostMeta` 显式 `showTags={false}`（参考站卡片 meta 行本就没有标签位，
+> 标签由下方 `#标签` 药丸承担）。全站假文案 0 处、真药丸在（首页 21）。
+> ④ **V0.1.26 两条复测**（代码层）：封面"文章页F5→软导航回首页" `realBug=0/10`、`reinitRuns("cover-image")=1`；
+> 卡片标题 hover `borderInHover=false`（五-36 修法在位）。真机观感仍归用户。
+> ① **画廊升级为参考站内联查看器**（V0.1.47）：点缩略图 `<button>` 就地展开 `[data-gallery-viewer]`
+> （工具栏 收起/查看大图/N-M 计数 + stage 大图 + 左右箭头回绕），「查看大图」才进 Fancybox 全屏
+> （走新入口 `window.__fancyboxOpenImages(items, idx)`）。⚠️ **顺带从根上绕开十-17 的 Swup 捕获陷阱**：
+> 缩略图不再用 `<a data-fancybox>`，`data-no-swup` 与 `dynamic:gallery-rendered` 补绑事件**都删了**。
+> preview + 线上两路全 PASS（展开/计数/翻页/回绕/查看大图带 caption/收起）。
+> ⑥ **meCard 三个社交按钮代码层早已接好**（QQ 复制 / 微信二维码浮层 / GitHub 真链接 / RSS）→ 只剩用户真机反馈。
+> ⚠️ **本批踩到自己造的坑**：临时 bump 脚本把 `version` 写成整数 `46`（`parseInt` 赋值）毁掉 semver，
+> 已随 `8c54f09` 推上去 → 补 `c6af208` 修回 `"0.1.46"`。教训：**改版本号用 edit 工具逐字改，别写脚本 `parseInt`**。
+> 门禁：`build` 0 / `check` 0 error 3 hint / `docs:check` 0 error；回滚资产 48 个；临时脚本/动态/服务器 /tmp 全 0。
+>
+> —— 以下为 2026-10-13 深夜续（第六批：动态页图片画廊两处真缺陷，已上线 V0.1.45）的记录 ——
 >
 > **🔧 2026-10-13 深夜续②一句话**：① **图片画廊不做"未验证"结案了——它当时根本是坏的**（用户问"还有什么没完成"时我去验，一验两条真缺陷）：
 > **灯箱被 Swup 静默吃掉**（Swup 的点击处理在 `document` **捕获**阶段对站内 `<a>` 先 `preventDefault`，
@@ -1194,23 +1215,23 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-10-13 深夜实测；**线上 = V0.1.45**，`src/` 累计 12 个文件、已部署）
+## 三、当前状态快照（2026-10-14 实测；**线上 = V0.1.47**，已部署）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**本批（第六批）一笔**：`f267c3c` 图片画廊两处真缺陷（V0.1.45）；上一批两笔：`cadc58f` 筛选栏样式搬全局 + `65aeb8a` 年份下拉全站化（V0.1.44）、`2cfc1b8` 文档收尾；**已推送，`HEAD == origin/main`**。上一批：四条 BUG + 动态页二期三项 + 横幅波浪三处（V0.1.43）。今日更早：动态 0.1.31 / meCard 社交按钮 0.1.32 / 波纹高度 0.1.33 / 二维码浮层动效 0.1.34 / PostMeta 间距 0.1.35 / 手册同步 v1.4.0 0.1.36 / 暂无标签间距 0.1.37 / 顶部三平台说明 0.1.38 / 手册同步 v1.4.1 0.1.39 / SEO 元数据 0.1.40 / `og:type` 0.1.41 / 分页 title 0.1.42 |
-| 工作区 | 本批（V0.1.45）`src/` 动 **3 个文件**：`DynamicFeed.svelte`（画廊：`data-count`/`data-layout`/`+N` 角标 + **`data-no-swup`** + 渲染完派发 `dynamic:gallery-rendered`）、`FancyboxManager.astro`（监听该事件补一次 `setup()`）、`global.css`（`.dynamic-gallery-*` 全套网格规则，照参考站数值）。`package.json` 版本号 0.1.45。文档动 `docs/agents/swup.md`（新增 **十-17**：Swup 捕获阶段吃掉委托点击 + 客户端渲染内容的初始化时机）、`AGENTS.md`（计数 1~17）、`HANDOFF.md`。上一批（V0.1.44）动 `DynamicFeed.svelte` + `global.css`（筛选栏与年份下拉，样式进全局 = 十-16）。**零依赖改动** |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**本批（第七批）四笔**：`8c54f09` title后缀+假文案+分节线（V0.1.46）+ `c6af208` 修 version 被误写成整数 46 + `1a93fe2` 画廊内联查看器（V0.1.47）+ 文档；**已推送，`HEAD == origin/main`**。上一批：`f267c3c` 图片画廊两处真缺陷（V0.1.45）。更早：cadc58f/65aeb8a/2cfc1b8（V0.1.44）、四条 BUG+动态二期三项+波浪三处（V0.1.43） |
+| 工作区 | 本批（V0.1.46 + V0.1.47）`src/` 动 **8 个文件**：`BaseLayout.astro`（`documentTitle` 计算 + `<title>` 用它，og:title 不动）、`PostCard.astro`（`PostMeta` 加 `showTags={false}`）、`ccnewtools-manual.md`（删 9 条分节线）、`DynamicItemTemplate.astro`（画廊模板加 `[data-gallery-viewer]` 全套：工具栏/收起/查看大图/计数/stage/左右箭头/大图）、`DynamicFeed.svelte`（`collectGallery` 重写为内联查看器：缩略图 `<button>` + `openViewer`/`stepViewer`/`paintViewer`；删 `data-no-swup` 与 `dynamic:gallery-rendered`）、`FancyboxManager.astro`（`commonOptions` 提到模块作用域 + 新增 `window.__fancyboxOpenImages`；删死监听）、`global.css`（`.dynamic-gallery-viewer/-toolbar/-action/-counter/-stage/-main-image/-nav/-thumb` 全套，照参考站数值、直角）、`global.d.ts`（`__fancyboxOpenImages` 类型）。文档动 `swup.md`（十-17 末段改为"已升级内联查看器"）、`writing.md`（八-9 站内规矩第四→五类：分节线只留 1 条）、`HANDOFF.md`。**零依赖改动** |
 | 文档分层 | `AGENTS.md` + `AGENTS.local.md` 合计 < 65536 B（`npm run docs:check` 实测 0 error，**1 条余量提醒：常驻层只剩 174 B** —— 十-16 的细节已沉进 `swup.md`，常驻层只加了一句指针，**下次加内容前必须先下沉到 `docs/agents/` 分册**） |
 | 浏览器能力 | **2026-10-12 已装 DSH 的 playwright browser-use provider**（`~\.dsh\profiles\desktop\`，不在仓库内）。⚠️ **本会话仍无工具** —— provider 不接管已活动 Session，**要新建/恢复 Session** 才出现 `mcp__playwright-mcp__*`。⚠️ **别改成 `headless: false`**。当前可用通道：`npm run probe -- <url> <宽> <高>` + 本地 `astro preview`（**别用 `file://` 验 dist**，见 harness.md B-13） |
-| 线上站点 | ✅ **2026-10-13 深夜部署 V0.1.45**（第六节原子替换 + 替换前断言：`dynamic-gallery-grid` / `dynamic:gallery-rendered` / `data-no-swup` 必须在 `dist.new/_astro/`、`V0.1.45` 必须在、`V0.1.44` 必须不在）。**浏览器实测线上**：`/_astro/Layout.*.css` 含画廊网格与单图规则；`/dynamic/` 站点卡 `V0.1.45`、软导航进入后条目 2 条、年份面板 `visible`、选项 `[全部年份,2026]`、搜「博客」→ 1 条、零 pageerror；**回归：文章页点正文图灯箱正常弹出**（`fancybox__container has-thumbs is-ready`，这也是本站灯箱**第一次被真实点击验证**）。⚠️ 线上两条动态**零图**，画廊在线上仍不可见（用临时条目在本地 preview 验的全部分支，已删除临时条目） |
-| 本地构建 | 本批 `npm run build`（含临时画廊条目）退出码 0；**零图回归自检**（删临时条目后重建）：真页面 2 条、`[data-dynamic-gallery]` 保持 hidden、正文零裸图、搜索/年份在、**零图不拉 Fancybox 本体 chunk**、零 pageerror。画廊双图/单图/灯箱/翻页四条分支在 preview 全 PASS（网格 `display:grid`/`grid-template-columns:222px 222px`/`aspect-ratio:1/1`/`object-fit:cover`；单图 `layout=single`、`576x288`、`object-fit:contain`；灯箱 `00-toolset-home → 02-parsed`）。`npm run check` **0 error / 3 hint** |
+| 线上站点 | ✅ **2026-10-14 部署 V0.1.47**（第七节原子替换 + 替换前断言：`V0.1.47` 必须在、`V0.1.46` 必须不在、`data-gallery-viewer`/`data-gallery-collapse`/`__fancyboxOpenImages`/`dynamic-gallery-grid` 必须在、`暂无标签` 必须不在、`关于我-亦林` 必须在）。**浏览器实测线上**：模板 `[data-dynamic-item-template]` 的 `content` 含查看器全套（viewer/collapse/lightbox/counter/prev/next/main，收起/查看大文字样对）；`window.__fancyboxOpenImages` 是 function；站点卡 `V0.1.47` 无 `V0.1.46` 残留；软导航进动态页条目 2 条、搜索/年份在、搜「博客」→1、画廊保持 hidden；**回归：文章页点正文图灯箱正常**；43 页 title 全带「-亦林」（首页除外，是品牌全名）。⚠️ 线上两条动态**零图**，查看器在线上仍不出现（内联查看器全部交互分支用临时双图/三图条目在本地 preview 验过，已删） |
+| 本地构建 | 本批多次 `npm run build` 退出码 0；**内联查看器全分支 preview PASS**（临时双图/三图条目）：初始 viewer hidden + 缩略图 button + 正文零裸图；点缩略图 viewer 展开 + 计数 `1/3` + 大图 src；`[data-gallery-next]` 计数 +1 换图、末尾回绕到 1；`[data-gallery-prev]` 回退；`[data-gallery-lightbox]` → `.fancybox__container` + `.f-caption` 显示当前 alt；`[data-gallery-collapse]` → viewer 重新 hidden；零 pageerror。**零图回归**（删临时条目后）：2 条、gallery hidden、不拉 Fancybox chunk。⚠️ **探针读 template markup 必须 `template.content.querySelector`**（`document.querySelector` 不穿透 template，会假报缺失）。`npm run check` **0 error / 3 hint** |
 | 文档自检 | `npm run docs:check` = **0 error / 1 条提醒**（常驻层余量 174 B，见上） |
 | 服务器配置 | **未动**（只换 dist；没碰 Nginx / 宝塔） |
 | 依赖 | 本批**零改动**。基线仍是 `@astrojs/check@0.9.10` devDep、`allowScripts` 钉 `esbuild@0.28.2` |
 | dev / preview server | 本批两轮 `npm run preview`（:4321）做验证，**收尾时按「`node.exe` + `astro\bin\astro.mjs` + `preview`」精确杀掉并复查残留 = 0**。当前 dev 与 preview **都已停** |
 | 服务器回滚资产 | `dist.old` + **42 个 `dist_backup_*`** = **43 个**（本批新增 1 个）。全部保留，**删需用户明确同意**。回滚一行：`cd /www/wwwroot/chenBlog && rm -rf dist && mv dist.old dist` |
 | 临时文件 | **本批已清并复查**：本地 `scripts/_tmp_*.mjs`（6 个探针/截图/调试脚本）+ 截图 5 张 + `%TEMP%\chenblog_dist.tar.gz`；**两条临时动态条目**（`2026-10-14-120000.md` 双图 / `-130000.md` 单图，专为验画廊而造）已删并重建；服务器 `/tmp` 部署包已删（= 0）。⚠️ **回滚资产不算临时文件，不删** |
-| 待用户拍板 | ⓪c ⓪d ⓪e 已结（见第二节）。⓪a browser-use 插件已装、**等他新建 Session 实测**。⓪a2 同浏览器 `mode: attach` 未做。⓪b OwO 表情 21 图无 `alt`（第三方组件）。① 手册分节线（10 条）观感要不要滤 ② V0.1.26 两条复测 ③ 新文章肉眼验收 ⑨ 全站 title 带不带后缀（SEO）⑩ meCard 那排真人反馈 ⑪ 列表卡「暂无标签」假文案等他定。~~⑤ 图片画廊未实战验证~~ → **已完成（V0.1.45）**，两条真缺陷（灯箱被 Swup 吃掉 / 网格无 CSS）已修并两路验证。**【本批新增·要他拍】要不要把参考站新版的自研内联查看器（`page-gallery-viewer` + 工具栏 + 折叠 + 计数器，非 Fancybox）也搬过来** —— 现在本站是「网格 + Fancybox 灯箱」，功能等价但少那套自研 UI |
+| 待用户拍板 | **【本批（V0.1.46+47）已全部处理完"1~6"】**：① 画廊内联查看器 ✅ ② 全站 title 后缀 ✅ ③ 手册分节线滤到 1 条 ✅ ④ V0.1.26 两条复测（代码层 ✅，真机观感仍待他）⑤ 列表卡「暂无标签」假文案 ✅ ⑥ meCard 三社交按钮（代码层早已接好，只剩他真机反馈）。**⚠️ 本批踩到自己造的坑**：临时 bump 脚本 `parseInt` 把 version 写成整数 46、毁掉 semver，已随 `8c54f09` 推上去 → `c6af208` 修回；**改版本号一律用 edit 工具逐字改，别写脚本**。**仍挂着的（都不是我能单方推进的）**：⓪a browser-use 插件已装、**等他新建 Session 实测** `mcp__playwright-mcp__*`。⓪a2 同浏览器 `mode: attach` 未做。⓪b OwO 表情 21 图无 `alt`（第三方组件，没动代码）。③′ 他手上那篇**新文章**还没发来（发了就走发稿流程）。④′ V0.1.26 两条 + 本批查看器的**真机观感**（手机强刷看：封面不转圈、点文字不跳、动态页带图条目点缩略图展开查看器）。⑩′ meCard 那排真人反馈（手机扫码能否扫上、QQ 复制提示条观感）。**【要他拍·本批新增】查看器已搬，参考站新版还有一层"点击缩略图默认展开 vs 直接全屏"的取舍** —— 本站现按参考站做成"点缩略图就地展开内联查看器、点查看大图才全屏"，若他更想要"点缩略图直接全屏 Fancybox"（即回退到 V0.1.45 那版），一句话可切 |
 | 既存小坑 | `--radius-large` / `--panel-border-color` 未定义（AGENTS 五-16）——直角正好符合站内口径，别当缺陷补变量；`focus-ring-inset` 全站无定义（死类，只有 DropdownMenu 在用）；`tsconfig.json` react jsx 残留无影响；`/site.webmanifest` Content-Type 缺映射；重复 id `announcement`/`cardTags`（九节已判定降级） |
 
 | 项 | 状态 |

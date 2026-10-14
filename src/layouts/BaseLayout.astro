@@ -28,6 +28,17 @@ interface Props extends PageSEO {
 
 const { title } = Astro.props
 
+// 文档标题统一带品牌短名后缀（2026-10-14 用户拍板「全站 title 带后缀」）。
+// 只在文档 <title> 上加：og:title 与 JSON-LD 的 headline 仍是内容原标题（社交卡片与富结果
+// 要的是文章名，不是「文章名-站名」）。首页传进来的已经是品牌全名「亦林 YILIn」、
+// 归档/分类/标签/系列/分页页也已经是「XX-亦林」→ 含「亦林」就不重复加。
+const brandShort = "亦林"
+const documentTitle = title
+    ? title.includes(brandShort)
+        ? title
+        : `${title}-${brandShort}`
+    : siteConfig.siteMeta.name
+
 // 首页（含 /2/ 这类分页）横幅用高的一套高度变量，切页时做高矮过渡，见 layout-style.css
 const pathname = Astro.url.pathname
 const isHome = pathname === "/" || /^\/\d+\/$/.test(pathname)
@@ -57,7 +68,7 @@ const reinitVersion = createHash("sha256")
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/site.webmanifest" />
         <meta name="generator" content={Astro.generator} />
-        <title>{title || siteConfig.siteMeta.name}</title>
+        <title>{documentTitle}</title>
         <SEO {...Astro.props} />
         <!-- 「导航后重 init」注册表：必须在 body 之前同步执行——容器内的 is:inline 脚本在解析期就要拿到 window.onReinit -->
         <script is:inline src={`/assets/js/reinit.js?v=${reinitVersion}`}></script>

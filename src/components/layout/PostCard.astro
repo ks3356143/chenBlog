@@ -90,8 +90,12 @@ const hasCoverImage = image ? true : false
 				)
 			}
 		</a>
-		<!-- 元数据 -->
-		<PostMeta published={published} category={category || undefined} />
+		<!-- 元数据：不传 tags、并显式 showTags={false} —— 参考站列表卡的 meta 行里没有标签位
+		     （扒它的编译产物：卡片段内 tag-rounded 出现 0 次），标签由下面那排 `#标签` 药丸承担。
+		     此前这里不传 tags 又让它走默认 true → PostMeta 渲染出空态占位文案，而下方同时显示着
+		     真标签，属自相矛盾的假文案（2026-10-14 修）。⚠️ 注释里别再写那句占位文案的原文，
+		     否则 grep 产物验「假文案已消失」会被注释自己骗到。 -->
+		<PostMeta published={published} category={category || undefined} showTags={false} />
 		<!-- 文章描述 -->
 		<div
 			class:list={[

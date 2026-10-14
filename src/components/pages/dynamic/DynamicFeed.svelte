@@ -127,8 +127,16 @@
 		const tpl = document.querySelector("[data-dynamic-item-template]");
 		if (!tpl) return;
 		list.textContent = "";
-		for (const item of visible) list.append(renderItem(tpl, item));
+		let hasGallery = false;
+		for (const item of visible) {
+			const el = renderItem(tpl, item);
+			if (el.querySelector("[data-gallery-grid]")?.children.length) hasGallery = true;
+			list.append(el);
+		}
 		syncHash();
+		// 让 FancyboxManager 补一次 bind：它首次 setup() 跑在条目出现之前（要等 fetch），
+		// 那时还没有 [data-fancybox] → 早退、绑不上，缩略图点了会直接跳图（详见该组件注释）
+		if (hasGallery) document.dispatchEvent(new CustomEvent("dynamic:gallery-rendered"));
 	});
 
 	/**
@@ -188,6 +196,12 @@
 		if (imgs.length === 0) return;
 
 		gallery.hidden = false;
+		// 网格排布按张数走不同模板（数值照参考站 .page-gallery-* 编译产物）：
+		// 1 张不裁切（data-layout=single），3/5 张首图占两行，其余方图裁切
+		const total = imgs.length;
+		const shown = Math.min(total, 6);
+		grid.dataset.count = String(shown);
+		if (total === 1) grid.dataset.layout = "single";
 		// 动态正文的图是站点自己的静态图，不是用户上传；同组命名让 Fancybox 能整组翻页
 		const group = `dynamic-${Math.random().toString(36).slice(2, 9)}`;
 		imgs.forEach((img, i) => {
@@ -195,7 +209,7 @@
 			const alt = img.getAttribute("alt") || "";
 			// 只搬前 6 张进网格（参考站同款上限），其余直接从正文移除，
 			// 否则长图集会把条目撑爆、且它们仍会被 FancyboxManager 的 .custom-markdown img 绑定接走
-			if (i >= 6) {
+			if (i >= shown) {
 				img.remove();
 				return;
 			}
@@ -206,12 +220,25 @@
 			a.setAttribute("data-fancybox", group);
 			a.setAttribute("data-type", "image");
 			a.setAttribute("data-caption", alt);
+			// ⚠️ 必须让 Swup 放过这个链接：Swup 的点击处理挂在 document **捕获**阶段，
+			// 对站内 <a> 一律 preventDefault 后自行 navigate，而 Fancybox 的事件委托在 body **冒泡**阶段，
+			// 它的 fromEvent 第一行就是 `if (e.defaultPrevented) return` → 灯箱被静默吃掉
+			// （2026-10-14 实测：点缩略图不弹灯箱、页面被 navigate 走）。
+			// Swup 的默认 ignoreVisit 认 `[data-no-swup]`（见 SwupManager 编译产物）。
+			a.setAttribute("data-no-swup", "");
 			a.title = alt ? `查看图片：${alt}` : "查看图片";
 			const thumb = img.cloneNode(true);
 			thumb.loading = "lazy";
 			thumb.decoding = "async";
 			a.appendChild(thumb);
 			wrap.appendChild(a);
+			// 超出 6 张：最后一张盖一层 "+N"（参考站 .page-gallery-more 同款）
+			if (i === shown - 1 && total > shown) {
+				const more = document.createElement("span");
+				more.className = "dynamic-gallery-more";
+				more.textContent = `+${total - shown}`;
+				wrap.appendChild(more);
+			}
 			grid.appendChild(wrap);
 			img.remove();
 		});

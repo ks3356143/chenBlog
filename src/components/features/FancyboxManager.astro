@@ -97,5 +97,13 @@ import "@/styles/fancybox-custom.css"
     document.addEventListener("swup:content:replace", setup)
     document.addEventListener("swup:visit:start", cleanupFancybox)
 
+    // 动态页的条目是客户端渲染的（要等 /api/dynamic.json 回来），本文件的 setup() 跑在它们出现之前 →
+    // `hasElements` 为 false 直接 return，画廊的 <a data-fancybox> 从来没被 bind 过（2026-10-14 实测：
+    // 缩略图点了不弹灯箱、直接跳到图片文件）。Fancybox v6 的 bind 是挂在 body 上的**事件委托**
+    // （`1===s.size && e.addEventListener("click", F.fromEvent)`），只要 bind 过一次，后加的节点也命中，
+    // 所以条目渲染完补喊一次 setup() 即可。
+    // 本组件在 #swup-container 外面（BaseLayout body 末尾），监听器每文档只注册一次，不会随导航叠。
+    document.addEventListener("dynamic:gallery-rendered", setup)
+
     // 这里原有 password:decrypted 重绑灯箱的监听：本站无密码门 UI、事件无派发方，2026-09-30 删（见 AGENTS 五-5）
 </script>

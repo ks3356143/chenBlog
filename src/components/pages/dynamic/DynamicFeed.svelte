@@ -127,16 +127,10 @@
 		const tpl = document.querySelector("[data-dynamic-item-template]");
 		if (!tpl) return;
 		list.textContent = "";
-		let hasGallery = false;
-		for (const item of visible) {
-			const el = renderItem(tpl, item);
-			if (el.querySelector("[data-gallery-grid]")?.children.length) hasGallery = true;
-			list.append(el);
-		}
+		for (const item of visible) list.append(renderItem(tpl, item));
 		syncHash();
-		// 让 FancyboxManager 补一次 bind：它首次 setup() 跑在条目出现之前（要等 fetch），
-		// 那时还没有 [data-fancybox] → 早退、绑不上，缩略图点了会直接跳图（详见该组件注释）
-		if (hasGallery) document.dispatchEvent(new CustomEvent("dynamic:gallery-rendered"));
+		// 画廊缩略图是 <button> + 「查看大图」走 window.__fancyboxOpenImages（自带 import），
+		// 不依赖 FancyboxManager 的 [data-fancybox] bind，所以这里不再派发补绑事件。
 	});
 
 	/**
@@ -182,15 +176,18 @@
 	}
 
 	/**
-	 * 把条目正文里的 <img> 搬进画廊容器（照 firefly.cuteleaf.cn 的 /dynamic/）：
-	 * 正文里只留一个可点的缩略图，点它弹 Fancybox 大图。零图时整块画廊保持 hidden。
+	 * 把条目正文里的 <img> 搬进画廊（照 firefly.cuteleaf.cn 新版 /dynamic/）：
+	 * 正文里的图全部移除，前 6 张进网格当缩略图；点缩略图 → 就地展开内联查看器
+	 * （stage 大图 + 左右箭头 + 计数器 + 收起），查看器里的「查看大图」才进 Fancybox 全屏。
+	 * 零图时整块画廊保持 hidden。
 	 * @param {DocumentFragment} frag
 	 * @param {HTMLElement} content
 	 */
 	function collectGallery(frag, content) {
 		const gallery = /** @type {HTMLElement | null} */ (frag.querySelector("[data-dynamic-gallery]"));
 		const grid = gallery?.querySelector("[data-gallery-grid]");
-		if (!gallery || !grid) return;
+		const viewer = gallery?.querySelector("[data-gallery-viewer]");
+		if (!gallery || !grid || !viewer) return;
 
 		const imgs = [...content.querySelectorAll("img")];
 		if (imgs.length === 0) return;
@@ -202,36 +199,33 @@
 		const shown = Math.min(total, 6);
 		grid.dataset.count = String(shown);
 		if (total === 1) grid.dataset.layout = "single";
-		// 动态正文的图是站点自己的静态图，不是用户上传；同组命名让 Fancybox 能整组翻页
-		const group = `dynamic-${Math.random().toString(36).slice(2, 9)}`;
+
+		/** @type {{ src: string, alt: string }[]} */
+		const items = [];
 		imgs.forEach((img, i) => {
 			const src = img.getAttribute("src") || "";
 			const alt = img.getAttribute("alt") || "";
-			// 只搬前 6 张进网格（参考站同款上限），其余直接从正文移除，
-			// 否则长图集会把条目撑爆、且它们仍会被 FancyboxManager 的 .custom-markdown img 绑定接走
+			// 只搬前 6 张进网格（参考站同款上限），其余直接从正文移除
 			if (i >= shown) {
 				img.remove();
 				return;
 			}
+			items.push({ src, alt });
 			const wrap = document.createElement("figure");
 			wrap.className = "dynamic-gallery-item";
-			const a = document.createElement("a");
-			a.href = src;
-			a.setAttribute("data-fancybox", group);
-			a.setAttribute("data-type", "image");
-			a.setAttribute("data-caption", alt);
-			// ⚠️ 必须让 Swup 放过这个链接：Swup 的点击处理挂在 document **捕获**阶段，
-			// 对站内 <a> 一律 preventDefault 后自行 navigate，而 Fancybox 的事件委托在 body **冒泡**阶段，
-			// 它的 fromEvent 第一行就是 `if (e.defaultPrevented) return` → 灯箱被静默吃掉
-			// （2026-10-14 实测：点缩略图不弹灯箱、页面被 navigate 走）。
-			// Swup 的默认 ignoreVisit 认 `[data-no-swup]`（见 SwupManager 编译产物）。
-			a.setAttribute("data-no-swup", "");
-			a.title = alt ? `查看图片：${alt}` : "查看图片";
+			// 缩略图是 <button>（不是 <a data-fancybox>）：点它展开内联查看器，不直接开灯箱。
+			// 用 button 也顺带绕开了「Swup 捕获阶段吃掉 <a> 点击」那一坑（十-17）——button 不是链接，Swup 不管。
+			const btn = document.createElement("button");
+			btn.type = "button";
+			btn.className = "dynamic-gallery-thumb";
+			btn.title = alt ? `查看图片：${alt}` : "查看图片";
+			btn.setAttribute("aria-label", alt ? `查看图片：${alt}` : "查看图片");
 			const thumb = img.cloneNode(true);
 			thumb.loading = "lazy";
 			thumb.decoding = "async";
-			a.appendChild(thumb);
-			wrap.appendChild(a);
+			btn.appendChild(thumb);
+			btn.addEventListener("click", () => openViewer(gallery, items, i));
+			wrap.appendChild(btn);
 			// 超出 6 张：最后一张盖一层 "+N"（参考站 .page-gallery-more 同款）
 			if (i === shown - 1 && total > shown) {
 				const more = document.createElement("span");
@@ -242,6 +236,68 @@
 			grid.appendChild(wrap);
 			img.remove();
 		});
+
+		// 查看器交互：收起 / 上一张 / 下一张 / 查看大图（→ Fancybox 全屏）
+		viewer.querySelector("[data-gallery-collapse]")?.addEventListener("click", () => {
+			viewer.hidden = true;
+		});
+		viewer.querySelector("[data-gallery-prev]")?.addEventListener("click", () => stepViewer(gallery, -1));
+		viewer.querySelector("[data-gallery-next]")?.addEventListener("click", () => stepViewer(gallery, 1));
+		viewer.querySelector("[data-gallery-lightbox]")?.addEventListener("click", () => {
+			const idx = Number(gallery.dataset.galleryIndex || "0");
+			void window.__fancyboxOpenImages?.(
+				items.map((it) => ({ src: it.src, caption: it.alt || undefined })),
+				idx
+			);
+		});
+	}
+
+	/**
+	 * 展开查看器并定位到第 index 张。
+	 * @param {HTMLElement} gallery
+	 * @param {{ src: string, alt: string }[]} items
+	 * @param {number} index
+	 */
+	function openViewer(gallery, items, index) {
+		gallery.dataset.galleryIndex = String(index);
+		const viewer = /** @type {HTMLElement | null} */ (gallery.querySelector("[data-gallery-viewer]"));
+		if (!viewer) return;
+		viewer.hidden = false;
+		paintViewer(gallery, viewer, items);
+		// 展开后把查看器滚进视野（长条目里缩略图可能在视口下方）
+		viewer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+	}
+
+	/** @param {HTMLElement} gallery @param {number} delta */
+	function stepViewer(gallery, delta) {
+		const viewer = /** @type {HTMLElement | null} */ (gallery.querySelector("[data-gallery-viewer]"));
+		if (!viewer || viewer.hidden) return;
+		const items = /** @type {{ src: string, alt: string }[]} */ (/** @type {any} */ (gallery).__galleryItems) || [];
+		const n = items.length;
+		if (!n) return;
+		const cur = Number(gallery.dataset.galleryIndex || "0");
+		gallery.dataset.galleryIndex = String((cur + delta + n) % n);
+		paintViewer(gallery, viewer, items);
+	}
+
+	/**
+	 * 用当前 index 刷新查看器的大图与计数器。
+	 * @param {HTMLElement} gallery
+	 * @param {HTMLElement} viewer
+	 * @param {{ src: string, alt: string }[]} items
+	 */
+	function paintViewer(gallery, viewer, items) {
+		/** @type {any} */ (gallery).__galleryItems = items;
+		const idx = Number(gallery.dataset.galleryIndex || "0");
+		const it = items[idx];
+		if (!it) return;
+		const main = /** @type {HTMLImageElement | null} */ (viewer.querySelector("[data-gallery-main]"));
+		if (main) {
+			main.src = it.src;
+			main.alt = it.alt || "";
+		}
+		const counter = viewer.querySelector("[data-gallery-counter]");
+		if (counter) counter.textContent = `${idx + 1} / ${items.length}`;
 	}
 
 	// 首屏若带 #dynamic-xxx，滚动到对应条目（参考站同款：刷新深链直接定位）

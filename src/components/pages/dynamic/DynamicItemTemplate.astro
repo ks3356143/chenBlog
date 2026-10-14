@@ -38,9 +38,43 @@ const isDev = import.meta.env.DEV
 			</span>
 		</header>
 		<div class="custom-md dynamic-content" data-dynamic-content></div>
-		<!-- 图片画廊：由客户端把正文里的 img 搬进来；零图时整块 hidden 不占位 -->
+		<!-- 图片画廊：由客户端把正文里的 img 搬进来；零图时整块 hidden 不占位。
+		     交互照参考站 firefly.cuteleaf.cn 新版：点缩略图 → 就地展开内联查看器
+		     （stage 大图 + 左右箭头 + 计数器 + 收起/查看大图），「查看大图」才进 Fancybox 全屏。 -->
 		<div class="dynamic-gallery" data-dynamic-gallery hidden>
 			<div class="dynamic-gallery-grid" data-gallery-grid></div>
+			<div class="dynamic-gallery-viewer" data-gallery-viewer hidden>
+				<div class="dynamic-gallery-toolbar">
+					<button type="button" class="btn-plain dynamic-gallery-action" data-gallery-collapse>
+						<Icon name="material-symbols:close-fullscreen-rounded" aria-hidden="true" />
+						<span>收起</span>
+					</button>
+					<button type="button" class="btn-plain dynamic-gallery-action" data-gallery-lightbox>
+						<Icon name="material-symbols:zoom-in-rounded" aria-hidden="true" />
+						<span>查看大图</span>
+					</button>
+					<span class="dynamic-gallery-counter" data-gallery-counter aria-live="polite"></span>
+				</div>
+				<div class="dynamic-gallery-stage">
+					<button
+						type="button"
+						class="btn-plain dynamic-gallery-nav dynamic-gallery-prev"
+						data-gallery-prev
+						aria-label="上一张图片"
+						title="上一张图片">
+						<Icon name="material-symbols:chevron-left-rounded" aria-hidden="true" />
+					</button>
+					<img class="dynamic-gallery-main-image" data-gallery-main alt="" />
+					<button
+						type="button"
+						class="btn-plain dynamic-gallery-nav dynamic-gallery-next"
+						data-gallery-next
+						aria-label="下一张图片"
+						title="下一张图片">
+						<Icon name="material-symbols:chevron-right-rounded" aria-hidden="true" />
+					</button>
+				</div>
+			</div>
 		</div>
 	</div>
 </template>

@@ -372,3 +372,112 @@ html[data-theme="dark"] .dynamic-year-item {
     font-size: 1.5rem;
     font-weight: 600;
 }
+
+/* 缩略图按钮（.dynamic-gallery-item 里现在是 button 不是 a）：撑满方格、无原生按钮外观 */
+.dynamic-gallery-thumb {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+/* 内联查看器（点缩略图后就地展开；数值照参考站 .page-gallery-viewer/-stage/-nav/-main-image/-toolbar）
+   本站一律直角（--radius-large 未定义，见五-16），面板底用 --btn-regular-bg。 */
+.dynamic-gallery-viewer {
+    box-sizing: border-box;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    margin-top: 0.5rem;
+    background: var(--btn-regular-bg);
+}
+.dynamic-gallery-toolbar {
+    display: flex;
+    align-items: center;
+    min-height: 2.75rem;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+}
+.dynamic-gallery-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 2.25rem;
+    padding-inline: 0.65rem;
+    color: var(--content-meta);
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+.dynamic-gallery-action svg {
+    font-size: 1.15rem;
+}
+.dynamic-gallery-counter {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.5rem;
+    padding-inline: 0.55rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+.dynamic-gallery-stage {
+    position: relative;
+    display: block;
+    box-sizing: border-box;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    padding-inline: 4rem;
+}
+.dynamic-gallery-main-image {
+    display: block;
+    min-width: 0;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: min(28rem, 65vh);
+    margin: 0 auto;
+    object-fit: contain;
+}
+.dynamic-gallery-nav {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    border-radius: 50%;
+    background: #0000007a;
+    color: #fff;
+    font-size: 1.75rem;
+    transform: translateY(-50%);
+    cursor: pointer;
+    border: 0;
+}
+.dynamic-gallery-prev {
+    left: 0.5rem;
+}
+.dynamic-gallery-next {
+    right: 0.5rem;
+}
+@media (max-width: 640px) {
+    .dynamic-gallery-stage {
+        padding-inline: 3rem;
+    }
+    .dynamic-gallery-nav {
+        width: 2.25rem;
+        height: 2.25rem;
+        font-size: 1.45rem;
+    }
+}
+

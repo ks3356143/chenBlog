@@ -12,6 +12,12 @@ declare global {
         // SiderBarToc.astro：popstate / hashchange 两个 window 监听只注册一次的哨兵
         __sidebarTocNavListeners?: boolean
         tocInternalNavigation?: boolean
+        // FancyboxManager.astro：动态页画廊「查看大图」主动开灯箱的唯一入口
+        // （Fancybox 本体在该组件里懒加载，别处不另起 import）
+        __fancyboxOpenImages?: (
+            items: { src: string; caption?: string }[],
+            startIndex?: number
+        ) => Promise<void>
     }
 }
 

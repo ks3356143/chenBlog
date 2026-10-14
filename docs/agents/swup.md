@@ -1,4 +1,4 @@
-# AGENTS 分册 · 第十节「Swup 页面过渡的坑」全文（第 1 ~ 16 条）
+# AGENTS 分册 · 第十节「Swup 页面过渡的坑」全文（第 1 ~ 17 条）
 
 > 本文件是 `AGENTS.md` 某一节的**全文**，2026-10-12 从 AGENTS.md 无损切出。
 > `AGENTS.md` 只留常驻结论与索引（受 harness 64KB 注入预算限制）；改到本节任何主题前先读本文件全文。
@@ -330,3 +330,39 @@
       ↑↓ 在选项间移动焦点。面板样式同样放 global.css（`.dynamic-year-*`）。
       ⚠️ `focus-ring-inset` 在全站**没有任何定义**（只有 DropdownMenu 在用，是死类）——
       下拉的键盘焦点样式用 `.dynamic-year-item:focus-visible` 自己给。
+
+17. 🔴 **「点了没反应」的另一种真因：Swup 在捕获阶段 `preventDefault`，把别人挂在冒泡阶段的委托点击静默吃掉**
+    （2026-10-14 图片画廊实战，两条独立缺陷叠在一起才发现）。
+    - **现场**：动态页图片画廊的缩略图 `<a data-fancybox>` 点了**不弹 Fancybox 灯箱**，反而整页被 navigate 走。
+      对照实验证明灯箱本体没问题：**文章页点正文图（裸 `<img>`）灯箱正常弹出**
+      （`fancybox__container has-thumbs is-ready`）。差别只在"点的是不是 `<a>`"。
+    - **根因两条**：
+      ① **Swup 的点击处理挂在 `document` 捕获阶段**（编译产物里 `capture:!0`），对站内 `<a>` 一律
+         `preventDefault()` 后自行 `navigate()`；而 **Fancybox v6 的事件委托挂在 `document.body` 冒泡阶段**
+         （`bind()` 内部 `e.addEventListener("click", F.fromEvent)`），它的 `fromEvent` **第一行就是
+         `if (e.defaultPrevented) return`** → 灯箱被静默吃掉，且没有任何报错。
+      ② **FancyboxManager 的 `setup()` 会早退**：它先判断页面上有没有可绑元素，没有就直接 `return`
+         （这是为了"无图页面不拉 Fancybox 本体 chunk"）。而动态页条目是**客户端渲染**的（要等
+         `/api/dynamic.json`），`setup()` 跑在它们出现之前 → `bind()` 一次都没调过。
+    - **修法**（`SwupManager` 编译产物里 `ignoreVisit:(e,{el})=>!(el==null||!el.closest("[data-no-swup]"))`
+      就是官方开关）：
+      ① 画廊的 `<a>` 加 **`data-no-swup`** → Swup 放过这次点击，Fancybox 才拿得到；
+      ② 条目渲染完由 `DynamicFeed` 派发 **`dynamic:gallery-rendered`**，`FancyboxManager` 监听它补一次
+         `setup()`。⚠️ **Fancybox v6 的 `bind()` 是 body 级委托**（`1===s.size && addEventListener`），
+         所以"补绑一次"就能覆盖之后**所有**新加的节点，不必每渲染一次绑一次。
+    - **通则**：**站内 `<a>` 上挂第三方灯箱/浮层，一律先问"Swup 会不会先把它 navigate 走"** →
+      加 `data-no-swup`；判据是**点击后 URL 有没有变**，不是"弹层有没有出现"。
+      另一半通则：**任何"先扫页面元素、再决定要不要初始化"的第三方管理器，遇到客户端渲染的内容都会漏**
+      （十-16 同族）→ 要么改成事件触发补扫，要么把初始化推迟到内容真正就绪之后。
+    - **验证**：`build` + `preview` 与**线上**两路都跑；量 `[data-gallery-grid]` 的
+      `display:grid` / `grid-template-columns` / `aspect-ratio` / `object-fit`，
+      点开灯箱读 `.fancybox__slide.is-selected img` 的 `src`，按 `ArrowRight` 确认整组翻页
+      （实测 00-toolset-home → 02-parsed）。
+    - **顺带补的第三件事**：画廊网格**当时一条 CSS 都没有**（图全宽竖着堆、看着跟正文图没区别）——
+      数值照参考站 `firefly.cuteleaf.cn` 的 `.page-gallery-*` 编译产物补齐（2 列 `minmax(0,1fr)`、
+      `data-count` 3/5 首图 `grid-row: span 2`、方图 `aspect-ratio:1` + `object-fit:cover`、
+      单图 `data-layout=single` 不裁切、超 6 张叠 `.dynamic-gallery-more` 的 "+N"）。
+      ⚠️ 参考站那条 `border-radius: calc(var(--radius-large) - .25rem)` 走的是本项目**从未定义**的变量
+      （五-16）→ 本站按直角写，**别补变量**。样式同样必须进 `global.css`（十-16）。
+      ⚠️ 参考站**新版已换成自带的内联查看器**（`page-gallery-viewer` + 工具栏 + 折叠 + 计数器），
+      不是 Fancybox；本站目前是**网格 + Fancybox 灯箱**，属有依据的偏离（少一套自研查看器）。

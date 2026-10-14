@@ -3,7 +3,22 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-13 深夜续（第五批：动态页筛选栏软导航丢样式 + 年份下拉全站化，已上线 V0.1.44）**。
+> 最后更新：**2026-10-13 深夜续（第六批：动态页图片画廊两处真缺陷，已上线 V0.1.45）**。
+>
+> **🔧 2026-10-13 深夜续②一句话**：① **图片画廊不做"未验证"结案了——它当时根本是坏的**（用户问"还有什么没完成"时我去验，一验两条真缺陷）：
+> **灯箱被 Swup 静默吃掉**（Swup 的点击处理在 `document` **捕获**阶段对站内 `<a>` 先 `preventDefault`，
+> Fancybox 的委托在 body **冒泡**阶段、`fromEvent` 第一行 `if(e.defaultPrevented)return` → 点了不弹还把页面 navigate 走；
+> 对照实验：文章页点**裸 `<img>`** 灯箱正常，差别只在"是不是 `<a>`"）；
+> 以及 **`FancyboxManager.setup()` 早退**（它先扫元素再决定要不要初始化，而动态条目是客户端渲染的 → `bind()` 一次没跑）。
+> ② 修法两条：画廊 `<a>` 加 **`data-no-swup`**（Swup `ignoreVisit` 的官方开关）+ 条目渲染完派发
+> **`dynamic:gallery-rendered`** 让 Fancybox 补一次 `setup()`（v6 的 `bind` 是 body 级委托，补一次覆盖后续所有新节点）。
+> ③ **顺带发现网格一条 CSS 都没有**（图全宽竖着堆、跟正文图没区别）→ 照参考站 `.page-gallery-*` 数值补齐
+> （2 列 / 3·5 张首图占两行 / 方图 cover / 单图 `data-layout=single` 不裁切 / 超 6 张叠 "+N"）。
+> ④ 临时造了两条带图动态实测（验完删除）：双图网格、单图不裁切、灯箱开启 + `ArrowRight` 整组翻页
+> **preview 与线上两路全 PASS**；**文章页灯箱也第一次被真实点击验证过**。
+> ⑤ 门禁：`build` 0 / `check` 0 error 3 hint / `docs:check` 0 error；回滚资产 43 个。
+>
+> —— 以下为 2026-10-13 深夜续（第五批：动态页筛选栏软导航丢样式 + 年份下拉全站化，已上线 V0.1.44）的记录 ——
 >
 > **🔧 2026-10-13 深夜续一句话**：① **筛选栏样式整块丢失是他截图报的**（结构在、搜索图标和
 > 输入框竖着堆叠、select 露原生箭头）。根因 = **十-16 新坑**：Svelte 岛的 scoped `<style>` 被 Astro
@@ -461,11 +476,12 @@
 
 ### 🟡 还挂着的事
 
-1. **动态页二期三项已于 2026-10-13 深夜全部做完**（搜索 / 年份筛选 / 图片画廊）。
-   ⚠️ 仍**未实战验证**的一条：**图片画廊** —— 现有两条动态零图，所以画廊整块 `hidden`、一次都没显示过。
-   首条带图的动态要在 `dev` 逐项验：图搬进 `[data-gallery-grid]`、正文不再有裸图、
-   点缩略图弹 Fancybox、`data-fancybox` 同组能整组翻页。
-   （原先记的"深链撞墙"已一并解决：条目现在有 id `dynamic-<文件名>`，`#hash` 能直接定位。）
+1. **动态页二期三项已全部做完并实战验证（2026-10-13 深夜 → 10-14）**（搜索 / 年份筛选 / 图片画廊）。
+   ✅ **图片画廊已于 2026-10-14 补齐并验证**：实测发现它当时其实是**坏的**（两条真缺陷：Swup 捕获阶段
+   `preventDefault` 把 Fancybox 的委托点击吃掉 → 点缩略图不弹灯箱还被 navigate 走；网格一条 CSS 都没有），
+   已修（`data-no-swup` + `dynamic:gallery-rendered` 补 bind + 照参考站数值补网格样式），
+   用两条临时带图动态在 preview 与线上两路验过全部分支。根因与通则记 **十-17**；临时条目已删。
+   （原先记的"深链撞墙"也已解决：条目有 id `dynamic-<文件名>`，`#hash` 能直接定位。）
 2. **服务器回滚资产**：个数与占用是**会变的状态**，只在第三节那行维护（AGENTS 运维条也是这个口径）。
    **必须用户明确说才删**，我不会自己动。
 3. **2026-09-30 那批「报了但没做」的清单——2026-10-01 已清掉大半，剩下的都在下面**
@@ -1178,23 +1194,23 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-10-13 深夜实测；**线上 = V0.1.44**，`src/` 累计 10 个文件、已部署）
+## 三、当前状态快照（2026-10-13 深夜实测；**线上 = V0.1.45**，`src/` 累计 12 个文件、已部署）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**本批两笔**：`cadc58f` 筛选栏样式搬全局（V0.1.44）+ `65aeb8a` 年份下拉全站化；**已推送，`HEAD == origin/main`**。上一批：四条 BUG + 动态页二期三项 + 横幅波浪三处（V0.1.43）。今日更早：动态 0.1.31 / meCard 社交按钮 0.1.32 / 波纹高度 0.1.33 / 二维码浮层动效 0.1.34 / PostMeta 间距 0.1.35 / 手册同步 v1.4.0 0.1.36 / 暂无标签间距 0.1.37 / 顶部三平台说明 0.1.38 / 手册同步 v1.4.1 0.1.39 / SEO 元数据 0.1.40 / `og:type` 0.1.41 / 分页 title 0.1.42 |
-| 工作区 | 本批 `src/` 动 **2 个文件**：`DynamicFeed.svelte`（筛选栏样式注释化 + 年份下拉组件化：`yearOpen`/`yearBox`/`yearTrigger` 状态、`setYear`/`onWindowClick`/`onTriggerKeydown`/`onItemKeydown`、`<svelte:window>` 点外收起）、`global.css`（`.dynamic-filter-*` 与 `.dynamic-year-*` 全部规则，样式必须进全局 = 十-16）。`package.json` 版本号 0.1.44。文档动 `docs/agents/swup.md`（新增 **十-16** Svelte 岛 scoped CSS 内联坑 + 下拉交互规格）、`AGENTS.md`（十-2 加十-16 指针、计数 1~16）、`HANDOFF.md`。**零依赖改动** |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**本批（第六批）一笔**：`f267c3c` 图片画廊两处真缺陷（V0.1.45）；上一批两笔：`cadc58f` 筛选栏样式搬全局 + `65aeb8a` 年份下拉全站化（V0.1.44）、`2cfc1b8` 文档收尾；**已推送，`HEAD == origin/main`**。上一批：四条 BUG + 动态页二期三项 + 横幅波浪三处（V0.1.43）。今日更早：动态 0.1.31 / meCard 社交按钮 0.1.32 / 波纹高度 0.1.33 / 二维码浮层动效 0.1.34 / PostMeta 间距 0.1.35 / 手册同步 v1.4.0 0.1.36 / 暂无标签间距 0.1.37 / 顶部三平台说明 0.1.38 / 手册同步 v1.4.1 0.1.39 / SEO 元数据 0.1.40 / `og:type` 0.1.41 / 分页 title 0.1.42 |
+| 工作区 | 本批（V0.1.45）`src/` 动 **3 个文件**：`DynamicFeed.svelte`（画廊：`data-count`/`data-layout`/`+N` 角标 + **`data-no-swup`** + 渲染完派发 `dynamic:gallery-rendered`）、`FancyboxManager.astro`（监听该事件补一次 `setup()`）、`global.css`（`.dynamic-gallery-*` 全套网格规则，照参考站数值）。`package.json` 版本号 0.1.45。文档动 `docs/agents/swup.md`（新增 **十-17**：Swup 捕获阶段吃掉委托点击 + 客户端渲染内容的初始化时机）、`AGENTS.md`（计数 1~17）、`HANDOFF.md`。上一批（V0.1.44）动 `DynamicFeed.svelte` + `global.css`（筛选栏与年份下拉，样式进全局 = 十-16）。**零依赖改动** |
 | 文档分层 | `AGENTS.md` + `AGENTS.local.md` 合计 < 65536 B（`npm run docs:check` 实测 0 error，**1 条余量提醒：常驻层只剩 174 B** —— 十-16 的细节已沉进 `swup.md`，常驻层只加了一句指针，**下次加内容前必须先下沉到 `docs/agents/` 分册**） |
 | 浏览器能力 | **2026-10-12 已装 DSH 的 playwright browser-use provider**（`~\.dsh\profiles\desktop\`，不在仓库内）。⚠️ **本会话仍无工具** —— provider 不接管已活动 Session，**要新建/恢复 Session** 才出现 `mcp__playwright-mcp__*`。⚠️ **别改成 `headless: false`**。当前可用通道：`npm run probe -- <url> <宽> <高>` + 本地 `astro preview`（**别用 `file://` 验 dist**，见 harness.md B-13） |
-| 线上站点 | ✅ **2026-10-13 深夜部署 V0.1.44**（第六节原子替换 + 替换前断言：`dynamic-year-panel` / `dynamic-filter-search` 必须在 `dist.new/_astro/`、`V0.1.44` 必须在、`V0.1.43` 必须不在）。**从本机打公网 IP 用浏览器实测（复现他的路径：首页软导航进动态页）**：面板收起 `opacity:0/visibility:hidden`、展开 `opacity:1/visible/translate:0`、边框 `1px solid`、箭头 `rotate(180°)`、选项「全部年份/2026」、选中 2026 后触发器文案变「2026」且计数「筛选出 2 / 2 条」→ **PASS**；`/` `/2/` `/archive/` `/posts/ccnewtools-manual/` 全 200；站点信息卡 `V0.1.44` |
-| 本地构建 | 本批 `npm run build` 退出码 0，**43 页 / 357 文件**，Pagefind 正常。产物核验：`Layout.Caf-QmPj.css` 含 `.dynamic-filter-search` 与 `.dynamic-year-*`（每页 head 都挂 → 软导航安全）；`/dynamic/` 页**不再**有内联的 `.dynamic-filter-search.svelte-*`；`npm run check` **0 error / 3 hint** |
+| 线上站点 | ✅ **2026-10-13 深夜部署 V0.1.45**（第六节原子替换 + 替换前断言：`dynamic-gallery-grid` / `dynamic:gallery-rendered` / `data-no-swup` 必须在 `dist.new/_astro/`、`V0.1.45` 必须在、`V0.1.44` 必须不在）。**浏览器实测线上**：`/_astro/Layout.*.css` 含画廊网格与单图规则；`/dynamic/` 站点卡 `V0.1.45`、软导航进入后条目 2 条、年份面板 `visible`、选项 `[全部年份,2026]`、搜「博客」→ 1 条、零 pageerror；**回归：文章页点正文图灯箱正常弹出**（`fancybox__container has-thumbs is-ready`，这也是本站灯箱**第一次被真实点击验证**）。⚠️ 线上两条动态**零图**，画廊在线上仍不可见（用临时条目在本地 preview 验的全部分支，已删除临时条目） |
+| 本地构建 | 本批 `npm run build`（含临时画廊条目）退出码 0；**零图回归自检**（删临时条目后重建）：真页面 2 条、`[data-dynamic-gallery]` 保持 hidden、正文零裸图、搜索/年份在、**零图不拉 Fancybox 本体 chunk**、零 pageerror。画廊双图/单图/灯箱/翻页四条分支在 preview 全 PASS（网格 `display:grid`/`grid-template-columns:222px 222px`/`aspect-ratio:1/1`/`object-fit:cover`；单图 `layout=single`、`576x288`、`object-fit:contain`；灯箱 `00-toolset-home → 02-parsed`）。`npm run check` **0 error / 3 hint** |
 | 文档自检 | `npm run docs:check` = **0 error / 1 条提醒**（常驻层余量 174 B，见上） |
 | 服务器配置 | **未动**（只换 dist；没碰 Nginx / 宝塔） |
 | 依赖 | 本批**零改动**。基线仍是 `@astrojs/check@0.9.10` devDep、`allowScripts` 钉 `esbuild@0.28.2` |
 | dev / preview server | 本批两轮 `npm run preview`（:4321）做验证，**收尾时按「`node.exe` + `astro\bin\astro.mjs` + `preview`」精确杀掉并复查残留 = 0**。当前 dev 与 preview **都已停** |
-| 服务器回滚资产 | `dist.old` + **41 个 `dist_backup_*`** = **42 个**（本批新增 1 个）。全部保留，**删需用户明确同意**。回滚一行：`cd /www/wwwroot/chenBlog && rm -rf dist && mv dist.old dist` |
-| 临时文件 | **本批已清并复查**：本地 `scripts/_tmp_*.mjs`（5 个探针/截图脚本）+ 截图 3 张 + `%TEMP%\chenblog_dist.tar.gz`；服务器 `/tmp` 部署包已删（`/tmp/cb*`/`chenblog*` = 0）。⚠️ **回滚资产不算临时文件，不删** |
-| 待用户拍板 | ⓪c ⓪d ⓪e 已结（见第二节）。⓪a browser-use 插件已装、**等他新建 Session 实测**。⓪a2 同浏览器 `mode: attach` 未做。⓪b OwO 表情 21 图无 `alt`（第三方组件）。① 手册分节线（10 条）观感要不要滤 ② V0.1.26 两条复测 ③ 新文章肉眼验收 ④ 灯箱真人点击 ⑨ 全站 title 带不带后缀（SEO）⑩ meCard 那排真人反馈 ⑪ 列表卡「暂无标签」假文案等他定。**【本批新增】图片画廊仍未实战验证**（两条动态都零图，`[data-dynamic-gallery]` 恒 hidden）→ 他发首条带图动态时逐项验（搬图/灯箱/整组翻页） |
+| 服务器回滚资产 | `dist.old` + **42 个 `dist_backup_*`** = **43 个**（本批新增 1 个）。全部保留，**删需用户明确同意**。回滚一行：`cd /www/wwwroot/chenBlog && rm -rf dist && mv dist.old dist` |
+| 临时文件 | **本批已清并复查**：本地 `scripts/_tmp_*.mjs`（6 个探针/截图/调试脚本）+ 截图 5 张 + `%TEMP%\chenblog_dist.tar.gz`；**两条临时动态条目**（`2026-10-14-120000.md` 双图 / `-130000.md` 单图，专为验画廊而造）已删并重建；服务器 `/tmp` 部署包已删（= 0）。⚠️ **回滚资产不算临时文件，不删** |
+| 待用户拍板 | ⓪c ⓪d ⓪e 已结（见第二节）。⓪a browser-use 插件已装、**等他新建 Session 实测**。⓪a2 同浏览器 `mode: attach` 未做。⓪b OwO 表情 21 图无 `alt`（第三方组件）。① 手册分节线（10 条）观感要不要滤 ② V0.1.26 两条复测 ③ 新文章肉眼验收 ⑨ 全站 title 带不带后缀（SEO）⑩ meCard 那排真人反馈 ⑪ 列表卡「暂无标签」假文案等他定。~~⑤ 图片画廊未实战验证~~ → **已完成（V0.1.45）**，两条真缺陷（灯箱被 Swup 吃掉 / 网格无 CSS）已修并两路验证。**【本批新增·要他拍】要不要把参考站新版的自研内联查看器（`page-gallery-viewer` + 工具栏 + 折叠 + 计数器，非 Fancybox）也搬过来** —— 现在本站是「网格 + Fancybox 灯箱」，功能等价但少那套自研 UI |
 | 既存小坑 | `--radius-large` / `--panel-border-color` 未定义（AGENTS 五-16）——直角正好符合站内口径，别当缺陷补变量；`focus-ring-inset` 全站无定义（死类，只有 DropdownMenu 在用）；`tsconfig.json` react jsx 残留无影响；`/site.webmanifest` Content-Type 缺映射；重复 id `announcement`/`cardTags`（九节已判定降级） |
 
 | 项 | 状态 |

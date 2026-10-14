@@ -270,6 +270,16 @@ Tailwind 的 `prose-base` 拼错 → 该工具类从未生效。它正好是 `pr
 - **回滚资产的命名**：每次部署留 `dist.old` + `dist_backup_<时间戳>`（第六节流程产出的）。
   保留与删除的规则见**第七节收尾铁律**；当前有几个、共占多少是**会变的状态**，只记在
   [`HANDOFF.md`](./HANDOFF.md) 第三节，别在这里复制一份过期数。
+- **每天开工先做依赖体检（2026-10-14 用户立的规矩，只读、不改依赖）**：
+  ① `npm outdated` 看哪些包落后（Current / Wanted / Latest 三列）；
+  ② `npm audit --registry=https://registry.npmjs.org` 查漏洞（默认 npmmirror 不实现 audit，会假报 404）。
+  ⚠️ **`Latest` 列不是升级目标**：`mermaid` 的 Latest 是 12.x、`typescript` 的 Latest 是 7.x，**都撞上面的版本天花板**
+  （`astro-mermaid` peer 只收 `^10||^11`、`@astrojs/svelte` peer 只收 `^5.3.3||^6.0.0`）→ 看到"落后"别手痒升。
+  2026-10-14 实测 `npm outdated` 有 12 个包落后，其中只有 patch/minor（astro 7.3.4→7.3.8、svelte、katex 0.18.x、
+  @astrojs/* 等）是"可考虑"的，mermaid/ts 两个大版本是"绝不能碰"的。
+  ⚠️ **体检 ≠ 升级**：真要升（哪怕 patch），也属于**改依赖**——他对新增/升级依赖保守，
+  **要他当次点头**，且走九节那条干净序列（`npm update --package-lock-only` → `npm ci` → `npm run build`），
+  绝不用 `npm audit fix --force`（会把 mermaid 降级撞天花板）。**日常只把体检结果报给他，不擅自升。**
 - 前端计划：**页面间动画已于 2026-09-23 用 Swup 实现**（见第十节）；剩余计划见 `README.md` 的「后续计划」。
 
 ### 九·补（2026-10-12 常驻层瘦身时搬进来的原文）

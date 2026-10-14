@@ -106,16 +106,17 @@ npm run new:post -- --day 29 --title "标题"   # 文章脚手架（ASCII slug +
 
 **验证手段只有三样**：`dev` 看效果 + `build` 确认能构建通过 + `npm run check` 查类型。没有 lint / test 脚本，也没有部署脚本。
 
-> `npm run check` 当前基线：**0 error / 4 条 hint**，**这 4 条是故意留的、别当 error 追**：
-> ① `PostCard.astro:39` `password` 声明未读（= 五-5 那条"锁图标其实是空的"）；② `SiteStatus.astro:123` `siteStartDate`
-> 是 `define:vars` 注入的（tsc 看不到但运行时真有）；③④ `meCard` / `CopyShare` 各一条 `execCommand` 的 ts(6387) deprecated
-> （纯 HTTP 下没别的出路，五-38；且 `CopyShare` 那条脚本是 `is:inline`，**不能写 TS 断言去压**，五-39）。
+> `npm run check` 当前基线：**0 error / 3 条 hint**，**这 3 条是故意留的、别当 error 追**：
+> ① `SiteStatus.astro:123` `siteStartDate` 是 `define:vars` 注入的（tsc 看不到但运行时真有）；②③ `meCard` / `CopyShare`
+> 各一条 `execCommand` 的 ts(6387) deprecated（纯 HTTP 下没别的出路，五-38；且 `CopyShare` 那条脚本是 `is:inline`，**不能写 TS 断言去压**，五-39）。
 > `src/modules.d.ts` 里那条 `declare module "@rehype-callouts-theme"` 是给 check 准备的——它是 `astro.config.mjs` 的
 > **vite alias**，tsc/Volar 不解析 alias，删了报 ts(2882)。它比 tsc 慢得多（冷启动 20~30s），别每改一行就跑。
 > 老的 `npx tsc --noEmit -p tsconfig.json` 仍应退出码 0（它快，适合随手核）。
 
 查漏洞要**显式换官方源**（默认 registry 是 npmmirror，它不实现 audit 接口，会报 `404 NOT_IMPLEMENTED` 而不是给结论）：
 `npm audit --registry=https://registry.npmjs.org` —— **每次现跑、别引用旧数字**（2026-10-12 实测 **23 条 / 退出码 1**；2026-09-21 那次是 0）。⚠️ **禁用 `npm audit fix --force`**（会把 mermaid 降级撞第九节天花板，细则见 `todo.md`）。
+
+🔴 **每天开工跑 `npm outdated` + 上面那条 audit（都只读）**；**`Latest` 不是升级目标**（mermaid/ts 撞天花板），大版本升级要他点头（细则 `todo.md`）。
 
 ⚠️ **`dev` 下站内搜索一定不可用**：Pagefind 索引是 `astro build` 之后才生成的，dev 服务不认 `dist/pagefind/`，
 组件会显示"开发模式下没有搜索索引"——**这是设计，不是 bug**（参考站在 dev 下塞假结果，我们塞真提示）。

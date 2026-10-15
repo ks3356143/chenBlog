@@ -40,7 +40,7 @@ harness 注入链 = `~/.dsh/AGENTS.md` → `AGENTS.md` → `AGENTS.local.md`，*
 个人博客，**纯静态站点**（Astro SSG），部署在阿里云 + 宝塔面板 + Nginx 上。
 
 - 线上地址：http://47.108.230.220/ （目前是 IP，**没有域名**）
-- 文章 27 篇（26 篇中文 URL 的 CSS100Day/CodePen + 1 篇 ASCII slug 的 `/posts/ccnewtools-manual/`），
+- 文章 28 篇（26 篇中文 URL 的 CSS100Day/CodePen + 2 篇 ASCII slug 的 `/posts/ccnewtools-manual*`），
   UI 和提交信息全部为中文
 
 ### 参考源（用户说"参考"时，默认指这两个）
@@ -134,7 +134,7 @@ src/config/siteConfig.ts    # 站点总开关：分页数、图片格式、页�
 src/config/navBarConfig.ts  # 顶部菜单项（含「文章」子菜单）——改菜单只改这里
 src/config/           # 另有 backgroundWallpaper / commentConfig / effectsConfig / galleryConfig（相册清单，见五-28）
 public/gallery/<id>/  # 相册图片本体，按 1.jpg 2.jpg 序号命名；与 galleryConfig 的 id 一一对应
-src/content/posts/    # 27 篇文章（25 .md + 2 .mdx）；images/ 是空的历史遗留目录
+src/content/posts/    # 28 篇文章（26 .md + 2 .mdx）；images/ 是空的历史遗留目录
 src/content/spec/     # 单页内容（about 等）
 src/content/dynamic/  # 动态（说说）：一条一个 md，文件名 YYYY-MM-DD-HHMMSS.md 即条目 id
 src/pages/            # 路由：about / archive / categories / tags / series / dynamic / guestbook / gallery / posts/[...slug] / [...page]
@@ -177,7 +177,7 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
 - **1** `site_url` 随环境变（dev `localhost:4321` / build `47.108.230.220`）→ 改地址必须同步改，否则外链、sitemap、RSS 全错乱。
 - **2** 封面路径以 `src/` 为基准。**3** 代码块超 15 行自动折叠（"代码消失"就是这个）。**6** 统一 webp q80。**7** `dist/` `.astro/` `node_modules/` 不入库。
 - **8** ⚠️ **Astro 7 下不能留空的 `<script></script>`** → `Cannot find the built path for …`，**整页含首页渲染失败**（Astro 6 容忍、7 报错）。
-- **9** 基线（2026-10-12 实测）**43 页 / 357 文件 / 21.31MB**，27 篇。**报数字必须带方法**（`du -sh` 按 4K 分块虚高）：`find dist -name index.html|wc -l`、`find dist -type f|wc -l`。⚠️ **加一条动态不动这些数字**。
+- **9** 基线（2026-10-12 实测）**44 页 / 359 文件 / 21.57MB**，28 篇。**报数字必须带方法**（`du -sh` 按 4K 分块虚高）：`find dist -name index.html|wc -l`、`find dist -type f|wc -l`。⚠️ **加一条动态不动这些数字**。
 - **10** `@astrojs/markdown-remark` **必须显式声明**。通则：`astro.config.mjs` 里 import 的每个包都要显式声明，**别赌 peer 自动安装**。
 - **11** `allowScripts` 钉精确版本（现只剩 `esbuild@0.28.2`）→ 升级忘了改，npm **静默跳过 postinstall**，只有全新克隆才崩。
 - **21** 🔴 **改 `src/plugins/**` 或 markdown 链 → 必须 `rm -f node_modules/.astro/data-store.json` 再构建 + grep 产物确认**（内容缓存在 `node_modules/.astro/`、**按内容哈希失效、插件源码变了它不管** → 退出码 0 但产物是旧的）。⚠️ **别在 dev 运行时删**；同族 `node_modules/.vite/` 会造成"整块功能静默消失、完全像 JS 回归"。
@@ -293,7 +293,7 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 > 🔴 改到任何文章 / 手册内容前先 Read `writing.md`：**八-9 的同步自检标准与「站内故意加」清单只能从那里读。**
 
 - 他说"发文章"时 **不要发前置问卷** —— 唯一必须问的是**归位（永久 URL）**。语法特性、摘要、分类、标签、日期一律自己定并事后说明。
-- **现状**：27 篇 = 25 `.md` + 2 `.mdx`，无草稿。`category` 两个值（设计灵感 26 / 工具 1）→ **再新增分类值先确认**（新值会立刻进分类栏 / `/categories/` / 归档筛选）。
+- **现状**：28 篇 = 26 `.md` + 2 `.mdx`，无草稿。`category` 两个值（设计灵感 26 / 工具 2）→ **再新增分类值先确认**（新值会立刻进分类栏 / `/categories/` / 归档筛选）。
 - **分工**：他给 MD 正文 → 特殊语法（Mermaid / `$$` / `:::` / 图片网格 / `<github>` / 外链图）**我自己扫**，扫到就逐项验，**不许"配置装了就当它能用"**；`description` 没给就提草稿；tag「CSS100天」vs series「CSS100Day」两套写法别混。
 - ⚠️ **图片路径已在 2026-10-10 更正**（writing.md 原文还写着"本地路径我读不到"，**以这里为准**）：**会话附件发来的图，消息里那个绝对路径能直接读**（哪怕是微信/电脑管家临时目录）→ **别再让他"先放 `public/` 或改成 URL"**。只有他**口头写一个路径**时才受跨工具路径限制（`D:/xxx` vs `/d/xxx`，见 harness.md）。
 
@@ -318,7 +318,7 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 
 **图片唯一正确写法**：`![说明](/images/xxx.jpg)` + 文件放 `public/images/`。❌ 正文里 `<img src="./x.svg">` → 解析成 `/posts/<slug>/x.svg` → 404。✅ 写在 ``` 围栏里**无害**（不发请求 —— 曾害我误报"heart.svg 404"）。相对路径不行、**中文文件名也不行**（一组图放一个子目录，文件名 `NN-语义`）。`src/assets/covers/1,2,3.jpg` 是**站头轮播壁纸**不是文章封面。
 
-⚠️ **配置齐全但从未在生产用过**：**Mermaid、KaTeX、`:::` callout、图片网格** —— 27 篇零使用，四条渲染路径**零实战验证**，首篇用到必须在 `dev` 逐项确认再上线。**已在生产用的别混进去**：代码块折叠（28+ 产物含 `ec-collapse`）、`<github>` 卡片（`/about/` 实渲染 3 张）。
+⚠️ **配置齐全但从未在生产用过**：**Mermaid、KaTeX、`:::` callout、图片网格** —— 28 篇零使用，四条渲染路径**零实战验证**，首篇用到必须在 `dev` 逐项确认再上线。**已在生产用的别混进去**：代码块折叠（28+ 产物含 `ec-collapse`）、`<github>` 卡片（`/about/` 实渲染 3 张）。
 
 ## 九、长期结论与别再尝试的清单（**索引** — 全文 `docs/agents/todo.md`）
 
@@ -371,7 +371,7 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 - **15** ⚠️ **「内容随页面变、但位置在容器外」的 chrome 必须登记成 Swup container**（横幅标题 bug）。迷惑点：那层本来就带 `transition-swup-fade`、CSS 也照它写了 → 看起来"已在参与过渡"，**实际只是淡出淡入同一份内容**（表现为"有动画但字没换"、只有 F5 才对）。修法两处：post-meta **移进** overlay 容器 + `containers: ["#banner-overlay-container", "#swup-container"]`。
   - ⚠️ **登记成 container 前先查有没有代码把实例句柄挂在元素属性上**（打字机 `el.__typewriterInstance`）→ 节点被换掉后再也 destroy 不到，**留下孤儿定时器链**。判据：**每秒由打字机回调发起的 setTimeout 次数是否随导航递增**（实测 1→3→2→3→3 有界 = 正常）；**别用"动画还在跑"当判据**。
   - **刻意没照搬参考站的** `#banner-dim-container` / `#left|right-sidebar-dynamic` / `#floating-toc-wrapper`（**侧栏与悬浮目录是本站刻意留在容器外的**）→ 有依据的偏离，**别当漏改补上**。
-  - 验证**两向都要测**；核 overlay 容器在**全部 43 页**都存在；post-meta 是 `hidden lg:flex` → **375 下 `display:none` 属正常**。控制台 `[swup] No CSS animation duration…` 先确认**是不是自己探针注入了 `transition:none!important`**。
+  - 验证**两向都要测**；核 overlay 容器在**全部 44 页**都存在；post-meta 是 `hidden lg:flex` → **375 下 `display:none` 属正常**。控制台 `[swup] No CSS animation duration…` 先确认**是不是自己探针注入了 `transition:none!important`**。
   - ⚠️ **同族第二处已修（2026-10-13）**：右栏卡片不随软导航更换（`isPostPage ? TOC : 日历`，≥1280px 可见）
     → `containers` 加 `#right-sidebar`。**光加 container 不够**：脚本重跑选择器要覆盖**所有** container、
     `SiteInfo` 要改 `onReinit` + 每轮先解绑、`SiderBarToc` 的 window 监听加哨兵。全文与实测数字在 `swup.md` 十-15 末段。

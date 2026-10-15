@@ -3,7 +3,25 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-14（第七批：待拍板 1~6 全部处理，已上线 V0.1.47）**。
+> 最后更新：**2026-10-15（第八批：CCNewTools V1.5.0 手册按「一版一篇」新发，已上线 V0.1.48）**。
+>
+> **🔧 2026-10-15 一句话（用户"手册更新 V1.5.0，直接新发一篇文章，不要覆盖旧的了"）**：
+> ① **先核前提再动手**（八-9"内容已存在要先摆冲突问一次归位"）：源手册 `使用手册.md`（mtime 10-13 13:35、17804 B）
+> 与站内 v1.4.1 那篇**归一化后只差 3 处版本号**，正文一个字没新增；v1.5.0 的真新功能只在
+> 他仓库 `.claude/tmp/发版说明-v1.5.0.md`（九级标题编号全链 / WQ 层级自动重组 / 重组可见信号 / WPS 存档免疫），
+> **没写进使用手册**。② 他把范围定为**「手册全文」**（不加"更新了什么"那节）、slug 选 **`ccnewtools-manual-v150`**
+> → 新 URL `/posts/ccnewtools-manual-v150/`，**旧那篇 V1.4.1 原样不动**（以后一版一篇）。
+> ③ **16 张截图按八-9 的 md5 法证明没重拍**（同参数重转 → 16/16 逐字节相同），而 `00-toolset-home.webp`
+> 顶栏徽标实测 **V1.4.0** → 文末加一句"截图取自 v1.4.0"的注，**登记为站内规矩第 6 类**（不登记下次同步会被抹掉）。
+> ④ 生成脚本 `_scratch/gen-v150.mjs`（一次性）里每步都带断言：图片映射 16 / 围栏 2 对 / 宽表 3 处 / Q 空行 15 处 /
+> 删 9 条分节线 / 弯引号 29 对且**不碰 `<...>` 与 code span 与围栏** / U+FFFD = 0。
+> ⑤ 门禁：`build` 0（**44 页 / 359 文件 / 21.57MB**，页数 +1 符合预期）/ `check` **0 error 3 hint** /
+> `docs:check` **0 error**（常驻层余量 **78 B**，AGENTS.md 五处计数走**字节中性**脚本更正，57866→57866 B）。
+> ⑥ 浏览器实测（preview :4321）：1200 与 375 双档 `overflowX=0`、`h1=1`、破图 0、标题序列 `h1,h2…`、
+> 三张宽表 375 下 `scrollable:true`（1029/726/1089 vs 容器 309）、零 pageerror；
+> **Pagefind 真机 API 查询**：「追踪表」「银河麒麟」「九级标题编号全链」三个词都命中新篇（后者排第一）。
+> ⚠️ **Pagefind 分片是压缩格式，明文 grep URL 必然 0 命中**（旧文章同样 0）→ 查收录只能调 `pagefind.js` 的 `search()`
+> 并 `await x.data()` 取 `url`（`x.url` 在 1.x 的 result 上不存在）。
 >
 > **🔧 2026-10-14 一句话（用户"1~6 全部做了吧"）**：
 > ② **全站 title 带后缀** → `BaseLayout` 一处加「-亦林」（含"亦林"的不重复加，首页仍品牌全名）；
@@ -1215,23 +1233,23 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-10-14 实测；**线上 = V0.1.47**，已部署）
+## 三、当前状态快照（2026-10-15 实测；**线上 = V0.1.48**，已部署）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**本批（第七批）四笔**：`8c54f09` title后缀+假文案+分节线（V0.1.46）+ `c6af208` 修 version 被误写成整数 46 + `1a93fe2` 画廊内联查看器（V0.1.47）+ 文档；**已推送，`HEAD == origin/main`**。上一批：`f267c3c` 图片画廊两处真缺陷（V0.1.45）。更早：cadc58f/65aeb8a/2cfc1b8（V0.1.44）、四条 BUG+动态二期三项+波浪三处（V0.1.43） |
-| 工作区 | 本批（V0.1.46 + V0.1.47）`src/` 动 **8 个文件**：`BaseLayout.astro`（`documentTitle` 计算 + `<title>` 用它，og:title 不动）、`PostCard.astro`（`PostMeta` 加 `showTags={false}`）、`ccnewtools-manual.md`（删 9 条分节线）、`DynamicItemTemplate.astro`（画廊模板加 `[data-gallery-viewer]` 全套：工具栏/收起/查看大图/计数/stage/左右箭头/大图）、`DynamicFeed.svelte`（`collectGallery` 重写为内联查看器：缩略图 `<button>` + `openViewer`/`stepViewer`/`paintViewer`；删 `data-no-swup` 与 `dynamic:gallery-rendered`）、`FancyboxManager.astro`（`commonOptions` 提到模块作用域 + 新增 `window.__fancyboxOpenImages`；删死监听）、`global.css`（`.dynamic-gallery-viewer/-toolbar/-action/-counter/-stage/-main-image/-nav/-thumb` 全套，照参考站数值、直角）、`global.d.ts`（`__fancyboxOpenImages` 类型）。文档动 `swup.md`（十-17 末段改为"已升级内联查看器"）、`writing.md`（八-9 站内规矩第四→五类：分节线只留 1 条）、`HANDOFF.md`。**零依赖改动** |
-| 文档分层 | `AGENTS.md` + `AGENTS.local.md` 合计 < 65536 B（`npm run docs:check` 实测 0 error，**1 条余量提醒：常驻层只剩 174 B** —— 十-16 的细节已沉进 `swup.md`，常驻层只加了一句指针，**下次加内容前必须先下沉到 `docs/agents/` 分册**） |
-| 浏览器能力 | **2026-10-12 已装 DSH 的 playwright browser-use provider**（`~\.dsh\profiles\desktop\`，不在仓库内）。⚠️ **本会话仍无工具** —— provider 不接管已活动 Session，**要新建/恢复 Session** 才出现 `mcp__playwright-mcp__*`。⚠️ **别改成 `headless: false`**。当前可用通道：`npm run probe -- <url> <宽> <高>` + 本地 `astro preview`（**别用 `file://` 验 dist**，见 harness.md B-13） |
-| 线上站点 | ✅ **2026-10-14 部署 V0.1.47**（第七节原子替换 + 替换前断言：`V0.1.47` 必须在、`V0.1.46` 必须不在、`data-gallery-viewer`/`data-gallery-collapse`/`__fancyboxOpenImages`/`dynamic-gallery-grid` 必须在、`暂无标签` 必须不在、`关于我-亦林` 必须在）。**浏览器实测线上**：模板 `[data-dynamic-item-template]` 的 `content` 含查看器全套（viewer/collapse/lightbox/counter/prev/next/main，收起/查看大文字样对）；`window.__fancyboxOpenImages` 是 function；站点卡 `V0.1.47` 无 `V0.1.46` 残留；软导航进动态页条目 2 条、搜索/年份在、搜「博客」→1、画廊保持 hidden；**回归：文章页点正文图灯箱正常**；43 页 title 全带「-亦林」（首页除外，是品牌全名）。⚠️ 线上两条动态**零图**，查看器在线上仍不出现（内联查看器全部交互分支用临时双图/三图条目在本地 preview 验过，已删） |
-| 本地构建 | 本批多次 `npm run build` 退出码 0；**内联查看器全分支 preview PASS**（临时双图/三图条目）：初始 viewer hidden + 缩略图 button + 正文零裸图；点缩略图 viewer 展开 + 计数 `1/3` + 大图 src；`[data-gallery-next]` 计数 +1 换图、末尾回绕到 1；`[data-gallery-prev]` 回退；`[data-gallery-lightbox]` → `.fancybox__container` + `.f-caption` 显示当前 alt；`[data-gallery-collapse]` → viewer 重新 hidden；零 pageerror。**零图回归**（删临时条目后）：2 条、gallery hidden、不拉 Fancybox chunk。⚠️ **探针读 template markup 必须 `template.content.querySelector`**（`document.querySelector` 不穿透 template，会假报缺失）。`npm run check` **0 error / 3 hint** |
-| 文档自检 | `npm run docs:check` = **0 error / 1 条提醒**（常驻层余量 174 B，见上） |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**本批（第八批）一笔**：`acbc175` 新发 CCNewTools V1.5.0 手册（V0.1.48）；**已推送，`HEAD == origin/main`**。上一批：`7d36982`（记录每天开工体检规矩）；更早 `1a93fe2`/`98d96a8`（V0.1.47）、`8c54f09`+`c6af208`（V0.1.46）、`f267c3c`+`49dce6b`（V0.1.45）、cadc58f/65aeb8a/2cfc1b8（V0.1.44） |
+| 工作区 | 本批 `src/` **只新增 1 个文件**：`content/posts/ccnewtools-manual-v150.md`（317 行，V1.5.0 手册全文）；加 `package.json` 版本号 0.1.47→0.1.48。文档动 `AGENTS.md`（**五处计数，全部字节中性**：27→28 篇 / 43→44 页 / 357→359 文件 / 21.31→21.57MB / 工具 1→2，57866→57866 B）、`writing.md`（八-9 三条新登记：一版一篇口径、V1.5.0 事实、站内第 6 类故意加）、`HANDOFF.md`。**零依赖改动、零组件改动** |
+| 文档分层 | `AGENTS.md` + `AGENTS.local.md` 合计 < 65536 B（`npm run docs:check` 实测 0 error，**1 条余量提醒：常驻层只剩 78 B** —— 本批所有新增内容都写进分册，常驻层只做等长替换；**下次往常驻层加任何东西前必须先下沉腾挪**） |
+| 浏览器能力 | 同前（`npm run probe -- <url> <宽> <高>` + 本地 `astro preview`；browser-use MCP 仍等他新建 Session）。⚠️ **本批新增一条取证坑**：**Pagefind 分片是压缩格式，明文 grep URL 必然 0 命中**（旧文章同样 0，别误报"没进索引"）→ 查收录要在页面里 `await import('/pagefind/pagefind.js')` + `init()` + `search()`，**url 要 `await x.data()` 才拿得到**（1.x 的 result 上没有 `x.url`）。另：PowerShell 里 `node -e "…"` 带引号会被吃掉（本批实测 ParserError），**一律写成 `_scratch/*.mjs` 文件再跑** |
+| 线上站点 | ✅ **2026-10-15 13:03 部署 V0.1.48**（第七节原子替换 + **替换前断言全过**：`V0.1.48` 必须在、`V0.1.47` 必须不在、`posts/ccnewtools-manual-v150/index.html` 必须存在且含 `CCNewTools V1.5.0`、**旧那篇 `posts/ccnewtools-manual/` 必须仍在且含 `CCNewTools V1.4.1`**）。**公网实测**：首页/旧篇/新篇/归档/RSS 全 200；首页 `V0.1.48`×4、`V0.1.47`×0、新卡片链接 2 处；新篇 `<title>CCNewTools V1.5.0 使用手册-亦林</title>`、16 图引用、3 个宽表容器、`h1=1`、文末那句注在；`00-toolset-home.webp` 200 / 20280 B / `must-revalidate, no-cache`。**线上 probe（1280）**：`overflowX=0`、破图 0、三张宽表 `scrollable:true`（1029/726/1089 vs 容器 582）。**线上 Pagefind API**：「追踪表」「银河麒麟」「九级标题编号全链」三词均命中新篇，零 pageerror |
+| 本地构建 | `npm run build` 退出码 0，**44 页 / 359 文件 / 21.57MB**（页数 +1 = 新文章，符合"每加一篇页数 +1"），Pagefind 索引 30 页 / 2903 词。`npm run check` **0 error / 3 hint**（基线未变）。新篇 preview 双档探针：1200 与 375 均 `overflowX=0` / `h1=1` / 破图 0 / 标题序列 `h1,h2,…` / 375 下三张宽表 `scrollable:true`（1029/726/1089 vs 309）/ 零 pageerror。分类页「工具」计数 **1 → 2** 已核 |
+| 文档自检 | `npm run docs:check` = **0 error / 1 条提醒**（常驻层余量 78 B，见上） |
 | 服务器配置 | **未动**（只换 dist；没碰 Nginx / 宝塔） |
-| 依赖 | 本批**零改动**。基线仍是 `@astrojs/check@0.9.10` devDep、`allowScripts` 钉 `esbuild@0.28.2` |
-| dev / preview server | 本批两轮 `npm run preview`（:4321）做验证，**收尾时按「`node.exe` + `astro\bin\astro.mjs` + `preview`」精确杀掉并复查残留 = 0**。当前 dev 与 preview **都已停** |
-| 服务器回滚资产 | `dist.old` + **42 个 `dist_backup_*`** = **43 个**（本批新增 1 个）。全部保留，**删需用户明确同意**。回滚一行：`cd /www/wwwroot/chenBlog && rm -rf dist && mv dist.old dist` |
-| 临时文件 | **本批已清并复查**：本地 `scripts/_tmp_*.mjs`（6 个探针/截图/调试脚本）+ 截图 5 张 + `%TEMP%\chenblog_dist.tar.gz`；**两条临时动态条目**（`2026-10-14-120000.md` 双图 / `-130000.md` 单图，专为验画廊而造）已删并重建；服务器 `/tmp` 部署包已删（= 0）。⚠️ **回滚资产不算临时文件，不删** |
-| 待用户拍板 | **【本批（V0.1.46+47）已全部处理完"1~6"】**：① 画廊内联查看器 ✅ ② 全站 title 后缀 ✅ ③ 手册分节线滤到 1 条 ✅ ④ V0.1.26 两条复测（代码层 ✅，真机观感仍待他）⑤ 列表卡「暂无标签」假文案 ✅ ⑥ meCard 三社交按钮（代码层早已接好，只剩他真机反馈）。**⚠️ 本批踩到自己造的坑**：临时 bump 脚本 `parseInt` 把 version 写成整数 46、毁掉 semver，已随 `8c54f09` 推上去 → `c6af208` 修回；**改版本号一律用 edit 工具逐字改，别写脚本**。**仍挂着的（都不是我能单方推进的）**：⓪a browser-use 插件已装、**等他新建 Session 实测** `mcp__playwright-mcp__*`。⓪a2 同浏览器 `mode: attach` 未做。⓪b OwO 表情 21 图无 `alt`（第三方组件，没动代码）。③′ 他手上那篇**新文章**还没发来（发了就走发稿流程）。④′ V0.1.26 两条 + 本批查看器的**真机观感**（手机强刷看：封面不转圈、点文字不跳、动态页带图条目点缩略图展开查看器）。⑩′ meCard 那排真人反馈（手机扫码能否扫上、QQ 复制提示条观感）。**【要他拍·本批新增】查看器已搬，参考站新版还有一层"点击缩略图默认展开 vs 直接全屏"的取舍** —— 本站现按参考站做成"点缩略图就地展开内联查看器、点查看大图才全屏"，若他更想要"点缩略图直接全屏 Fancybox"（即回退到 V0.1.45 那版），一句话可切 |
+| 依赖 | 本批**零改动**。⚠️ 上次开工体检快照（10-14）：`npm outdated` 12 个落后（astro 7.3.4→7.3.8 等 patch/minor 待他点头）、`mermaid 12.x` / `typescript 7.x` **撞天花板绝不能碰** |
+| dev / preview server | 本批起了 `npm run preview`（:4321）做验证，**收尾时 `job_kill` + 按「`node.exe` + `astro*bin*astro.mjs*`」复查残留 = 0**。当前 dev 与 preview **都已停** |
+| 服务器回滚资产 | `dist.old` + **48 个 `dist_backup_*`** = **49 个**（本批新增 `dist_backup_20261015_130336`）。全部保留，**删需用户明确同意**。回滚一行：`cd /www/wwwroot/chenBlog && rm -rf dist && mv dist.old dist` |
+| 临时文件 | **本批已清并复查 = 0**：`_scratch/`（4 个一次性脚本：生成器 / 两版验证 / 图标 md5 核）整目录删除；`%TEMP%\chenblog_v48.tar.gz`、`%TEMP%\manual_diff\`（归一化 diff 脚本与产物）、`%TEMP%\preview_v150.log` 已删；服务器 `/tmp` 下 `chenblog*`/`deploy_v48*` 计数 **0**（部署脚本自我删除已挪到 ssh 尾部执行）。⚠️ **回滚资产不算临时文件，不删**。⚠️ 本批踩到：**`_scratch/` 并没有被 gitignore**（记忆里以为有）→ 临时脚本要么进 `%TEMP%`，要么收尾必删 |
+| 待用户拍板 | **【本批新增】① 新篇 V1.5.0 手册的真机验收**（手机强刷看 `/posts/ccnewtools-manual-v150/`：16 张图、三张宽表横滚、文末那句"截图取自 v1.4.0"要不要留）。**② 他手册这次没写新功能** → 若想让站内文章体现 v1.5.0 干了什么，得他先把「九级编号全链 / WQ 层级重组 / 重组可见信号 / WPS 存档免疫」写进 `使用手册.md`（我不动他的源文件）。**③ 以后一版一篇已成型**：下次他发 v1.6/v1.7 → 直接 `new:post --slug ccnewtools-manual-v160`，别再问归位。**仍挂着的（都不是我能单方推进的）**：⓪a browser-use 插件已装、**等他新建 Session 实测** `mcp__playwright-mcp__*`。⓪a2 同浏览器 `mode: attach` 未做。⓪b OwO 表情 21 图无 `alt`（第三方组件，没动代码）。④′ V0.1.26 两条 + 动态页内联查看器的**真机观感**（手机强刷：封面不转圈、点文字不跳、带图条目点缩略图展开查看器）。⑩′ meCard 那排真人反馈（手机扫码能否扫上、QQ 复制提示条观感）。⑪ **画廊交互取舍**：本站现按参考站做成"点缩略图就地展开内联查看器、点查看大图才全屏"，若他更想要"点缩略图直接全屏 Fancybox"（V0.1.45 那版），一句话可切。⑫ **依赖升级**：10-14 体检报的 10 个 patch/minor 落后，要不要动（体检 ≠ 升级，任何 bump 都要他点头 + 走干净 `npm ci` 序列）。⑬ Twikoo 裸 `envId IP:8099` → 同域反代、面板 IP 白名单、`90a38e5` 提交消息写错（要强推）——三条老的决定项仍未批 |
 | 既存小坑 | `--radius-large` / `--panel-border-color` 未定义（AGENTS 五-16）——直角正好符合站内口径，别当缺陷补变量；`focus-ring-inset` 全站无定义（死类，只有 DropdownMenu 在用）；`tsconfig.json` react jsx 残留无影响；`/site.webmanifest` Content-Type 缺映射；重复 id `announcement`/`cardTags`（九节已判定降级） |
 
 | 项 | 状态 |

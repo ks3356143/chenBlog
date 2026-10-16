@@ -389,6 +389,47 @@ reasoningEfforts:
 
 ---
 
+### B-23 🔴 Playwright `page.evaluate(fn, arg)` 的参数里**不能放函数**（2026-10-16 整脚本崩在第一项）
+
+写"逐按钮点击"这类通用探针时，习惯把"读状态的回调"当参数传进去：
+`clickTest(name, url, sel, readFn)` → `page.evaluate(({s, r}) => …, { s: sel, r: readFn })`。
+Playwright 会抛 **`Attempting to serialize unexpected value at position "r": el => document.documentElement.getAttribute("data-theme")`**
+（来自 `playwright-core/lib/coreBundle.js` 的序列化器，**不是页面错误**，`pageerror` 抓不到）。
+
+**修法**：在 **Node 侧**先 `const src = readFn.toString()`，只把**字符串**传过边界，页面里
+`new Function("el", "return (" + src + ")(el)")` 执行。代价是失去静态检查，所以读数失败要在页面里
+`try/catch` 回 `READ_ERR + msg`（否则真缺陷会被读成"没变化"）。
+
+### B-24 探针报"元素不存在 / ❌NOCHANGE" **不等于缺陷**——本项目大量节点是条件渲染（同日）
+
+本轮一次扫出 15 个按钮，其中 **4 个的"点不到"全是我自己误判**：
+`.search-panel` 只在有搜索词时存在、日历月份格子只在点开月视图后才渲染、
+`#reset-month-btn` 在当前月是 `display:none`、动态"加载更多"只在条目数 > 每页数时才出（本站仅 2 条动态）。
+两条硬规矩：
+
+1. **判"没渲染"与"渲染了但不可见"要分开**：`getBoundingClientRect().width > 0` + computed `display/visibility/pointer-events`
+   一起读，别只看 `querySelector` 是否命中。
+2. **每次 `page.goto` 都重置状态**：要看"点 A 之后才有 B"的顺序态，必须在**同一次页面会话里连着点完**，
+   不能一项开一个 URL（我第一版就是每项 goto，于是永远看不到月视图里的格子）。
+3. ⚠️ 顺带：`querySelector('button:contains, .btn-regular')` 这种**非法选择器会让整段 `evaluate` 抛 SyntaxError**
+   （`:contains` 是 jQuery 不是 CSS），一条脚本里一个非法选择器 = 后面全不跑。
+
+### B-25 本会话三条 shell / 工具边界（同日；与 collab.md 的行尾纪律并列）
+
+1. 🔴 **每次 `pwsh` 调用都是全新进程**——上一条命令里的 `$h` / `$vars` 下一条**不再存在**。
+   用它跑 `Select-String -Path $h` 会**静默 0 命中**，看起来像"产物里没这个内容"（本轮我据此差点误报一次）。
+   → 要么在同一条命令里重新取值，要么落盘成文件再读。
+2. pwsh 里 `Invoke-WebRequest` 失败后 `$_.Exception.Response` 是 **.NET 的 `HttpResponseMessage`，没有 `GetResponseStream()`**
+   （报 `InvalidOperation`）。错误响应体直接读 **`$_.ErrorDetails.Message`**。
+3. `grep` 工具的 ripgrep **不支持反向引用**：`"([^"]*)"\s*:\s*"\1"` 这类"找 self-same 值"的模式**直接被拒**，
+   换 PCRE2 也不行（工具没开）→ 要这种判定就写脚本用 JS 正则跑。
+
+⚠️ 另两条本轮踩到但**不是新坑**、属老规矩复现：`node -e "…"` 带引号会被 PowerShell 吃掉（→ 一律写成 `%TEMP%\*.mjs` 文件再跑）；
+`Select-String -Path <目录> -Recurse` **没有 `-Recurse` 参数**（要 `-Path (Get-ChildItem -Recurse -File …)`）。
+**临时脚本一律进 `%TEMP%\<项目名>\`，别进仓库**（`_scratch/` 并没有被 gitignore，第八批踩过）。
+
+---
+
 ## A. 继承自上一任的纪律（22 份记忆文件压缩落盘，卸载 Qoder 后仍有效）
 
 ### A-1 否定结论必须配控制组

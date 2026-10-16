@@ -515,6 +515,40 @@
 
 ### 🟡 还挂着的事
 
+0. **🔎 2026-10-16 全站「按钮 / 功能未完成」体检（线上 V0.1.48 逐一点过 + 源码扫描，清单已交他、等他挑）**
+   —— 结论分三档，**每条都带实测出处，不是推测**：
+   - **A 真缺陷（可直接修，属"修缺陷别回问"）**：① 归档页筛选摘要行输出 **「1 1 年」/「0 0 年」**——
+     `ArchivePannel.svelte:152-153` 把 `{groups.length}` 写了两遍、且 150 行
+     `{filteredPostCount === 1 ? "篇文章" : "篇文章"}` 三元两分支**完全相同**（死代码）。
+     ② **站内没有 404 页**：`dist` 根下零个 `404*`，vhost 里 `#error_page 404/404.html;` 是注释状态 →
+     任意错误 URL 给的是 nginx 裸页（实测 `/no-such-page/` = `404 Not Found` html）。
+     ③ 分页**左右箭头 href 缺尾斜杠**（`href="/2"`、`/3`），而同组数字页码是 `href="/3/"`；
+     nginx 有 301、Swup 也接得住（实测点箭头 `swup:contentReplaced` +1、`beforeunload` 0 → 走的是软导航），
+     但爬虫按 href 走要多付一跳、且与该页 canonical `/2/` 不一致。
+   - **B 功能缺口（参考站有 / 我们只有半成品，属"要问"）**：④ 参考站菜单里
+     **友链 `/friends/`、项目 `/projects/`、打赏 `/sponsor/`、书签导航 `/booknav/`、B站/番组/VNDB/MyAnimeList**
+     本站**一条都没做**（源码 grep 零命中）。⑤ **GitHub 卡片无任何降级**：`/about/` 三张卡在本机实测
+     `api.github.com` **全部 `net::ERR_FAILED`**，卡片永远停在 `Waiting for api.github.com...` / `00K`；
+     ⚠️ 这条**很可能是本机网络**（harness A-6 记过"本机直连 GitHub API 常不通"），访客侧未取证，
+     所以只报"没有失败态文案/没有构建期兜底"这个真缺口。⑥ **`pinned` 只做了一半**：排序真生效
+     （`content-utils` 比较 pinned），但列表卡 `.pinned` 这个 class **全站 CSS 从未定义**（探针 `pinnedEls:0`）
+     → 置顶与否没有任何视觉标识。⑦ **相册照片 alt 全空**（`/gallery/zhuhai-2026/` 实测 5/5 空 alt）、
+     灯箱 `caption: false` → 相册没有"每张一句说明"的能力（`galleryConfig` 无 per-photo caption 字段）。
+   - **C 配置/字段齐但从没启用（不坏，别当 bug 追）**：⑧ `Mermaid / KaTeX / ::: callout / 图片网格`
+     四条渲染路径 **28 篇零使用**（本轮脚本正则实测各 0 命中）。⑨ `image` 字段 10 篇写了**且全是空串**
+     → 详情页封面 banner 与 `og:image` 两条路径**从未被走到**。⑩ `password` 只隐藏评论区、**没有密码门 UI**（AGENTS 五-5）。
+     ⑪ `comment: false`、⑫ `visitorCount: false`（Twikoo 访问量统计没开、站内也没有浏览量 UI）
+     ⑬ `siteConfig.pages.*` 三个页面开关**全是 true**，那条 `Astro.redirect("/404/")` 分支从未走过
+     （纯静态 SSG 下 `Astro.redirect` 语义与 SSR 不同 → **真要关一个得先验证**）。
+     ⑭ `DropdownMenu.astro:44` 的 `focus-ring-inset` 是**死类**（全站 CSS 无定义）→ 下拉键盘聚焦没有焦点环。
+   - **✅ 顺手验过「没问题」的（别再重查）**：主题切换/记忆/软导航后保持、分类卡「更多」、站点信息展开、
+     QQ 复制、微信二维码、日历上/下月与日→月→年三级视图、浮动目录、系列展开、复制链接、相册标签筛选、
+     分页跳转、返回顶部、桌面搜索（打字即出结果、↑↓ 可达、Esc 关闭）、动态页年份下拉+搜索、
+     Twikoo 评论（文章页与留言页都真渲染）、RSS/sitemap/manifest/og-image 全 200、卡片封面 alt 全空（符合五-34）。
+     **零控制台报错、零 pageerror**。
+   - 另有既存两条本轮**复验仍成立**：分类卡只有 2 个分类时**收起态 120px 比展开后 80px 还高**
+     （模板写死 `collapsedHeight: 7.5rem`）、且展开后**没有收起按钮**（`btn.hidden`，单向）。
+
 1. **动态页二期三项已全部做完并实战验证（2026-10-13 深夜 → 10-14）**（搜索 / 年份筛选 / 图片画廊）。
    ✅ **图片画廊已于 2026-10-14 补齐并验证**：实测发现它当时其实是**坏的**（两条真缺陷：Swup 捕获阶段
    `preventDefault` 把 Fancybox 的委托点击吃掉 → 点缩略图不弹灯箱还被 navigate 走；网格一条 CSS 都没有），

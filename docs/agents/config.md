@@ -611,7 +611,21 @@
     - ⚠️ **口径分叉，别看花**：`astro build` 那行现在打 **`45 page(s)`**，而 **五-9** 那套方法量的
       `find dist -name index.html | wc -l` 仍是 **44**。差的那一个就是 **`404.html`**——它不是目录页、
       没有 `index.html`，所以五-9 的口径不计它，而 Astro 自己把非 index 的 .html 也算进页数。
-      两个数都对，**报数字必须连着方法一起报**（就是五-9 那条原始教训）。
+      两个数都对，**报数字必须连着方法一起报**（就是五-9 那条原始教训）
+    - 🔴 **第二轮复验抓出来、我自己引入的缺陷：非目录页的产物文件名 ≠ 构建期路径 → canonical 指向死链。**
+      `404.astro` 产出 `dist/404.html`，但构建期 `Astro.url.pathname` 是 **`/404/`**，而 `SEO.astro` 的
+      canonical / og:url 默认取 `Astro.url` → 产物里 canonical 写成 `http://…/404/`，
+      **实测那个 URL 返回 404** —— 页面自证「我的规范地址是个死链」。
+      ⚠️ **第一遍验收完全没抓到**：我只数了 h1 / title / 内链可达性，**从没把 canonical 与这页真实
+      可访问的 URL 做对比**（元素计数型断言对这类错完全隐形）。
+      → 修法：`Layout.astro` 接住 `url` 并转发给 `BaseLayout`（后者是 `<SEO {...Astro.props} />`），
+      404 页显式传 `new URL("/404.html", Astro.site ?? siteConfig.site_url)`。
+      ⚠️ **不传时 `url = Astro.url` 的默认值照常生效** → 其余 44 页零影响。复验口径：线上 45 个 URL
+      （sitemap 44 + `404.html`）逐个抓 canonical/og:url 并与自身真实 URL 比，**0 处不符**；
+      且线上 360 个文件与本地 dist **逐字节相同**（`find . -type f -exec md5sum` 全表比对）。
+      → **通则：凡 `<name>.astro` 直出 `<name>.html` 的非目录页，canonical、og:url、sitemap、
+      `error_page` 目标要逐个核，别信默认值。** 验收清单必须加一条：
+      **「canonical 指向的那个 URL，自己去访问要能 200」**——光数标签数链接抓不到这类错。。
     - ⚠️ **别为了「让 `/404/` 也能访问」再在 pages 下建一个 404 目录页**：那会多一页、多一个 canonical，
       而 `error_page` 只指 `/404.html`；真要指 `/404/` 得配 rewrite，没必要。
       （措辞上**别把那个不存在的目录页写成反引号路径**——`npm run docs:check` 的死引用闸门会把它当真死链报 error，

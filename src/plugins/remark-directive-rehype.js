@@ -30,9 +30,19 @@ const ADMONITION_TYPES = [
     "cite",
 ]
 
+// ⚠️ 只有真正注册成组件的指令名才允许转成自定义标签（2026-10-17 修）。
+// remark-directive 的**文本指令语法是 `:name`**，于是作者正文里的 CSS 写法
+// `rotate:45deg` / `margin-bottom:16px` / `z-index:1` / `:checked` 全被解析成指令，
+// 再经下面 else 分支渲染成 `<45deg></45deg>` 这类非法标签 → 读者看到的正文是错的。
+// 根因、复现与验证见 docs/agents/config.md 五-52。
+// 组件注册表在 astro.config.mjs 的 rehypeComponents（`components: { github }`）。
+// ⚠️ 判定对 text / leaf **两种写法一起放行**（`:github{…}` 与 `::github{…}` 都渲染同一个组件），
+//    否则只放行 leaf 会让 text 写法的卡片静默退回成纯文本。
+const COMPONENT_NAMES = ["github"]
+
 export function parseDirectiveNode() {
-    return (tree) => {
-        visit(tree, (node) => {
+    return (tree, file) => {
+        visit(tree, (node, index, parent) => {
             if (node.type === "containerDirective" || node.type === "leafDirective" || node.type === "textDirective") {
                 const name = node.name ? node.name.toLowerCase() : ""
 
@@ -67,6 +77,27 @@ export function parseDirectiveNode() {
                     node.data.hName = "blockquote"
                     // 关键：清除可能存在的 hProperties，防止变为自定义标签
                     delete node.data.hProperties
+                } else if (
+                    (node.type === "textDirective" || node.type === "leafDirective") &&
+                    !COMPONENT_NAMES.includes(name)
+                ) {
+                    // 未注册的 text/leaf 指令 = 作者的普通文字，退回**原始文本**，不生成自定义标签。
+                    // 用 node.position 从 file.value 抠原文，而不是凭 ":" + name 重构：
+                    // 重构会丢 `{attrs}`、`(label)` 与原始大小写（实测 name 保留大小写，但属性不保留在 name 里）。
+                    const pos = node.position
+                    const raw =
+                        typeof file?.value === "string" && pos
+                            ? file.value.slice(pos.start.offset, pos.end.offset)
+                            : null
+                    if (raw === null || !parent || typeof index !== "number") {
+                        // 宁可让构建大声失败，也不静默丢字或造非法标签
+                        throw new Error(
+                            `[remark-directive-rehype] 无法还原未注册指令的原文：${node.type} ${JSON.stringify(node.name)} ` +
+                                `position=${JSON.stringify(pos?.start)} file.value=${typeof file?.value}`,
+                        )
+                    }
+                    parent.children[index] = { type: "text", value: raw, position: pos }
+                    return
                 } else {
                     // 其他 Directive，保留原有逻辑：转换为自定义 HTML 标签
                     const data = node.data || {}

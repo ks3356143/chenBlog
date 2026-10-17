@@ -1,4 +1,4 @@
-# AGENTS 分册 · 第五节「必须知道的配置约定」全文（五-1 ~ 五-51）
+# AGENTS 分册 · 第五节「必须知道的配置约定」全文（五-1 ~ 五-52）
 
 > 本文件是 `AGENTS.md` 某一节的**全文**，2026-10-12 从 AGENTS.md 无损切出。
 > `AGENTS.md` 只留常驻结论与索引（受 harness 64KB 注入预算限制）；改到本节任何主题前先读本文件全文。
@@ -707,3 +707,46 @@
       （实测点开 `caption: ""`）。要"每张一句人话"得他先给文案，并且要**同时**动两处：
       给 `galleryConfig` 加字段 + 把灯箱 `caption` 打开。**只改一处等于白改。**
     - 对照参考站：`firefly.cuteleaf.cn/gallery/` 自己也只写 `alt="封面"`，所以这不是"照抄漏了"，是**它也没做**。
+
+52. 🔴 **`remark-directive` 的文本指令语法是 `:name` —— 作者正文里任何 `:词` 都会变指令，自研插件再把它渲染成非法标签，读者看到的正文是错的**（2026-10-17 修）
+    - **症状**：第 17 天源码 L17 写的是 **`rotate:45deg`**（字节 hex `3a 34 35 64 65 67`），
+      但 dist 产物里是 **`rotate<45deg></45deg>`**（hex `3c 34 35 64 65 67 3e`），
+      浏览器 `innerText` = `rotate<45deg>` —— **作者写的冒号在读者眼前变成了尖括号**。
+      同型受害者共 **3 篇 7 处**：第 17 天（`:45deg` / `:16px`）、
+      **第 27 天（`:checked样式取代JS点击事件`）**、`边框炫彩和模糊炫彩特效`（`:1` / `:3` / `:2` / `:3把炫彩和模糊炫彩都挡住`）。
+      parse5 在修复前为此报全站 12 处 `invalid-first-character-of-tag-name`（只落这 2 页）。
+      ⚠️ 第 27 天那条是我上一轮只盯第 17 天时**漏掉**的，靠"扫全站所有指令节点"才捞出来 →
+      **同类缺陷要按"这一类"去扫，别按"我看见的那一条"去修。**
+    - **根因链**（每一环都有实测，不是推测）：
+      ① `remark-directive@4.0.0` 的**文本指令**语法正是 `:name`（底层扩展里
+      `text: {[codes.colon]: directiveText}`），于是 CSS 写法 `rotate:45deg`、`:checked` 被解析成
+      `textDirective`；② 自研 `src/plugins/remark-directive-rehype.js` 的 `else` 分支对**任何**非
+      admonition 指令执行 `h(node.name, attrs)` → 产出 hast 元素 `<45deg>`；③ `45deg` 不是合法标签名，
+      浏览器按 bogus comment 解析 → DOM 里多出 `#comment(45deg)`，而冒号已经没了。
+      ⚠️ **围栏代码块与 code span 里的冒号是安全的**：实测 `&::before`、缩进代码里的 `z-index: 45deg`
+      **不生成指令**（本轮把全站正文剥掉围栏后扫描，只有那 7 处文本指令 + about.md 的 3 处 `::github`）。
+    - **修法**（改 `remark-directive-rehype.js`；白名单 = 真注册成组件的名字）：
+      `const COMPONENT_NAMES = ["github"]`（唯一注册处在 `astro.config.mjs` 的
+      `rehypeComponents` → `components: { github: GithubCardComponent }`）。
+      **未注册**的 `textDirective` / `leafDirective` → 用 `node.position` 从 `file.value` 里
+      **抠原始字节**换回 `text` 节点；拿不到原文就 `throw` 让构建**大声失败**。
+      ⚠️ 别凭 `":" + name` 重构，那会丢 `{attrs}`、`(label)` 与大小写；也别静默丢字。
+      ⚠️ **白名单要对 `:github{…}` 与 `::github{…}` 两种写法一起放行**——只放行 leaf 会让 text 写法的卡片静默退回成纯文本。
+      containerDirective（admonition `:::note` 那套）**完全没动**。
+    - **验证（两层，先插件级再产物级）**：
+      ① **插件级 12 用例全过**（不跑 build 就能看到 HTML）：照 unified 调用形状
+      `transformer(tree, file)` + `mdast-util-to-hast` + `hast-util-to-html`，断言
+      `rotate:45deg` 回来且 `<45deg>` 消失、`:checked样式…` 回来、`z-index:1` 回来、
+      `::github{repo="a/b"}` 与 `:github{…}` **都**渲染 `<github repo=…>`、`:::note` 仍是 blockquote、
+      `1:2:3` 与 `http://a.com/b:8080` **不误伤**、未注册指令**带属性也整段退回原文**（`x:foo{a=1}y`）、
+      大小写 `::GitHub` 放行。② **产物级**：3 篇原文各命中 1 次、非法标签 0 次、about 仍 3 张卡、
+      parse5 错误 **12 → 0**；`check` 0 error / 3 hint、`docs:check` 0 error、
+      基线 44 个 `index.html` / 360 文件 / 21.70MB **不变**（只是文字换回冒号）。
+      ⚠️ 产物里另有 `<polygon></polygon>` / `<polyline></polyline>` 18 处，我一度当成同类残留 ——
+      核实是**他代码示例里的合法 SVG 元素**（在 `<svg>` 内），不是指令产物。
+      **判"某类问题是否清零"时，先把可疑命中的上下文看一眼。**
+    - 🔴 **动 `src/plugins/**` 必须清内容缓存再构建**（**五-21**）。本批照做，构建从 ~6s 涨到 20.2s
+      （全量重渲染）——**这次变慢恰好是缓存清干净了的可验证信号**，别当性能回归。
+    - ⚠️ **`remark-directive` 不接受任何选项**（其 `lib/index.js` 里 `remarkDirective()` 无参、
+      推扩展时 `directive()` 也没传配置）→ **没法**从源头关掉文本指令语法，只能在自研插件里放行白名单。
+      **别去调 `astro.config.mjs` 的插件顺序**：`remarkDirective` 必须在 `parseDirectiveNode` 之前，两个都得留。

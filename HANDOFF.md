@@ -3,7 +3,8 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-16（第九批：全站体检清单里 A 档六条真缺陷全部修完并本地验真；部署状态见第三节，线上以侧栏「博客版本」为准）**。
+> 最后更新：**2026-10-17（第九批：体检清单 A 档六条全部修完，已部署上线 V0.1.49）**。
+> （本批跨两天：**10-16 深夜做完全站体检并列出分档清单**（提交 `8d70fdf`），**10-17 上午按「开动吧」把 A 档六条修完并上线**（提交 `9fabbef`）。）
 >
 > **🔧 2026-10-16 一句话（用户"查一下还有哪些按钮、功能没完成"→ 我列了分档清单 → 用户"开动吧"）**：
 > ① 体检方法是**源码扫描 + 线上逐按钮真点**（Playwright 15 组交互 × 前后对照），
@@ -572,39 +573,33 @@
 
 ### 🟡 还挂着的事
 
-0. **🔎 2026-10-16 全站「按钮 / 功能未完成」体检（线上 V0.1.48 逐一点过 + 源码扫描，清单已交他、等他挑）**
-   —— 结论分三档，**每条都带实测出处，不是推测**：
-   - **A 真缺陷（可直接修，属"修缺陷别回问"）**：① 归档页筛选摘要行输出 **「1 1 年」/「0 0 年」**——
-     `ArchivePannel.svelte:152-153` 把 `{groups.length}` 写了两遍、且 150 行
-     `{filteredPostCount === 1 ? "篇文章" : "篇文章"}` 三元两分支**完全相同**（死代码）。
-     ② **站内没有 404 页**：`dist` 根下零个 `404*`，vhost 里 `#error_page 404/404.html;` 是注释状态 →
-     任意错误 URL 给的是 nginx 裸页（实测 `/no-such-page/` = `404 Not Found` html）。
-     ③ 分页**左右箭头 href 缺尾斜杠**（`href="/2"`、`/3`），而同组数字页码是 `href="/3/"`；
-     nginx 有 301、Swup 也接得住（实测点箭头 `swup:contentReplaced` +1、`beforeunload` 0 → 走的是软导航），
-     但爬虫按 href 走要多付一跳、且与该页 canonical `/2/` 不一致。
-   - **B 功能缺口（参考站有 / 我们只有半成品，属"要问"）**：④ 参考站菜单里
-     **友链 `/friends/`、项目 `/projects/`、打赏 `/sponsor/`、书签导航 `/booknav/`、B站/番组/VNDB/MyAnimeList**
-     本站**一条都没做**（源码 grep 零命中）。⑤ **GitHub 卡片无任何降级**：`/about/` 三张卡在本机实测
-     `api.github.com` **全部 `net::ERR_FAILED`**，卡片永远停在 `Waiting for api.github.com...` / `00K`；
-     ⚠️ 这条**很可能是本机网络**（harness A-6 记过"本机直连 GitHub API 常不通"），访客侧未取证，
-     所以只报"没有失败态文案/没有构建期兜底"这个真缺口。⑥ **`pinned` 只做了一半**：排序真生效
-     （`content-utils` 比较 pinned），但列表卡 `.pinned` 这个 class **全站 CSS 从未定义**（探针 `pinnedEls:0`）
-     → 置顶与否没有任何视觉标识。⑦ **相册照片 alt 全空**（`/gallery/zhuhai-2026/` 实测 5/5 空 alt）、
-     灯箱 `caption: false` → 相册没有"每张一句说明"的能力（`galleryConfig` 无 per-photo caption 字段）。
-   - **C 配置/字段齐但从没启用（不坏，别当 bug 追）**：⑧ `Mermaid / KaTeX / ::: callout / 图片网格`
-     四条渲染路径 **28 篇零使用**（本轮脚本正则实测各 0 命中）。⑨ `image` 字段 10 篇写了**且全是空串**
-     → 详情页封面 banner 与 `og:image` 两条路径**从未被走到**。⑩ `password` 只隐藏评论区、**没有密码门 UI**（AGENTS 五-5）。
-     ⑪ `comment: false`、⑫ `visitorCount: false`（Twikoo 访问量统计没开、站内也没有浏览量 UI）
-     ⑬ `siteConfig.pages.*` 三个页面开关**全是 true**，那条 `Astro.redirect("/404/")` 分支从未走过
-     （纯静态 SSG 下 `Astro.redirect` 语义与 SSR 不同 → **真要关一个得先验证**）。
-     ⑭ `DropdownMenu.astro:44` 的 `focus-ring-inset` 是**死类**（全站 CSS 无定义）→ 下拉键盘聚焦没有焦点环。
-   - **✅ 顺手验过「没问题」的（别再重查）**：主题切换/记忆/软导航后保持、分类卡「更多」、站点信息展开、
-     QQ 复制、微信二维码、日历上/下月与日→月→年三级视图、浮动目录、系列展开、复制链接、相册标签筛选、
-     分页跳转、返回顶部、桌面搜索（打字即出结果、↑↓ 可达、Esc 关闭）、动态页年份下拉+搜索、
-     Twikoo 评论（文章页与留言页都真渲染）、RSS/sitemap/manifest/og-image 全 200、卡片封面 alt 全空（符合五-34）。
-     **零控制台报错、零 pageerror**。
-   - 另有既存两条本轮**复验仍成立**：分类卡只有 2 个分类时**收起态 120px 比展开后 80px 还高**
-     （模板写死 `collapsedHeight: 7.5rem`）、且展开后**没有收起按钮**（`btn.hidden`，单向）。
+0. **🔎 全站「按钮 / 功能未完成」体检（10-16 深夜查出、10-17 00:30 提交 `8d70fdf`）→ A 档六条已在本批（10-17）处理完**
+   ✅ **A 档六条全部落地**（细节与实测数字在 `config.md` 五-45 ~ 五-51，这里只留状态）：
+   A1 归档摘要「1 1 年」/ A3 分页箭头尾斜杠 / A4 GitHub 卡片失败态 / A5 置顶徽标 / A6 相册照片 alt → **已全部修完并线上验真**。
+   ⚠️ **A2 只完成一半，别当已完工**：站内 404 页已经上线（`/404.html` 实测 200、不进搜索、不进 sitemap），
+   但 **Nginx 的 `#error_page 404/404.html;` 仍是注释状态 → 访客打错 URL 现在看到的还是 nginx 裸页**。
+   放开那一行**属服务器改动、要他当次点头**；**放开后不用再部署**（文件已在 dist 里）。→ 已列进「需要他决定」。
+
+   **B 档（功能没开始做，要他先给内容 / 点头，不是我能单方推进的）**：
+   ① 参考站有、本站零实现的菜单项：**友链 `/friends/`、项目 `/projects/`、打赏 `/sponsor/`、书签导航 `/booknav/`、
+   B站 / 番组计划 / VNDB / MyAnimeList**（源码 grep 零命中）。
+   ② **Mermaid / KaTeX / `:::` callout / 图片网格** 四条渲染路径至今 28 篇零使用（本批脚本正则各 0 命中复核过）
+   → 第一篇用到必须逐项验才上线。
+   ③ **相册「每张一句人话」**：`galleryConfig` 没有 per-photo caption 字段、灯箱 `caption:false`，
+   要做得他给文案，并且**同时**动两处（加字段 + 开 caption），只改一处等于白改
+   （本批给的是「相册名 第 N 张照片」这种兜底命名，不是最终形态）。
+   ④ **`image` 字段两条下游从未走到**：10 篇写了且全是空串 → 详情页封面 banner、`og:image` 都还在走兜底。
+
+   **C 档（开关/字段存在但从没启用，不坏，别当缺陷重查）**：`password` 无密码门 UI（五-5）· `comment:false` 零篇用 ·
+   `visitorCount:false` 且站内没有浏览量 UI · `pages.*` 三个开关全 true（那句 `Astro.redirect` 到 404 的分支从未走过；
+   ⚠️ 纯静态下该 API 语义与 SSR 不同，真要关一个页面得先验证）· `DropdownMenu` 的 `focus-ring-inset` 是死类（键盘聚焦无焦点环）。
+
+   ✅ **本批顺带逐一点验过「没问题」的，别再重查**：主题切换/记忆/软导航后保持 · 分类卡「更多」· 站点信息展开 ·
+   QQ 复制 · 微信二维码 · 日历 上/下月与日→月→年三级视图 · 浮动目录 · 系列展开 · 复制链接 · 相册标签筛选（5→1）·
+   分页 · 返回顶部（2500→0）· 桌面搜索（打字即出、↑↓ 可达、Esc 关）· 动态页年份下拉+搜索 · Twikoo 评论两处真渲染 ·
+   RSS / sitemap / manifest / og-image 全 200 · 卡片封面 alt 全空（符合五-34）。**全程零控制台报错、零 pageerror。**
+   既存两条本批复验**仍成立**：只有 2 个分类时分类卡**收起态 120px 比展开后 80px 还高**（模板写死 `collapsedHeight: 7.5rem`）、
+   且展开后**没有收起按钮**（单向）。都属九·补②「看过选择不做」口径，别重开。
 
 1. **动态页二期三项已全部做完并实战验证（2026-10-13 深夜 → 10-14）**（搜索 / 年份筛选 / 图片画廊）。
    ✅ **图片画廊已于 2026-10-14 补齐并验证**：实测发现它当时其实是**坏的**（两条真缺陷：Swup 捕获阶段
@@ -1324,24 +1319,23 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-10-15 实测；**线上 = V0.1.48**，已部署）
+## 三、当前状态快照（2026-10-17 实测；**线上 = V0.1.49**，已部署）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**本批（第八批）一笔**：`acbc175` 新发 CCNewTools V1.5.0 手册（V0.1.48）；**已推送，`HEAD == origin/main`**。上一批：`7d36982`（记录每天开工体检规矩）；更早 `1a93fe2`/`98d96a8`（V0.1.47）、`8c54f09`+`c6af208`（V0.1.46）、`f267c3c`+`49dce6b`（V0.1.45）、cadc58f/65aeb8a/2cfc1b8（V0.1.44） |
-| 工作区 | 本批 `src/` **只新增 1 个文件**：`content/posts/ccnewtools-manual-v150.md`（317 行，V1.5.0 手册全文）；加 `package.json` 版本号 0.1.47→0.1.48。文档动 `AGENTS.md`（**五处计数，全部字节中性**：27→28 篇 / 43→44 页 / 357→359 文件 / 21.31→21.57MB / 工具 1→2，57866→57866 B）、`writing.md`（八-9 三条新登记：一版一篇口径、V1.5.0 事实、站内第 6 类故意加）、`HANDOFF.md`。**零依赖改动、零组件改动** |
-| 文档分层 | `AGENTS.md` + `AGENTS.local.md` 合计 < 65536 B（`npm run docs:check` 实测 0 error，**1 条余量提醒：常驻层只剩 78 B** —— 本批所有新增内容都写进分册，常驻层只做等长替换；**下次往常驻层加任何东西前必须先下沉腾挪**） |
-| 浏览器能力 | 同前（`npm run probe -- <url> <宽> <高>` + 本地 `astro preview`；browser-use MCP 仍等他新建 Session）。⚠️ **本批新增一条取证坑**：**Pagefind 分片是压缩格式，明文 grep URL 必然 0 命中**（旧文章同样 0，别误报"没进索引"）→ 查收录要在页面里 `await import('/pagefind/pagefind.js')` + `init()` + `search()`，**url 要 `await x.data()` 才拿得到**（1.x 的 result 上没有 `x.url`）。另：PowerShell 里 `node -e "…"` 带引号会被吃掉（本批实测 ParserError），**一律写成 `_scratch/*.mjs` 文件再跑** |
-| 线上站点 | ✅ **2026-10-15 13:03 部署 V0.1.48**（第七节原子替换 + **替换前断言全过**：`V0.1.48` 必须在、`V0.1.47` 必须不在、`posts/ccnewtools-manual-v150/index.html` 必须存在且含 `CCNewTools V1.5.0`、**旧那篇 `posts/ccnewtools-manual/` 必须仍在且含 `CCNewTools V1.4.1`**）。**公网实测**：首页/旧篇/新篇/归档/RSS 全 200；首页 `V0.1.48`×4、`V0.1.47`×0、新卡片链接 2 处；新篇 `<title>CCNewTools V1.5.0 使用手册-亦林</title>`、16 图引用、3 个宽表容器、`h1=1`、文末那句注在；`00-toolset-home.webp` 200 / 20280 B / `must-revalidate, no-cache`。**线上 probe（1280）**：`overflowX=0`、破图 0、三张宽表 `scrollable:true`（1029/726/1089 vs 容器 582）。**线上 Pagefind API**：「追踪表」「银河麒麟」「九级标题编号全链」三词均命中新篇，零 pageerror |
-| 本地构建 | `npm run build` 退出码 0，**44 页 / 359 文件 / 21.57MB**（页数 +1 = 新文章，符合"每加一篇页数 +1"），Pagefind 索引 30 页 / 2903 词。`npm run check` **0 error / 3 hint**（基线未变）。新篇 preview 双档探针：1200 与 375 均 `overflowX=0` / `h1=1` / 破图 0 / 标题序列 `h1,h2,…` / 375 下三张宽表 `scrollable:true`（1029/726/1089 vs 309）/ 零 pageerror。分类页「工具」计数 **1 → 2** 已核 |
-| 文档自检 | `npm run docs:check` = **0 error / 1 条提醒**（常驻层余量 78 B，见上） |
-| 服务器配置 | **未动**（只换 dist；没碰 Nginx / 宝塔） |
-| 依赖 | 本批**零改动**。⚠️ 上次开工体检快照（10-14）：`npm outdated` 12 个落后（astro 7.3.4→7.3.8 等 patch/minor 待他点头）、`mermaid 12.x` / `typescript 7.x` **撞天花板绝不能碰** |
-| dev / preview server | 本批起了 `npm run preview`（:4321）做验证，**收尾时 `job_kill` + 按「`node.exe` + `astro*bin*astro.mjs*`」复查残留 = 0**。当前 dev 与 preview **都已停** |
-| 服务器回滚资产 | `dist.old` + **48 个 `dist_backup_*`** = **49 个**（本批新增 `dist_backup_20261015_130336`）。全部保留，**删需用户明确同意**。回滚一行：`cd /www/wwwroot/chenBlog && rm -rf dist && mv dist.old dist` |
-| 临时文件 | **本批已清并复查 = 0**：`_scratch/`（4 个一次性脚本：生成器 / 两版验证 / 图标 md5 核）整目录删除；`%TEMP%\chenblog_v48.tar.gz`、`%TEMP%\manual_diff\`（归一化 diff 脚本与产物）、`%TEMP%\preview_v150.log` 已删；服务器 `/tmp` 下 `chenblog*`/`deploy_v48*` 计数 **0**（部署脚本自我删除已挪到 ssh 尾部执行）。⚠️ **回滚资产不算临时文件，不删**。⚠️ 本批踩到：**`_scratch/` 并没有被 gitignore**（记忆里以为有）→ 临时脚本要么进 `%TEMP%`，要么收尾必删 |
-| 待用户拍板 | **【本批·只剩一句措辞】① 新篇文末那句"截图取自 v1.4.0 界面"要不要留**（站内独有第 6 类，我加的，防正文 v1.5.0 与图里 V1.4.0 徽标打架）。⚠️ **他 10-15 已回「能看到了」→ 新篇真机可见性通过**（16 张图 / 三张宽表横滚 / 排版都没反馈 = 没问题），只剩这句没表态，一句话可删。**② 他手册这次没写新功能** → 若想让站内文章体现 v1.5.0 干了什么，得他先把「九级编号全链 / WQ 层级重组 / 重组可见信号 / WPS 存档免疫」写进 `使用手册.md`（我不动他的源文件）。**③ 以后一版一篇已成型**：下次他发 v1.6/v1.7 → 直接 `new:post --slug ccnewtools-manual-v160`，别再问归位。**仍挂着的（都不是我能单方推进的）**：⓪a browser-use 插件已装、**等他新建 Session 实测** `mcp__playwright-mcp__*`。⓪a2 同浏览器 `mode: attach` 未做。⓪b OwO 表情 21 图无 `alt`（第三方组件，没动代码）。④′ V0.1.26 两条 + 动态页内联查看器的**真机观感**（手机强刷：封面不转圈、点文字不跳、带图条目点缩略图展开查看器）。⑩′ meCard 那排真人反馈（手机扫码能否扫上、QQ 复制提示条观感）。⑪ **画廊交互取舍**：本站现按参考站做成"点缩略图就地展开内联查看器、点查看大图才全屏"，若他更想要"点缩略图直接全屏 Fancybox"（V0.1.45 那版），一句话可切。⑫ **依赖升级**：10-14 体检报的 10 个 patch/minor 落后，要不要动（体检 ≠ 升级，任何 bump 都要他点头 + 走干净 `npm ci` 序列）。⑬ Twikoo 裸 `envId IP:8099` → 同域反代、面板 IP 白名单、`90a38e5` 提交消息写错（要强推）——三条老的决定项仍未批 |
-| 既存小坑 | `--radius-large` / `--panel-border-color` 未定义（AGENTS 五-16）——直角正好符合站内口径，别当缺陷补变量；`focus-ring-inset` 全站无定义（死类，只有 DropdownMenu 在用）；`tsconfig.json` react jsx 残留无影响；`/site.webmanifest` Content-Type 缺映射；重复 id `announcement`/`cardTags`（九节已判定降级） |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**本批（第九批）三笔**：`8d70fdf`（体检清单分档 + harness.md B-23~B-25）、`9fabbef`（A 档六条修复，V0.1.49）、第三笔＝本档快照；**已推送、`HEAD == origin/main`、工作区计数 0**。更早：`4f36f0c`/`acbc175`（V0.1.48 新篇）、`7d36982`（每日体检规矩）、`1a93fe2`+`98d96a8`（V0.1.47） |
+| 工作区 | 本批 `src/` **新增 1 个文件**（`pages/404.astro`）+ **改 6 个组件/插件**：`ArchivePannel.svelte`（摘要坏文案）、`Pagination.astro`（箭头尾斜杠）、`PostMeta.astro`+`PostCard.astro`（置顶徽标）、`gallery/[album].astro`（照片 alt）、`src/plugins/rehype-component-github-card.mjs`（卡片失败态）。另 `astro.config.mjs`（sitemap `filter`）。文档动 `AGENTS.md`（**两处等长替换**：五-9 基线、索引 五-42→五-51，57866→57866 B）、`config.md`（**新增五-45~51**）、`harness.md`（B-23~26）、`writing.md`（pinned 时效更正）、`HANDOFF.md`。**零依赖改动** |
+| 文档分层 | `docs:check` **0 error / 1 提醒**（常驻层余量仍 **78 B**）。⚠️ 本批所有新增内容**全写进分册**，常驻层只做等长替换；`config.md` 60138→72959 B、`harness.md` 63563→66366 B、`writing.md` 18620→18977 B |
+| 浏览器能力 | 同前（`npm run probe` + 本地 `astro preview`；browser-use MCP 仍等他新建 Session）。⚠️ **本批新增三条取证坑（记进 harness.md B-26）**：① **Node 用 `latin1` 读文件再比中文永远 0 命中**（搜中文必须 `utf8`，同 八-27 解码口径族）；② `docs:check` 的死引用闸门**不认反事实**（写「别新建某文件」时别给不存在的路径加反引号）；③ **往分册写「机制」前必须单独复现**——我差点把「pwsh 中文 Select-String 会坏」记成分层规则，落盘前复现**证伪**（其实是 `node -e` 的 ParserError，正犯 B-17 那族）。另 **六-③ 本批又应验一次**：`execFileSync("curl")` 报「13 个资源全 ERR」，而同期 `body()` 全拿到了新内容 → 自相矛盾即假信号，**curl 直接在 shell 里跑**才是真数 |
+| 线上站点 | ✅ **2026-10-17 10:58 部署 V0.1.49**（第七节原子替换 + **替换前断言 12 条全过**：`V0.1.49` 在、`V0.1.48` 不在、`404.html` 存在且含「这个页面走丢了」、`个年份` 在 `_astro/`、GitHub 失败态文案在 about、`珠海日记 第 1 张照片` 在相册页、首页 `href="/2/"`、**`sitemap-index.xml` 与 `sitemap-0.xml` 两个文件必须都在**（五-45 那条静默不生成的回归守卫）、sitemap 不含 404、**旧那篇 V1.4.1 与新那篇 V1.5.0 两篇都在**）。`dist.new` 文件数 **360** = 本地基线。**公网 curl 实测**：`/`、`/404.html`、`/2/`、两篇手册、`/gallery/zhuhai-2026/`、`/archive/`、`/rss.xml`、两个 sitemap **全 200**；`/2` 301（nginx 尾斜杠跳转，设计如此）；**首页引用的 7 个 `_astro/*` 资源逐个 200**（换 dist 后没有旧哈希 404）。⬅️ **但 404 页对访客还没生效**：vhost 的 `#error_page 404/404.html;` 仍是注释状态 → 打错 URL 还是 nginx 裸页，**要他点头放开那一行（放开后不用再部署）** |
+| 本地构建 | `npm run build` 退出码 0，**44 个 `index.html` / 360 文件 / 真实字节 21.70MB**；⚠️ **口径分叉别当回归**：`astro build` 那行打 **45 page(s)**，多的那 1 个就是 `404.html`（非目录页、没有 index.html，五-9 的口径不计它）——**两个数都对，报数字必须连着方法**。Pagefind **30 页 / 2903 词**、sitemap **44 条 URL**。`npm run check` **0 error / 3 hint**（基线未变）。preview 全项实测：置顶徽标（临时数据验完即撤，现产物 0 个属预期）、软导航进出 404 页两向、GitHub 卡片**掐断 `api.github.com` 才走到失败分支**（点一下仍真新开仓库页）、375/1440 双档溢出 0、**零 pageerror** |
+| 服务器配置 | **未动**（只换 dist；没碰 Nginx / 宝塔）。⚠️ 唯一待动的是 vhost 那行 `#error_page`，属当次点头类 |
+| 依赖 | 本批**零改动**。每日体检（10-17 只读实测）：`npm outdated` **14 个落后**（比 10-14 多 2：`@astrojs/svelte` 9.1.0、`markdown-it` 15.0.3）、官方源 `npm audit` **23 条（6 low / 15 moderate / 2 high）退出码 1**（与 10-12 持平）。`mermaid 12.x` / `typescript 7.x` **撞天花板绝不碰**，`audit fix --force` 禁用 |
+| dev / preview server | 本批起了 `npm run preview`（:4321）做验证。**收尾时 `job_kill` + 按「`node.exe` + `astro*bin*astro.mjs*`」精确复查残留 = 0**（宽匹配会把自己 shell 吃掉，九节）。当前 dev 与 preview 都已停 |
+| 服务器回滚资产 | **实测（10-17 部署后 SSH 数）**：`dist.old` + **50 个 `dist_backup_*`** = **51 个**；本批那一个 = `dist_backup_20261017_105806`。全部保留，**删需用户明确同意**。回滚一行见 `AGENTS.local.md`（不入库；**别把真实路径抄回这个公开文件**）|
+| 临时文件 | 本批临时脚本全在 `%TEMP%`（`cb_audit` / `cb_verify` / `cb_fix1` / `cb_gcard` / `cb_deploy` / `cb_docs`），**收尾整目录删除并复查 = 0**；服务器 `/tmp` 下 `chenblog_v49.tar.gz` 由部署脚本自删、`deploy_v49.sh` 由 ssh 尾部删。⚠️ 部署脚本**不能自我删除**（bash 边读边执行会读不到尾行）——这条本批照做了。⚠️ 回滚资产不算临时文件 |
+| 待用户拍板 | 🔴 **①【本批唯一新决定，且是服务器改动】要不要放开 Nginx 的 `#error_page 404/404.html;`** —— 404 页产物已在线上，**放开就立刻生效、不用再部署**；不动那行访客打错 URL 仍是 nginx 裸页。**② 相册要不要逐张写文案**（要则他给文案 + 我同时加 `galleryConfig` 字段并开灯箱 caption）。**③ B 档要不要做**：友链 / 项目 / 打赏 / 书签导航 / B站 / 番组 / VNDB / MyAnimeList（参考站有、本站零实现）。**④ `propse-base` 拼错要不要补**、**⑤ 新篇文末那句「截图取自 v1.4.0」要不要留**、**⑥ 画廊交互取舍**（内联展开 vs 直接全屏，一句话可切）、**⑦ 依赖升级**（14 个落后要不要动）、**⑧ Twikoo 裸 `envId IP:8099` 同域反代 / 面板 IP 白名单 / `90a38e5` 提交消息强推** —— 老决定项仍未批。**⑨ 真机观感仍归他**：V0.1.26 两条 + 动态页查看器 + meCard 那排 + **本批新加的 404 页与置顶徽标长什么样**（徽标当前零篇用到，他写 `pinned: true` 才看得见）。⓪ browser-use 插件已装、**等他新建 Session** |
+| 既存小坑 | `--radius-large` / `--panel-border-color` 未定义（五-16）→ 直角符合站内口径，别补变量；`focus-ring-inset` 死类（本批登记进清单 C 档，未动）；`/site.webmanifest` Content-Type 缺映射（要动 nginx）；`tsconfig.json` react jsx 残留；重复 id `announcement`/`cardTags`（九·补② 已判定降级）；单分类时分类卡收起态更高（**本批复验：两个分类时仍成立，120px > 80px**）；每页两个 `<title>`（本批复验：45/45 页都是 2 个、内容一致，属既存、已判降级） |
 
 | 项 | 状态 |
 |---|---|
@@ -1356,7 +1350,7 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 | 服务器配置 | **未动**（只换 dist；没碰 Nginx / 宝塔）。缓存策略文件与 vhost 备份位置见 AGENTS 六节（值已脱敏，展开版在私密记录里）。原先那条 `reinit.js` 12h 缓存隐患已用**构建期哈希**解掉，无需改服务器 |
 | 依赖 | 本批**零改动**。基线仍是 `@astrojs/check@0.9.10` devDep、`allowScripts` 钉 `esbuild@0.28.2`、干净 `npm ci` 695 包 |
 | dev / preview server | 本批起了 `npm run preview`（:4321）做验证，**收尾时按「`node.exe` + `astro\bin\astro.mjs` + `preview`」精确杀掉并复查残留 = 0**（宽匹配会把自己的 shell 吃掉，见 AGENTS 九节依赖坑③）。当前 dev 与 preview **都已停，:4321 空闲** |
-| 服务器回滚资产 | `dist.old` + **39 个 `dist_backup_*`** = **40 个**（本批新增 `dist_backup_20261013_180610`；最老仍是 `20260920_234618`）。全部保留，**删需用户明确同意**。回滚一行：`cd /www/wwwroot/chenBlog && rm -rf dist && mv dist.old dist`（展开版命令在 `AGENTS.local.md`） |
+| 服务器回滚资产 | `dist.old` + **39 个 `dist_backup_*`** = **40 个**（本批新增 `dist_backup_20261013_180610`；最老仍是 `20260920_234618`）。全部保留，**删需用户明确同意**。回滚一行见 `AGENTS.local.md`（不入库） |
 | 临时文件 | **本批已清并复查（本地 `cb*` = 0，服务器 `/tmp/cb*` = 0）**：本地 `%TEMP%` 下 `cb.tar.gz` + 4 个探查脚本（`cb_find_maxtokens.mjs` / `cb_models.mjs` / `cb_read_catalog.mjs` / `cb_shape.mjs`）；服务器 `/tmp/cb.tar.gz` + `/tmp/cb_deploy.sh`。⚠️ **回滚资产不算临时文件，不删**（`dist.old` / `dist_backup_*`）。⚠️ 老坑仍在：**node 读不了 bash 的 `/tmp`**（解析成 `E:\tmp` → ENOENT），跨工具传文件一律 `process.env.TEMP`。⚠️ 部署脚本的自我删除要放在**跑完之后**由外部执行——`bash` 边读边执行时删自己会读不到尾行。⚠️ 本批为查 DSH 缺陷在 `%TEMP%\chenblog_sess\` 留了一批**只读**分析脚本与 asar 读取器（`sess_dump.mjs` / `asar.mjs` / `inplace2.mjs` / `patches_final.json` 等），**它们是修 DSH 的作业凭据，重启验证通过前别删** |
 | 排查方法类坑位 | 本批新增三条，细节都在 **AGENTS 五-36 / 五-37 / 十-14**，此处只留索引：**`:hover` 态画下划线不能用 `border-bottom`（inline border 撑高行盒）**、**`forwards` 把 transform 永久留在元素上 = 常驻合成层**、**`navigating()` 的假设对全新 key 不成立（module 脚本晚一个宏任务）**。另有两条工具性坑：隐藏标签页 `setTimeout` 节流到 ≥1s（探针会 15s 超时，改用 `getAnimations().currentTime` 驱动）、`:hover` 不能用 JS 触发所以只能"手动施加同组声明"做等价验证 |
 | 待用户拍板 | ⓪c **【第二批 SEO 审计产物】**：~~**E** `og:type` 全站 0/43 缺失~~ → **已完成（V0.1.41）**；~~**F** 首页分页 `/2/` `/3/` 的 `<title>` 与首页完全相同~~ → **已完成（V0.1.42）**，全站 43 页 43 个不同 title。⚠️ **别与九节那条"每页两个 `<title>`（内容一致）"混为一谈**，那是重复标签、已列"看过选择不做"，这是两条不同的东西 ⓪e ~~【新·本批，等他操作】DSH 的 400 补丁要重启才生效~~ → **已完成（2026-10-13 晚间）**：他已退出 DSH、覆盖 `app.asar` 并重启，**三项复检全过**（字节级守卫 5/5、diff 只落那两个文件、补丁生效后 0 空块 0 新错）。`reasoningEfforts` 配置**下次请求即生效**（日志已见 `reasoningEffort:"max"`）。**遗留一条**：⚠️ **DSH 升级会覆盖 asar → 补丁会丢**，跑 `npm run gateway:check` 可一眼看出（它会报「app.asar 补丁状态：还是未打补丁的原盘」）；若被覆盖，补丁构造记录全在 `harness.md` **B-21**（含三个硬教训），按它重打即可，原盘备份 `app.asar.bak-before-pi-ai-fix-20261013_134330` ⓪d ~~常驻层预算怎么处理~~ → **已按 ① 轻量腾挪解决**（余量回到 1911 B，告警消失）。⓪a ~~要不要装 DSH 的 browser-use 插件~~ → **已装好并挂载完毕**（playwright provider）。**下一步在他手上：新建或恢复一个 Session**，实测 `mcp__playwright-mcp__browser_navigate` 等工具是否出现；若新会话创建失败，用 `~\.dsh\browser-plugin-profile-backup\` 覆盖回滚（大概率是 `headless` 被改成了 false）。⓪a2 **要不要改成"我和用户看同一个浏览器"** → 需把 config 换成 `mode: attach` 并自己起一个带调试端口的浏览器（Edge 可行但未实测）；不做则两边永远是两个独立上下文 ⓪b **评论区 OwO 表情面板 21 张图没有 `alt` 属性**（按容器分组实测确认全是 `.OwO-item`，文章与站点内容图零缺失）→ 属第三方组件，**我没动代码** ① **手册现在每节之间有一条分节线（10 条，照他手册原样同步；旧版站内只有 1 条）**——观感变了，要不要滤掉说一声 ② **V0.1.26 两条复测**（文章页→主页的封面；框选/点击文字是否还跳，见 16.）③ 新文章肉眼验收（11.）④ **灯箱真人点击**（12.）⑤ 第8天宽表要不要一起包（13.）⑥ `propse-base` 拼错要不要补（14.）⑦ 侧栏卡片不随软导航更换（9.）⑧ PostCard 加密文章锁图标（AGENTS 五-5）⑨ 全站 title 带不带后缀（SEO）⑩ **meCard 那排的真人反馈**（手机扫二维码能不能扫上、QQ 复制在他自己浏览器里的提示条观感）——我这边只能证明图解码正常、退路走得到；⑪ **列表卡上那句「暂无标签」是假的**（`PostCard.astro:81` 调 PostMeta 时不传 tags，而他 27 篇全都有标签）→ 要么把 tags 传进去显示、要么卡片不显示这一格（`showTags={false}`），等他定 |

@@ -430,7 +430,7 @@ Playwright 会抛 **`Attempting to serialize unexpected value at position "r": e
 
 ---
 
-### B-26 🔴 一条**探针假阴性** + 一次**差点写进分层的假归因**（2026-10-16，都是我自己造的）
+### B-26 🔴 一条**探针假阴性** + 一次**差点写进分层的假归因**（2026-10-17，都是我自己造的）
 
 1. **用 `latin1` 读文件、再拿中文字符串去比 → 永远 0 命中**（本轮实测复现）：
    查产物里有没有「个年份」时写成 `readFileSync(f, 'latin1').includes('个年份')` → 报 **0 个文件**，
@@ -460,6 +460,35 @@ Playwright 会抛 **`Attempting to serialize unexpected value at position "r": e
 
 ---
 
+### B-27 🔴 Playwright 打裸 IP 线上站报 `net::ERR_PROXY_CONNECTION_FAILED`：是**本机代理拦的**，不是站点挂了（2026-10-17）
+
+同一批里，**早几轮同样的探针跑 `http://47.108.230.220` 全通**，晚一轮起来第一件事就整批失败：
+
+```text
+page.goto: net::ERR_PROXY_CONNECTION_FAILED at http://47.108.230.220/404.html
+```
+
+排查顺序（这次实测有效，别跳）：
+
+1. **先确认站点没坏**：直接在 shell 里跑 `curl.exe -s -o NUL -w "%{http_code}"` → 全 200。
+   **curl 通、Chromium 不通 = 一定是本机网络层，不是服务器**（同 **六-③** 那条"自相矛盾即假信号"）。
+2. **看代理**：`reg query HKCU\...\Internet Settings /v ProxyEnable /v ProxyServer`
+   → 本机 `ProxyServer = 127.0.0.1:7897`（FastGithub 那类工具会写系统代理，`ProxyEnable` 可能是 0 但
+   Chromium 仍有自己的解析路径），环境变量 `HTTP_PROXY` 等全是空 —— **所以只看 env 会得出"没代理"的错结论**。
+3. **修法（两条都试过，只有一条真有效）**：
+   - `launch({ args: ["--no-proxy-server"] })` → **无效**，还是 ERR_PROXY_CONNECTION_FAILED。
+   - ✅ **`launch({ args: ["--proxy-server=direct://"] })` 有效**。
+   - ⚠️ `newContext({ proxy: { mode: "direct" } })` 是**我瞎猜的 API** → 报
+     `proxy.server: expected string, got undefined`。**这个版本的 Playwright 没有 `mode` 这个键**，
+     要指定代理得给 `server`。别照着记忆写选项名。
+
+⚠️ **副作用是好事**：强制直连之后，`/about/` 的 GitHub 卡片从"成功分支"翻成了**失败分支真出现**
+（`class="card-github no-styling fetch-error"` + 中文失败文案 + `pointer-events: all`）——
+这正好等于**用最自然的方式复现了访客端的真实处境**：访客机器上没有 FastGithub，`api.github.com` 就是连不上。
+本批 A4 那条修复因此有了比 `route.abort()` 更可信的一份证据。
+→ **通则：探针遇到代理类故障时，"绕开代理"往往同时打开一扇观察真实用户条件的窗。**
+
+---
 ## A. 继承自上一任的纪律（22 份记忆文件压缩落盘，卸载 Qoder 后仍有效）
 
 ### A-1 否定结论必须配控制组

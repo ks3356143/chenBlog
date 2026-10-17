@@ -14,6 +14,8 @@ interface Props {
 	hideUpdateDate?: boolean
 	hideTagsForMobile?: boolean
 	showTags?: boolean
+	// 列表卡「置顶」徽标；排序在 content-utils 里已按 pinned 前置，这里补视觉标识
+	pinned?: boolean
 }
 
 const {
@@ -24,6 +26,7 @@ const {
 	hideUpdateDate,
 	hideTagsForMobile,
 	showTags = true,
+	pinned,
 } = Astro.props
 const className = Astro.props.className
 ---
@@ -34,6 +37,14 @@ const className = Astro.props.className
 		className,
 	]}
 >
+	{
+		pinned && (
+			<div class="pinned-btn flex items-center gap-1 rounded-md bg-(--btn-regular-bg) px-2 py-1.5 font-bold text-(--btn-content)">
+				<Icon name="material-symbols:pinboard" class="text-xl" aria-hidden="true" />
+				<span class="text-sm">置顶</span>
+			</div>
+		)
+	}
 	<!-- 发布时间 -->
 	<div class="flex items-center">
 		<div class="meta-icon-regular meta-icon">

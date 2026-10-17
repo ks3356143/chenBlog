@@ -59,7 +59,16 @@ export function GithubCardComponent(properties, children) {
         document.getElementById('${cardUuid}-card').classList.remove("fetch-waiting");
       }).catch(err => {
         const c = document.getElementById('${cardUuid}-card');
+        c?.classList.remove("fetch-waiting");
         c?.classList.add("fetch-error");
+        const d = document.getElementById('${cardUuid}-description');
+        if (d) d.innerText = '未能连上 GitHub API — 点击卡片仍可直接打开仓库页';
+        const lg = document.getElementById('${cardUuid}-language');
+        if (lg) lg.innerText = '未知';
+        for (const k of ['stars', 'forks', 'license']) {
+          const el = document.getElementById('${cardUuid}-' + k);
+          if (el) el.innerText = '—';
+        }
         console.warn("[GITHUB-CARD] (Error) Loading card for ${repo} | ${cardUuid}.")
       })
     `,

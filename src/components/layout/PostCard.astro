@@ -95,7 +95,7 @@ const hasCoverImage = image ? true : false
 		     此前这里不传 tags 又让它走默认 true → PostMeta 渲染出空态占位文案，而下方同时显示着
 		     真标签，属自相矛盾的假文案（2026-10-14 修）。⚠️ 注释里别再写那句占位文案的原文，
 		     否则 grep 产物验「假文案已消失」会被注释自己骗到。 -->
-		<PostMeta published={published} category={category || undefined} showTags={false} />
+		<PostMeta published={published} category={category || undefined} showTags={false} pinned={pinned} />
 		<!-- 文章描述 -->
 		<div
 			class:list={[

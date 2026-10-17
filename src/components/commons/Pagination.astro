@@ -44,6 +44,10 @@ if (r < page.lastPage - 2) pages.push(HIDDEN)
 if (r === page.lastPage - 2) pages.push(page.lastPage - 1)
 if (r < page.lastPage) pages.push(page.lastPage)
 
+// 上一页/下一页的 page.url.prev/next 不带尾斜杠（"/2"），与同排数字页码的 "/2/"、与该页 canonical 都不一致，
+// 爬虫按 href 走要多付一跳 nginx 301。undefined（禁用态）原样返回，别造出 href="#"（五-14）。
+const withTrailingSlash = (u?: string) => (u === undefined ? undefined : u === "/" ? "/" : `${u}/`)
+
 const getPageUrl = (p: number) => {
 	if (p === 1) return "/"
 	return `/${p}/`
@@ -55,7 +59,7 @@ const getPageUrl = (p: number) => {
 	<div class="flex flex-row justify-center gap-3" role="navigation" aria-label="文章列表">
 		<!-- 前进 -->
 		<a
-			href={page.url.prev}
+			href={withTrailingSlash(page.url.prev)}
 			aria-label="上一页"
 			aria-disabled={page.url.prev === undefined ? "true" : false}
 			tabindex={page.url.prev === undefined ? "-1" : "0"}
@@ -95,7 +99,7 @@ const getPageUrl = (p: number) => {
 		</div>
 		<!-- 后退 -->
 		<a
-			href={page.url.next}
+			href={withTrailingSlash(page.url.next)}
 			aria-label="下一页"
 			aria-disabled={page.url.next === undefined ? "true" : false}
 			tabindex={page.url.next === undefined ? "-1" : "0"}

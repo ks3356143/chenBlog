@@ -1,4 +1,4 @@
-# AGENTS 分册 · 第五节「必须知道的配置约定」全文（五-1 ~ 五-44）
+# AGENTS 分册 · 第五节「必须知道的配置约定」全文（五-1 ~ 五-51）
 
 > 本文件是 `AGENTS.md` 某一节的**全文**，2026-10-12 从 AGENTS.md 无损切出。
 > `AGENTS.md` 只留常驻结论与索引（受 harness 64KB 注入预算限制）；改到本节任何主题前先读本文件全文。
@@ -48,8 +48,10 @@
    导致整个页面（含首页）渲染失败。Astro 6 容忍、Astro 7 报错。
    → 已于 2026-09-20 从 `src/pages/[...page].astro` 移除一处。要么写内容，要么整行删掉，别留空标签。
 
-9. 构建产物基线（**2026-10-10 傍晚实测**，V0.1.36）：
-   **43 个页面 / dist 357 个文件 / `du -sh` 22M**，
+9. 构建产物基线（**2026-10-16 实测**，V0.1.49）：**44 个 `index.html` / dist 360 个文件 / 真实字节合计 21.70MB**；
+   HTML 总数 45（多出的那 1 个 = `404.html`，见五-46）。Pagefind 索引 **30 页 / 2903 词**、`sitemap` 44 条 URL。
+   历史（各批当时的实测值，**别再当现状引用**）：
+   ↳ 2026-10-10 傍晚 V0.1.36 时是 **43 个页面 / dist 357 个文件 / `du -sh` 22M**，
    ⚠️ **量数字要连着方法一起报**：`du -sh` 按 4K 分块算（351 个文件就白涨 ~0.7M），字节合计才可比；
    文件数用 `find dist -type f | wc -l`，页数用 `find dist -name index.html | wc -l`。
    上一条记的"350 个文件"与今天的 351 差 1，**不是本批引入的回归**：`_astro/` 同步从 211 涨到 212，
@@ -558,3 +560,128 @@
       `-42.000,2.641,48.944,92.468`。
     - ⚠️ 别只比源码字符串：`h-[10vh] max-h-37.5 min-h-12.5` 这类**尺寸类**走样时不报错、不告警
       （同一族坑见 AGENTS 一节「参考源用法」第 5 条那次波纹高度差 2.7 倍）。
+45. 🔴 **给 `@astrojs/sitemap` 写错选项键名不报错，而是整个 sitemap 不生成**（2026-10-16 实测）
+    - 我给 404 页做排除时按直觉写了 `sitemap({ exclude: ["/404.html"] })`。构建输出：
+
+      ```text
+      [WARN] [@astrojs/sitemap]    Unrecognized key: "exclude".
+      [build] 45 page(s) built in 4.04s
+      [build] Complete!      ← 退出码 0
+      ```
+
+      **构建照过，但 `dist` 里静默少了 `sitemap-index.xml` 与 `sitemap-0.xml` 两个文件。**
+      我当时没发现，是下一步脚本读 `dist/sitemap-0.xml` 抛 ENOENT 才撞出来。
+    - 根因：`node_modules/@astrojs/sitemap/dist/schema.js` 里
+      `SitemapOptionsSchema = z.object({...}).strict()`，而 `index.js` 校验失败走的是
+      **打一行 warn 然后 `return`**（`return errorList.join("\n")` 那条路径），**不抛错**。
+    - → 这个集成**根本没有 `exclude` 键**。排除 URL 只能用官方支持的那一个：
+
+      ```js
+      sitemap({ filter: page => !page.includes("/404") }),
+      ```
+
+    - ⚠️ **通判据**：这个集成成功时会打一行 `sitemap-index.xml` created at `dist`（INFO）。
+      **看到这行才叫真生成了**，只看到 `Complete!` 不算。核构建顺手数：
+      `find dist -maxdepth 1 -name 'sitemap*'` 应为 **2**。
+    - 同族病（配置写错 → 不报错、功能静默没了）已有三条：**五-11**（`allowScripts` 忘改 → npm 静默跳 postinstall）、
+      **五-21**（改插件而内容缓存不失效 → 退出码 0 但产物是旧的）、**五-33**（不写 `client:*` → HTML 有内容但零 JS）。
+      **这条是第四条，破坏面比前三条大：它删掉的是本来已经生成好的产物文件。**
+
+46. ⚠️ **站内 404 页：产物已就位，但 Nginx 还没接**（2026-10-16 建；**别当已完工**）
+    - `src/pages/404.astro` → 产出 **`dist/404.html`**（不是 `dist/404/index.html`；Astro 对非
+      `[...slug]` 的单个 .astro 页就是直接出 `<name>.html`）。直接访问 `/404.html` 实测 **200**。
+    - 但服务器上 vhost 里那一行**是注释状态**：`#error_page 404/404.html;`
+      （只读 SSH 查过 vhost 与 extension 两处，`404.html` 也只出现在注释里）。
+      → **访客打错 URL 现在仍是 nginx 裸页**（`<html>…404 Not Found…nginx`），与这次改动之前完全一样。
+    - → 要真生效必须在 vhost 放开那行 + `nginx -t` + reload，**属服务器改动，要他当次点头**（六节四类之一）。
+      ⚠️ **放开之后不用再部署**：文件已经在 `dist` 里，改完 nginx 立刻生效。
+      报告里要说清这一层，**别说成「404 已经做好了」**。
+    - 页面本身守住三条站内规矩：① 语义 h1 由 Layout 注入的 sr-only 承担，可见大标题是 **div**
+      （同 `guestbook` / `gallery`，**五-13**）；② 整块挂 `data-pagefind-ignore` → 不进搜索索引
+      （实测搜「页面不存在」「走丢」都只回手册页，**没有** 404 页）；③ 不进 sitemap（就是 45. 那条 `filter`，
+      实测 sitemap **44** 条 URL、零 404）。
+    - ⚠️ **口径分叉，别看花**：`astro build` 那行现在打 **`45 page(s)`**，而 **五-9** 那套方法量的
+      `find dist -name index.html | wc -l` 仍是 **44**。差的那一个就是 **`404.html`**——它不是目录页、
+      没有 `index.html`，所以五-9 的口径不计它，而 Astro 自己把非 index 的 .html 也算进页数。
+      两个数都对，**报数字必须连着方法一起报**（就是五-9 那条原始教训）。
+    - ⚠️ **别为了「让 `/404/` 也能访问」再在 pages 下建一个 404 目录页**：那会多一页、多一个 canonical，
+      而 `error_page` 只指 `/404.html`；真要指 `/404/` 得配 rewrite，没必要。
+      （措辞上**别把那个不存在的目录页写成反引号路径**——`npm run docs:check` 的死引用闸门会把它当真死链报 error，
+      本轮就是这么被撞了一次：闸门只认「反引号里的仓库内路径必须存在」，不区分反事实用法。）
+    - ⚠️ **写这页的注释时别出现一级标题标签的字面尖括号写法**——注释会原样进产物，
+      将来用 grep 数那个标签来验「每页恰好一个」会被注释自己骗到（本轮我自己踩了一次：
+      源码注释里写了字面标签 → 产物里数出 2 个 → 改掉措辞后回到 1）。同 `PostCard` 那条占位文案的教训。
+
+47. ⚠️ **列表卡「置顶」徽标：视觉标识补齐（2026-10-16）；当前零篇用到 → 产物里计数为 0，属预期不是坏了**
+    - `pinned` 的**排序一直生效**（`content-utils` 的比较函数把 pinned 前置），缺的只有视觉：
+      原先 `PostCard` 挂了 `.pinned` 这个 class，而**全站 CSS 从未定义它**（探针 `pinnedEls: 0`）
+      → 置顶与普通文章看着**完全一样**。这是"只做了一半"，不是"坏了"。
+    - 改法照参考站：`PostMeta` 新增 `pinned` prop，为真时在 meta 行**第一个**位置插 `.pinned-btn`
+      （`material-symbols:pinboard` + 「置顶」），class 串与参考站产物逐字对齐；`PostCard` 把已有的 `pinned` 传进去。
+    - 实测（**临时**把 `ccnewtools-manual-v150` 设 `pinned: true` 后 preview）：徽标宽 68px、svg 可见宽 20、
+      背景 `rgb(224,244,234)`、圆角 6px、`parentElement.firstElementChild === 徽标` 为真；
+      375 档 meta 行 72px、页面横向溢出 0、带徽标的卡序号数组 = `[0]`（只有第一张）。
+      **验完立刻撤掉 `pinned`**（该篇与 HEAD 逐字节一致）→ 所以现在全站产物 `pinned-btn` = **0**，符合预期。
+    - ⚠️ 图标名 `material-symbols:pinboard` 是读了 `icons.json` 的 **`icons` 表**确认的（**五-29** 的教训：
+      照抄参考站图标名会把构建打挂，而那时 `dist/` 已被清空）。
+    - → 他要用置顶，**在文章 frontmatter 写 `pinned: true` 就行**（schema 本来就有、此前零篇写过）。
+
+48. ✅ **GitHub 仓库卡片的失败态修好**（2026-10-16）——原先 API 连不上就**永远停在使用中的假象里**
+    - `src/plugins/rehype-component-github-card.mjs` 的 `catch` 原先**只加 `fetch-error` 类、不摘 `fetch-waiting`**，
+      而 `markdown-extend.styl` 里 `a.card-github.fetch-waiting` 是 `opacity: 0.7` + 描述/信息条/头像
+      **无限 pulsate**，占位文本 `Waiting for api.github.com...` / `00K` / `Waiting...` **一格都没换**
+      → **访客端看着就是网页卡在加载中，而且永远不会自己好**。（点击其实是通的：
+      `fetch-error` 有 `pointer-events: all`，这条我先怀疑过是死链，实测才排除。）
+    - 修法（**只改 catch，不动成功路径**）：`remove("fetch-waiting")` + 四格占位换成中文失败态
+      （描述＝未能连上 GitHub API、点击卡片仍可直接打开仓库页；星标与许可＝`—`；语言＝未知）。
+    - ⚠️ **验证必须掐断才走得到这个分支**——本机 FastGithub 会代理 `api.github.com`，
+      正常跑只会测到成功分支（我第一次跑就得到"卡片显示 陈俊亦个人博客 / 1 星 / Astro"，看着一切正常）。
+      掐断办法：`ctx.route("**://api.github.com/**", r => r.abort())` → 三张卡全部
+      `class="card-github no-styling fetch-error"`、占位 `animationName` 变 `none`（pulsate 停了）、
+      `pointer-events: all`；**再点一次，新窗口真开出仓库页**（这条是我最担心的"失败态点不动"，实测没问题）。
+    - 附带纠正一条我自己的计数错：用 `html.includes("card-github")` 数卡片得到 **9** 张是**虚数**
+      （CSS 里也提这个类名）；数**元素**要匹配 `<a ... class="...card-github...">`，实测 **3** 张。
+    - ⚠️ 这属"改了 `src/plugins/**`"→ 按 **五-21** 必须 `rm -f node_modules/.astro/data-store.json` 再构建，
+      我这次是**新建 404 页 + 动 about 的 mdx 链**，所以顺手清了；不清的代价是"退出码 0、产物是旧的"。
+
+49. ✅ **分页「上一页/下一页」的 href 补齐尾斜杠**（2026-10-16）；禁用态**没有 href** 是对的，别"修"
+    - 原先 `page.url.prev` / `page.url.next` 直接当 href 用 → 产物是 `href="/2"`，
+      而同排数字页码走 `getPageUrl` 出 `"/2/"`、该页 canonical 也是 `/2/`，**三者不一致**。
+      nginx 有 301 兜着、Swup 也接得住（实测点 `href="/2"` 那个箭头：`location=/2/`、
+      `swup:contentReplaced` **+1**、`beforeunload` **0** → 走的是软导航，**用户完全看不出坏**），
+      但爬虫按 href 走要多付一跳 301。
+    - 改法是加 `withTrailingSlash(u)`，`u === undefined` **原样返回**——
+      ⚠️ **别为了让 href 非空而写 `href="#"`**（**五-14** 明令禁止，且 `#` 会被 Swup 的 capture 监听吃掉）。
+    - 实测三页：首页的上一页 = **无 href + `aria-disabled=true` + `tabindex=-1`**（这正是五-14 要的状态）、
+      下一页 `/2/`；`/2/` 是 `/` 与 `/3/`；`/3/` 的下一页无 href。
+    - ⚠️ 这条改动差点被我自己误判成 bug：探针用 `/<a[^>]*aria-label="上一页"[^>]*href="([^"]*)"/` 匹配，
+      在禁用态**没有 href** → 正则返回 null → 脚本崩。**先按"属性可能不存在"写探针**，
+      或者按 **九·补③** 那条通则用 DOM 解析器（本项目没有 linkedom/parse5 时，退化成
+      "先抠出 `<a ...>` 整标签、再逐属性取值"）。
+
+50. ✅ **归档页筛选摘要行的坏文案**（2026-10-16 修）——附一条「三元两分支写成一样」的检测思路
+    - `ArchivePannel.svelte` 那行渲染成「26 篇文章 · **1 1 年**」：`{groups.length}` **写了两遍**、
+      漏了中间的量词；而上一行 `{filteredPostCount === 1 ? "篇文章" : "篇文章"}` 的**两个分支完全相同**
+      （死代码，中文没有单复数变化，当初大概是英文 post/posts 的残留）。
+      → **两个字节级缺陷连排，`build` 退出码 0、`astro check` 0 error 0 warning，只有肉眼看得见。**
+      ⚠️ 这类"两个分支一样"值得单独扫一遍：
+      `grep -E '\? *"[^"]*" *: *"[^"]*"' | 前后两个字符串字面量相同` 就是命中
+      （ripgrep **不支持反向引用**，所以别想用 `"(\1)"` 一次写完，见 harness.md **B-25**）。
+    - 改成 `{filteredPostCount} 篇文章 · {groups.length} 个年份`。实测三种查询串：
+      `?tag=css` → 26 篇文章 · 1 个年份；`?tag=不存在xyz` → 0 篇文章 · 0 个年份；`?category=工具` 同理。
+    - ⚠️ **这个摘要块只在有查询串时渲染**（`{#if primaryFilter}`），所以无查询串的 `/archive/` 产物里
+      **搜不到「个年份」是正常的**，别据此判定"改动没进产物"（本轮我自己差点误判，靠带 `?tag=` 硬加载才验出来）。
+      同族：纯静态下 `Astro.url.searchParams` 恒空，**筛选值的真相全在客户端**（**五-33**）。
+
+51. ✅ **相册照片的 alt 已传值**（2026-10-16）；`PhotoCard` 的 `alt` 默认空串**不是 bug**
+    - `[album].astro` 原先写 `<PhotoCard src={photo} albumId={albumMeta.id} />` **不传 alt**，
+      而 `PhotoCard` 的 `alt = ""` 默认值 → 产物里 5/5 全空（实测 `空alt: 5`）。
+      **五-34 那条"装饰图 alt 必须留空串"只约束装饰图**（横幅、自动封面、头像这类），
+      相册照片是**内容图** → 该有 alt。别把两条规矩混起来用。
+    - 现在传 ``${albumMeta.name} 第 ${i + 1} 张照片``，实测 `/gallery/zhuhai-2026/`
+      5 张 alt 全非空（`珠海日记 第 1 张照片` …）。
+    - ⚠️ **这是没有逐张文案时的兜底命名，不是最终形态**：`galleryConfig.albums` 里**没有 per-photo caption 字段**，
+      而 `FancyboxManager` 的 `commonOptions` 是 `caption: false` → 灯箱里不显示说明
+      （实测点开 `caption: ""`）。要"每张一句人话"得他先给文案，并且要**同时**动两处：
+      给 `galleryConfig` 加字段 + 把灯箱 `caption` 打开。**只改一处等于白改。**
+    - 对照参考站：`firefly.cuteleaf.cn/gallery/` 自己也只写 `alt="封面"`，所以这不是"照抄漏了"，是**它也没做**。

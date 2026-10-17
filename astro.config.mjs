@@ -143,7 +143,10 @@ export default defineConfig({
                 },
             },
         }),
-        sitemap(),
+        // ⚠️ 这个集成没有 `exclude` 键（schema 是 .strict()，给错键名只打一行
+        // `Unrecognized key: "exclude"` 然后**整个 sitemap 不写了**，dist 里静默少两个文件）。
+        // 排除页面只能用 `filter`。404 页不该进 sitemap（搜索引擎抓它等于抓死信）。
+        sitemap({ filter: page => !page.includes("/404") }),
         svelte(),
         mdx(),
     ],

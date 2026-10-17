@@ -1,0 +1,85 @@
+---
+import { Icon } from "astro-icon/components"
+import Layout from "@/layouts/Layout.astro"
+import { url } from "@/utils/url-utils"
+
+// 站内 404 页。
+// ⚠️ 两个已知边界，别以为写完就全好了：
+// ① Nginx 的 vhost 里 `#error_page 404/404.html;` 目前是**注释状态** → 要让访客真的看到这一页，
+//    需要在宝塔那个 vhost 放开这一行（属服务器改动，要用户当次点头，见 AGENTS 六节）。
+//    现在这页已经作为静态产物存在，`/404.html` 直接访问是 200，改完 nginx 立刻生效、不用再部署。
+// ② 纯静态 SSG 里 `Astro.redirect("/404/")` 那几处（关页面开关的分支）不会走到这里——
+//    它不产出 404.html，语义也和 SSR 不同。这条与本页无关，别顺手"修"。
+const homeUrl = url("/")
+const links = [
+	{ name: "首页", href: homeUrl, icon: "home", desc: "回到文章列表" },
+	{ name: "归档", href: url("/archive/"), icon: "archive", desc: "按年份翻完全部文章" },
+	{ name: "分类", href: url("/categories/"), icon: "material-symbols:folder-open-rounded", desc: "按主题挑" },
+	{ name: "相册", href: url("/gallery/"), icon: "xiangce", desc: "生活那边的内容" },
+	{ name: "关于", href: url("/about/"), icon: "about", desc: "站主是谁" },
+]
+---
+
+<Layout title="页面不存在-亦林">
+	<!-- data-pagefind-ignore：整块不进搜索索引（pagefind.yml 已排除这个属性）。
+	     否则搜「页面」「不存在」会把 404 页排进结果，读者点进去又是一次 404。 -->
+	<div data-pagefind-ignore class="relative flex min-h-32 w-full overflow-hidden">
+		<div class="card-base relative z-10 w-full px-9 py-8">
+			<div class="mb-6 flex items-center gap-3">
+				<div
+					class="flex h-8 w-8 items-center justify-center rounded-lg bg-(--primary) text-white dark:text-black/70"
+				>
+					<Icon name="material-symbols:search-off" class="text-[1.5rem]" />
+				</div>
+				<!-- 本站口径：可见大标题是 div，语义 h1 由 Layout 注入的 sr-only 承担（同 guestbook / gallery）。
+				     ⚠️ 这段注释里**别出现那个标签的字面尖括号写法**——注释会原样进产物，
+				     将来用 grep 数一级标题标签的个数来验「每页恰好一个」，会被这条注释自己骗到
+				     （同 PostCard 那条占位文案的教训，那边是靠改注释措辞解决的）。
+				     这里再写一个真的可见标题就变成两个非空标题，违反五-13 -->
+				<div class="text-3xl font-bold text-neutral-900 dark:text-neutral-100">这个页面走丢了</div>
+			</div>
+
+			<p class="mb-1 text-base leading-relaxed text-neutral-600 dark:text-neutral-400">
+				你访问的地址在本站找不到对应的内容（404）。可能是文章改过 URL、链接被截断，或者地址本来就写错了。
+			</p>
+			<p class="mb-7 text-sm leading-relaxed text-neutral-500 dark:text-neutral-500">
+				如果确定是从站内某个链接点进来的，告诉我一声，我把那条链接补上。
+			</p>
+
+			<div class="mb-7 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+				{
+					links.map(l => (
+						<a
+							href={l.href}
+							class="btn-card group flex items-center gap-3 px-4 py-3 active:scale-[0.98]"
+							aria-label={`去${l.name}`}
+						>
+							<Icon name={l.icon} class="shrink-0 text-xl text-(--primary)" />
+							<span class="min-w-0 flex-1">
+								<span class="block truncate text-sm font-bold text-black/75 transition group-hover:text-(--primary) dark:text-white/75">
+									{l.name}
+								</span>
+								<span class="block truncate text-xs text-black/35 dark:text-white/35">{l.desc}</span>
+							</span>
+							<Icon
+								name="material-symbols:chevron-right-rounded"
+								class="shrink-0 text-xl text-black/15 transition group-hover:translate-x-0.5 group-hover:text-(--primary) dark:text-white/15"
+							/>
+						</a>
+					))
+				}
+			</div>
+
+			<div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-neutral-500 dark:text-neutral-400">
+				<span>也可以在顶栏那排输入框里直接搜关键词。</span>
+				<button
+					type="button"
+					class="btn-regular cursor-pointer px-4 py-2 active:scale-[0.98]"
+					onclick="history.length > 1 ? history.back() : (location.href = '/')"
+				>
+					返回上一页
+				</button>
+			</div>
+		</div>
+	</div>
+</Layout>

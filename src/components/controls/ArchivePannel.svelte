@@ -146,11 +146,9 @@
                     {/if}
                 </div>
                 <div class="shrink-0 text-xs text-50">
-                    {filteredPostCount}
-                    {filteredPostCount === 1 ? "篇文章" : "篇文章"}
+                    {filteredPostCount} 篇文章
                     <span class="mx-1.5 text-30">·</span>
-                    {groups.length}
-                    {groups.length} 年
+                    {groups.length} 个年份
                 </div>
             </div>
         </div>

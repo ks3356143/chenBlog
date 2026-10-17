@@ -125,9 +125,10 @@ const columnWidth = galleryConfig.columnWidth || 240
 						class="gallery-masonry"
 						style={`column-count: 2; column-gap: 0.75rem; --col-width: ${columnWidth}px;`}
 					>
-						{photos.map(photo => (
-							<PhotoCard src={photo} albumId={albumMeta.id} />
+						{photos.map((photo, i) => (
+							<PhotoCard src={photo} albumId={albumMeta.id} alt={`${albumMeta.name} 第 ${i + 1} 张照片`} />
 						))}
+
 					</div>
 				) : (
 					<div class="flex flex-col items-center justify-center py-16 text-neutral-400 dark:text-neutral-500">

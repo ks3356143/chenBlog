@@ -161,6 +161,9 @@ draft: false
 26 篇实测**只出现了 9 个字段名**：上例那 9 个（`title` `published` `updated` `description` `tags` `category`
 `series` `seriesOrder` `draft`），`image` 只有 10 篇写了、且值全是 `""`（所以封面全走兜底图）。
 schema 里剩下 3 个（`pinned` `comment` `password`）零使用。
+（⚠️ **2026-10-16 更正这句的时效**：`pinned` 的**视觉标识已经就位**——一写就是列表卡 meta 行最左侧的
+「置顶」徽标，排序此前也早就生效，详见 config.md 五-47；`comment: false` 关评论区、`password` 只隐藏评论区
+且无密码门 UI，这两条不变。字段本身仍是**零篇写过**。）
 （**2026-10-01 删掉了 6 个零使用字段**：`lang` `author` `sourceLink` `licenseName` `licenseUrl` `passwordHint`，见五-5。）
 `category` 会进分类导航栏，要新增分类值前先确认；`series` 决定文章是否出现在 `/series/`（见第五节 17）。
 

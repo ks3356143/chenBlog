@@ -1323,7 +1323,7 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**本批（第九批）三笔**：`8d70fdf`（体检清单分档 + harness.md B-23~B-25）、`9fabbef`（A 档六条修复，V0.1.49）、第三笔＝本档快照；**已推送、`HEAD == origin/main`、工作区计数 0**。更早：`4f36f0c`/`acbc175`（V0.1.48 新篇）、`7d36982`（每日体检规矩）、`1a93fe2`+`98d96a8`（V0.1.47） |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**本批（第九批）已推的分笔**：`8d70fdf`（体检清单分档 + harness.md B-23~B-25）、`9fabbef`（A 档六条修复，V0.1.49）、`0ea31c1`（分册五-45~51 与本档快照）、`55793aa`（harness.md B-26 第四条）；**已推送、`HEAD == origin/main`、工作区计数 0**。更早：`4f36f0c`/`acbc175`（V0.1.48 新篇）、`7d36982`（每日体检规矩）、`1a93fe2`+`98d96a8`（V0.1.47） |
 | 工作区 | 本批 `src/` **新增 1 个文件**（`pages/404.astro`）+ **改 6 个组件/插件**：`ArchivePannel.svelte`（摘要坏文案）、`Pagination.astro`（箭头尾斜杠）、`PostMeta.astro`+`PostCard.astro`（置顶徽标）、`gallery/[album].astro`（照片 alt）、`src/plugins/rehype-component-github-card.mjs`（卡片失败态）。另 `astro.config.mjs`（sitemap `filter`）。文档动 `AGENTS.md`（**两处等长替换**：五-9 基线、索引 五-42→五-51，57866→57866 B）、`config.md`（**新增五-45~51**）、`harness.md`（B-23~26）、`writing.md`（pinned 时效更正）、`HANDOFF.md`。**零依赖改动** |
 | 文档分层 | `docs:check` **0 error / 1 提醒**（常驻层余量仍 **78 B**）。⚠️ 本批所有新增内容**全写进分册**，常驻层只做等长替换；`config.md` 60138→72959 B、`harness.md` 63563→66366 B、`writing.md` 18620→18977 B |
 | 浏览器能力 | 同前（`npm run probe` + 本地 `astro preview`；browser-use MCP 仍等他新建 Session）。⚠️ **本批新增三条取证坑（记进 harness.md B-26）**：① **Node 用 `latin1` 读文件再比中文永远 0 命中**（搜中文必须 `utf8`，同 八-27 解码口径族）；② `docs:check` 的死引用闸门**不认反事实**（写「别新建某文件」时别给不存在的路径加反引号）；③ **往分册写「机制」前必须单独复现**——我差点把「pwsh 中文 Select-String 会坏」记成分层规则，落盘前复现**证伪**（其实是 `node -e` 的 ParserError，正犯 B-17 那族）。另 **六-③ 本批又应验一次**：`execFileSync("curl")` 报「13 个资源全 ERR」，而同期 `body()` 全拿到了新内容 → 自相矛盾即假信号，**curl 直接在 shell 里跑**才是真数 |

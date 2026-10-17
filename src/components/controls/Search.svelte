@@ -169,7 +169,7 @@
 			class="btn-plain h-10 w-10 items-center justify-center"
 			aria-label="打开站内搜索"
 			aria-expanded={mobileOpen}
-			{...panelShown ? { "aria-controls": "search-panel" } : {}}
+			aria-controls={panelShown ? "search-panel" : undefined}
 			onclick={openMobile}
 		>
 			<svg width="22" height="22" viewBox="1.4 1.1 13.8 13.8" fill="none" aria-hidden="true" class="shrink-0">

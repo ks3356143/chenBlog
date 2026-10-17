@@ -1,7 +1,7 @@
 {
   "name": "chenblog",
   "type": "module",
-  "version": "0.1.52",
+  "version": "0.1.53",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build && pagefind --site dist",

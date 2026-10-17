@@ -1,7 +1,14 @@
 ---
 import { Icon } from "astro-icon/components"
 import Layout from "@/layouts/Layout.astro"
+import { siteConfig } from "@/config/siteConfig"
 import { url } from "@/utils/url-utils"
+
+// ⚠️ 本页产物是 dist/404.html（Astro 对单文件页直接出 <name>.html，不是目录页），
+//    但 Astro.url.pathname 在构建期是 `/404/` → 照默认值生成的 canonical/og:url 会指向
+//    一个**真实返回 404 的 URL**（2026-10-17 复验抓出来的，我自己引入的缺陷）。
+//    所以这里显式传真实可访问的绝对 URL。
+const selfUrl = new URL("/404.html", Astro.site ?? siteConfig.site_url).href
 
 // 站内 404 页。
 // ⚠️ 两个已知边界，别以为写完就全好了：
@@ -20,9 +27,13 @@ const links = [
 ]
 ---
 
-<Layout title="页面不存在-亦林">
-	<!-- data-pagefind-ignore：整块不进搜索索引（pagefind.yml 已排除这个属性）。
-	     否则搜「页面」「不存在」会把 404 页排进结果，读者点进去又是一次 404。 -->
+<Layout title="页面不存在-亦林" url={selfUrl}>
+	<!-- 本页**天然不进 Pagefind 索引**，真实机制（2026-10-17 查清）：
+	     `Markdown.astro` 只在文章/单页正文上放 `data-pagefind-body`，而 Pagefind 一旦在站内
+	     发现任何 body 标记，就**只索引带该标记的页**、其余整页忽略（本站 30 页索引 / 15 页不索引，
+	     首页与归档/分类/标签/系列/相册都在不索引那批）。本页没走 <Markdown> → 自动不索引。
+	     下面这个 data-pagefind-ignore 只是**第二道兜底**（万一将来有人给这页加 body 标记）。
+	     ⚠️ 别把它当成「404 不进索引」的原因——那是错的因果，曾写进分册，已更正。 -->
 	<div data-pagefind-ignore class="relative flex min-h-32 w-full overflow-hidden">
 		<div class="card-base relative z-10 w-full px-9 py-8">
 			<div class="mb-6 flex items-center gap-3">

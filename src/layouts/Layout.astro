@@ -43,7 +43,9 @@ interface Props extends PageSEO {
     }
 }
 
-const { title, contentHasH1, bannerPostMeta, postSlug, headings, description } = Astro.props
+// url 不传时 SEO 组件里 `url = Astro.url` 的默认值照常生效；
+// 只有产物文件名与 Astro.url.pathname 不一致的页面（404.html）必须显式传。
+const { title, contentHasH1, bannerPostMeta, postSlug, headings, description, url } = Astro.props
 
 // SEO所需内容
 const { frontmatter } = Astro.props
@@ -54,7 +56,7 @@ const isPostPage = !!postSlug
 const postCategory = isPostPage ? String((frontmatter as { category?: unknown } | undefined)?.category ?? "") : ""
 ---
 
-<BaseLayout title={title ?? siteConfig.siteMeta.name} description={description} frontmatter={frontmatter}>
+<BaseLayout title={title ?? siteConfig.siteMeta.name} description={description} frontmatter={frontmatter} url={url}>
     <slot slot="head" name="head" />
     <Header />
     <div id="progress-bar"></div>

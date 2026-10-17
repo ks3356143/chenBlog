@@ -162,11 +162,14 @@
 	<!-- 移动：按钮。外层容器才带 lg:hidden——按钮自己有 .btn-plain{display:flex}，
 	     它在 abutton.css 里、加载顺序在 Tailwind 工具类之后，同特异性会盖掉按钮上的 lg:hidden -->
 	<div class="flex items-center lg:hidden">
+		<!-- aria-controls 只能在面板真的在 DOM 里时指过去（面板是条件渲染，
+		     写死 "search-panel" 会留下悬空引用，45/45 页都被扫出来过） -->
 		<button
 			type="button"
 			class="btn-plain h-10 w-10 items-center justify-center"
+			aria-label="打开站内搜索"
 			aria-expanded={mobileOpen}
-			aria-controls="search-panel"
+			{...panelShown ? { "aria-controls": "search-panel" } : {}}
 			onclick={openMobile}
 		>
 			<svg width="22" height="22" viewBox="1.4 1.1 13.8 13.8" fill="none" aria-hidden="true" class="shrink-0">

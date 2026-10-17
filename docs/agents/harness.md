@@ -549,6 +549,34 @@ page.goto: net::ERR_PROXY_CONNECTION_FAILED at http://47.108.230.220/404.html
    逼我第二次改写法。**同一个错误在一段话里犯了两次**，说明"凭记忆引用编号"这个习惯本身要改掉。
 
 ---
+### B-29 本轮（2026-10-18，V0.1.51~53 三批）新踩的 harness/工具坑，逐条实测
+
+1. 🔴 **`write` 工具的参数顺序**：长 `content` 且把 `file_path` 写在 `content` 之后时，本轮 4 次报
+   `invalid arguments: missing required property "file_path"`（同一脚本内容原样、只调换参数顺序就成功）。
+   → **`write`/`edit` 一律先写 `file_path` 再写内容参数**，别赌解析器容错。
+2. 🔴 **pwsh 里内联 `node -e "…"` 是雷区，第三次踩**：本轮两种方式翻车——
+   ① JS 里的 `\"` 经 PowerShell 后变 `Invalid string escape`（SyntaxError）；
+   ② 字符串里含 `$(stat …)` 时 **PowerShell 先把 `$()` 当子表达式执行**，报
+   "术语 'stat' 不被识别为 cmdlet"，Node 根本没拿到脚本。
+   → 规则升级：**只要脚本含引号嵌套、`$(`、或中文键对象字面量，一律 `write` 成 `.mjs` 文件再 `node` 跑**；
+   `node -e` 只配一行不用嵌套引号的简单表达式。
+3. **Playwright `page.evaluate` 里引用 Node 侧局部变量**（循环计数 `i`）→ 浏览器里 `ReferenceError: i is not defined`。
+   与 B-23「evaluate 参数不能放函数」同根：**evaluate 只序列化「函数体字符串 + 显式参数」，不捕获闭包**。
+   要传状态就放进第二个参数对象里。
+4. **探针字段名要先枚举再断言**：Pagefind `search()` 的返回对象**没有 `total` 字段**（实测 JSON 里整个键消失），
+   我拿 `res.total` 打出 6 个 `undefined`，差点报成「重建后索引全坏」。控制组 = 同页 UI 实测「按钮」5 条、
+   「炫彩」1 条都正常。→ 先 `Object.keys(res)` 打印结构，再写字段名。
+5. **ssh 内联 bash 的 `[ ]` 测试必须留空格**：`$([ -d /path] && echo yes)` 报 `[: missing ']'`——
+   报错发生在**我自己写的只读探测命令**里，不是目标脚本。远端命令里再嵌 `$()`/`""` 时优先落成
+   `bash /tmp/x.sh`（脚本本身先 `bash -n` 校验）。
+6. **我的 prose 停（用户第 4 次纠正）**：两次把「先核实 A/B/C 再动手」写成正文就结束回合、没带工具调用。
+   → 纪律：**回合必须以工具调用或完整结论结束**；铺垫句（"接下来我……"）后面必须紧跟同一回合的工具调用。
+7. **Svelte 5 属性位里不能放 HTML 注释**：`<button a=1 <!-- c --> b=2 >` 编译期 `Failed to parse component`。
+   注释放标签外面。同批教训：**条件展开属性 `{...cond ? {k:v} : {}}` 会把运行时 helper 拉进共享 chunk
+   （实测 client.*.js 40,995→47,742 B，md5 变了）**，等于给每个含岛页面 +6.7KB；
+   `attr={cond ? v : undefined}` 才是纯 `p()` 属性设置（编译产物 `w($,'aria-controls',p(G)?'search-panel':void 0)`）。
+   详见 config.md 五-53。
+
 ## A. 继承自上一任的纪律（22 份记忆文件压缩落盘，卸载 Qoder 后仍有效）
 
 ### A-1 否定结论必须配控制组

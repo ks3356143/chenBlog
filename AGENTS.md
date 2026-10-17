@@ -14,7 +14,7 @@ harness 注入链 = `~/.dsh/AGENTS.md` → `AGENTS.md` → `AGENTS.local.md`，*
 | **私密层** | `AGENTS.local.md`（不入库） | 部署目标真实值 + 展开版部署命令 |
 | **分册层** | `docs/agents/*.md`（**不自动注入，要自己 Read**） | 原第五~十节的**逐字全文** |
 
-- `config.md` — 原第五节全文（**五-1 ~ 五-52**，每条的根因与实测数字）
+- `config.md` — 原第五节全文（**五-1 ~ 五-55**，每条的根因与实测数字）
 - `deploy.md` — 原第六节全文（路径表 / 缓存策略 / 标准流程 / 已知坑 / 面板与凭据 / 铁律）
 - `collab.md` — 原第七节全文（收尾铁律 + 日常约定，含行尾与跨工具路径引号的全部细则）
 - `writing.md` — 原第八节全文（发稿流程 8 条 + **八-9 同步自检标准与「站内故意加」清单** + frontmatter + 图片规矩）
@@ -177,7 +177,7 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
 - **1** `site_url` 随环境变（dev `localhost:4321` / build `47.108.230.220`）→ 改地址必须同步改，否则外链、sitemap、RSS 全错乱。
 - **2** 封面路径以 `src/` 为基准。**3** 代码块超 15 行自动折叠（"代码消失"就是这个）。**6** 统一 webp q80。**7** `dist/` `.astro/` `node_modules/` 不入库。
 - **8** ⚠️ **Astro 7 下不能留空的 `<script></script>`** → `Cannot find the built path for …`，**整页含首页渲染失败**（Astro 6 容忍、7 报错）。
-- **9** 基线（2026-10-16 实测）**44 页 / 360 文件 / 21.70MB**，28 篇。**报数字必须带方法**（`du -sh` 按 4K 分块虚高）：`find dist -name index.html|wc -l`、`find dist -type f|wc -l`。⚠️ **加一条动态不动这些数字**。
+- **9** 基线（2026-10-18 实测）**44 页 / 360 文件 / 21.69MB**，28 篇。**报数字必须带方法**（`du -sh` 按 4K 分块虚高）：`find dist -name index.html|wc -l`、`find dist -type f|wc -l`。⚠️ **加一条动态不动这些数字**。
 - **10** `@astrojs/markdown-remark` **必须显式声明**。通则：`astro.config.mjs` 里 import 的每个包都要显式声明，**别赌 peer 自动安装**。
 - **11** `allowScripts` 钉精确版本（现只剩 `esbuild@0.28.2`）→ 升级忘了改，npm **静默跳过 postinstall**，只有全新克隆才崩。
 - **21** 🔴 **改 `src/plugins/**` 或 markdown 链 → 必须 `rm -f node_modules/.astro/data-store.json` 再构建 + grep 产物确认**（内容缓存在 `node_modules/.astro/`、**按内容哈希失效、插件源码变了它不管** → 退出码 0 但产物是旧的）。⚠️ **别在 dev 运行时删**；同族 `node_modules/.vite/` 会造成"整块功能静默消失、完全像 JS 回归"。
@@ -300,7 +300,7 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 **正文改写三条硬规矩**（细节在 writing.md）
 - **不写 `# 一级标题`**（`Layout.astro` 已注入 sr-only `<h1>`）；小节从 `##` 起。
 - **成对英文直引号改中文 `“”`，但 `<` … `>` 之间的内容一律不碰** —— 2026-10-07 把 `class="horizontal-scroll-container"` 的**属性引号**也改了 → 产物 class 带弯引号 → 选择器永不匹配 → **宽表滚动容器死了一个多星期、不报错不告警**。`code span`、围栏、**frontmatter**（`description: "…"` 那对是 YAML 定界符）都要保护。验收要**同时** grep 产物属性 + 在 375px iframe 实测 `scrollWidth > clientWidth`。
-- **宽表格必须自己包 `.horizontal-scroll-container`**（`<div>` 后空行、`</div>` 前空行）：表格按最大内容宽排 + 文章页 `overflow-x:hidden` → 375px 下超出部分**既不出滚动条也看不见 = 内容丢失**。既存未修：`css100天-第8天.md`（缩进在列表项内 → **要改他的旧文章，等他点头**）。
+- **宽表格必须自己包 `.horizontal-scroll-container`**（`<div>` 后空行、`</div>` 前空行）：表格按最大内容宽排 + 文章页 `overflow-x:hidden` → 375px 下超出部分**既不出滚动条也看不见 = 内容丢失**。第8天那张 10-13 已修（细节与实测数字在 `writing.md`，**别再当他要点头的待办**）。
 
 **⚠️ 八-9 差量同步手册（必然再现：他发版很快，一天改几次）**
 - 他说"软件又升级了使用手册，更新吧"→ **不要重跑发稿流程**（不问归位、不重建文件），做**差量同步**：两边归一化（剥 frontmatter / 去一级标题 / 图片路径映射成 `IMG:NN` / 弯引号还原 / 折叠块引用空行）→ 逐行 diff → **剩余差异必须只剩"站内规矩"四类**。

@@ -1,4 +1,4 @@
-# AGENTS 分册 · 第五节「必须知道的配置约定」全文（五-1 ~ 五-52）
+# AGENTS 分册 · 第五节「必须知道的配置约定」全文（五-1 ~ 五-55）
 
 > 本文件是 `AGENTS.md` 某一节的**全文**，2026-10-12 从 AGENTS.md 无损切出。
 > `AGENTS.md` 只留常驻结论与索引（受 harness 64KB 注入预算限制）；改到本节任何主题前先读本文件全文。
@@ -48,8 +48,8 @@
    导致整个页面（含首页）渲染失败。Astro 6 容忍、Astro 7 报错。
    → 已于 2026-09-20 从 `src/pages/[...page].astro` 移除一处。要么写内容，要么整行删掉，别留空标签。
 
-9. 构建产物基线（**2026-10-17 实测**，V0.1.49）：**44 个 `index.html` / dist 360 个文件 / 真实字节合计 21.70MB**；
-   HTML 总数 45（多出的那 1 个 = `404.html`，见五-46）。Pagefind 索引 **30 页 / 2903 词**、`sitemap` 44 条 URL。
+9. 构建产物基线（**2026-10-18 实测**，V0.1.53）：**44 个 index.html / dist 360 个文件 / 真实字节合计 21.69MB（22,742,496 B）**；
+   HTML 总数 45（多出的那 1 个 = `404.html`，见五-46）。Pagefind 索引 **30 页 / 2899 词**（词数取构建输出 `Indexed N words`，`pagefind-entry.json` 只给 `page_count:30`）、`sitemap` 44 条 URL。
    历史（各批当时的实测值，**别再当现状引用**）：
    ↳ 2026-10-10 傍晚 V0.1.36 时是 **43 个页面 / dist 357 个文件 / `du -sh` 22M**，
    ⚠️ **量数字要连着方法一起报**：`du -sh` 按 4K 分块算（351 个文件就白涨 ~0.7M），字节合计才可比；
@@ -750,3 +750,105 @@
     - ⚠️ **`remark-directive` 不接受任何选项**（其 `lib/index.js` 里 `remarkDirective()` 无参、
       推扩展时 `directive()` 也没传配置）→ **没法**从源头关掉文本指令语法，只能在自研插件里放行白名单。
       **别去调 `astro.config.mjs` 的插件顺序**：`remarkDirective` 必须在 `parseDirectiveNode` 之前，两个都得留。
+
+53. 🟡 **两处既存的结构/无障碍缺陷修复（2026-10-18，V0.1.52）：`<a>` 里套 `<button>` 180 处 · 搜索按钮无名 + 悬空 `aria-controls`**
+    - **A) 侧栏分类卡 `<a><button>`**（`src/components/card/Category.astro`，180 处 = 45 页 × 每页 2 份卡 × 2 分类 × …）
+      HTML 规范里 `<button>` 是**交互内容**，不得出现在 `<a>` 内 → parse5 报 `nested-interactive`；
+      副作用是**每张卡两个 Tab 停靠点**（外 `a` + 内 `button`）。
+      ⚠️ **但"点了不跳"是假的**：本条修复前我用 `page.mouse.click` 测过线上，**1440 和 390 都正常导航**，
+      内层 `<button>` 抢焦点后按 **Enter 也能跳**（我一度把它当"点不开"报，是我自己点到了视口外/隐藏副本）。
+      → 修它是为了**规范与键盘停靠点数量**，不是为了修点击。别当"点击坏"复述。
+    - **修法**：把内层 `<button class="btn-right">` 删掉，`btn-right` 直接挂到 `<a>` 上并补 `inline-block`：
+      `class="btn-right inline-block"`。⚠️ **`inline-block` 不能省**——`.btn-right` 在
+      `src/styles/singles/mainSingles.css:46` 只声明 `h-10 w-full …`，**没有 `display`**；
+      原来那个 `<button>` 的 `inline-block` 来自**浏览器默认 UA 样式**，换成默认 `inline` 的 `<a>` 后
+      高度与盒模型全靠这个类补上。实测改后盒仍是 `246×40`（1440）/ `340×40`（390），与旧版**逐像素相同**。
+    - **✅ 视觉 A/B 是改前必做项（这次线上旧版 vs 本地 preview 新版，双主题 × 双断点 × 三态）**：
+      静止 `pl=8px / bg=rgba(0,0,0,0) / color=rgb(0,0,0)`（暗 `oklch(0.87 0 none)`）、
+      hover `pl=12px / bg=rgb(222,244,237) / color=rgb(0,186,153)`、卡高 218 / 列表高 120 **两边完全相同**。
+      唯二差异：`cursor default→pointer`（链接本该是手型）、`appearance button→none`（**无边框无底色 → 不可见**）。
+      ⚠️ hover 探针必须**先 `scrollIntoView`**：目标在 y=1113 / y=4161 时 `mouse.move` 打在视口外，
+      两边都测出 `进hover:false` → 差点误报"hover 效果消失"。**`matches(':hover')` 为 false 先怀疑坐标，不是怀疑 CSS。**
+    - **B) 搜索按钮**（`src/components/controls/Search.svelte:165`）：原 `aria-controls="search-panel"` **写死**，
+      而面板是 `{#if panelShown}` **条件渲染** → 45/45 页都存在**悬空 ID 引用**（`getElementById` = null），
+      且按钮**没有可访问名**（只有 `aria-hidden` 的 svg）。修法：加 `aria-label="打开站内搜索"`，
+      `aria-controls` 改**条件属性**。定稿写法（V0.1.53）：`aria-controls={panelShown ? "search-panel" : undefined}`。
+      ⚠️⚠️ **别用条件展开属性 `{...panelShown ? { "aria-controls": "search-panel" } : {}}`** —— 看着等价，
+      实测它把 Svelte 运行时 helper 拉进**共享** chunk：`_astro/client.*.js` 40,995 → **47,742 B（+6.7KB）**，
+      连带 `client.svelte` / `Search` / `ArchivePannel` / `DynamicFeed` / Layout CSS 全重算哈希，
+      **每个含岛的页面都吃这 6.7KB**（V0.1.52 就这么把回归上线了一次，靠逐文件 md5 差异面才发现）。
+      三元写法编译产物是 `w($,"aria-controls",p(G)?"search-panel":void 0)`（纯属性设置，
+      `client` chunk **md5 与改动前逐字节相同**）。
+      🔴 通则：**改完 Svelte 组件必须看 `dist/_astro/client.*.js` 的字节数** —— 共享 chunk 变大 = 全站付费，
+      页面行为验收完全看不出来。
+      ⚠️ Svelte 5 里**注释不能写在标签的属性之间**（`Failed to parse component`）→ 注释放标签外。
+      实测 390：未点开 `controls=null` → 点开 `controls="search-panel"` 且指向真实元素、焦点进输入框 →
+      Escape 后回到 `null`、面板移除；搜索 5 条结果、Tab 序列里该按钮读作 `BUTTON:打开站内搜索`。
+    - **验证（产物 + 浏览器两层）**：parse5 `nested-interactive` **180 → 0**、`invalid-first-character` 0；
+      新产物 `<button class="btn-right"` 全站 **0**、`<a …btn-right…>` 首页 4 个；
+      45/45 页含「打开站内搜索」、首页静态 `aria-controls` **0**；
+      线上终验：分类行标签全 `A`、内层 button **0**、点击与键盘 Enter **都**跳
+      `/archive/?category=设计灵感`、聚焦元素名 `posts in 设计灵感`；三篇正文注释节点 **0**；about 卡 3 张；页面 JS 报错 **0**。
+    - **尺寸基线三版连跳（逐版取自各自部署脚本的实测值，不凭记忆）**：
+      V0.1.51 = **22,753,662**（404.html 133,504）→ V0.1.52 = **22,749,999**（133,270）→ V0.1.53 = **22,742,496**（133,254）；
+      页数/文件数恒 **44 / 360**，AGENTS 五-9 的 **21.70MB** 级基线三版都没变（差 11KB 在 MB 精度下不可见）。
+      🔴 部署断言里的**字节数与尺寸必须重新实测**，别沿用上一版数字（沿用会把健康构建判成失败）。
+      另 ⚠️ 断言**单位要写死**：「含该串的 *.html 文件数」≠「全站出现次数」≠「某单文件内次数」——
+      我这轮先写成全局次数、又写成文件数，两次都得出假的 FAIL。
+      例：`card-github` 在 `about/index.html` 是 3 次，但全站 48 次（Layout CSS 里还有 45 条规则）；
+      `个年份` 只在 `_astro/ArchivePannel.<hash>.js`（**哈希文件名，不能当路径断言**，只能断言"存在"）。
+
+54. 🔴 **未定义 CSS 变量：上一版扫描器有假阴性；按"参考站有没有定义"分三类，别一锅端补上**（2026-10-18 复扫）
+    - **先修探针**：Tailwind **v4** 里 CSS 变量的用法是**简写** `bg-(--x)` / `text-(--x)` / `border-(--x)`，不只 `var(--x)`。
+      上一版只匹配 `var(--x)` / `(--x,)` / `(--x:)` → 把 `--enter-btn-bg` 报成**「无使用」**（实际 3 处使用）。
+      正确正则：`/(?:var|[a-z-]*)\(\s*(--[\w-]+)\s*[,)]/g`（扫 `src/**` 100 个文件：定义 68 种、被使用 63 种）。
+      ⚠️ 同族反向坑：**只看 dist CSS 做"定义 vs 使用"扫描**，会对 `style=` / `define:vars` 注入的变量报假阳性
+      （`--collapsedHeight` 早前已判**证伪**；`--content-top` / `--content-delay` / `--rotation` / `--speed` / `--gradient`
+      同属注入或他文示例变量，不是缺陷）。**报"未定义"前先确认它是不是框架/插件内置**：
+      `--spacing`（v4 内置，`calc(var(--spacing)*10)` 全靠它）、`--color-black` / `--color-white`、
+      `--tw-prose-*`（`@tailwindcss/typography` **已装** `^0.5.20`，变量由插件注入）—— 这四类在 `src` 扫不到属正常。
+    - **分类方法（新增，别再猜）**：抓**参考站编译产物**比对 —— `curl https://firefly.cuteleaf.cn/` 取 3 个
+      `/_astro/*.css`（合计 239,084 B），对每个变量数「定义」与「被引用」。结果三类：
+      **① 参考站有定义、我们只在裁剪时把 `:root` 那几行删了**（照抄漏了，属遗留）：
+      `--enter-btn-bg: var(--btn-regular-bg)`（我们 3 处用：`PostCard.astro:166`「阅读」按钮底色、
+      `RecommendedPost.astro:38` 与 `:123` 相关文章/随机文章序号块底色）、
+      `--enter-btn-bg-hover/-active`（`PostCard.astro:167`）、
+      `--meta-divider: rgba(0,0,0,.2)` / 暗 `rgba(255,255,255,.2)`（`PostMeta.astro:94` 标签间那个 `/` 的颜色）、
+      `--card-bg-transparent: var(--card-bg)`（`markdown.css:192` 与 `:200`，**只作用于壁纸透明态**：
+      `body.wallpaper-transparent` 下的横向滚动容器底色与 `td` 的 `color-mix(… 92%)`）、
+      `--link-underline`、`--admonitions-color-*`（5 个，被 `markdown-extend.styl` 引用；`:::` callout 全站零使用 → 暂时无害）。
+      **② 参考站也没有 = 我们的纯死引用**：`--panel-border-color`（`MobileMenu.astro:68` 用在 **`border:` 简写**里 →
+      未定义使**整条边框声明失效**，移动端菜单面板因此没边框，**是有视觉后果的**，别说"无害"）、
+      `--primary-hover`（`markdown-extend.styl:323` = 九节已登记的「Mermaid 两个未定义变量」之一，零生产使用）。
+      **③ 框架内置**（见上，不算问题）。
+    - 🔴 **别把 ① 一次性全补上**：`--radius-large: 1rem` 参考站有定义，而**本站「面板一律直角」是明写的规则**
+      （五-16③；九节也已把 `rounded-(--radius-large)` 按直角渲染登记为**成立**的既存事实）→ 补上它 = **推翻既定设计决策**，
+      会同时改动 about / guestbook / gallery[album] 等 6 处横幅圆角。**这是视觉范围变更，要他点头**，不是"直接解决"的缺陷。
+      同理 `--enter-btn-bg*` 一定义就会**真的多出可见底色**、`--meta-divider` 一改就换标签分隔符颜色、
+      `--panel-border-color` 一补就给移动端菜单凭空加边框 → **五条都得先问**。
+    - ⚠️ **实测边界（诚实记录）**：本轮只在浏览器里**量过** `--enter-btn-bg` 那组序号块
+      （计算 `background-color` 亮暗两主题都是 `rgba(0, 0, 0, 0)`，同一探针下的对照组 `--btn-plain-bg-hover`
+      芯片实测 `rgb(222, 244, 237)` → 差异是真的）。②③ 类的后果是**按 CSS 规则推出来的**（未定义 var 使声明
+      在 computed-value time 失效），**没有逐个量过** —— 要动之前先量，别拿推断当取证。
+    - ⚠️ **`var(--x, fallback)` 有 fallback ≠ 没问题**（五-22 已记），也别反过来用「有兜底」论证未定义变量无害。
+
+55. ✅ **`data-code` 里的 `0x7F`（DEL）不是缺陷 —— 是 expressive-code 故意的换行占位符**（2026-10-18 定案，**证伪**）
+    - **我上一版的两条误判**：① 怀疑「复制出去的代码带控制字节」；② 断言「dist 里 0 个 JS 引用 `data-code`」，
+      据此把它降级成"死属性"。**两条都错**，而且第 ② 条错得很典型：
+      我用的正则是 `/data-code|dataset\.code/`，而压缩后的真实写法是
+      `let a=e.dataset, r=a.code.replace(/\u007f/g,"\n")` —— **属性名被解构掉了，`dataset.code` 与 `data-code` 一个字都不出现**
+      → 正则 0 命中 → 我据此得出"没人消费它"的**假阴性结论**。
+      🔴 通则：**判"某属性/字段没有消费者"时，正则必须覆盖「解构 + 简写」形态**（`x.dataset` 之后接 `.任意名`），
+      单搜字面属性名**必然漏**；要么搜 `dataset` 本身再看上下文，要么在浏览器里真的点一次复制看结果。
+      这是 B-1「0 命中先怀疑探针」在本会话**第四次**应验。
+    - **真机制**：`dist/_astro/ec.xb3ii.js` 偏移 1533 处（**已在产物里原文抠出**）：
+      `async function u(o){let e=o.currentTarget,a=e.dataset,n=!1,r=a.code.replace(/\u007f/g,`\n`);try{await navigator.clipboard.writeText(r)`
+      —— HTML 属性里不便放裸换行，expressive-code 用 `0x7F` 占位，**运行时一行 `replace` 还原成 `\n`**。
+      ⚠️ 该 `replace` 里的 `\u007f` 是**源码转义写法**，所以 `ec.xb3ii.js` 文件本身**不含裸 0x7F 字节**（实测 `含裸0x7F字节=false`）
+      —— 别拿"在 JS 里搜 0x7F 字节"去找它，要搜 `\\u007f` 这 6 个字符。
+      另注意它同时保留了 `execCommand` 退路（`document.execCommand("copy")` 那段）→ 与五-38（裸 HTTP 无 `navigator.clipboard`）对上。
+    - **数量级（V0.1.53 实测）**：**208 个产物文件、36,626 个 DEL 字节**
+      （比上一版报的"28 文件 / 4719 字节"大一个量级 —— 那次我只扫了 `*.html`；
+      这回含 `pagefind/` 分片与 `_astro/`。**报"全站有多少"必须交代扫描范围**，否则两版数字互相打架）。
+    - **结论：不动、不修、别当悬案重查**。真要"清理产物字节"只能改第三方插件的输出格式，**零收益**。
+      唯一值得留的收获是上面那条**探针教训**。

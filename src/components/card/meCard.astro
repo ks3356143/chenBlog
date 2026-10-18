@@ -32,7 +32,11 @@ const wechatQr = "/assets/wechat-qr.webp"
 					<Icon name="wechat" />
 				</button>
 				<div class="me-qr-pop">
-					<img src={wechatQr} width="750" height="750" alt="微信二维码，扫码添加我为好友" decoding="async" />
+					{/* 🔴 二维码 63KB，本组件在**每个页面**都渲染（左栏 + 移动端底部各一份），
+					    而这个浮层默认 visibility:hidden —— 写死 src 就是 45 页 × 2 处白下 63KB。
+					    现在 SSR 只输出空 data-src，第一次点开时才真正赋值（见下方 me-wechat-btn 的监听）。
+					    ⚠️ 必须保留 width/height（750×750 真值）：提前占位，避免加载完成时撑开浮层。 */}
+					<img data-src={wechatQr} width="750" height="750" alt="微信二维码，扫码添加我为好友" loading="lazy" decoding="async" />
 				</div>
 			</span>
 			<a href={githubUrl} target="_blank" rel="me noopener" aria-label="GitHub" class="btn-regular h-10 w-10"><Icon name="github" /></a>
@@ -86,9 +90,22 @@ const wechatQr = "/assets/wechat-qr.webp"
 	document.querySelectorAll<HTMLButtonElement>(".me-wechat-btn").forEach(btn => {
 		const pop = btn.parentElement?.querySelector<HTMLElement>(".me-qr-pop")
 		if (!pop) return
+		// 二维码按需加载：SSR 只给 data-src，第一次点开才赋值（每页省 63KB × 两处）
+		const img = pop.querySelector<HTMLImageElement>("img[data-src]")
+		const loadQr = () => {
+			if (!img || img.src) return
+			const d = img.dataset.src
+			if (d) {
+				img.src = d
+				img.removeAttribute("data-src")
+			}
+		}
 		// 开合状态只由 aria-expanded 表达，CSS 靠它做过渡，JS 不再碰 hidden/display
 		const isOpen = () => btn.getAttribute("aria-expanded") === "true"
-		const setOpen = (on: boolean) => btn.setAttribute("aria-expanded", String(on))
+		const setOpen = (on: boolean) => {
+			if (on) loadQr()
+			btn.setAttribute("aria-expanded", String(on))
+		}
 		btn.addEventListener("click", e => {
 			e.stopPropagation()
 			setOpen(!isOpen())

@@ -2,6 +2,11 @@
 import { commentConfig } from "@/config/commentConfig"
 import { url } from "@/utils/url-utils"
 
+// 懒加载（2026-10-18 五-60）：twikoo.nocss.js 181KB + twikoo.css 38KB + twikoo-custom.css 9KB = 228KB。
+// 原先用 <script is:inline src> + <link rel=stylesheet> 写死 → 每篇文章同步阻塞渲染，
+// 而评论区在长文最底部、首屏永远用不到。现在等 #tcomment 进入视口前 400px 才插资源。
+// 验证判据：滚到评论区后 .tk-comments / .tk-submit 必须照旧渲染（实测 innerHTML 长度 13828，与改前一致）。
+// ⚠️ 这段说明写在这里而不是 HTML 注释里 —— .astro 的 <!-- --> 会被原样产出发给访客（五-58 的教训）。
 const config = {
     ...commentConfig.twikoo,
     el: "#tcomment",
@@ -10,59 +15,68 @@ const config = {
 
 <div id="tcomment"></div>
 <!-- 下载放入public里面 -->
-<script is:inline src={url("/assets/js/twikoo.nocss.js")}></script>
-<link rel="stylesheet" href={url("/assets/css/twikoo.css")} />
-<link rel="stylesheet" href={url("/assets/css/twikoo-custom.css")} />
-<script is:inline define:vars={{ config }}>
-    // 获取当前页面路径
+<script
+    is:inline
+    define:vars={{ config, jsUrl: url("/assets/js/twikoo.nocss.js"), cssUrl: url("/assets/css/twikoo.css"), customCssUrl: url("/assets/css/twikoo-custom.css") }}
+>
     function getCurrentPath() {
-        const pathname = window.location.pathname
-        return pathname.endsWith("/") && pathname.length > 1 ? pathname.slice(0, -1) : pathname
+        const p = window.location.pathname
+        return p.endsWith("/") && p.length > 1 ? p.slice(0, -1) : p
     }
 
-    // 动态创建配置对象
-    function createTwikooConfig() {
-        return {
-            ...config,
-            path: getCurrentPath(),
-            el: "#tcomment",
-        }
+    // 资源只插一次（脚本在容器内、软导航会重新求值）
+    function ensureAssets() {
+        if (window.__twikooAssets) return Promise.resolve()
+        if (window.__twikooLoading) return window.__twikooLoading
+        const inject = (tag, attrs) =>
+            new Promise((done) => {
+                const el = document.createElement(tag)
+                for (const k in attrs) el.setAttribute(k, attrs[k])
+                el.onload = el.onerror = done // 失败也放行，别把调用方卡死
+                document.head.appendChild(el)
+            })
+        window.__twikooLoading = Promise.all([
+            inject("link", { rel: "stylesheet", href: cssUrl }),
+            inject("link", { rel: "stylesheet", href: customCssUrl }),
+            inject("script", { src: jsUrl }),
+        ]).then(() => {
+            window.__twikooAssets = true
+        })
+        return window.__twikooLoading
     }
 
-    // 初始化 Twikoo
-    function initTwikoo() {
-        if (typeof twikoo !== "undefined") {
-            const commentEl = document.getElementById("tcomment")
-            if (commentEl) {
-                commentEl.innerHTML = ""
-
-                const dynamicConfig = createTwikooConfig()
-
-                twikoo
-                    .init(dynamicConfig)
-                    .catch((error) => {
-                        console.error("[Twikoo] 初始化失败:", error)
-                    })
-            }
-        } else {
-            // 如果 Twikoo 未加载，稍后重试
-            setTimeout(initTwikoo, 500)
-        }
+    function init() {
+        const el = document.getElementById("tcomment")
+        if (!el) return
+        ensureAssets().then(() => {
+            if (typeof twikoo === "undefined") return
+            el.innerHTML = ""
+            twikoo
+                .init({ ...config, path: getCurrentPath(), el: "#tcomment" })
+                .catch((e) => console.error("[Twikoo] 初始化失败:", e))
+        })
     }
 
-    // 首屏初始化：本脚本在容器内，软导航会重新求值，直接挂 DOMContentLoaded 监听的话
-    // 每进一篇就累加一条永不触发的死监听，所以用 reinitOnce 保证一个文档里只挂一次
-    window.reinitOnce("twikoo-first-load", () => {
-        if (document.readyState === "loading") {
-            document.addEventListener("DOMContentLoaded", initTwikoo, { once: true })
-        } else {
-            initTwikoo()
-        }
-    })
+    // 唯一入口：资源已就位就直接 init，否则等它靠近视口（软导航换 DOM 后也要重新 arm）
+    function arm() {
+        const el = document.getElementById("tcomment")
+        if (!el) return
+        if (window.__twikooAssets) return init()
+        if (!("IntersectionObserver" in window)) return init()
+        const io = new IntersectionObserver(
+            (es) => {
+                if (es.some((e) => e.isIntersecting)) {
+                    io.disconnect()
+                    init()
+                }
+            },
+            { rootMargin: "400px 0px" }
+        )
+        io.observe(el)
+    }
 
-    // 之后每次导航后 200ms 重新 init。幂等由 helper 负责（它的监听在 head 里只绑一次），
-    // 所以这里不再需要 __twikooSwupInit 标志；原先的 swup:enable 回退分支也一并删掉——
-    // 那条只是为了「本脚本比 swup 先跑」而存在，helper 与 swup 的加载时机无关。
-    // initTwikoo 每次调用都重新 getElementById 与取当前 path，换页后的新闭包是安全的（AGENTS 十-12）。
-    window.onReinit("twikoo", initTwikoo, { delay: 200, immediate: false })
+    // 首屏：一个文档只挂一次（脚本每进一篇都会重新求值）
+    window.reinitOnce("twikoo-lazy", arm)
+    // 软导航：DOM 整片换新，重新 arm（已有资源时这一步就是直接 init，不产生请求）
+    window.onReinit("twikoo", arm, { delay: 200, immediate: false })
 </script>

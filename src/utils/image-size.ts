@@ -112,18 +112,14 @@ export function getPublicImageSizeSync(url: string | undefined | null): Size | n
 	let result: Size | null = null
 	if (abs) {
 		try {
-			if (fs.existsSync(abs)) {
-				// 文件头最多需要前 32 字节；JPEG 需略多，读 64KB 足够
-				const fd = fs.openSync(abs, "r")
-				const buf = Buffer.alloc(65536)
-				const n = fs.readSync(fd, buf, 0, buf.length, 0)
-				fs.closeSync(fd)
-				const head = buf.subarray(0, n)
-				if (head.toString("ascii", 0, 4) === "RIFF") result = parseWebp(head)
-				else if (head[0] === 0xff && head[1] === 0xd8) result = parseJpeg(head)
-			}
+			// 直接整读：openSync/readSync/closeSync 三件套要自己管 fd 生命周期，
+			// 中间抛错就会漏掉 close（code review 抓到过）。这里 37 张图合计约 4MB、
+			// 构建期跑一次还有缓存，整读的代价远小于多一个资源泄漏点。
+			const buf = fs.readFileSync(abs)
+			if (buf.toString("ascii", 0, 4) === "RIFF") result = parseWebp(buf)
+			else if (buf[0] === 0xff && buf[1] === 0xd8) result = parseJpeg(buf)
 		} catch {
-			result = null // 解不出来就当没有，绝不打断构建
+			result = null // 文件不存在 / 读不动 / 解不出来 → 当作没有，绝不打断构建
 		}
 	}
 

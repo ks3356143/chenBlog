@@ -3,9 +3,12 @@ interface Props {
 	class: string
 }
 const className = Astro.props.class
+// 注意 custom-markdown 样式在单独文件定义。
+// 2026-10-18 修正：原写作 `propse-base`（拼错）→ 该类在 Tailwind 里不存在、一直空转；
+// 现改为 `prose-base`（正文 1rem / 行高 1.75，与 prose 默认值相同 → 视觉零变化，只把意图写对）。
+// ⚠️ 这个注释放 frontmatter 里，**不要写成 HTML 注释**：Astro 会把 HTML 注释原样产出发给访客。
 ---
 
-<!-- 注意custom-markdown样式在单独文件定义 -->
-<div data-pagefind-body class={`prose dark:prose-invert propse-base max-w-none! custom-markdown ${className}`}>
+<div data-pagefind-body class={`prose prose-base dark:prose-invert max-w-none! custom-markdown ${className}`}>
 	<slot />
 </div>

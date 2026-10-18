@@ -27,7 +27,9 @@
     --panel-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     --page-width: 100rem;
     --deep-text: #19251f;
-    --title-active: #3a9371;
+    /* 原 #3a9371（= 参考站 oklch(.6 .1 165)）只用在 `:active`（按下瞬间）。
+       --primary 调深后它反而比 hover 态更亮，按下会"跳一下发亮" → 跟 --primary-hover 对齐。 */
+    --title-active: #005e4d;
     --hue: 175;
     --code-font-size: 0.875rem;
 
@@ -42,8 +44,16 @@
     --inline-code-bg: var(--btn-regular-bg);
     --inline-code-color: var(--btn-content);
 
-    /* 主题 */
-    --primary: #00ba99;
+    /* 主题
+       ⚠️ 2026-10-18（V0.1.55）：--primary 从 #00ba99 调深到 #00705c。
+       原值对白底只有 2.48、对 --page-bg 2.15、对 --btn-regular-bg 2.16（AA 小字要 4.5），
+       参考站同款（oklch(.7 .14 165) → rgb(34,185,136) = 2.51）—— 是"照抄来的低对比"，不是我们写坏的。
+       新值保持原色相 169° 与满饱和，只把亮度压到 22%：
+       对白底 6.05 / 对 --page-bg 5.26 / 对 --btn-regular-bg 5.27 / 对其 hover 态 4.57，
+       且当**背景**用时上面的白字同样是 6.05（旧值是 2.48，最差的一处反而改进了）。
+       要回退：把这行换回 #00ba99，并删掉下面的 --primary-hover。 */
+    --primary: #00705c;
+    --primary-hover: #005e4d;
     --plain-bg: oklch(0.9 0.05 175);
     --btn-plain-bg-hover: #def4ed;
     --btn-plain-bg-active: #f3fbf7;
@@ -55,7 +65,9 @@
     --card-bg-rgb: 255, 255, 255;
     --line-divider: rgba(0, 0, 0, 0.08);
     --btn-regular-bg: #e0f4ea;
-    --btn-content: #008760;
+    /* 原 #008760 对 --btn-regular-bg 只有 3.95（它几乎只当文字色用：行内代码、表格表头、
+       chip、pinned 徽标）→ 压到同色相 L23%：对 chip 4.65 / 对白 5.33。 */
+    --btn-content: #007a5c;
     --btn-regular-bg-hover: #c0e9d6;
     --btn-regular-bg-active: #9cdfc1;
     --btn-card-bg-hover: #fcf7f8;
@@ -63,6 +75,21 @@
     --line-color: rgba(0, 0, 0, 0.1);
     --license-block-bg: rgba(0, 0, 0, 0.03);
     --content-meta: rgba(0, 0, 0, 0.7);
+
+    /* 裁剪主题时漏掉的变量（2026-10-18 V0.1.55 按参考站编译产物补齐，值逐个对齐）
+       —— 原先这些只有引用没有定义，导致「阅读」按钮/序号块没底色、标签分隔符无颜色、
+       移动端菜单面板整条 border 声明失效。--radius-large 刻意不补（见 AGENTS 五-16③ 直角口径）。 */
+    --enter-btn-bg: var(--btn-regular-bg);
+    --enter-btn-bg-hover: var(--btn-regular-bg-hover);
+    --enter-btn-bg-active: var(--btn-regular-bg-active);
+    --meta-divider: rgba(0, 0, 0, 0.2);
+    --card-bg-transparent: var(--card-bg);
+    --panel-border-color: var(--line-divider);
+    --admonitions-color-tip: oklch(0.7 0.14 180);
+    --admonitions-color-note: oklch(0.7 0.14 250);
+    --admonitions-color-important: oklch(0.7 0.14 310);
+    --admonitions-color-warning: oklch(0.7 0.14 60);
+    --admonitions-color-caution: oklch(0.6 0.2 25);
 
     /* 二级设置 */
     --text-color: var(--grey-7);
@@ -91,6 +118,20 @@
     --content-meta: rgba(255, 255, 255, 0.6);
     --line-color: rgba(255, 255, 255, 0.1);
     --license-block-bg: var(--codeblock-bg);
+
+    /* 同上一组，暗色自己的取值（参考站暗色 :root.dark 原值） */
+    --primary-hover: #0ab394;
+    --enter-btn-bg: var(--btn-regular-bg);
+    --enter-btn-bg-hover: var(--btn-regular-bg-hover);
+    --enter-btn-bg-active: var(--btn-regular-bg-active);
+    --meta-divider: rgba(255, 255, 255, 0.2);
+    --card-bg-transparent: var(--card-bg);
+    --panel-border-color: var(--line-divider);
+    --admonitions-color-tip: oklch(0.75 0.14 180);
+    --admonitions-color-note: oklch(0.75 0.14 250);
+    --admonitions-color-important: oklch(0.75 0.14 310);
+    --admonitions-color-warning: oklch(0.75 0.14 60);
+    --admonitions-color-caution: oklch(0.65 0.2 25);
 
     /* TOC相关变量 - 暗色主题 */
     --toc-badge-bg: var(--btn-regular-bg);

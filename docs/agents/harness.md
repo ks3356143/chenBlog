@@ -595,6 +595,14 @@ page.goto: net::ERR_PROXY_CONNECTION_FAILED at http://47.108.230.220/404.html
    ⚠️ 同族另一例（本批）：想用 `grep opener` 证明"没人依赖 `window.opener`"，结果 **`noopener` 自身含 `opener`** →
    11 行全命中假阳性；排除 `no` 前缀后真命中只有 1 处，且那是 twikoo 自己在写 `.opener=null`。
    → **写包含式正则前先想清它会不会匹配到自己的关键词**（与 B-28「`IP:8099` 命中自己」、八-9「`^[+-][^+-]` 滤掉整类」同族）。
+10. **Node 24 里 `execFileSync("npm", …)` 报 `ENOENT`、换成 `npm.cmd` 报 `EINVAL`** → 想在脚本里跑 npm 子命令（`outdated` / `audit`）拿文本再分类，**别 spawn npm**：
+    用 pwsh 落盘（`npm outdated 2>&1 | Out-File -Encoding utf8 $env:TEMP\…\outdated.txt`），脚本只做**读文件 + 分类**。
+    ⚠️ `Out-File -Encoding utf8`（PS7）会带 BOM，读回来先 `.replace(/^\uFEFF/, "")`。
+    🔴 **真正的收获是逼我把「14 个落后」拆成可验证的三档**：我草稿里写的是
+    「**12 行 `Wanted<Latest`（都能升）**」—— 一算才发现**只有 1 行** `Wanted<Latest`（`katex` 0.18.7 → W 0.18.11 / L 0.19.0），
+    另外 11 行是 `Wanted==Latest`，还有 2 行 `Wanted==Current`（`mermaid` / `typescript`，就是撞 peer 天花板那两条）。
+    → **分档数字一律用代码从表里算**（`split(/\s{2,}/)` + 自己写版本比较函数），别用眼睛读表格、更别照旧印象写；
+    与 B-17「凭记忆写规则」、B-28「探针 0 命中先怀疑探针」同族：**能算的就别读、能读的就别猜**。
 
 ---
 

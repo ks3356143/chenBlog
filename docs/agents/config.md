@@ -878,3 +878,8 @@
       `public/assets/js/twikoo.nocss.js` 里的 `open("_blank").opener=null` —— **它做的正是 `noopener` 这件事**，
       不是依赖回写父窗口 → 没有任何代码读 `window.opener`。
       ⚠️ 若将来要"新窗口回写父页"，必须改 `window.open` + `postMessage`，不能靠 `opener`。
+      ✅ **真实弹窗行为证据（不是只看属性字符串）**：Playwright 真点这 4 条并读**新标签页里的** `window.opener` →
+      **4/4 全部 `window.opener === null` 且落地 URL 正确**（astro.build、站内 `/rss.xml`、CuteLeaf/Firefly、
+      `ks3356143/chenBlog` 卡片 —— 卡片这条走的正是 GitHub API 失败的兜底分支，**点了照样开仓库页**）；pageerror 0。
+      → 「加了 `noopener` 会不会把新窗口点坏」这个担心可以排除；下次改这类属性**务必点一次读 opener**，
+      光 `grep rel` 只能证明属性在、不能证明隔离生效。

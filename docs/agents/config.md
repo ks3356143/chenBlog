@@ -1,4 +1,4 @@
-# AGENTS 分册 · 第五节「必须知道的配置约定」全文（五-1 ~ 五-55）
+# AGENTS 分册 · 第五节「必须知道的配置约定」全文（五-1 ~ 五-56）
 
 > 本文件是 `AGENTS.md` 某一节的**全文**，2026-10-12 从 AGENTS.md 无损切出。
 > `AGENTS.md` 只留常驻结论与索引（受 harness 64KB 注入预算限制）；改到本节任何主题前先读本文件全文。
@@ -745,8 +745,12 @@
       ⚠️ 产物里另有 `<polygon></polygon>` / `<polyline></polyline>` 18 处，我一度当成同类残留 ——
       核实是**他代码示例里的合法 SVG 元素**（在 `<svg>` 内），不是指令产物。
       **判"某类问题是否清零"时，先把可疑命中的上下文看一眼。**
-    - 🔴 **动 `src/plugins/**` 必须清内容缓存再构建**（**五-21**）。本批照做，构建从 ~6s 涨到 20.2s
-      （全量重渲染）——**这次变慢恰好是缓存清干净了的可验证信号**，别当性能回归。
+      🔴 **本批照做了。但「变慢 = 缓存清干净」这句因果是错的**（同文件 **L213** 早就写着「清空缓存不会变慢多少，
+      重建仍约 5s」，我落笔时没读到自己那句矛盾）：V0.1.51 那次确实 20.2s，而 V0.1.54 同样删 `data-store.json`
+      只花 **5.44s**，产物断言（`target=_blank` 缺 `noopener` 由 **183 → 0**）证明插件改动**真的生效**。
+      同一晚另一次构建又跑到 **22.18s**（那次**没**清缓存）—— 5.44 / 5.94 / 22.18 三个数方向互相打架，
+      🔴 所以**别给「构建耗时」编任何因果**（既不是「变慢=清干净」也不是「变慢=带缓存」）；判据只有一个：
+      **解析产物里该出现的新内容 / 该消失的旧内容**（**五-21** 后半句本来就是它，我却另编了一条）。
     - ⚠️ **`remark-directive` 不接受任何选项**（其 `lib/index.js` 里 `remarkDirective()` 无参、
       推扩展时 `directive()` 也没传配置）→ **没法**从源头关掉文本指令语法，只能在自研插件里放行白名单。
       **别去调 `astro.config.mjs` 的插件顺序**：`remarkDirective` 必须在 `parseDirectiveNode` 之前，两个都得留。
@@ -852,3 +856,25 @@
       这回含 `pagefind/` 分片与 `_astro/`。**报"全站有多少"必须交代扫描范围**，否则两版数字互相打架）。
     - **结论：不动、不修、别当悬案重查**。真要"清理产物字节"只能改第三方插件的输出格式，**零收益**。
       唯一值得留的收获是上面那条**探针教训**。
+56. 🟡 **`target="_blank"` 必须配 `rel`：页脚 4 条与 GitHub 卡片曾缺（全站 183 处 → 0，2026-10-18 V0.1.54 修）**
+    - **发现方式**：第五轮把无障碍普查扩到 `rel` 维度（**parse5 逐页遍历**，不是 grep 字符串），命中 **183 处**：
+      页脚 `Footer.astro` 4 条 × 45 页 = **180**，加 `about` 的 3 张 GitHub 卡片。
+    - ⚠️ **归属判定：`src` 里 `grep target="_blank"` 只命中 2 个文件，卡片那 3 处搜不到** ——
+      它们的 `target` 是 **JS 对象属性写法**（`rehype-component-github-card.mjs:82` 的 `target: "_blank",`）。
+      → 查这类**两种写法都要搜**：`target="_blank"` 与 `target:\s*"_blank"`；只搜 HTML 属性会漏插件生成的那批。
+    - **同仓库早有正确口径，不必自创**：`meCard.astro:38-39` 写的是 `rel="me noopener"` / `rel="noopener"`，
+      自研 `rehype-external-links.mjs:40` 给对方站点写 `noopener noreferrer`。
+      → 修法照这两档：**站内两条**（RSS / Sitemap）用 `noopener`，**真外链**（astro.build / Firefly / 仓库卡）用 `noopener noreferrer`。
+      ✅ `_blank` 指**站内**也要 `noopener`：浏览器照样建 `window.opener`，别因"反正是自己站点"就省。
+    - **验证（本地先证因果 → 远端断言 → 线上复测，三层）**：
+      ① 本地**逐行**模拟远端 `grep -aoP '<a [^>]*target="_blank"[^>]*>'`（跨行标签会数漏，必须逐行跑一遍）
+      → `total=365 缺=0 可疑跨行=0`；
+      ② 部署断言**成对写**：「缺 rel = **0**」**加**「总数 = **365**」——只写前者，在"正则一个都没匹配上"时会假通过（B-29 第 8 条那族）；
+      ③ 线上 `curl` 抓 8 个 URL：`target=_blank` 69 处、缺 rel 0；浏览器读 `a.rel`（DOMTokenList）：
+      页脚 RSS/Sitemap = `["noopener"]`、Astro/Firefly = `["noopener","noreferrer"]`、3 张卡片 = `["noopener","noreferrer"]`；
+      ④ parse5 遍历本地 dist（与线上 **360/360 逐字节相同**）：45 页 365 处，缺 rel **0**。`npm run check` 0 error / 3 hint。
+    - ✅ **加 `noopener` 无副作用（实测，别再用"grep opener 零命中"当依据）**：正则 `/opener/g` 会把
+      **`noopener` 自己**全数进来（本站源码里 11 行命中全是它），排除 `no` 前缀后全站只剩 **1 处**：
+      `public/assets/js/twikoo.nocss.js` 里的 `open("_blank").opener=null` —— **它做的正是 `noopener` 这件事**，
+      不是依赖回写父窗口 → 没有任何代码读 `window.opener`。
+      ⚠️ 若将来要"新窗口回写父页"，必须改 `window.open` + `postMessage`，不能靠 `opener`。

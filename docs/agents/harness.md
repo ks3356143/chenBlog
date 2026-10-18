@@ -548,7 +548,6 @@ page.goto: net::ERR_PROXY_CONNECTION_FAILED at http://47.108.230.220/404.html
    我加的"残留计数"断言把这件事抓了个正着——**而且连我那句自我批评里写的 `五-18` 也被算进残留**，
    逼我第二次改写法。**同一个错误在一段话里犯了两次**，说明"凭记忆引用编号"这个习惯本身要改掉。
 
----
 ### B-29 本轮（2026-10-18，V0.1.51~53 三批）新踩的 harness/工具坑，逐条实测
 
 1. 🔴 **`write` 工具的参数顺序**：长 `content` 且把 `file_path` 写在 `content` 之后时，本轮 4 次报
@@ -576,6 +575,28 @@ page.goto: net::ERR_PROXY_CONNECTION_FAILED at http://47.108.230.220/404.html
    （实测 client.*.js 40,995→47,742 B，md5 变了）**，等于给每个含岛页面 +6.7KB；
    `attr={cond ? v : undefined}` 才是纯 `p()` 属性设置（编译产物 `w($,'aria-controls',p(G)?'search-panel':void 0)`）。
    详见 config.md 五-53。
+8. 🔴 **探针浅实现造出 533 个假阳性（本站「0 命中先怀疑探针」的对偶：非 0 命中也可能全是假的）**：
+   普查「无名字的可聚焦元素」时我用 `(n.childNodes||[]).map(c=>c.value).join("")` 取文本 ——
+   **只取直接子节点**，而站方按钮/卡片的文字都在**孙子层**（`<button><div><span>文字</span></div></button>`），
+   于是 45 页报出 **533 个"无名"元素**（含 `site-info-toggle` 90、`dropdown-trigger` 45 等），
+   差点被写成一批新缺陷。改成**递归** `textOf()` 后：站方 chrome **0 处**、正文只剩 1 个
+   （他 `css100天-第15天.md` 练习示例里的 `<input type=file class="input-class-chen">`，属教程内容不是站方缺陷）。
+   → 规则：**凡"取元素的文本/名字"必须递归到后代**；`firstChild.value` / `childNodes.map(value)` 都只到一层。
+   ⚠️ 同族第二例：判「某属性没有消费者」时只搜字面属性名会漏**解构写法**（`let a=e.dataset` + `a.code`），
+   我据此把 expressive-code 的换行占位符误判成"复制会带控制字节"（详见 config.md 五-55）。
+9. 🔴 **又一个「假 0 命中」：对字符串调 `.join?.("")` 得到 `undefined`，被 `?? ""` 兜成空串 → 整轮统计全 0**
+   线上终验时我写 `const body = execFileSync('curl',[...],{encoding:'utf8'}).join?.('') ?? ''` ——
+   `encoding:'utf8'` 时 `execFileSync` **返回的就是字符串**（我在 pwsh 那侧才需要 `-join`），
+   字符串没有 `.join`，`?.` 短路成 `undefined`，再被 `?? ""` 静默兜成**空串** →
+   8 个 URL 全部报 `_blank=0 缺rel=0 字节=0`，看起来像"线上一个外链都没有"。
+   → 三教训：① **跨语言别照搬聚合习惯**（pwsh 数组要 `-join`，Node `encoding:'utf8'` 已经是字符串）；
+   ② **`?.` + `?? 默认值` 会把"我用错了 API"伪装成"数据就是空"** —— 宁可让它抛；
+   ③ 判据：**"0 命中"若同时把分母也打成 0（字节=0），那是探针坏了**，不是站点没内容（本次靠浏览器侧真读 `a.rel` 与本地 365 处对照才发现矛盾）。
+   ⚠️ 同族另一例（本批）：想用 `grep opener` 证明"没人依赖 `window.opener`"，结果 **`noopener` 自身含 `opener`** →
+   11 行全命中假阳性；排除 `no` 前缀后真命中只有 1 处，且那是 twikoo 自己在写 `.opener=null`。
+   → **写包含式正则前先想清它会不会匹配到自己的关键词**（与 B-28「`IP:8099` 命中自己」、八-9「`^[+-][^+-]` 滤掉整类」同族）。
+
+---
 
 ## A. 继承自上一任的纪律（22 份记忆文件压缩落盘，卸载 Qoder 后仍有效）
 

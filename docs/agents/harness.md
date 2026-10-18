@@ -603,6 +603,17 @@ page.goto: net::ERR_PROXY_CONNECTION_FAILED at http://47.108.230.220/404.html
     另外 11 行是 `Wanted==Latest`，还有 2 行 `Wanted==Current`（`mermaid` / `typescript`，就是撞 peer 天花板那两条）。
     → **分档数字一律用代码从表里算**（`split(/\s{2,}/)` + 自己写版本比较函数），别用眼睛读表格、更别照旧印象写；
     与 B-17「凭记忆写规则」、B-28「探针 0 命中先怀疑探针」同族：**能算的就别读、能读的就别猜**。
+11. **PowerShell 传中文参数会把一条 URL 拆成两个 token → 假 403 / 假 000**：查线上 22 个 URL 时写成
+    `"/posts/" + [uri]::EscapeDataString('css100天-第17天') + "/"`（在数组元素里做字符串相加），
+    结果输出成 `/posts/=403` 与 `css100%E5%A4%A9…=000` **两行** —— 即 `curl.exe` 实际收到的是
+    `http://…/posts/`（目录 → 403）加一段被当成独立 argv 的残串（000 = 根本没发出请求）。
+    **站点其实 200**：改用 Node 侧 `encodeURIComponent` 拼好再交给 curl，8 篇中文 slug + 2 条分类深链 **10/10 全 200**。
+    → 规则：**测含中文/特殊字符的 URL，字符串拼接放在 JS 里**（`execFileSync("curl.exe", [url])`）；
+    在 pwsh 里至多用**一个已拼好的变量** `$u`，别在参数列表里做 `+`。
+    **形状特征**：同一个 URL 变成两行、一行 403 一行 000 → 是拆参，不是站点坏了。
+    ⚠️ 与 **deploy.md 六-③**（node `execSync("curl")` 走 cmd.exe，`/dev/null` 与 `%{http_code}` 被吃掉）同族：
+    **Windows 下 curl 的参数会被 shell 二次解析**。判"某资源 403/404"必须**换一种传参方式复现一次**再下结论
+    （本轮我差点据此报"两篇文章 403"）。
 
 ### B-30 🔴 Chromium 的 `getComputedStyle` **不会把 oklch 解析成 rgb** —— 跨站比颜色必须走 canvas 像素法（2026-10-18）
 

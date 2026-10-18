@@ -337,7 +337,7 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 🔴 **通则：「文档说坏了」≠ 坏了，也 ≠ 修法对**；取证用 DOM 解析器不用 grep、**选择器必须先在产物里实测出来**。
 📖 **完整措辞与"当初怎么查错的"在 `docs/agents/todo.md` 九·补③。**
 
-**⚠️ 用户看过选择不做 / 我判定降级（别当新发现重提）**：Twikoo 无 `defer` · 横幅 `srcset` 缺 750w 档 · 每页两个 `<title>` · 重复 id `cardTags`/`announcement`/`banner` · 两份 `__allPostMetaCache` fetch · 配置里那四行"写了但没装"的假图标集 · Mermaid 两个未定义变量 · 单分类卡收起态更高 · `/site.webmanifest` Content-Type · `tsconfig.json` 的 React jsx 残留。细节见 `todo.md` 九·补②。
+**⚠️ 用户看过选择不做 / 我判定降级（别当新发现重提）**：Twikoo 无 `defer` · 横幅 `srcset` 缺 750w 档 · 每页两个 `<title>` · 重复 id `cardTags`/`announcement`/`banner` · 两份 `__allPostMetaCache` fetch · 配置里那四行"写了但没装"的假图标集 · Mermaid 两个未定义变量 · 单分类卡收起态更高 · `/site.webmanifest` Content-Type · 卡片标签药丸改全圆淡底。细节见 `todo.md` 九·补②。
 
 **🔴 安全与授权边界**：全历史 **零凭据泄露**；文档已脱敏但**历史未重写**（要 `git filter-repo` + 强推，**他没批准**）。仍未处理：**Twikoo `envId` 是裸 `IP:8099`**（改同域反代要他拍）、面板 IP 白名单未开、一笔已发布提交消息写错（`90a38e5`，当次点头类，没点头没动）。
 **凭据纪律：面板密码 / SSH 私钥 / 任何 token 一律不入库、不在对话里明文传递。** 全文见 `todo.md` 九·补①。

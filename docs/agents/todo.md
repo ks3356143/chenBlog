@@ -302,6 +302,13 @@ Tailwind 的 `prose-base` 拼错 → 该工具类从未生效。它正好是 `pr
 
 - 横幅 `srcset` **缺 750w 档**（他看过，选择不做）。
 - `/site.webmanifest` 的 **Content-Type 是 `application/octet-stream`**（要修得改服务器 mime 映射，故未做）。
+- **卡片底部 `#标签` 药丸改成参考站那样（全圆 + 8% 淡底 + 去 hover 放大）**（2026-10-18 他答「选择3吧不懂」「不动」）。
+  现状是我们自己的风格：`btn-regular h-6 px-2 py-1 text-xs stats hover:scale-110 active:scale-95` → 实心浅绿底 `--btn-regular-bg`(#e0f4ea)
+  + 绿字 `--btn-content`(#007a5c) + **直角** + hover 放大到 1.10。参考站 `.tag-item` 是 `border-radius:9999px` +
+  `color-mix(in srgb,var(--btn-content) 8%,transparent)` 底、hover 到 18% 且**不缩放**，另有 `+N` 溢出灰态（`tag-item-static`）。
+  **⛔ 别当新发现重提**。附带两条已知：① `+N` 阈值是"超过 3 个"，而本站 28 篇**实测每篇最多 3 个标签**（26 篇 2 个 + 2 篇 3 个）
+  → 就算做了今天也**永远不触发**；② 圆角与 AGENTS 五-16③「本站面板一律直角」的关系是"标签算小控件不算面板"，
+  我当时给的推荐是照参考站改，他选了不动 —— **视觉口径只以他为准，别自己放开**。
 
 **③ 已证伪清单的完整措辞（含"当初是怎么查错的"，常驻层已压缩为一行）**
 

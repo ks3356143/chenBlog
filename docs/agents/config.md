@@ -1,4 +1,4 @@
-# AGENTS 分册 · 第五节「必须知道的配置约定」全文（五-1 ~ 五-58）
+# AGENTS 分册 · 第五节「必须知道的配置约定」全文（五-1 ~ 五-59）
 
 > 本文件是 `AGENTS.md` 某一节的**全文**，2026-10-12 从 AGENTS.md 无损切出。
 > `AGENTS.md` 只留常驻结论与索引（受 harness 64KB 注入预算限制）；改到本节任何主题前先读本文件全文。
@@ -967,3 +967,78 @@
        修正后产物 `prose-base` **30 处 / `propse-base` 0 处**（45 个 html 里 30 个有正文）。
        ⚠️ 我第一版把说明写成 **HTML 注释** → Astro 原样发给访客（产物里多 30 条注释）→ 改放 frontmatter 的 `//` 注释。
        **通则：给源码留解释不要用 HTML 注释**，`<!-- -->` 在 `.astro` 里是产出物的一部分。
+
+59. ✅ **sitemap 补 `<lastmod>` + 站内静态图补 `width/height`（V0.1.56）**（2026-10-18）
+    这两条此前都被记成"低优先观测，未修"，本批判定**该修**：前者是搜索引擎能不能判断更新的硬指标，
+    后者有真实 CLS 收益（实测最大 36 倍改善）。
+     - **A) sitemap 零 `<lastmod>`**
+       - 根因：`@astrojs/sitemap` 只有在传统一 `lastmod` 选项、或在 `serialize` 里自己给值时才写 `<lastmod>`。
+         我们两样都没给 → 44 条 URL **零 lastmod**。
+       - 🔴 **不能用统一时间**：给所有页面盖同一个"今天"等于宣称"全站今天都改过"，比没有更糟（假信号）。
+       - 🔴 **不能用 `serialize` 选项**：那个回调跑在 sitemap 集成内部，**拿不到 content collections**
+         （`astro:content` 只在页面/端点渲染上下文可用）。→ 改用自建 integration 的 `astro:build:done` 后处理。
+       - 实现：`src/plugins/integration-sitemap-lastmod.mjs`，按页面类型取真实来源
+         —— 文章页取 frontmatter `updated ?? published`（直接用正则读 md 首部，本项目 28 篇全是单行 `key: value`）；
+         列表/聚合页（`/`、`/2/`…、`/archive/`、`/categories/`、`/tags/`、`/series/`）取全站最新一篇的更新时间；
+         相册页取该目录内最新文件 mtime；`/about/`、`/guestbook/`、`/dynamic/` **不写**（宁可没有也不造）。
+       - 实测 **41/44** 条补上；没补的正是那三个静态页（about / dynamic / guestbook）= 符合设计。
+       断言要成对：URL 数 **44** 且 lastmod 数 **41**，只断言后者在 sitemap 生成失败时会假通过。
+       - ⚠️ **注册顺序有讲究**：`sitemapLastmod()` 必须排在 `sitemap()` **之后**，否则 `build:done` 里
+         `sitemap-0.xml` 还没写出来。
+     - **B) 88 个 `<img>` 缺 `width`/`height`**
+       - 分四类（改前实测 90 处）：`public/images` 32、`/gallery/` 30、`/dynamic/` 客户端占位 16、**远程 http 12**。
+       - 前两类走 `public/` 原样拷贝、不经 Astro 图片优化 → 构建期没有 `ImageMetadata`。
+         新增 `src/utils/image-size.ts`：**零依赖**读文件头解析 webp（VP8/VP8L/VP8X 三种子格式）与 jpeg（扫 SOF 段）。
+         🔴 **不 import `sharp`**：它是 astro 的**传递依赖**、`package.json` 没声明，直接 import 属隐式依赖
+         （换台机器/升级 astro 就可能 ENOENT）。
+         ✅ **已用 sharp 交叉验证 37/37 张零差异**（脚本跑完即删），解析器可信。
+       - 接入四处：`rehype-figure.js`（Markdown 正文图，统一在这里补最省事）、`PhotoCard.astro`、
+         `AlbumCard.astro`、`gallery/[album].astro`。⚠️ **解析不到就不写**，绝不猜数字 ——
+         猜错会让浏览器按错误比例预留高度，**比不写更糟**。
+       - **远程 12 处不改**：它们在文章的 CSS 演示框里（`.frame` 400×400、`img{width:100%;height:100%}`），
+         尺寸由 CSS 约束死，补属性对 CLS 零收益；且要改用户正文，风险不值得。
+       - **实测收益（layout-shift 真实测量，390×844，滚到底）**：
+         | 页面 | 改前 CLS | 改后 CLS |
+         |---|---|---|
+         | `/gallery/zhuhai-2026/` | **0.076** | **0.0029**（线上复测 0.0021） |
+         | `/gallery/` | 0.0055 | 0.0029 |
+         | `/posts/ccnewtools-manual/` | 0.0014 | 0.0014（那 12 处远程图本就不产生位移） |
+       - 🔴 **判据是宽高比，不是像素相等**：Astro `<Image>` 产出的图 `width/height` 记的是**原图比例**，
+         而 `naturalWidth` 是浏览器选中的那个 srcset 候选（如 attr `400x300` / natural `320x240`）。
+         用"像素全等"当判据会得出一堆假不符 —— 实测 7 个采样点**比例偏差全部 ≤0.06%**，无一产生 CLS。
+     - **C) 顺带清掉两条死物**
+       - `focus-ring-inset`：`DropdownMenu.astro` 挂了它，但**全站 CSS 从未定义** → 一直空转。
+         删除的同时补 `.dropdown-item:focus-visible` 与 hover 同观感（否则键盘 Tab 只有浏览器默认轮廓）。
+         实测聚焦后 `bg=rgb(222,244,237) / color=rgb(0,112,92)`，与 hover 一致。
+       - `tsconfig.json` 的 `"jsx": "react-jsx"` + `"jsxImportSource": "react"`：项目零 React，删掉后
+         `tsc --noEmit` 仍退出码 0、`astro check` 仍 0 error/3 hint。
+     - **D) 依赖保守升级（这批唯一"缩水"的决定）**
+       - 行为：`npm update --package-lock-only` → `npm ci` → `npm run build`（照第九节纪律，只装一次）。
+       - 升上去的：`@astrojs/mdx 8.0.2→8.1.0`、`@astrojs/svelte 9.0.1→9.1.0`、`svelte 5.57.1→5.57.2`、
+         `katex 0.18.7→0.18.11`、`sanitize-html 2.17.7→2.18.1`、`markdown-it 15.0.2→15.0.3`、
+         `prettier 3.9.9→3.9.10` 等。`mermaid 11.17.2` / `typescript 6.0.3` 按天花板**没动**。
+       - 🔴 **`astro` 钉在 `7.3.5`，故意不升**。二分实测（每次 `npm ci` 干净装 + 全量 build）：
+         | astro | 产物文件数 | `_astro` 下 css | 结论 |
+         |---|---|---|---|
+         | 7.3.4（原） | 360 | 3 | 基线 |
+         | **7.3.5** | **360** | **3** | ✅ 取这个 |
+         | 7.3.6 | **361** | **4** | ❌ 多写一个死文件 |
+         | 7.3.7 / 7.3.8 / 7.4.0 | 361 | 4 | ❌ 同样多 |
+         多的那个是 **`_astro/Search.*.css`（442 B，零引用死文件）**：全 dist 搜引用数 **0**，
+         页面里也没有它的 `<link>`，而**同样的三条规则已经在 `Layout.*.css` 里**（逐条核过，缺 0 条）。
+         ⚠️ **别被"文件数多一个"骗过去**：它不是功能丢失，是重复产物；但会污染构建基线
+         （所有"360 文件"类断言全要改），所以钉住 7.3.5 更划算。
+         ✅ **对照实验排除过两个错误归因**：`@astrojs/svelte` 9.0.1 与 9.1.0 **都**会产出它
+         （不是 svelte 集成的锅）；`astro@7.3.4` 单独装**不**产出（不是 mdx 8.1.0 的锅）。
+       - ⚠️ **`npm update --package-lock-only` 会打印 `up to date`**，看着像"什么都没升"。
+         **别信那行**，直接查 lock 里的 `"version"` 字段核对（实测 astro/mdx/svelte 全都升了）。
+       - 漏洞：官方源 `npm audit` **21 条（5 low / 15 moderate / 1 high）**，比 10-18 上午的 23 条**少 2**。
+         唯一 high 是 `stylus → glob@10.4.5` 的 **CLI 命令注入**（`glob -c/--cmd` 走 `shell:true`）——
+         本项目只经 stylus 在构建期调用 glob、**不走命令行、不进 dist**，不可利用；修它要升 stylus 大版本，
+         已判**不动**。`audit fix --force` 依然禁用。
+     - **E) 一个必须记住的探针陷阱**：**不要用"自己 createElement 造的 div"去量 Svelte 组件样式**。
+       Svelte scoped CSS 的规则是 `.search-panel.svelte-1n2o1uz{…}`，手造的元素没有那个作用域类
+       → 规则一条都匹配不上 → 量出"底色透明、无边框、无毛玻璃"，**看起来像样式全丢了**。
+       我据此一度误判"删掉的 Search.css 是唯一样式来源"。**正确做法：先真的把面板打开，
+       量页面上那个真实岛元素**（实测亮 `rgba(255,255,255,0.55)`、`border 1px`、`blur(20px) saturate(1.5)`，
+       与线上旧版逐项相同）。这是 B-1「0 命中先怀疑探针」在本项目的又一实例。

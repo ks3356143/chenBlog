@@ -3,8 +3,39 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-18 下午（第十一批：⑩/⑪ 两项视觉决策已落地 + ① Nginx 404 放开，已上线 V0.1.55）**。
+> 最后更新：**2026-10-18 傍晚（第十一批B：sitemap lastmod + 图片宽高治 CLS + 死类清理 + 依赖保守升级，已上线 V0.1.56）**。
 > （第十批跨 10-17 深夜到 10-18 凌晨：`4e462da` 修 V0.1.51、`1d32d2d` 修 V0.1.52、`c4eb046` 修我自己的回归成 V0.1.53；**分册五-52~55 + harness.md B-29 全在 `8d70fdf` 之后的独立笔**。）
+>
+> **🔧 2026-10-18 傍晚一句话（用户"开干全部修复"）**：把「待拍板」里我判定**该修**的四项全做了，
+> 另做了一次**保守的**依赖升级。全部已上线 **V0.1.56**，线上 360/360 md5 逐字节相同。
+> ① **sitemap 补 lastmod**：原本 44 条 URL **零 lastmod**（@astrojs/sitemap 不给就不写）。
+>   🔴 没用统一时间（那等于宣称全站今天都改过，假信号），也没用 serialize 回调（**拿不到 content collections**）
+>   → 自建 integration 在 astro:build:done 后处理：文章页取 updated ?? published、聚合页取最新一篇时间、
+>   相册页取目录 mtime、about/guestbook/dynamic **不写**。实测 **41/44** 条补上（没补的正是那三个静态页）。
+>   新文件 src/plugins/integration-sitemap-lastmod.mjs，**必须注册在 sitemap() 之后**。
+> ② **站内静态图补 width/height（治 CLS）**：改前 90 处缺尺寸，分四类。public/ 下的图不走 Astro 优化、
+>   构建期没有 ImageMetadata → 新增 src/utils/image-size.ts **零依赖**读文件头解析 webp/jpeg
+>   （🔴 **不 import sharp**，它是传递依赖、没在 package.json 声明；已用 sharp 交叉验证 **37/37 零差异**）。
+>   接入 rehype-figure.js（正文图）+ PhotoCard / AlbumCard / gallery/[album]。
+>   **实测收益**：/gallery/zhuhai-2026/ CLS **0.076 → 0.0021（线上复测，降 36 倍）**、/gallery/ 0.0055 → 0.0029。
+>   远程 12 处**没改**（在 CSS 演示框里被 width:100%/height:100% 约束死，补属性零收益，且要动他正文）。
+> ③ **清两条死物**：focus-ring-inset（全站 CSS 从未定义，一直空转）删掉并补 .dropdown-item:focus-visible
+>   与 hover 同观感；tsconfig.json 的 jsx: react-jsx + jsxImportSource: react（项目零 React）删除。
+> ④ **依赖保守升级**：升了 mdx 8.1.0 / svelte 5.57.2 / katex 0.18.11 / sanitize-html 2.18.1 等；
+>   mermaid 11.17.2、typescript 6.0.3 按天花板没动。
+>   🔴 **astro 钉在 7.3.5，故意不升** —— 二分实测：**7.3.5 产物 360 文件 / 3 个 css；7.3.6 起变 361 / 4**，
+>   多的是 _astro/Search.*.css（442 B、**零引用死文件**，同样三条规则已在 Layout.*.css 里）。
+>   对照实验排除了两个错误归因：@astrojs/svelte 9.0.1 与 9.1.0 **都**产出它；astro@7.3.4 单独装**不**产出。
+>   审计 **21 条**（5 low/15 mod/1 high），比上午少 2；唯一 high 是 stylus → glob 的 CLI 注入
+>   （构建期不走命令行、不进 dist，**判不动**）。
+> ⑤ 🔴 **一条新探针陷阱（已记进五-59 末段）**：**别用自己 createElement 造的 div 去量 Svelte 组件样式** ——
+>   Svelte scoped CSS 是 .search-panel.svelte-xxxxx{…}，手造元素没有那个作用域类 → 规则一条都不匹配 →
+>   量出"底色透明、无边框"的假缺陷，我据此一度误判"删掉的 Search.css 是唯一样式来源"。
+>   **正确做法：真把面板打开、量页面上那个真实岛元素**（实测与线上旧版逐项相同）。
+> ⑥ 门禁：build 0 / **360 文件 / 44 index.html / 22,747,454 B** / 404.html 133,224 B；
+>   check **0 error 3 hint**、tsc 0、docs:check **0 error**（余量 62 B）。
+>   部署断言 30+ 条全过（含 Search.*.css **必须为 0 个**、sitemap 44/41、站内静态图缺 width **0**、
+>   target=_blank 365/365 带 rel），线上浏览器复验 pageerror **0**。
 >
 > **🔧 2026-10-18 下午一句话（用户"你说的坑和修改错误全部进行吧，并且提交部署"）**：
 > ① **⑩ 补齐 14 个未定义 CSS 变量**（`global.css` 亮暗两套）：`--enter-btn-bg*`（← `--btn-regular-bg*`，**「阅读」按钮与
@@ -1396,23 +1427,23 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-10-18 下午实测；**线上 = V0.1.55**，已部署）
+## 三、当前状态快照（2026-10-18 傍晚实测；**线上 = V0.1.56**，已部署）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**第十一批一笔**：`90c5452`（V0.1.55：补 14 个未定义 CSS 变量 + `propse-base`→`prose-base` + 主色与 `--btn-content`/`--title-active` 压深）。**已推送、`HEAD == origin/main`、工作区计数 0**（`.tmp-probe/` 是探针目录，收尾删除，不入库） |
-| 工作区 | 第十一批 `src/` **共动 3 个文件**：`styles/global.css`（**+42/-3**：14 个变量亮暗两套 + 主色/btn-content/title-active 三处取值）、`components/commons/Markdown.astro`（**+5/-2**：`propse-base`→`prose-base` + 说明改 frontmatter 注释）、`package.json`（0.1.54→**0.1.55**）。文档动 `config.md`（**新增五-58**，99822→105851 B）、`AGENTS.md`（**等长替换**，索引 五-57→**五-58**，57882 B 不变）、`HANDOFF.md`。**零依赖改动**。⚠️ V0.1.55 **没碰** Nginx 之外的任何服务器配置；那次 vhost 改动已备份 |
-| 文档分层 | `docs:check` **0 error / 1 提醒**（注入链 63407 B，余量 **62 B**）。⚠️ 常驻层只剩 62 B，**任何新增都只能等下批先下沉分册**；本批只做了索引编号的等长替换（五-57→五-58）。V0.1.55 的新知识点全部写进 `config.md` **五-58**，没往常驻层加字 |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**第十一批两笔**：`90c5452`（V0.1.55 补 14 个未定义变量 + 主色压深）、`226031f`（文档五-58）；**第十一批B 一笔**：`62a75b7`（V0.1.56 sitemap lastmod + 图片宽高 + 死类清理 + 依赖保守升级）。**已推送、`HEAD == origin/main`、工作区计数 0** |
+| 工作区 | 第十一批B `src/` **动 8 个文件**：**新增** `plugins/integration-sitemap-lastmod.mjs`、`utils/image-size.ts`；改 `plugins/rehype-figure.js`（补 width/height，+12）、`pages/PhotoCard.astro`（+8）、`pages/AlbumCard.astro`（+8）、`pages/gallery/[album].astro`（+11/-1）、`headers/DropdownMenu.astro`（去 `focus-ring-inset` + `:focus-visible`，+6/-2）、`astro.config.mjs`（+4 注册 integration）。另 `tsconfig.json`（-2 删 jsx 残留）、`package.json`（版本 0.1.56 + **astro 钉 `7.3.5`**）、`package-lock.json`（依赖升级，1443/1048 行）。文档动 `config.md`（**新增五-59**，105851→113437 B）、`AGENTS.md`（**等长替换** 五-58→五-59，57882 B 不变）、`HANDOFF.md` |
+| 文档分层 | `docs:check` **0 error / 1 提醒**（注入链 63407 B，余量 **62 B**）。⚠️ 常驻层只剩 62 B，**任何新增都只能先下沉分册**；本批仍只做等长替换（五-58→五-59）。V0.1.56 的全部知识点写进 `config.md` **五-59**（含依赖二分的四行表格） |
 | 浏览器能力 | 同前（`npm run probe` + 本地 `astro preview`；browser-use MCP 仍等他新建 Session）。⚠️ **`harness.md` B-29 已累到九条**，本批最后两条最要命：**⑦ Svelte 条件展开属性 `{...cond ? {k:v} : {}}` 把共享 chunk 撑 +6.7KB**（三元 `undefined` 才不拉 helper；改完必 `stat` 一下 `dist/_astro/client.*.js`）；**⑨ Node 里对字符串调 `.join?.('')` → `undefined` 被 `?? ''` 兜成空串**，把 8 个 URL 全报成「0 处外链、0 字节」的假绿 → **0 命中同时把分母也打成 0 就是探针坏了**；另 `grep opener` 会命中 **`noopener` 自身**（排除 `no` 前缀后真命中仅 1 处，是 twikoo 自己写 `.opener=null`） |
-| 线上站点 | ✅ **2026-10-18 13:21 部署 V0.1.55**（**替换前断言全过**：12 条 `need` 新形态 + 3 条 `ban` 旧值 + 文件数 360 / `index.html` 44 / 字节数 22,745,787 / `target=_blank` 365 条且 365 条带 rel / `prose-base` 30 处且 `propse-base` 0 处）。**线上 360 个文件与本地 dist 逐字节 md5 相同**。线上实测：`V0.1.55` 位、`--primary:#00705c`、enter-btn 三态 `rgb(224,244,234)/rgb(192,233,214)/rgb(156,223,193)`、标签分隔符亮 `rgba(0,0,0,0.2)` 暗 `rgba(255,255,255,0.2)`、移动菜单边框 `1px solid rgba(0,0,0,0.08)`、表格圆角仍 `0px`、序号块 10 个 `24x24` 有底色、**pageerror 0**。✅ **404 页已对访客生效**：`/this-page-does-not-exist-xyz/` 与 `/nope.html` 都 **HTTP 404** 且渲染自定义页（title「页面不存在-亦林」/ h1=1 / 5 个快捷入口） |
-| 本地构建 | V0.1.55 = **45 page(s) / 44 个 `index.html` / 360 文件 / 真实字节 22,745,787（21.69MB）**；`404.html = 133,336 B`；Pagefind **30 页 / 2899 词**、sitemap **44 条 URL**、`npm run check` **0 error / 3 hint**、`npx tsc --noEmit` 退出码 0；`Layout.*.css = 186,195 B`（哈希文件名随内容变）。⚠️ 版本链字节：22,753,662（.51）→ 22,749,999（.52）→ 22,742,496（.53）→ 22,746,382（.54）→ **22,745,787（.55）**；404.html 133,504 → 133,270 → 133,254 → 133,336 → **133,336**（这批没动 404 页）。⚠️ `astro build` 打 45、`find -name index.html` 是 44（多的是 `404.html`）。⚠️ **每次部署断言数字必须重新实测** |
-| 服务器配置 | ⚠️ **本批动过一次（用户当次点头的 ①）**：vhost `/www/server/panel/vhost/nginx/html_chenblog.com.conf` 第 17 行 `#error_page 404 /404.html;` **取消注释**。流程合规：先 `cp -a` 备份 → `/root/html_chenblog.com.conf.bak2-20261018_131441`（另有同日 `.bak-20261018_131428` 是按惯例顺手备的）→ `sed` 前断言 `grep -c` **匹配数 = 1**（不唯一就不改）→ `nginx -t` **syntax ok** → `nginx -s reload` → **公网两个 404 URL 实测** 通过。⚠️ 第 13 行那处 `#error_page 404/404.html;`（SSL-START 段里、**少个空格**）**保持注释不动**——它是宝塔给 SSL 证书申请用的占位，改了会干扰面板流程 |
-| 依赖 | 本批**零改动**。**10-18 上午现跑（只读，逐行按 Wanted/Current/Latest 三列比对过）**：`npm outdated` **14 行 = 2 行 `Wanted==Current` 升不动（`mermaid` 11.17.2、`typescript` 6.0.3，Latest 是 12.2.0 / 7.0.2 → 撞 peer 天花板绝不碰）+ 12 行可升（其中 11 行 `Wanted==Latest`；只有 `katex` 是 `Wanted 0.18.11 < Latest 0.19.0`）**。官方源 `npm audit` **23 条（6 low / 15 moderate / 2 high）退出码 1**，与 10-12、10-17 同量级（`source-map-js` 的 high 标着「fix available via `npm audit fix`」但它是传递依赖，**别顺手 fix**）。⚠️ **引用时现跑现报，别用旧批数字**；`audit fix --force` 禁用（会把 mermaid 降级）|
+| 线上站点 | ✅ **2026-10-18 14:24 部署 V0.1.56**（**替换前 30+ 条断言全过**：文件数 360 / `index.html` 44 / 字节 22,747,454 / sitemap 44 URL 且 41 lastmod / 站内静态图缺 width **0** / `Search.*.css` **必须 0 个** / `target=_blank` 365 且 365 带 rel / `prose-base` 30 且 `propse-base` 0 / 版本 0.1.56 在且 0.1.55 不在）。**线上 360/360 文件 md5 与本地逐字节相同**。线上实测：`V0.1.56` 位、主色 `#00705c`、搜索面板 `rgba(255,255,255,0.55)` + `blur(20px) saturate(1.5)` + `border 1px`、**CLS `/gallery/zhuhai-2026/` 0.0021**、`/gallery/` 0.0053、404 页 HTTP 404 且 title 正确、**pageerror 0** |
+| 本地构建 | V0.1.56 = **45 page(s) / 44 个 `index.html` / 360 文件 / 真实字节 22,747,454（21.69MB）**；`404.html = 133,224 B`；sitemap **44 URL / 41 lastmod**；Pagefind **30 页 / 2899 词**；`check` **0 error / 3 hint**、`tsc` 0、`docs:check` 0 error。⚠️ 版本链字节：22,753,662（.51）→ 22,749,999（.52）→ 22,742,496（.53）→ 22,746,382（.54）→ 22,745,787（.55）→ **22,747,454（.56）**。⚠️ `client.*.js` 40,995 → **41,113 B**（astro 7.3.4→7.3.5 的正常差异，**不是**展开属性那类回归，远低于出事时的 47,742） |
+| 服务器配置 | 本批**没动服务器配置**（只换 dist）。上一次改动仍是 10-18 下午放开 vhost 的 `error_page 404 /404.html;`（已备份 `/root/html_chenblog.com.conf.bak2-20261018_131441`，`nginx -t` 过） |
+| 依赖 | **本批升过一次（保守）**：`npm update --package-lock-only` → `npm ci` → `npm run build`（干净装，退出码全 0）。升了 `@astrojs/mdx 8.1.0`、`@astrojs/svelte 9.1.0`、`svelte 5.57.2`、`katex 0.18.11`、`sanitize-html 2.18.1`、`markdown-it 15.0.3`、`prettier 3.9.10` 等；`mermaid 11.17.2` / `typescript 6.0.3` 按天花板**没动**。🔴 **`astro` 钉 `7.3.5`**：7.3.6 起会多产出一个零引用的 `_astro/Search.*.css`（详见五-59 D 的二分表）。审计 **21 条（5 low / 15 mod / 1 high）**，比上午少 2；唯一 high 是 `stylus→glob` 的 CLI 注入，构建期不走命令行、不进 dist，**判不动**；`audit fix --force` 仍禁用 |
 | dev / preview server | 本批为做视觉 A/B 起过一次 `npm run preview`（:4321），**收尾按「`node.exe` + `astro*bin*astro.mjs*preview*`」精确杀掉并复查 astro 进程 = 0、:4321 监听 = 0**。⚠️ 起服务时我第一发用了臆造的 `astro/vendor/...` 路径 → 直接 000 连不上，改用 `npm run preview` 才对（别猜入口路径） |
-| 服务器回滚资产 | **实测（10-18 13:21 部署 V0.1.55 后 SSH 数）**：`dist.old` = **V0.1.54**；备份目录**真数 59 个**（`find . -maxdepth 1 -name "*dist_backup*"`）= 55 个名字正常 + **3 个名字畸形**（10-14 某次脚本多套一层引号，名里带 `"` ⇒ shell glob 数不到）+ **本批新增 1 个**（`dist_backup_20261018_132109`）。全部回滚资产合计 **1.4G**，磁盘用 32%。**一律保留，删需用户明确同意**；回滚一行见 `AGENTS.local.md`（不入库）。⚠️ **数回滚资产必须用 find 不用 glob** → `deploy.md` 六-⑦ |
-| 临时文件 | 收尾已清：本地 `.tmp-probe/` 探针目录整目录删除并复查 = 0（本轮所有 `.mjs` 探针与部署脚本都在里面，**没往项目根丢**）；服务器 `/tmp` 复查 = 0（`chenblog_v55.tar.gz` 与 `deploy-v55.sh` 都由脚本**跑成功后**才删，`rc=$?` 判据）。⚠️ 回滚资产不算临时文件 |
-| 待用户拍板 | ✅ **已清账（2026-10-18 下午 V0.1.55）**：~~⑩ 未定义 CSS 变量~~ → **14 个全补**（含 `--enter-btn-bg*` / `--meta-divider` / `--card-bg-transparent` / `--panel-border-color` / 5 个 admonitions；`--radius-large` **仍刻意不补**，直角口径）· ~~⑪ 主色对比 2.48~~ → **`#00705c`，对白底 6.05**（参考站同款只有 2.51，故决定偏离）· ~~① Nginx `#error_page`~~ → **已放开并公网验证 404 页生效** · ~~④ `propse-base`~~ → **已改 `prose-base`**。详见顶部第十一批与 **五-58**。**以下仍未答**：**② 相册逐张文案**（他给文案 + 同时加 `galleryConfig` 字段并开灯箱 caption）· **③ B 档功能**：友链 / 项目 / 打赏 / 书签导航 / B站 / 番组 / VNDB / MyAnimeList · **⑤「截图取自 v1.4.0」那句留不留** · **⑥ 画廊交互取舍** · **⑦ 依赖升级**（10-18 上午现跑 = 14 落后（2 锁死 + 12 可升）/ 23 条漏洞，与 10-12、10-17 同量级；要不要动等他批）· **⑧ Twikoo 裸 `envId IP:8099` 同域反代 / 面板 IP 白名单 / `90a38e5` 提交消息强推** · **⑨ 真机观感**：累计六处要看 —— 三篇旧文章**正文文字复原**、侧栏分类卡、移动端搜索按钮、页脚与仓库卡片的**新窗口行为**、**「阅读」按钮与序号块新增的浅绿底色**、**移动端菜单面板新增的 1px 边框** · **⑫【新】主色改动后的观感**：品牌绿明显比之前深（`#00ba99`→`#00705c`），**这是他点头要做的事，但仍需他肉眼确认不刺眼**；若要更浅可退到 `#007a5c`（对白底 5.33）或直接回退四处（见五-58 回退路径） |
-| 既存小坑 | **未定义变量已全部清账（V0.1.55，五-58）** —— 唯一的例外是 `--radius-large`：**刻意不补**（本站「面板一律直角」是明写规则，五-16③），`docs:check` 扫到它属**预期项**，别再当缺口；`data-code` 里的 `0x7F` **已证伪，不是缺陷（五-55）**；`focus-ring-inset` 死类（C 档）；`/site.webmanifest` Content-Type 缺映射（要动 nginx）；`tsconfig.json` react jsx 残留；重复 id `announcement` / `cardTags`（九·补② 已降级）；单分类卡收起态更高（两分类时 120px > 80px，已判降级）；每页两个 `<title>`（45/45 复验、内容一致，已降级）；**sitemap 零 `<lastmod>`**、**88 个 `<img>` 无 `width`/`height`**（低优先观测，未修）|
+| 服务器回滚资产 | **实测（10-18 14:24 部署 V0.1.56 后 SSH 数）**：`dist.old` = **V0.1.55**；备份目录**真数 60 个**（`find . -maxdepth 1 -name "*dist_backup*"`；含 3 个名字畸形的老目录，shell glob 数不到）。全部回滚资产合计 **1.4G**，磁盘用 32%。**一律保留，删需用户明确同意**。⚠️ **数回滚资产必须用 find 不用 glob**（`deploy.md` 六-⑦） |
+| 临时文件 | 收尾已清：本地 `.tmp-probe/` 整目录删除并复查 = 0；`%TEMP%` 下 `preview.log`/`audit.json`/`chenblog-deploy-v56`/`extimg`/`sharp` 临时脚本清理；服务器 `/tmp` 复查 = 0（tar 与 deploy 脚本**跑成功后才删**，`rc=$?` 判据） |
+| 待用户拍板 | ✅ **又清账四项（2026-10-18 傍晚 V0.1.56）**：~~sitemap 零 lastmod~~ → **41/44 条补上**（五-59 A）· ~~88 个 img 缺 width/height~~ → **站内全补，相册 CLS 降 36 倍**（五-59 B；远程 12 处因在 CSS 演示框内固定尺寸、零收益而不改）· ~~`focus-ring-inset` 死类~~ → **已删并补 `:focus-visible`**· ~~`tsconfig` React jsx 残留~~ → **已删**· ~~⑦ 依赖升级~~ → **已升（astro 钉 7.3.5）**。详见顶部第十一批B 与 **五-59**。**以下仍未答**：**② 相册逐张文案**（他给文案 + 同时加 `galleryConfig` 字段并开灯箱 caption）· **③ B 档功能**：友链 / 项目 / 打赏 / 书签导航 / B站 / 番组 / VNDB / MyAnimeList · **⑤「截图取自 v1.4.0」那句留不留** · **⑥ 画廊交互取舍** · **⑧ Twikoo 裸 `envId IP:8099` 同域反代 / 面板 IP 白名单 / `90a38e5` 提交消息强推** · **⑨ 真机观感**（累计八处）：三篇旧文章正文复原、侧栏分类卡、移动端搜索按钮、页脚与仓库卡片新窗口行为、**「阅读」按钮与序号块新增的浅绿底色**、**移动端菜单面板新增的 1px 边框**、**主色变深后的整体观感**、**相册页图片不再跳动**（CLS 修复的肉眼版） |
+| 既存小坑 | **只还剩这些，别再当新发现重提**：`--radius-large` **刻意不补**（直角口径，五-16③，`docs:check` 扫到属**预期项**）；`data-code` 的 `0x7F` **已证伪不是缺陷**（五-55）；`/site.webmanifest` Content-Type 缺映射（要动 nginx mime.types）；重复 id `announcement` / `cardTags`（九·补② 已降级）；单分类卡收起态更高（已判降级）；每页两个 `<title>`（45/45 复验、内容一致，已降级）；**远程 12 张图无 width/height**（在 CSS 演示框内被固定尺寸约束，零收益，**故意不改**）。✅ **本批已清**：`focus-ring-inset` 死类、`tsconfig` React jsx 残留、sitemap 零 lastmod、88 个 img 缺宽高 |
 
 | 项 | 状态 |
 |---|---|

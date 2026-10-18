@@ -1,4 +1,4 @@
-# AGENTS 分册 · 第五节「必须知道的配置约定」全文（五-1 ~ 五-59）
+# AGENTS 分册 · 第五节「必须知道的配置约定」全文（五-1 ~ 五-60）
 
 > 本文件是 `AGENTS.md` 某一节的**全文**，2026-10-12 从 AGENTS.md 无损切出。
 > `AGENTS.md` 只留常驻结论与索引（受 harness 64KB 注入预算限制）；改到本节任何主题前先读本文件全文。
@@ -1042,3 +1042,61 @@
        我据此一度误判"删掉的 Search.css 是唯一样式来源"。**正确做法：先真的把面板打开，
        量页面上那个真实岛元素**（实测亮 `rgba(255,255,255,0.55)`、`border 1px`、`blur(20px) saturate(1.5)`，
        与线上旧版逐项相同）。这是 B-1「0 命中先怀疑探针」在本项目的又一实例。
+
+60. ⚡ **性能优化（V0.1.57）：把「每页都付的固定成本」从首屏摘掉**（2026-10-18）
+    方法是先量再改：用 `PerformanceResourceTiming` 按页统计**真实传输字节**，而不是看 `du`。
+    实测出的三条「固定成本」里，两条是真浪费，一条是设计如此。
+    - **① twikoo 评论资源：每篇白付 228KB 且阻塞渲染**（本批最大的一笔）
+      - 现场：`Twikoo.astro` 原来写死 `<script is:inline src="twikoo.nocss.js">`（**181KB**）+
+        两条 `<link rel=stylesheet>`（`twikoo.css` **38KB** + `twikoo-custom.css` **9KB**）。
+        这些都在**首屏之外**（评论区在长文最底部），却是同步阻塞资源。
+        实测文章页 JS **261KB** 里有 181KB 是它，`load` 事件被拖住。
+      - 修法：改成 **IntersectionObserver 懒加载** —— `#tcomment` 进入视口前 400px 时才插三条资源。
+        资源只插一次（`window.__twikooAssets` / `__twikooLoading` 两个标志去重，因为脚本在容器内、软导航会重新求值）。
+        保留 `reinitOnce("twikoo-lazy", arm)` + `onReinit("twikoo", arm)` 两条既有纪律（第十节 14），
+        `arm()` 里判断"资源已在内存就直接 init"，否则重新挂观察。
+      - ⚠️ **不许改成给 `<script>` 加 `loading="lazy"`**：那不是标准写法。必须真的等到需要时才 append。
+      - ✅ **验证判据必须逐项对齐改前**（否则懒加载"成功"了但评论区没渲染也算通过）：
+        改前基线 `.tk-comments` / `.tk-submit` / 输入框全在、**`#twikoo` innerHTML 长度 = 13828**；
+        改后滚到评论区：同样三项 + **innerHTML 长度仍是 13828** + `.el-button` 背景色一致（`oklch(0.94865 …)`）。
+        软导航进另一篇后再滚下去，`innerLen` 仍 13828。pageerror 全程 0。
+      - 🔴 **探针陷阱（这次又踩了一遍）**：`scrollTo` 一次跳到底会让 IntersectionObserver 只看到
+        "已经滚过头"的最终态 → 测出假的"没加载"。必须**像真人一样逐步滚**（每步 `requestAnimationFrame` + 小延迟），
+        或者直接 `el.scrollIntoView({block:"center"})` 再等。我第一次就是一口气滚到底，差点误判成"懒加载坏了"。
+    - **② 微信二维码：45 页 × 2 处 = 90 次白下 63KB**
+      - 现场：`meCard.astro` 在 `Layout.astro` 挂了**两处**（左栏 + 移动端底部），
+        图是 `src` 直接写死；而它所在的 `.me-qr-pop` 是 `visibility:hidden` 的浮层（`mainSingles.css:240`）。
+        给 `visibility:hidden` 里的图加 `loading="lazy"` **没用** —— 浏览器仍判定它接近视口。
+      - 修法：SSR 只输出 `data-src`，`setOpen(true)` 时第一次赋值给 `src`。**保留 `width/height`（750×750 真值）**占位。
+      - 实测：点开前 **0 个二维码请求**、`naturalWidth=0`；点开后 **1 个请求**、`naturalWidth=750`、
+        浮层盒子 **192×192**、`aria-expanded` 开→关→开→关 两轮全正常、Escape 也能关、pageerror 0。
+      - ⚠️ **本批唯一"量了但决定不做"的**：二维码原图 750×750 / 63KB，显示尺寸只有 192px，
+        按 2x 屏只需 384px（实测 384px q88 = 25KB）。**但本机没有任何二维码解码器**
+        （无 `jsqr`/`zbarimg`/`pyzbar`），无法证明缩小后还能扫出来 —— 二维码是**扫码入口**，
+        不能拿可用性赌体积，故**保持原图**。要压这张图，先装个解码器验证通过再说。
+    - **③ 横幅壁纸 328KB + 轮播第二张 250KB：设计如此，不改**
+      - 首张壁纸 `loading="eager" fetchpriority="high"` 是对的（LCP 元素就是它）。
+      - 但横幅是**随机 3 选 1**（`backgroundWallpaper.carousel`），所以实际会加载 1~2 张。
+        这是"随机图"的必然代价，不是 bug。想省只能砍轮播张数或降 quality，属视觉决策，不在本批范围。
+    - **④ `preconnect` / `dns-prefetch`：本站加了等于没加，故不加**
+      - 全站图片、JS、CSS **全部同源**（单一 IP、无 CDN、无第三方域名依赖），
+        `preconnect` 没有对象可连。Ponytail 的原则是这个：**不写起不到作用的代码**。
+    - **⑤ 顺带修 code review 抓到的一条真缺陷**：`src/utils/image-size.ts` 里
+      `openSync` / `readSync` / `closeSync` 三件套**没有 try/finally 保护** —— `readSync` 抛错时
+      `closeSync` 被跳过，泄漏一个 fd。按 Ponytail 的"能不写就不写"直接换成 `readFileSync`：
+      **少两个 API 调用、内生关闭语义、无生命周期问题**（37 张图合计约 4MB，构建期一次且有缓存，代价可忽略）。
+    - **📊 前后对照（同一台机、同一断点、真实传输字节）**
+      | 页面 | 改前总计 | 改后总计 | 改前 JS | 改后 JS |
+      |---|---|---|---|---|
+      | 移动 390 首页 | 573 KB | **317 KB（-45%）** | 39 KB | 39 KB |
+      | 移动 390 文章页 | 1124 KB | **767 KB（-32%）** | **261 KB** | **80 KB（-69%）** |
+      | 桌面 1440 首页 | 573 KB | **509 KB（-11%）** | 39 KB | 39 KB |
+      线上复测与本地**逐项相同**（360/360 文件 md5 逐字节一致）。
+    - ⚠️ **`npm run build` 的耗时不能当性能判据**（同晚实测 5.4s / 20.4s / 22.2s 三档，与改动无关）。
+    - 🔴 **又一次 HTML 注释泄漏**：我把懒加载说明写在 `.astro` 的 `<!-- -->` 里 → Astro 原样发给访客，
+      导致 `twikoo.nocss.js` 每篇出现 **2 次**而不是 1 次（部署断言当场拦下）。
+      这已经是**同一个错误第二次**（五-58 末段记过）。**通则：给 `.astro` 留解释只写 frontmatter 的 `//`，
+      永远不要用 HTML 注释**。
+    - 📌 **断言口径要连着业务事实写**：`twikoo.nocss.js` 全站是 **29** 次不是 28 ——
+      **28 篇文章 + `/guestbook/` 留言板**（它本来就该有评论区）。我第一版按 28 写，被断言拦下，
+      改的是**断言**而不是代码（先查清为什么是 29 才改，没有直接把数字调大蒙过去）。

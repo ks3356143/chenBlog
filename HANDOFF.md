@@ -3,8 +3,31 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-18 傍晚（第十一批B：sitemap lastmod + 图片宽高治 CLS + 死类清理 + 依赖保守升级，已上线 V0.1.56）**。
+> 最后更新：**2026-10-18 傍晚B（第十二批：ponytail + code review + 性能优化，twikoo 与二维码改懒加载，已上线 V0.1.57）**。
 > （第十批跨 10-17 深夜到 10-18 凌晨：`4e462da` 修 V0.1.51、`1d32d2d` 修 V0.1.52、`c4eb046` 修我自己的回归成 V0.1.53；**分册五-52~55 + harness.md B-29 全在 `8d70fdf` 之后的独立笔**。）
+>
+> **🔧 2026-10-18 傍晚B 一句话（用户"使用 ponytail + code review + astro 性能优化把整体优化下"）**：
+> 已上线 **V0.1.57**，线上 360/360 md5 逐字节相同。方法：**先量再改**（`PerformanceResourceTiming` 按页统计真实传输字节，
+> 不看 `du`），量出三条"每页都付的固定成本"，两条是真浪费、一条是设计如此。
+> ① **twikoo 评论资源改视口懒加载**（最大一笔）：原来 `Twikoo.astro` 写死同步 `<script src>` 181KB +
+>   两条阻塞 `<link rel=stylesheet>` 38KB+9KB = **每篇白付 228KB**，而评论区在长文底部、首屏永远用不到。
+>   改成 IntersectionObserver（提前 400px）才插资源。**验证判据逐项对齐改前**：`.tk-comments`/`.tk-submit`/输入框全在、
+>   **`#twikoo` innerHTML 长度仍是 13828**、`.el-button` 背景色一致；软导航进另一篇再滚下去仍 13828；pageerror 0。
+> ② **微信二维码改按需加载**：`meCard` 在 `Layout.astro` 挂**两处**（左栏+移动端），图写死 `src`、浮层是
+>   `visibility:hidden`（加 `loading="lazy"` 无效）→ 45 页 × 2 处白下 63KB。改成 SSR 只出 `data-src`、
+>   `setOpen(true)` 时才赋值。实测**点开前 0 请求、点开后 1 请求**、`naturalWidth=750`、盒子 192×192、开合两轮正常。
+> ③ **`preconnect` 不加**：全站同源、无 CDN、无第三方域名，加了没有对象可连 —— **不写不起作用的代码**。
+> ④ **code review 抓到一条真缺陷已修**：`image-size.ts` 的 `openSync/readSync/closeSync` **没有 try/finally**，
+>   `readSync` 抛错就漏 fd → 直接换 `readFileSync`（少两个 API、内生关闭语义）。
+> ⑤ **唯一"量了但不做"的**：二维码 750×750/63KB，显示只 192px，压到 384px 只要 25KB —— 但**本机没有任何二维码
+>   解码器**（无 jsqr/zbarimg/pyzbar），无法证明缩小后还能扫出来。二维码是扫码入口，**不拿可用性赌体积**，保持原图。
+> ⑥ **📊 前后对照**：移动首页 573→**317KB（-45%）**、移动文章页 1124→**767KB（-32%）**、文章页 JS 261→**80KB（-69%）**、
+>   桌面首页 573→**509KB（-11%）**。线上复测与本地逐项相同。
+> ⑦ 🔴 **又一次 HTML 注释泄漏**（同一个错第二次）：懒加载说明写在 `.astro` 的 `<!-- -->` 里 → Astro 原样发给访客，
+>   导致 `twikoo.nocss.js` 每篇出现 2 次。**通则：`.astro` 里留解释只写 frontmatter 的 `//`，永远别用 HTML 注释**。
+> ⑧ 门禁：360 文件 / 44 index.html / **22,765,218 B** / 404.html 133,399 B；`check` 0 error 3 hint、`tsc` 0、
+>   `docs:check` 0 error（余量 62 B）。部署断言 20+ 条全过（含 twikoo 同步标签 **0** 处、二维码 `src` **0** 处 /
+>   `data-src` **90** 处、`twikoo.nocss.js` 全站 **29** 次 = 28 篇 + 留言板）。
 >
 > **🔧 2026-10-18 傍晚一句话（用户"开干全部修复"）**：把「待拍板」里我判定**该修**的四项全做了，
 > 另做了一次**保守的**依赖升级。全部已上线 **V0.1.56**，线上 360/360 md5 逐字节相同。
@@ -1427,16 +1450,16 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-10-18 傍晚实测；**线上 = V0.1.56**，已部署）
+## 三、当前状态快照（2026-10-18 傍晚B 实测；**线上 = V0.1.57**，已部署）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**第十一批两笔**：`90c5452`（V0.1.55 补 14 个未定义变量 + 主色压深）、`226031f`（文档五-58）；**第十一批B 一笔**：`62a75b7`（V0.1.56 sitemap lastmod + 图片宽高 + 死类清理 + 依赖保守升级）。**已推送、`HEAD == origin/main`、工作区计数 0** |
-| 工作区 | 第十一批B `src/` **动 8 个文件**：**新增** `plugins/integration-sitemap-lastmod.mjs`、`utils/image-size.ts`；改 `plugins/rehype-figure.js`（补 width/height，+12）、`pages/PhotoCard.astro`（+8）、`pages/AlbumCard.astro`（+8）、`pages/gallery/[album].astro`（+11/-1）、`headers/DropdownMenu.astro`（去 `focus-ring-inset` + `:focus-visible`，+6/-2）、`astro.config.mjs`（+4 注册 integration）。另 `tsconfig.json`（-2 删 jsx 残留）、`package.json`（版本 0.1.56 + **astro 钉 `7.3.5`**）、`package-lock.json`（依赖升级，1443/1048 行）。文档动 `config.md`（**新增五-59**，105851→113437 B）、`AGENTS.md`（**等长替换** 五-58→五-59，57882 B 不变）、`HANDOFF.md` |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`。**第十二批一笔**：`b301cbc`（V0.1.57 性能优化：twikoo 视口懒加载 + 二维码按需加载 + image-size 去 fd 管理）。**已推送、`HEAD == origin/main`、工作区计数 0** |
+| 工作区 | 第十二批 **动 4 个文件**：`components/comment/Twikoo.astro`（**+82/-68**，改 IntersectionObserver 懒加载，含去掉泄漏的 HTML 注释）、`components/card/meCard.astro`（**+19/-2**，二维码 `src`→`data-src` + 点开才赋值）、`utils/image-size.ts`（**+7/-11**，`openSync/readSync/closeSync`→`readFileSync`）、`package.json`（0.1.57）。文档动 `config.md`（**新增五-60**，113437→119640 B）、`AGENTS.md`（**等长替换** 五-59→五-60，57882 B 不变）、`HANDOFF.md`。**零依赖改动** |
 | 文档分层 | `docs:check` **0 error / 1 提醒**（注入链 63407 B，余量 **62 B**）。⚠️ 常驻层只剩 62 B，**任何新增都只能先下沉分册**；本批仍只做等长替换（五-58→五-59）。V0.1.56 的全部知识点写进 `config.md` **五-59**（含依赖二分的四行表格） |
 | 浏览器能力 | 同前（`npm run probe` + 本地 `astro preview`；browser-use MCP 仍等他新建 Session）。⚠️ **`harness.md` B-29 已累到九条**，本批最后两条最要命：**⑦ Svelte 条件展开属性 `{...cond ? {k:v} : {}}` 把共享 chunk 撑 +6.7KB**（三元 `undefined` 才不拉 helper；改完必 `stat` 一下 `dist/_astro/client.*.js`）；**⑨ Node 里对字符串调 `.join?.('')` → `undefined` 被 `?? ''` 兜成空串**，把 8 个 URL 全报成「0 处外链、0 字节」的假绿 → **0 命中同时把分母也打成 0 就是探针坏了**；另 `grep opener` 会命中 **`noopener` 自身**（排除 `no` 前缀后真命中仅 1 处，是 twikoo 自己写 `.opener=null`） |
-| 线上站点 | ✅ **2026-10-18 14:24 部署 V0.1.56**（**替换前 30+ 条断言全过**：文件数 360 / `index.html` 44 / 字节 22,747,454 / sitemap 44 URL 且 41 lastmod / 站内静态图缺 width **0** / `Search.*.css` **必须 0 个** / `target=_blank` 365 且 365 带 rel / `prose-base` 30 且 `propse-base` 0 / 版本 0.1.56 在且 0.1.55 不在）。**线上 360/360 文件 md5 与本地逐字节相同**。线上实测：`V0.1.56` 位、主色 `#00705c`、搜索面板 `rgba(255,255,255,0.55)` + `blur(20px) saturate(1.5)` + `border 1px`、**CLS `/gallery/zhuhai-2026/` 0.0021**、`/gallery/` 0.0053、404 页 HTTP 404 且 title 正确、**pageerror 0** |
-| 本地构建 | V0.1.56 = **45 page(s) / 44 个 `index.html` / 360 文件 / 真实字节 22,747,454（21.69MB）**；`404.html = 133,224 B`；sitemap **44 URL / 41 lastmod**；Pagefind **30 页 / 2899 词**；`check` **0 error / 3 hint**、`tsc` 0、`docs:check` 0 error。⚠️ 版本链字节：22,753,662（.51）→ 22,749,999（.52）→ 22,742,496（.53）→ 22,746,382（.54）→ 22,745,787（.55）→ **22,747,454（.56）**。⚠️ `client.*.js` 40,995 → **41,113 B**（astro 7.3.4→7.3.5 的正常差异，**不是**展开属性那类回归，远低于出事时的 47,742） |
+| 线上站点 | ✅ **2026-10-18 15:47 部署 V0.1.57**（**替换前 20+ 条断言全过**：文件数 360 / `index.html` 44 / 字节 **22,765,218** / twikoo 同步标签 **0** 处 / 二维码 `src` **0** 处 且 `data-src` **90** 处 / `twikoo.nocss.js` 全站 **29** 次 = 28 篇 + 留言板 / sitemap 44·41 / 站内静态图缺 width 0 / `target=_blank` 全带 rel）。**线上 360/360 md5 与本地逐字节相同**。线上实测：V0.1.57、二维码点开前 **0 请求**点开后 **1 请求且 naturalWidth=750**、滚到评论区后 `#twikoo` **innerHTML 13828**（与改前一致）、**pageerror 0** |
+| 本地构建 | V0.1.57 = **45 page(s) / 44 个 `index.html` / 360 文件 / 真实字节 22,765,218（21.71MB）**；`404.html = 133,399 B`；sitemap **44 URL / 41 lastmod**；`check` **0 error / 3 hint**、`tsc` 0、`docs:check` 0 error。⚠️ **性能基线（真实传输字节，移动 390×844）**：首页 **317 KB**、文章页 **767 KB**（其中 JS **80 KB**，改前 261 KB）。⚠️ **build 耗时不能当性能判据**（同晚实测 5.4s / 20.4s / 22.2s 三档） |
 | 服务器配置 | 本批**没动服务器配置**（只换 dist）。上一次改动仍是 10-18 下午放开 vhost 的 `error_page 404 /404.html;`（已备份 `/root/html_chenblog.com.conf.bak2-20261018_131441`，`nginx -t` 过） |
 | 依赖 | **本批升过一次（保守）**：`npm update --package-lock-only` → `npm ci` → `npm run build`（干净装，退出码全 0）。升了 `@astrojs/mdx 8.1.0`、`@astrojs/svelte 9.1.0`、`svelte 5.57.2`、`katex 0.18.11`、`sanitize-html 2.18.1`、`markdown-it 15.0.3`、`prettier 3.9.10` 等；`mermaid 11.17.2` / `typescript 6.0.3` 按天花板**没动**。🔴 **`astro` 钉 `7.3.5`**：7.3.6 起会多产出一个零引用的 `_astro/Search.*.css`（详见五-59 D 的二分表）。审计 **21 条（5 low / 15 mod / 1 high）**，比上午少 2；唯一 high 是 `stylus→glob` 的 CLI 注入，构建期不走命令行、不进 dist，**判不动**；`audit fix --force` 仍禁用 |
 | dev / preview server | 本批为做视觉 A/B 起过一次 `npm run preview`（:4321），**收尾按「`node.exe` + `astro*bin*astro.mjs*preview*`」精确杀掉并复查 astro 进程 = 0、:4321 监听 = 0**。⚠️ 起服务时我第一发用了臆造的 `astro/vendor/...` 路径 → 直接 000 连不上，改用 `npm run preview` 才对（别猜入口路径） |

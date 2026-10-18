@@ -1,5 +1,6 @@
 ---
 import { getPublicImageSizeSync } from "@/utils/image-size"
+import { getGalleryDisplaySrc, getGallerySrcset, getGalleryThumbWidth } from "@/utils/gallery-thumb"
 
 interface Props {
 	id: string
@@ -17,6 +18,17 @@ const { id, name, cover, description, date, location, tags, photoCount } = Astro
 // 补 width/height 治 CLS（封面是 public/ 静态图，构建期没有 ImageMetadata）。
 // 外层是 aspect-4/3 固定比例，属性不会改变观感，只是让浏览器提前知道原始比例。
 const coverSize = getPublicImageSizeSync(cover)
+
+// 卡片封面同样换缩略图：实测封面最大只显示到 290px（1920 屏），
+// 原图 1440–1600px → 超供 5.4–6.8 倍。没有缩略图时自动退回原图（getGalleryDisplaySrc 负责）。
+const displayCover = getGalleryDisplaySrc(cover)
+const coverSrcset = getGallerySrcset(cover)
+
+// width/height 写实际下发的缩略图档位（等比缩放，比例不变），理由见 PhotoCard 与 gallery-thumb.ts
+const coverThumbW = getGalleryThumbWidth(cover)
+const coverAttrW = coverThumbW && coverSize ? coverThumbW : coverSize?.width
+const coverAttrH =
+	coverThumbW && coverSize ? Math.round((coverThumbW * coverSize.height) / coverSize.width) : coverSize?.height
 ---
 
 <a
@@ -29,10 +41,12 @@ const coverSize = getPublicImageSizeSync(cover)
 		{
 			cover ? (
 				<img
-					src={cover}
+					src={displayCover}
+					srcset={coverSrcset}
+					sizes={coverSrcset ? "320px" : undefined}
 					alt={name}
-					width={coverSize?.width}
-					height={coverSize?.height}
+					width={coverAttrW}
+					height={coverAttrH}
 					class="pointer-events-none h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
 					loading="lazy"
 					decoding="async"

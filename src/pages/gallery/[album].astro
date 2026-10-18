@@ -31,6 +31,9 @@ const columnWidth = galleryConfig.columnWidth || 240
 // 横幅封面补 width/height 治 CLS。外层是 aspect-[3/1] 固定比例，
 // 属性只让浏览器提前知道原图比例，观感不变（详见五-59）。
 const coverSize = getPublicImageSizeSync(cover)
+// ⚠️ 横幅**不用缩略图**：它是整幅宽度，1440 屏实测最宽到 1507px，
+// 而缩略图最大只到 960w → 挂上 srcset 会让浏览器按 sizes 挑到 960w，横幅直接变糊。
+// 缩略图只给"最大只显示 301px / 290px"的瀑布流网格与相册卡封面用。
 ---
 
 <Layout title={albumMeta.name}>

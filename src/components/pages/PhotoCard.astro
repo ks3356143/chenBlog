@@ -1,5 +1,6 @@
 ---
 import { getPublicImageSizeSync } from "@/utils/image-size"
+import { getGalleryDisplaySrc, getGallerySrcset, getGalleryThumbWidth } from "@/utils/gallery-thumb"
 
 interface Props {
 	src: string
@@ -12,6 +13,21 @@ const { src, albumId, alt = "" } = Astro.props
 // 补 width/height 治 CLS（相册图走 public/ 原样拷贝，构建期没有 ImageMetadata）。
 // 解析不到就不写 —— 别猜数字。见 docs/agents/config.md 五-59。
 const size = getPublicImageSizeSync(src)
+
+// 网格用缩略图、灯箱用原图（data-src 保持原图 → 点开仍是高清）。
+// sizes：瀑布流实测最宽 301px（1920 屏），窄屏是两列各约 156px。
+// 写死一个 320px 会让手机两列（156px）也按 320 挑档 —— DPR2 下需要 312px，刚好卡在
+// 640/960 之间选 640，白付一倍体积。分段写更准：
+const displaySrc = getGalleryDisplaySrc(src)
+const srcset = getGallerySrcset(src)
+const thumbW = getGalleryThumbWidth(src)
+const SIZES = "(min-width: 640px) 320px, 50vw"
+
+// width/height 写**实际下发的缩略图**档位（不是原图）：等比缩放，比例完全相同，
+// 只是把数字换成真实值 —— 混用（属性 1440 + sizes 320px + srcset 640w）实测会让
+// Chromium 把 naturalWidth 报成第三个数字 320，属自相矛盾。见 gallery-thumb.ts 的注释。
+const attrW = thumbW && size ? thumbW : size?.width
+const attrH = thumbW && size ? Math.round((thumbW * size.height) / size.width) : size?.height
 ---
 
 <div class="gallery-photo-card mb-3 break-inside-avoid">
@@ -22,10 +38,12 @@ const size = getPublicImageSizeSync(src)
 		class="group block cursor-pointer overflow-hidden"
 	>
 		<img
-			src={src}
+			src={displaySrc}
+			srcset={srcset}
+			sizes={srcset ? SIZES : undefined}
 			alt={alt}
-			width={size?.width}
-			height={size?.height}
+			width={attrW}
+			height={attrH}
 			loading="lazy"
 			decoding="async"
 			class="h-auto w-full object-cover transition-transform duration-300 group-hover:scale-105"

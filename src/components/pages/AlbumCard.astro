@@ -1,4 +1,6 @@
 ---
+import { getPublicImageSizeSync } from "@/utils/image-size"
+
 interface Props {
 	id: string
 	name: string
@@ -11,6 +13,10 @@ interface Props {
 }
 
 const { id, name, cover, description, date, location, tags, photoCount } = Astro.props
+
+// 补 width/height 治 CLS（封面是 public/ 静态图，构建期没有 ImageMetadata）。
+// 外层是 aspect-4/3 固定比例，属性不会改变观感，只是让浏览器提前知道原始比例。
+const coverSize = getPublicImageSizeSync(cover)
 ---
 
 <a
@@ -25,6 +31,8 @@ const { id, name, cover, description, date, location, tags, photoCount } = Astro
 				<img
 					src={cover}
 					alt={name}
+					width={coverSize?.width}
+					height={coverSize?.height}
 					class="pointer-events-none h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
 					loading="lazy"
 					decoding="async"

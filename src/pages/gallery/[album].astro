@@ -5,6 +5,7 @@ import { siteConfig } from "@/config/siteConfig"
 import { galleryConfig } from "@/config/galleryConfig"
 import Layout from "@/layouts/Layout.astro"
 import { getAlbumCover, scanAlbumPhotos } from "@/utils/gallery-utils"
+import { getPublicImageSizeSync } from "@/utils/image-size"
 
 // 检查页面是否启用
 if (!siteConfig.pages.gallery) {
@@ -27,6 +28,9 @@ if (!albumMeta) {
 const photos = scanAlbumPhotos(albumMeta.id)
 const cover = getAlbumCover(albumMeta, photos)
 const columnWidth = galleryConfig.columnWidth || 240
+// 横幅封面补 width/height 治 CLS。外层是 aspect-[3/1] 固定比例，
+// 属性只让浏览器提前知道原图比例，观感不变（详见五-59）。
+const coverSize = getPublicImageSizeSync(cover)
 ---
 
 <Layout title={albumMeta.name}>
@@ -35,7 +39,13 @@ const columnWidth = galleryConfig.columnWidth || 240
 		{
 			cover ? (
 				<div class="relative aspect-[3/1] max-h-[360px] min-h-[200px] w-full">
-					<img src={cover} alt={albumMeta.name} class="h-full w-full object-cover" />
+					<img
+						src={cover}
+						alt={albumMeta.name}
+						width={coverSize?.width}
+						height={coverSize?.height}
+						class="h-full w-full object-cover"
+					/>
 					<div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
 					{/* 返回按钮 */}
 					<a

@@ -43,6 +43,7 @@ import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers"
 import { pluginLanguageBadge } from "expressive-code-language-badge" /* Language Badge */
 import { pluginCollapsible } from "expressive-code-collapsible"
 import sitemap from "@astrojs/sitemap"
+import sitemapLastmod from "./src/plugins/integration-sitemap-lastmod.mjs"
 
 // github卡片
 import rehypeComponents from "rehype-components"
@@ -147,6 +148,9 @@ export default defineConfig({
         // `Unrecognized key: "exclude"` 然后**整个 sitemap 不写了**，dist 里静默少两个文件）。
         // 排除页面只能用 `filter`。404 页不该进 sitemap（搜索引擎抓它等于抓死信）。
         sitemap({ filter: page => !page.includes("/404") }),
+        // 紧跟在 sitemap 之后：给它产出的每条 <loc> 补 <lastmod>（真实时间，非统一时间）。
+        // 必须排在 sitemap 之后注册，否则 build:done 里 sitemap-0.xml 还没写出来。见五-59。
+        sitemapLastmod(),
         svelte(),
         mdx(),
     ],

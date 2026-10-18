@@ -1,4 +1,6 @@
 ---
+import { getPublicImageSizeSync } from "@/utils/image-size"
+
 interface Props {
 	src: string
 	albumId: string
@@ -6,6 +8,10 @@ interface Props {
 }
 
 const { src, albumId, alt = "" } = Astro.props
+
+// 补 width/height 治 CLS（相册图走 public/ 原样拷贝，构建期没有 ImageMetadata）。
+// 解析不到就不写 —— 别猜数字。见 docs/agents/config.md 五-59。
+const size = getPublicImageSizeSync(src)
 ---
 
 <div class="gallery-photo-card mb-3 break-inside-avoid">
@@ -18,6 +24,8 @@ const { src, albumId, alt = "" } = Astro.props
 		<img
 			src={src}
 			alt={alt}
+			width={size?.width}
+			height={size?.height}
 			loading="lazy"
 			decoding="async"
 			class="h-auto w-full object-cover transition-transform duration-300 group-hover:scale-105"

@@ -41,7 +41,7 @@ const hasChildren = children.length > 0
 							<a
 								href={child.url}
 								aria-label={child.name}
-								class="dropdown-item focus-ring-inset"
+								class="dropdown-item"
 								data-dropdown-item
 							>
 								{child.icon && <Icon name={child.icon} class="shrink-0 text-[1.25rem]" />}
@@ -114,7 +114,11 @@ const hasChildren = children.length > 0
 		color: color-mix(in oklab, var(--color-black, #000) 75%, transparent);
 	}
 
-	.dropdown-item:hover {
+	/* 键盘焦点与 hover 同观感（2026-10-18 五-59）：原先这里挂的是 `focus-ring-inset`
+	   —— 那个类**全站从未定义**，一直是空转。删除的同时补上真规则，
+	   否则键盘 Tab 进来的子项只有浏览器默认轮廓，与 hover 态不对称。 */
+	.dropdown-item:hover,
+	.dropdown-item:focus-visible {
 		background-color: var(--btn-plain-bg-hover);
 		color: var(--primary);
 	}

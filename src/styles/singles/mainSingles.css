@@ -168,6 +168,20 @@
 .cover-image-container[data-error="true"] .fallback-image {
     display: block;
 }
+/* 2026-10-18（五-61）：出错时藏掉坏掉的原图。
+   以前只写 img[data-remote="true"] —— 本地图没这个属性，加载失败后浏览器在原地画出
+   破图图标（截图实测可见），与"封面加载失败"文案叠在一起很难看。
+   ⚠️ 主图是 <Picture> 产出的 <picture><img data-cover-img></picture>，
+     所以**不能用 `> img`**（它不是容器的直接子节点）→ 按 data-cover-img 属性匹配。
+   ⚠️ 回退图那张 img 没有 data-cover-img（它是独立的 Picture），不会被这条命中，
+     仍由下面 .fallback-image 的 display:block 正常显示。 */
+.cover-image-container[data-error="true"] img[data-cover-img] {
+    display: none;
+}
+.cover-image-container[data-error="true"] .fallback-image,
+.cover-image-container[data-error="true"] .fallback-image img {
+    display: block;
+}
 .cover-image-container[data-error="true"] img[data-remote="true"] {
     display: none;
 }

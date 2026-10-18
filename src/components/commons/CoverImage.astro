@@ -57,10 +57,14 @@ if (isLocal) {
 }
 
 // 加载回退图片
+// 2026-10-18（五-61）：原来的条件是 `!isLocal && !isFallbackPublic` —— 意味着**只有远程图才有回退图**，
+// 本站封面全是本地图（isLocal=true）→ 永远拿不到 fallbackImg → 一旦加载失败就只剩空白。
+// 改成：本地图也要有回退（这正是 fallbackPath 这张"加载失败占位图"存在的意义）。
+// 只保留 !isFallbackPublic（回退图自己走 public/ 路径时由下面的 <img> 分支处理，不进 glob）。
 let fallbackImg: ImageMetadata | null = null
 const fallbackPath = siteConfig.fallbackPath
 const isFallbackPublic = fallbackPath?.startsWith("/")
-if (fallbackPath && !isLocal && !isFallbackPublic) {
+if (fallbackPath && !isFallbackPublic) {
 	const files = import.meta.glob<ImageMetadata>("../../**/*.{png,jpg,jpeg,webp,avif}", {
 		import: "default",
 	})
@@ -109,6 +113,13 @@ const remoteReferrerPolicy = !isLocal && shouldAddNoReferrer(isPublic ? url(src)
 			</div>
 		)
 	}
+
+	<div class="error-message absolute inset-x-0 bottom-0 z-20 hidden items-center justify-center pb-3">
+		<span
+			class="rounded-sm bg-black/55 px-3 py-1 text-xs text-white/90 backdrop-blur-sm"
+			role="status">封面加载失败</span
+		>
+	</div>
 
 	<!-- 回退图片（错误时显示） -->
 	{
@@ -204,10 +215,11 @@ const remoteReferrerPolicy = !isLocal && shouldAddNoReferrer(isPublic ? url(src)
 
 			// 出错时**必须先摘掉加载态**，否则遮罩 + 转圈会永远盖在上面（既不报错也不消失）。
 			// 原先这里对非远程图直接 return，于是本地封面一旦 load 失败就无限转圈；
-			// data-error 仍只给远程图设——它驱动的是"换成回退图 + 藏掉坏图"那套远程专属表现。
+			// 2026-10-18（五-61）：本地图现在也设 data-error —— 以前只给远程图设，
+			// 后果是本地封面加载失败时**既没有回退图也没有任何提示**，访客看到一片空白。
+			// data-error 驱动三件事（都在 mainSingles.css 里）：藏 spinner、显示 .error-message、有回退图就显示回退图。
 			const onError = () => {
 				hideLoading()
-				if (img.dataset.remote !== "true") return
 				container.setAttribute("data-error", "true")
 			}
 

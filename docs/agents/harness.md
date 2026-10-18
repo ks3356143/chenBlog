@@ -604,6 +604,35 @@ page.goto: net::ERR_PROXY_CONNECTION_FAILED at http://47.108.230.220/404.html
     → **分档数字一律用代码从表里算**（`split(/\s{2,}/)` + 自己写版本比较函数），别用眼睛读表格、更别照旧印象写；
     与 B-17「凭记忆写规则」、B-28「探针 0 命中先怀疑探针」同族：**能算的就别读、能读的就别猜**。
 
+### B-30 🔴 Chromium 的 `getComputedStyle` **不会把 oklch 解析成 rgb** —— 跨站比颜色必须走 canvas 像素法（2026-10-18）
+
+1. **现场**：想判「本站主色 `#00ba99` 的低对比是不是我们抄错了」。参考站的 CSS 用
+   `--primary: oklch(.7 .14 var(--hue))`。我先用 `span.style.color = v; getComputedStyle(span).color`
+   做转换 → 得到的是 **`"oklch(0.7 0.14 165)"` 字面量本身**，不是 `rgb(...)`：
+   我的 `parse()` 只认 `rgba?(...)` → 返回 `null` → 输出 **`对白底 = null`、"色解析失败"、小字样本 = null**，
+   看起来像"参考站根本没设主色"。**差点据此写出"参考站用另一套体系、无法对照"的结论**（我 五-57 草稿里就是这么写的，落盘前实测推翻了）。
+2. ✅ **正确做法：canvas 像素法**，浏览器负责真正的色彩空间转换，我只读回像素：
+   ```js
+   const cv = document.createElement("canvas"); cv.width = cv.height = 4
+   const cx = cv.getContext("2d", { willReadFrequently: true })
+   cx.fillStyle = "#fff"; cx.fillRect(0, 0, 4, 4)
+   cx.fillStyle = colorString          // "#00ba99" / "oklch(.7 .14 165)" / "color(display-p3 …)" 都行
+   cx.fillRect(0, 0, 4, 4)
+   const d = cx.getImageData(0, 0, 4, 4).data   // 取 d[0..2] 即最终 sRGB 三元组
+   ```
+   同一条路径也适用于**判"某元素真实渲染色"**（`cs.color` 若是 oklch 也得走这里）。
+   实测：本站 `rgb(0,186,153)` 对白底 **2.48**，参考站 `rgb(34,185,136)` **2.51** → **同一个绿**，
+   我的"我们改坏了"假设**证伪**；结论从"要修"翻成"照抄同款、要改就是主动偏离参考站 → 等他拍板"。
+3. ⚠️ **顺带实测（同一探针里跑出来的）：`fillStyle` 赋**非法**颜色字符串不抛错、静默保持上一次的值**：
+   `"不存在的颜色"` / `"color(bogus 1 2 3)"` / `""` 三种输入 → `cx.fillStyle` 仍是 `"#ffffff"`、
+   **像素 255,255,255、`抛错 = null`**；而合法值会正确归一（`"rgb(0,186,153)"` → `fillStyle` 变 `"#00ba99"`）。
+   → 用像素法转颜色时**必须验一次"像素不等于兜底色"**，否则"解析失败"会伪装成"这颜色就是白的"。
+   另可先用 `CSS.supports("color", v)` 预筛（实测 oklch 那串 = `true`）。
+4. 🔴 **通用结论**：**只要跨实现比"颜色/尺寸等计算值"，别信 `getComputedStyle` 的字面量**，
+   要么读像素、要么读 `getBoundingClientRect()` 这类已解析量。
+   与 B-28（`latin1` 搜中文）、B-29 第 8/9 条（浅实现造出 533 假阳性、`.join?.()` 造出假 0）同族：
+   **探针的"读法"决定结论真假，读不出来 ≠ 站点没有。**
+
 ---
 
 ## A. 继承自上一任的纪律（22 份记忆文件压缩落盘，卸载 Qoder 后仍有效）

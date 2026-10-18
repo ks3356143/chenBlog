@@ -3,8 +3,29 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-18 傍晚B（第十二批：ponytail + code review + 性能优化，twikoo 与二维码改懒加载，已上线 V0.1.57）**。
+> 最后更新：**2026-10-18 傍晚C（第十三批：封面加载失败文案 + 本地图回退，已上线 V0.1.58）**。
 > （第十批跨 10-17 深夜到 10-18 凌晨：`4e462da` 修 V0.1.51、`1d32d2d` 修 V0.1.52、`c4eb046` 修我自己的回归成 V0.1.53；**分册五-52~55 + harness.md B-29 全在 `8d70fdf` 之后的独立笔**。）
+>
+> **🔧 2026-10-18 傍晚C 一句话（用户"行 先做图片加载失败文案吧"）**：
+> 用户从"参考站有哪些值得考虑的 UI"清单里选了第 1 项。已上线 **V0.1.58**，线上 364/364 md5 逐字节相同。
+> ① **发现是两条"规则写好了但没接上"的空转，不是加新功能**：
+>   - `mainSingles.css` 早就有 `[data-error=true] .error-message{display:flex}`，但组件**从没渲染过这个 div** → 规则一直空转。
+>   - `CoverImage.astro` 的回退图条件是 `if (fallbackPath && !isLocal && !isFallbackPublic)` —— **要求 `!isLocal`**，
+>     而本站封面全是本地图 → `fallbackImg` 恒为 null，`siteConfig.fallbackPath`（loadingfalse.png）**配了从没对本地图生效**。
+> ② **修完的效果**：`fallback-image` 元素 0 → **28**、`_astro/loadingfalse*` 产物 0 → **5 个尺寸变体**（文件总数 360 → **364**）；
+>   断图时显示黑猫占位图 + 「封面加载失败」灰底白字角标（截图确认）。
+> ③ **顺带修**：`data-error` 原先只给远程图设（`if (img.dataset.remote !== "true") return`）→ 本地图失败时静默；
+>   现在所有图都设。坏图也要藏：原先只藏 `img[data-remote=true]`，本地破图图标会画在文案旁边（**截图实测看到**）→
+>   补 `img[data-cover-img]{display:none}`。⚠️ **主图是 `<picture><img data-cover-img></picture>`，不是容器直接子节点**，
+>   用 `> img` 选不中。
+> ④ 🔴 **同一个错犯了第三次**：LQIP/说明又写成 `.astro` 的 HTML 注释 → 产物里出现 `五-61` 字样。
+>   部署断言现在**硬守卫**：`grep -rFo '五-61' dist --include='*.html'` 必须为 0。**默认不写 HTML 注释**。
+> ⑤ 门禁：364 文件 / 44 index.html / **22,699,653 B** / 404.html 133,399 B；check 0 error 3 hint、tsc 0、docs:check 0 error。
+>   部署断言含：error-message 28 / fallback-image 28（改前 0）/ 文案 28 / loadingfalse 5 个 / 注释泄漏 0。
+> ⑥ **参考站 UI 盘点结论（用户问过、这部分没做，记住别再重提已排除项）**：
+>   **值得做但需素材** → 音乐播放器（参考站有 `meting`+`music-player-widget`，本站 0）· 友链/项目/打赏/书签导航四个静态页（要内容）。
+>   **已判定不做** → LQIP（收益低、构建变慢）· 番组/VNDB/MyAnimeList/B站（要外部账号、与博客定位无关）·
+>   `#progress-bar`（两站都是**切页**进度条不是阅读进度，本站已有一模一样的实现）。
 >
 > **🔧 2026-10-18 傍晚B 一句话（用户"使用 ponytail + code review + astro 性能优化把整体优化下"）**：
 > 已上线 **V0.1.57**，线上 360/360 md5 逐字节相同。方法：**先量再改**（`PerformanceResourceTiming` 按页统计真实传输字节，
@@ -1450,20 +1471,20 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-10-18 傍晚B 实测；**线上 = V0.1.57**，已部署）
+## 三、当前状态快照（2026-10-18 傍晚C 实测；**线上 = V0.1.58**，已部署）
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`。**第十二批一笔**：`b301cbc`（V0.1.57 性能优化：twikoo 视口懒加载 + 二维码按需加载 + image-size 去 fd 管理）。**已推送、`HEAD == origin/main`、工作区计数 0** |
-| 工作区 | 第十二批 **动 4 个文件**：`components/comment/Twikoo.astro`（**+82/-68**，改 IntersectionObserver 懒加载，含去掉泄漏的 HTML 注释）、`components/card/meCard.astro`（**+19/-2**，二维码 `src`→`data-src` + 点开才赋值）、`utils/image-size.ts`（**+7/-11**，`openSync/readSync/closeSync`→`readFileSync`）、`package.json`（0.1.57）。文档动 `config.md`（**新增五-60**，113437→119640 B）、`AGENTS.md`（**等长替换** 五-59→五-60，57882 B 不变）、`HANDOFF.md`。**零依赖改动** |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`。**第十三批一笔**：`f1fd836`（V0.1.58 封面加载失败文案 + 本地图回退）。**已推送、`HEAD == origin/main`、工作区计数 0** |
+| 工作区 | 第十三批 **动 3 个文件**：`components/commons/CoverImage.astro`（**+15/-3**：补 `.error-message` DOM、`data-error` 对全部图生效、回退图条件去掉 `!isLocal`）、`styles/singles/mainSingles.css`（**+14/-0**：`img[data-cover-img]` 断图隐藏 + 回退图显示）、`package.json`（0.1.58）。文档动 `config.md`（**新增五-61**，119640→123451 B）、`AGENTS.md`（**等长替换** 五-60→五-61，57882 B 不变）、`HANDOFF.md`。**零依赖改动** |
 | 文档分层 | `docs:check` **0 error / 1 提醒**（注入链 63407 B，余量 **62 B**）。⚠️ 常驻层只剩 62 B，**任何新增都只能先下沉分册**；本批仍只做等长替换（五-58→五-59）。V0.1.56 的全部知识点写进 `config.md` **五-59**（含依赖二分的四行表格） |
 | 浏览器能力 | 同前（`npm run probe` + 本地 `astro preview`；browser-use MCP 仍等他新建 Session）。⚠️ **`harness.md` B-29 已累到九条**，本批最后两条最要命：**⑦ Svelte 条件展开属性 `{...cond ? {k:v} : {}}` 把共享 chunk 撑 +6.7KB**（三元 `undefined` 才不拉 helper；改完必 `stat` 一下 `dist/_astro/client.*.js`）；**⑨ Node 里对字符串调 `.join?.('')` → `undefined` 被 `?? ''` 兜成空串**，把 8 个 URL 全报成「0 处外链、0 字节」的假绿 → **0 命中同时把分母也打成 0 就是探针坏了**；另 `grep opener` 会命中 **`noopener` 自身**（排除 `no` 前缀后真命中仅 1 处，是 twikoo 自己写 `.opener=null`） |
-| 线上站点 | ✅ **2026-10-18 15:47 部署 V0.1.57**（**替换前 20+ 条断言全过**：文件数 360 / `index.html` 44 / 字节 **22,765,218** / twikoo 同步标签 **0** 处 / 二维码 `src` **0** 处 且 `data-src` **90** 处 / `twikoo.nocss.js` 全站 **29** 次 = 28 篇 + 留言板 / sitemap 44·41 / 站内静态图缺 width 0 / `target=_blank` 全带 rel）。**线上 360/360 md5 与本地逐字节相同**。线上实测：V0.1.57、二维码点开前 **0 请求**点开后 **1 请求且 naturalWidth=750**、滚到评论区后 `#twikoo` **innerHTML 13828**（与改前一致）、**pageerror 0** |
-| 本地构建 | V0.1.57 = **45 page(s) / 44 个 `index.html` / 360 文件 / 真实字节 22,765,218（21.71MB）**；`404.html = 133,399 B`；sitemap **44 URL / 41 lastmod**；`check` **0 error / 3 hint**、`tsc` 0、`docs:check` 0 error。⚠️ **性能基线（真实传输字节，移动 390×844）**：首页 **317 KB**、文章页 **767 KB**（其中 JS **80 KB**，改前 261 KB）。⚠️ **build 耗时不能当性能判据**（同晚实测 5.4s / 20.4s / 22.2s 三档） |
+| 线上站点 | ✅ **2026-10-18 17:19 部署 V0.1.58**（**替换前 20+ 条断言全过**：文件数 **364** / `index.html` 44 / 字节 **22,699,653** / error-message **28** / fallback-image **28（改前 0）** / 文案 **28** / `loadingfalse` 产物 **5 个** / **注释泄漏 0** / sitemap 44·41 / twikoo 同步标签 0 / 二维码 `src` 0 / `target=_blank` 全带 rel）。**线上 364/364 md5 逐字节相同**。线上实测：V0.1.58、首页 error-message 10 + fallback-image 10、**断图后 3/3 全对**（回退图 `320×240` 有真实像素、文案 `flex`、原图 `none`）、pageerror 0 |
+| 本地构建 | V0.1.58 = **45 page(s) / 44 个 `index.html` / 364 文件 / 真实字节 22,699,653（21.65MB）**；`404.html = 133,399 B`；sitemap **44 URL / 41 lastmod**；`check` 0 error 3 hint、`tsc` 0、`docs:check` 0 error。⚠️ **文件数从 360 → 364 是预期的**：多的 4 个是 `loadingfalse*` 回退图的尺寸变体（改前本地图根本不生成回退图）。**基线已更新为 364**，别再按 360 判断 |
 | 服务器配置 | 本批**没动服务器配置**（只换 dist）。上一次改动仍是 10-18 下午放开 vhost 的 `error_page 404 /404.html;`（已备份 `/root/html_chenblog.com.conf.bak2-20261018_131441`，`nginx -t` 过） |
 | 依赖 | **本批升过一次（保守）**：`npm update --package-lock-only` → `npm ci` → `npm run build`（干净装，退出码全 0）。升了 `@astrojs/mdx 8.1.0`、`@astrojs/svelte 9.1.0`、`svelte 5.57.2`、`katex 0.18.11`、`sanitize-html 2.18.1`、`markdown-it 15.0.3`、`prettier 3.9.10` 等；`mermaid 11.17.2` / `typescript 6.0.3` 按天花板**没动**。🔴 **`astro` 钉 `7.3.5`**：7.3.6 起会多产出一个零引用的 `_astro/Search.*.css`（详见五-59 D 的二分表）。审计 **21 条（5 low / 15 mod / 1 high）**，比上午少 2；唯一 high 是 `stylus→glob` 的 CLI 注入，构建期不走命令行、不进 dist，**判不动**；`audit fix --force` 仍禁用 |
 | dev / preview server | 本批为做视觉 A/B 起过一次 `npm run preview`（:4321），**收尾按「`node.exe` + `astro*bin*astro.mjs*preview*`」精确杀掉并复查 astro 进程 = 0、:4321 监听 = 0**。⚠️ 起服务时我第一发用了臆造的 `astro/vendor/...` 路径 → 直接 000 连不上，改用 `npm run preview` 才对（别猜入口路径） |
-| 服务器回滚资产 | **实测（10-18 14:24 部署 V0.1.56 后 SSH 数）**：`dist.old` = **V0.1.55**；备份目录**真数 60 个**（`find . -maxdepth 1 -name "*dist_backup*"`；含 3 个名字畸形的老目录，shell glob 数不到）。全部回滚资产合计 **1.4G**，磁盘用 32%。**一律保留，删需用户明确同意**。⚠️ **数回滚资产必须用 find 不用 glob**（`deploy.md` 六-⑦） |
+| 服务器回滚资产 | **实测（10-18 17:19 部署 V0.1.58 后）**：`dist.old` = **V0.1.57**；备份目录 **63 个**（`find . -maxdepth 1 -name "*dist_backup*"`）。合计 **1.4G**，磁盘 32%。**一律保留，删需用户明确同意**；⚠️ 数回滚资产用 `find` 不用 glob（`deploy.md` 六-⑦） |
 | 临时文件 | 收尾已清：本地 `.tmp-probe/` 整目录删除并复查 = 0；`%TEMP%` 下 `preview.log`/`audit.json`/`chenblog-deploy-v56`/`extimg`/`sharp` 临时脚本清理；服务器 `/tmp` 复查 = 0（tar 与 deploy 脚本**跑成功后才删**，`rc=$?` 判据） |
 | 待用户拍板 | ✅ **又清账四项（2026-10-18 傍晚 V0.1.56）**：~~sitemap 零 lastmod~~ → **41/44 条补上**（五-59 A）· ~~88 个 img 缺 width/height~~ → **站内全补，相册 CLS 降 36 倍**（五-59 B；远程 12 处因在 CSS 演示框内固定尺寸、零收益而不改）· ~~`focus-ring-inset` 死类~~ → **已删并补 `:focus-visible`**· ~~`tsconfig` React jsx 残留~~ → **已删**· ~~⑦ 依赖升级~~ → **已升（astro 钉 7.3.5）**。详见顶部第十一批B 与 **五-59**。**以下仍未答**：**② 相册逐张文案**（他给文案 + 同时加 `galleryConfig` 字段并开灯箱 caption）· **③ B 档功能**：友链 / 项目 / 打赏 / 书签导航 / B站 / 番组 / VNDB / MyAnimeList · **⑤「截图取自 v1.4.0」那句留不留** · **⑥ 画廊交互取舍** · **⑧ Twikoo 裸 `envId IP:8099` 同域反代 / 面板 IP 白名单 / `90a38e5` 提交消息强推** · **⑨ 真机观感**（累计八处）：三篇旧文章正文复原、侧栏分类卡、移动端搜索按钮、页脚与仓库卡片新窗口行为、**「阅读」按钮与序号块新增的浅绿底色**、**移动端菜单面板新增的 1px 边框**、**主色变深后的整体观感**、**相册页图片不再跳动**（CLS 修复的肉眼版） |
 | 既存小坑 | **只还剩这些，别再当新发现重提**：`--radius-large` **刻意不补**（直角口径，五-16③，`docs:check` 扫到属**预期项**）；`data-code` 的 `0x7F` **已证伪不是缺陷**（五-55）；`/site.webmanifest` Content-Type 缺映射（要动 nginx mime.types）；重复 id `announcement` / `cardTags`（九·补② 已降级）；单分类卡收起态更高（已判降级）；每页两个 `<title>`（45/45 复验、内容一致，已降级）；**远程 12 张图无 width/height**（在 CSS 演示框内被固定尺寸约束，零收益，**故意不改**）。✅ **本批已清**：`focus-ring-inset` 死类、`tsconfig` React jsx 残留、sitemap 零 lastmod、88 个 img 缺宽高 |

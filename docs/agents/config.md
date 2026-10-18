@@ -1,4 +1,4 @@
-# AGENTS 分册 · 第五节「必须知道的配置约定」全文（五-1 ~ 五-60）
+# AGENTS 分册 · 第五节「必须知道的配置约定」全文（五-1 ~ 五-61）
 
 > 本文件是 `AGENTS.md` 某一节的**全文**，2026-10-12 从 AGENTS.md 无损切出。
 > `AGENTS.md` 只留常驻结论与索引（受 harness 64KB 注入预算限制）；改到本节任何主题前先读本文件全文。
@@ -1100,3 +1100,43 @@
     - 📌 **断言口径要连着业务事实写**：`twikoo.nocss.js` 全站是 **29** 次不是 28 ——
       **28 篇文章 + `/guestbook/` 留言板**（它本来就该有评论区）。我第一版按 28 写，被断言拦下，
       改的是**断言**而不是代码（先查清为什么是 29 才改，没有直接把数字调大蒙过去）。
+
+61. 🖼️ **封面加载失败：补上可见文案，并修正"本地图没有回退图"（V0.1.58）**（2026-10-18）
+    这条**不是加新功能，是把两个"规则写好了但没接上"的空转变活的**。
+    - **① `.error-message` 的显示规则一直都在，但元素从来没渲染过**
+      `mainSingles.css` 早就写着 `.cover-image-container[data-error="true"] .error-message { display: flex }`，
+      而 `CoverImage.astro` **从来没有输出过 `.error-message` 这个 div** → 那条规则一直是空转，
+      访客看到的就是"图没了，什么都不显示"。
+      修法：组件里补一个 `.error-message`（默认 `hidden`，靠 `[data-error=true]` 翻成 flex），
+      文案「封面加载失败」，中性灰底 `bg-black/55` + 白字 + `role="status"`，绝对定位在底部，不挡图。
+    - **② `data-error` 以前只给远程图设**（`if (img.dataset.remote !== "true") return`）
+      本站封面**全是本地图** → 本地封面加载失败时既不显示回退图、也没有任何提示。
+      现在所有图出错都设 `data-error`，由它驱动三件事：藏 spinner / 显示文案 / 有回退图就显示回退图。
+    - **③ 真正让"回退图"生效的那一行：`if (fallbackPath && !isLocal && !isFallbackPublic)`**
+      这个条件要求 `!isLocal` —— **本地图永远进不去** → `fallbackImg` 恒为 null，
+      `siteConfig.fallbackPath`（`assets/postImages/loadingfalse.png`）**配了但从未对本地图生效**。
+      去掉 `!isLocal` 后：产物里 `fallback-image` 元素从 **0 → 28**、
+      `_astro/loadingfalse*` 产物从 **0 → 5 个尺寸变体**（文件总数 360 → 364）。
+      ⚠️ **看到文件数变多别慌**：多的 4 个就是回退图的不同尺寸，属预期。基线已更新为 **364 文件**。
+    - **④ 坏图要藏掉，否则破图图标与文案叠在一起**
+      原先只有 `img[data-remote="true"] { display:none }`，本地图没有这个属性 →
+      加载失败后浏览器会在原地画一个破图图标（**截图实测能看到**，在文案右下角）。
+      ⚠️ **主图是 `<Picture>` 产出的 `<picture><img data-cover-img></picture>`，
+      不是容器的直接子节点** → 用 `> img` 选不中，必须按 `img[data-cover-img]` 属性匹配。
+      回退图那张 img **没有** `data-cover-img`，不会被误伤（实测断图后它照常显示）。
+    - **验证方法（关键：不能靠 CSS 权重推算，必须真断图）**
+      用 `context.route()` 把 `/_astro/*.{webp,jpg,png,avif}` **真的打 404**，而不是改 DOM 骗自己。
+      ⚠️ 但**第一版探针把回退图也一起打死了** → `fallbackImgNatural` 全是 `0x0`，
+      看着像"回退图没显示"，其实是我自己拦的。**正确做法：按文件名放过 `loadingfalse*`**，
+      只打死原始封面。改对之后实测：
+      | 状态 | data-error | 回退图 | 文案 | 原图 | 回退图像素 |
+      |---|---|---|---|---|---|
+      | 正常（10 张） | 0 个 true | 0 显示 | **0 显示** | 正常 | — |
+      | 断图后 | true | `display:block` | `flex` | `none` | **320×240（有真实像素）** |
+      软导航回首页后断图同样 10/10 正确；pageerror 全程 **0**。
+    - 🔴 **同一个错我犯了第三次：HTML 注释泄漏进产物**
+      LQIP 那段说明我写在 `.astro` 的 `<!-- -->` 里 → Astro 原样发给访客，
+      产物里出现 `五-61` 字样。部署断言里现在加了硬守卫：
+      **`grep -rFo '五-61' dist --include='*.html'` 必须为 0**。
+      📌 三次都栽在同一处，说明"少写注释"不够，得**默认不写 HTML 注释**：
+      要解释就写 frontmatter 的 `//`，模板里一个字都别留。

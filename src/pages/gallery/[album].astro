@@ -139,7 +139,12 @@ const coverSize = getPublicImageSizeSync(cover)
 						style={`column-count: 2; column-gap: 0.75rem; --col-width: ${columnWidth}px;`}
 					>
 						{photos.map((photo, i) => (
-							<PhotoCard src={photo} albumId={albumMeta.id} alt={`${albumMeta.name} 第 ${i + 1} 张照片`} />
+							<PhotoCard
+								src={photo}
+								albumId={albumMeta.id}
+								alt={`${albumMeta.name} 第 ${i + 1} 张照片`}
+								preferOriginal={photo === cover}
+							/>
 						))}
 
 					</div>

@@ -1197,3 +1197,44 @@ DPR2 下需要 312px、刚好卡在 640/960 之间选 640，白付一倍体积�
 ⚠️ **原图比目标档还窄时不要删那一档**：`yuanmingyuan` 有 3 张原图本身就是 960px 宽，
 `withoutEnlargement` 会产出同宽文件、q78 重编码后**比原图还胖**（152KB → 163KB）→ 删掉是对的。
 但**不能因为「原图宽 == 该档宽」就删** —— srcset 少了那一档会让 DPR3 退到 640w，白白降清晰度。
+---
+
+### 五-63 首页横幅「玻璃药丸」社交按钮（2026-10-19，V0.1.60）
+
+照参考站 `firefly.cuteleaf.cn` 的 `.banner-links` / `.banner-link` 1:1 抄，数值取自它编译产物
+`/_astro/_..B1ALX-2b.css`：
+
+| 属性 | 值 |
+|---|---|
+| 尺寸 | `2.75rem × 2.75rem`（带文字的 GitHub 那枚 `width:auto; padding:0 1rem`） |
+| 圆角 | `9999px`（全圆，本站唯一破「面板一律直角」的地方 —— 它是**圆形控件**不是面板） |
+| 底色 | `rgba(255,255,255,0.14)` · hover `0.26` |
+| 边框 | `1px solid rgba(255,255,255,0.18)` |
+| 模糊 | `backdrop-filter: blur(8px)` |
+| 文字/图标 | `rgba(255,255,255,0.92)` · hover `#fff` |
+| 入场 | `banner-fadeInUp 0.3s ease-out 0.5s both`（比副标题晚 0.5s） |
+| hover 位移 | `translateY(-2px) scale(1.05)` |
+
+**四个按钮**：GitHub（带文字）· Email（`mailto:`）· 关于 · RSS。
+第 3 个用「关于」替代参考站的「打赏」，因为本站没有 `/sponsor/` 页。
+
+🔴 **只出现在首页**（含 `/2/` `/3/` 分页）。参考站的 `/archive/` `/about/` 里这排的 overlay 是
+`display:none`（实测 0×0、`elementFromPoint` 命中不到）—— `Cover` 在所有页面都渲染，
+光靠 `isPostPage` 只能排除文章页。所以 `Layout.astro` 加了 `isHomePage`（按 `Astro.url.pathname` 判），
+非首页给 `hidden` 属性。
+
+**踩到的两个坑（都实测过）**：
+
+1. 🔴 **写 `-webkit-backdrop-filter` 会把标准属性挤掉**：两行都写时，Lightning CSS 按构建目标
+   **只留 `-webkit-` 那条、删掉标准的**；而 Chromium 的 `CSS.supports("-webkit-backdrop-filter")` 返回 **false**、
+   `getComputedStyle().backdropFilter` 读到 `"none"` → **玻璃模糊完全没生效**（截图看着"淡但不糊"，极易误判成已实现）。
+   → **只写标准 `backdrop-filter`**，产物实测保留 `backdrop-filter:blur(8px)`。
+   判据：`getComputedStyle(el).backdropFilter` 必须是 `blur(8px)`，**不能只看 bg/border 对不对**。
+2. 🔴 **`grep -c "pointer-events-auto hidden"` 恒为 0**：`hidden={!isHomePage}` 渲染成 class **外面**的
+   HTML 属性（`class="… pointer-events-auto" hidden>`），不是 class 里的一个词。断言要写成
+   `grep -o '<div class="banner-links[^>]*>'` 再看标签尾部有没有 `hidden`。
+
+⚠️ 图标只能用**项目自带**的 `src/icons/*.svg`（`github`/`about`/`rss` 都在）+ `material-symbols:mail`。
+参考站用的 `fa7-brands:github` / `simple-icons` 本项目**根本没装**，照抄会把构建打挂（五-29）。
+
+✅ 主动增强两条（参考站没有）：`:focus-visible` 白色 outline、`prefers-reduced-motion` 下只保留颜色反馈不位移。

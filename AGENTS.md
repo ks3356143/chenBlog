@@ -214,7 +214,7 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
 - **44** ⚠️ 波浪四层 `<use>` 的 **`x` = `-42.000 / 2.641 / 48.944 / 92.468`**；全写同一个值 → 四条波重叠成一条平的。横幅底部必须有 **`#wallpaper-gradient`**。
 - **25** 自动封面 `getPostCover()`：手写 `image` 优先 → 按 `seriesOrder` 轮播 → 无序号按 id 稳定哈希。**只作用于列表卡片**（详情页 banner 与 `og:image` 读原始 `image`，**刻意收紧**）。⚠️ 别把 `.svg` 填进 `autoCoverPaths`（→ **静默不出图**）。卡片**所有断点都是右侧竖条** → **封面要按「无焦点、四角均匀」画**。
 - **27** ⚠️ markdown 结果转纯文本时**实体解码必须单趟做完**：`markdown-remark` 输出 **`&#x26;`/`&#x3C;`**（不是 `&amp;`/`&lt;`）→ 多趟 replace 一条都命中不了。**先去标签再一趟解实体**。
-- **28** 相册 = **改两处**（`public/gallery/<id>/1.jpg…` 序号命名 + `galleryConfig.albums`）；**每加一个相册页数 +1**；⚠️ **`public/` 原样拷进 dist、不走 Astro 图片优化**。不写 `cover` 时第一张就是封面。地点用间隔号写法（`中国·成都`）。
+- **28** 相册 = **改两处**（`public/gallery/<id>/1.jpg…` 序号命名 + `galleryConfig.albums`）；**每加一个相册页数 +1**；⚠️ **`public/` 原样拷、不走图片优化**；**加图后跑 `npm run thumbs`**。不写 `cover` 时第一张就是封面。地点用间隔号写法（`中国·成都`）。
 - **29** 站点信息卡：`博客版本` 读 `package.json.version`（**就是对外展示口径**，发版就改）；`Astro`/`Node`/`系统` 是**构建机的值**（显示 `Windows / x64` **正确**）；构建时间**必须显式传 `timeZone`**。⚠️ **挂两处 = 两个节点 → 必须 `querySelectorAll` 逐个绑定，用 `getElementById` 第二份点不开**。⚠️ **图标只能用真装了的集合**（`material-symbols`/`fa-solid`/`fa6-solid`/`fa7-solid`/`mingcute` + `src/icons/`）：配置里那四个 `mdi`/`simple-icons`/`fa7-brands`/`fa7-regular` **根本没装**（用户拍板先不删也不装）→ **照抄参考站图标名会把构建打挂且 `dist/` 已被清空**。核图标名要读 `icons.json` 的 **`icons` 与 `aliases` 两张表**。
 - **33** 🔴 **纯静态 SSG 无 SSR** → ① `Astro.url.searchParams` **构建期恒空**（访客的 `?category=` 永远回不到服务端）→ 必须客户端读 `window.location.search`；② **组件不写 `client:*` 就只出静态 HTML、零 JS** → **判据是数 `<astro-island>`，不是看 HTML 里有没有内容**。两条一起成立 = **代码全对、退出码 0、零报错，功能却恒不生效**。验证**必须硬加载 + 软导航两条都测**，且**仿真软导航要连 URL 一起改**；**数条数要数在岛内部**。
 

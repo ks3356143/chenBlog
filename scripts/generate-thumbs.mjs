@@ -71,17 +71,24 @@ async function processDir(dir, label) {
 
 		for (const w of WIDTHS) {
 			const out = path.join(outDir, `${stem}-${w}.webp`);
-			// withoutEnlargement：原图比目标还窄时不放大，直接输出原尺寸。
-			// 所以 960 宽的原图在 960 档会产出同宽文件 —— 这是**正确**的：
-			// srcset 里那一档仍然有意义（DPR3 要 960w 才会挑到它），
-			// 删掉它会让浏览器退到 640w，白白降清晰度。
+			// 🔴 原图**比目标档还窄** → 整档跳过、一个文件都不生成。
+			// 2026-10-19 实测：public/images/jessica-potter.jpg 只有 140×140，
+			// withoutEnlargement 会让 640 与 960 两档都产出 140×140 → 两个文件字节完全相同（2498B），
+			// 且 srcset 里挂两个同宽度候选是**错的**（浏览器按 w 描述符挑，会以为 960w 真更清晰）。
+			// 这种图让浏览器直接用原图，加缩略图毫无收益。
+			// （注意与"原图恰好等于某档宽"区分：那种情况该档**要保留**，
+			//  否则 DPR3 会退到更小一档、白降清晰度。）
+			if (meta.width < w) {
+				skipped++;
+				continue;
+			}
 			const info = await sharp(src)
 				.resize({ width: w, withoutEnlargement: true })
 				.webp({ quality: QUALITY })
 				.toFile(out);
 			made++;
 			smallest = Math.min(smallest, info.size);
-			// 唯一该删的情形：这一档**比原图文件还大**（q78 重编码有时比已压过的原图更胖），
+			// 另一种该删的情形：这一档**比原图文件还大**（q78 重编码有时会比已压过的原图更胖），
 			// 留着只会误导浏览器去下更大的文件。
 			if (info.size >= before) {
 				fs.unlinkSync(out);

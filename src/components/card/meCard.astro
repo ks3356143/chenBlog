@@ -14,7 +14,15 @@ const wechatQr = "/assets/wechat-qr.webp"
 
 <div class="card-base p-3">
 	<a aria-label="进入关于页" href="/about/">
-		<ImageWrapper src={ isDev ? "assets/touxiangDev.png": "assets/touxiang.jpeg" } loading="eager" />
+		{/* sizes 必写：不写时 Astro 生成 `(min-width: 1018px) 1018px, 100vw`，
+		    按原图宽度声明 → 桌面恒定显示 254px 却去下 1018w 图（**超供 4 倍**，实测白付 61KB→约 20KB）。
+		    实测各断点显示宽度：320→278 / 375→333 / 390→348 / ≥768→**恒定 254**。
+		    所以桌面写 254px 就够，窄屏按视口留 100vw 的余量。 */}
+		<ImageWrapper
+			src={isDev ? "assets/touxiangDev.png" : "assets/touxiang.jpeg"}
+			loading="eager"
+			sizes="(min-width: 768px) 254px, 100vw"
+		/>
 	</a>
 	<div class="px-2">
 		<div class="mb-1 text-center text-xl font-bold transition dark:text-neutral-50">犟哟</div>

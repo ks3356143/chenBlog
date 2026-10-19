@@ -32,6 +32,7 @@ import katex from "katex"
 import "katex/dist/contrib/mhchem.mjs"
 import rehypeSlug from "rehype-slug"
 import rehypeFigure from "./src/plugins/rehype-figure.js"
+import rehypeProseThumbs from "./src/plugins/rehype-prose-thumbs.js"
 import rehypeExternalLinks from "./src/plugins/rehype-external-links.mjs"
 import rehypeEmailProtection from "./src/plugins/rehype-email-protection.mjs"
 import rehypeAutolinkHeadings from "rehype-autolink-headings"
@@ -169,6 +170,11 @@ export default defineConfig({
                 [rehypeKatex, { katex }],
                 [rehypeCallouts, { theme: siteConfig.rehypeCallouts.theme }],
                 rehypeSlug,
+                // 正文图缩略图 srcset：必须排在 rehypeFigure **之前** ——
+                // 后者会把 img 包进 figure/center 并复制 properties，
+                // 排在它后面等于在一份已经复制出去的快照上加属性，改不到最终节点。
+                // @ts-ignore
+                rehypeProseThumbs,
                 // @ts-ignore
                 rehypeFigure,
                 // @ts-ignore

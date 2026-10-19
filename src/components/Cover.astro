@@ -84,7 +84,7 @@ const randomSubtitle = getRandomSubtitle()
 						class="h-full object-cover"
 						src={backgroundImages.images[0]}
 						position={backgroundWallpaper.position}
-						widths={[1280, 1920, 2560]}
+						widths={[640, 828, 1280, 1920, 2560]}
 						sizes="100vw"
 						loading="eager"
 						fetchpriority="high"
@@ -103,7 +103,7 @@ const randomSubtitle = getRandomSubtitle()
 						class="h-full object-cover"
 						src={src}
 						position={backgroundWallpaper.position}
-						widths={[1280, 1920, 2560]}
+						widths={[640, 828, 1280, 1920, 2560]}
 						sizes="100vw"
 						loading="eager"
 						fetchpriority="high"
@@ -185,10 +185,22 @@ const randomSubtitle = getRandomSubtitle()
 								>
 									<Icon name="material-symbols:mail" class="text-[1.25rem]" />
 								</a>
+								{/* 关于：站内页，走普通跳转（会被 Swup 接管做软导航，观感更好） */}
 								<a href="/about/" aria-label="关于" title="关于" class="banner-link">
 									<Icon name="about" class="text-[1.25rem]" />
 								</a>
-								<a href="/rss.xml" aria-label="RSS" title="RSS" class="banner-link">
+								{/* RSS：/rss.xml 是**纯 XML 文件**不是页面，当前页打开会把访客整个带离博客、
+								    看到一个裸 XML（2026-10-19 用户报）。必须新窗口开 ——
+								    与左栏 meCard 那个 RSS 按钮保持一致（它也带 target="_blank"）。
+								    ⚠️ 带 target 的链接会被 SwupManager 的 capture 监听跳过，正是我们要的。 */}
+								<a
+									href="/rss.xml"
+									aria-label="RSS"
+									title="RSS"
+									target="_blank"
+									rel="noopener"
+									class="banner-link"
+								>
 									<Icon name="rss" class="text-[1.25rem]" />
 								</a>
 							</div>

@@ -164,3 +164,89 @@ html.is-wallpaper-transitioning .content-panel {
     line-height: 1.3 !important;
     text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7) !important;
 }
+
+/* 横幅「玻璃药丸」社交按钮组（照参考站 firefly.cuteleaf.cn 的 .banner-links / .banner-link 1:1 抄，
+   数值取自它编译产物 /_astro/_..B1ALX-2b.css）。
+
+   🔴 必须写在**全局**样式表里，不能写进 Cover.astro 的 <style>：
+   Cover 只在首页与文章页渲染，而 Swup 不替换 head → 从别的页软导航回首页时
+   组件 scoped 样式不在 document 里，这排按钮会退化成无底无边框的裸链接（AGENTS 十-2）。
+   事实上 Cover 的 <style> 本来就走 set:html 注入 body，但显式放全局最稳。
+
+   ⚠️ backdrop-filter 在纯色/无图背景下看不出效果 —— 它的玻璃感来自**背后的横幅壁纸**，
+   所以这排只能在首页横幅文字区里用。 */
+
+.banner-links {
+    /* 入场：比副标题晚 0.5s，与参考站一致（两者都是 both，保证动画前不闪） */
+    animation: banner-fadeInUp 0.3s ease-out 0.5s both;
+}
+
+.banner-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 9999px;
+    color: rgba(255, 255, 255, 0.92);
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    /* 🔴 只写标准属性，**不要**再补一行 -webkit-backdrop-filter：
+       2026-10-19 实测，两行都写时 Lightning CSS 按构建目标只留下 -webkit- 那条、
+       把标准的删掉；而 Chromium 的 CSS.supports("-webkit-backdrop-filter") 返回 false、
+       getComputedStyle().backdropFilter 读到 "none" → 玻璃模糊完全没生效（截图看着"淡但不糊"）。
+       本文件其它只写标准属性的地方（如 fancybox-custom.css）产物都正确保留。 */
+    backdrop-filter: blur(8px);
+    transition:
+        background-color 0.25s ease,
+        color 0.25s ease,
+        transform 0.2s ease;
+}
+
+.banner-link svg {
+    fill: currentColor;
+}
+
+.banner-link:hover {
+    background: rgba(255, 255, 255, 0.26);
+    color: #fff;
+    transform: translateY(-2px) scale(1.05);
+}
+
+/* 带文字的胶囊（GitHub）：宽度交给内容，圆角仍是全圆 */
+.banner-link-text {
+    width: auto;
+    padding: 0 1rem;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* 键盘可达性：本项目有几个全局 focus 规则只管 btn-* 系列，这里补一条（参考站没有，属主动增强） */
+.banner-link:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.85);
+    outline-offset: 2px;
+}
+
+/* 纯装饰性玻璃：用户开了「减少动态效果」就不位移，只保留颜色反馈 */
+@media (prefers-reduced-motion: reduce) {
+    .banner-links {
+        animation: none;
+    }
+    .banner-link {
+        transition: background-color 0.25s ease, color 0.25s ease;
+    }
+    .banner-link:hover {
+        transform: none;
+    }
+}
+
+@keyframes banner-fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -54,6 +54,15 @@ const { frontmatter } = Astro.props
 const isPostPage = !!postSlug
 // 参考站的 #swup-container 带 data-current-post-category，CategoryBar 靠它在文章页软高亮对应分类
 const postCategory = isPostPage ? String((frontmatter as { category?: unknown } | undefined)?.category ?? "") : ""
+
+/* 是否首页（含 /2/ /3/ 这些分页）。
+   2026-10-19 实测：横幅那排「玻璃药丸」社交按钮只在参考站首页出现 ——
+   它的 /archive/ 与 /about/ 里 overlay 是 display:none（0×0、点不到）。
+   Cover 在所有页面都渲染，光靠 isPostPage 只能排除文章页 →
+   不判首页的话 /about/ /archive/ 会多出一排能点的按钮（实测 1080px 宽、elementFromPoint 可命中）。
+   首页路由是 pages/[...page].astro，分页产物路径形如 /2/ /3/。 */
+const pathname = Astro.url.pathname.replace(/\/+$/, "") || "/"
+const isHomePage = pathname === "/" || /^\/\d+$/.test(pathname)
 ---
 
 <BaseLayout title={title ?? siteConfig.siteMeta.name} description={description} frontmatter={frontmatter} url={url}>
@@ -61,7 +70,7 @@ const postCategory = isPostPage ? String((frontmatter as { category?: unknown } 
     <Header />
     <div id="progress-bar"></div>
     <div class="relative z-10 w-full overflow-hidden opacity-100">
-        <Cover bannerPostMeta={bannerPostMeta} isPostPage={isPostPage} />
+        <Cover bannerPostMeta={bannerPostMeta} isPostPage={isPostPage} isHomePage={isHomePage} />
         <Waves />
     </div>
     <!-- 主内容：绝对定位。

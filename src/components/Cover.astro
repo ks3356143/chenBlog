@@ -9,6 +9,8 @@ import { formatDateTimeToYYYYMMDDHHmm } from "@/utils/date-utils"
 
 interface Props {
 	isPostPage?: boolean
+	/** 是否首页（含 /2/ /3/ 分页）。玻璃药丸社交按钮只在首页出现，照参考站行为。 */
+	isHomePage?: boolean
 	bannerPostMeta?: {
 		title: string
 		published: Date
@@ -19,7 +21,13 @@ interface Props {
 }
 
 // 如果是postPage-文章详情则不展示打字机
-const { bannerPostMeta, isPostPage = false } = Astro.props
+const { bannerPostMeta, isPostPage = false, isHomePage = false } = Astro.props
+
+// 横幅玻璃按钮组的邮箱。与 src/content/spec/about.md 里公开的那个一致。
+// 🔴 这里刻意**不做 base64 混淆**：参考站用它防爬，但混淆只挡正则抓取、挡不住真爬虫，
+// 而 mailto: 在裸 IP + 纯 HTTP 下本来就是最直接的用法；真要防爬得改成表单。
+// 若以后要加混淆，改这里 + 加 onclick 解码，别在模板里另起一套。
+const contactEmail = "314298729@qq.com"
 
 // 获取所有背景图-images数组、isMultiple布尔值
 const backgroundImages = getBackgroundImages()
@@ -148,6 +156,42 @@ const randomSubtitle = getRandomSubtitle()
 									)}
 								</div>
 							)}
+							{/* 玻璃药丸社交按钮组 —— 照参考站首页 1:1（.banner-links / .banner-link，
+							    数值见 styles/layout-style.css）。它只出现在首页：
+							    外层 .banner-home-text-overlay 在文章页带 hidden，且参考站同样只有首页有这排。
+
+							    ⚠️ 图标名只能用**项目自带**的 src/icons/*.svg（github/rss 都在）——
+							    fa7-brands / simple-icons 这两个集本项目**根本没装**，照抄参考站的
+							    `fa7-brands:github` 会把构建打挂（AGENTS 五-29）。
+
+							    第 3 个按钮用「关于」替代参考站的「打赏」：本站没有 /sponsor/ 页。 */}
+							<div class="banner-links mt-5 flex items-center justify-center gap-3 pointer-events-auto" hidden={!isHomePage}>
+								<a
+									href="https://github.com/ks3356143"
+									aria-label="GitHub"
+									title="GitHub"
+									target="_blank"
+									rel="noopener"
+									class="banner-link banner-link-text"
+								>
+									<Icon name="github" class="text-[1.25rem]" />
+									<span>GitHub</span>
+								</a>
+								<a
+									href={`mailto:${contactEmail}`}
+									aria-label="Email"
+									title="Email"
+									class="banner-link"
+								>
+									<Icon name="material-symbols:mail" class="text-[1.25rem]" />
+								</a>
+								<a href="/about/" aria-label="关于" title="关于" class="banner-link">
+									<Icon name="about" class="text-[1.25rem]" />
+								</a>
+								<a href="/rss.xml" aria-label="RSS" title="RSS" class="banner-link">
+									<Icon name="rss" class="text-[1.25rem]" />
+								</a>
+							</div>
 						</div>
 					</div>
 				</div>

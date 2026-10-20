@@ -1,5 +1,7 @@
 ---
 import { siteConfig } from "@/config/siteConfig"
+import fs from "node:fs"
+import path from "node:path"
 
 export type PageSEO = {
     title?: string // 文章标题
@@ -16,11 +18,41 @@ export type PageSEO = {
 // 站点级默认值现在只有 siteConfig.siteMeta 一处（原先散在 src/data/site.json，是模板遗留脏数据）。
 const ogImage = new URL(siteConfig.siteMeta.ogImage, Astro.site ?? siteConfig.site_url).href
 
+/* 每篇文章独立分享图（2026-10-20）：
+   `npm run og` 会由文章标题 + 封面合成 1200×630 的 `public/og/<slug>.jpg`，
+   文件名与文章 slug 一一对应。这里按当前 URL 反查，**存在就替换默认图**。
+   ⚠️ 用 fs 存在性判断而不是"无条件拼路径"：没跑过脚本 / 新增文章但忘了重跑时，
+   拼出来的 URL 会 404，社交爬虫拿不到图会退化成无图卡片 —— 宁可用默认图。
+   ⚠️ slug 可能含中文（26 篇 CSS100天 系列），encodeURIComponent 由 new URL() 处理。
+
+   🔴 这里必须用 `Astro.props.url ?? Astro.url`，**不能直接读下面解构出来的 url**：
+   解构在函数调用之后才发生，直接读会撞 TDZ（"Cannot access 'url' before initialization"）。 */
+
+function findPostOgImage(pageUrl: unknown): string | null {
+    try {
+        const u = new URL(String(pageUrl))
+        const m = u.pathname.match(/^\/posts\/(.+?)\/?$/)
+        if (!m) return null
+        const slug = decodeURIComponent(m[1])
+        // 防目录穿越：slug 来自 URL，只允许单段
+        if (slug.includes("/") || slug.includes("..")) return null
+        const abs = path.join(process.cwd(), "public", "og", `${slug}.jpg`)
+        if (!fs.existsSync(abs)) return null
+        return new URL(`/og/${encodeURIComponent(slug)}.jpg`, Astro.site ?? siteConfig.site_url).href
+    } catch {
+        return null
+    }
+}
+
+const postOgImage = findPostOgImage(Astro.props.url ?? Astro.url)
+
 const {
     title = siteConfig.siteMeta.name,
     description = siteConfig.siteMeta.description,
     url = Astro.url,
-    image = { src: ogImage, alt: siteConfig.siteMeta.ogImageAlt },
+    image = postOgImage
+        ? { src: postOgImage, alt: title }
+        : { src: ogImage, alt: siteConfig.siteMeta.ogImageAlt },
     frontmatter, // 传入frontmatter
 } = Astro.props
 
@@ -43,7 +75,12 @@ function isoDate(value: unknown): string | undefined {
 
 function jsonLDGenerator({ type, post, url }: any) {
     if (type === "post") {
-        const imageSrc = typeof post.image === "string" && post.image ? post.image : ogImage
+        // 分享图优先用**已解析出来的那一张**（postOgImage 命中《/og/<slug>.jpg》时就是它），
+        // 其次文章 frontmatter 手写的 image，最后才是站点默认图。
+        // ⚠️ 原先这里只读 post.image —— 而 28 篇的 image 全是空串，
+        // 于是 JSON-LD 永远写默认图、与页面上 og:image 不一致（2026-10-20 实测到并修正）。
+        const explicit = typeof post.image === "string" && post.image ? post.image : ""
+        const imageSrc = postOgImage || explicit || ogImage
         const ld = {
             "@context": "https://schema.org",
             "@type": "BlogPosting",

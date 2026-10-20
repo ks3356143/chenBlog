@@ -1,7 +1,7 @@
 {
   "name": "chenblog",
   "type": "module",
-  "version": "0.1.61",
+  "version": "0.1.62",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build && pagefind --site dist",
@@ -10,6 +10,7 @@
     "icons": "node scripts/generate-icons.mjs",
     "covers": "node scripts/generate-covers.mjs",
     "thumbs": "node scripts/generate-thumbs.mjs",
+    "og": "node scripts/generate-og.mjs",
     "new:post": "node scripts/new-post.mjs",
     "docs:check": "node scripts/check-docs.mjs",
     "gateway:check": "node scripts/gateway-check.mjs",

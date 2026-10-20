@@ -1,0 +1,194 @@
+---
+import { Icon } from "astro-icon/components"
+import Layout from "@/layouts/Layout.astro"
+import { siteConfig } from "@/config/siteConfig"
+import { projectsConfig, statusMeta } from "@/config/projectsConfig"
+import type { ProjectStatus } from "@/config/projectsConfig"
+import ProjectCard from "@/components/pages/ProjectCard.astro"
+
+// 检查页面是否启用（与 gallery / dynamic 同一套约定）
+if (!siteConfig.pages.projects) {
+	return Astro.redirect("/404/")
+}
+
+const { title, description, projects } = projectsConfig
+
+// 置顶的排前面，同组内保持配置里的顺序
+const sorted = [...projects].sort((a, b) => Number(!!b.featured) - Number(!!a.featured))
+
+// 只统计**实际用到的**状态，避免出现"点进去是空列表"的死筛选按钮
+const usedStatuses = [...new Set(projects.map(p => p.status))] as ProjectStatus[]
+// 「全部」之外按固定顺序排（已发布 → 开发中 → 计划中 → 已归档），而不是配置出现顺序
+const statusOrder: ProjectStatus[] = ["published", "developing", "planning", "archived"]
+const filterStatuses = statusOrder.filter(s => usedStatuses.includes(s))
+---
+
+<Layout title={title}>
+	<div class="relative flex min-h-32 w-full overflow-hidden">
+		<div class="card-base relative z-10 w-full px-9 py-6">
+			<!-- 标题区 -->
+			<div class="mb-5">
+				<div class="mb-3 flex items-center gap-3">
+					<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-(--primary) text-white dark:text-black/70">
+						<Icon name="material-symbols:widgets-rounded" class="text-[1.5rem]" />
+					</div>
+					<div class="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
+						{title}
+					</div>
+				</div>
+				<p class="text-base leading-relaxed text-neutral-600 dark:text-neutral-400">
+					{description}
+				</p>
+			</div>
+
+			<!-- 搜索 + 状态筛选 -->
+			{
+				projects.length > 0 && (
+					<project-filter class="mb-6 block">
+						<div class="relative mb-3">
+							<Icon
+								name="material-symbols:search-rounded"
+								class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[1.1rem] text-neutral-400 dark:text-neutral-500"
+							/>
+							<input
+								type="text"
+								data-search
+								placeholder="搜索项目名称、简介或技术栈"
+								aria-label="搜索项目"
+								class="w-full border border-(--line-divider) bg-transparent py-2 pr-4 pl-10 text-sm text-neutral-900 transition outline-none placeholder:text-neutral-400 focus:border-(--primary) dark:text-neutral-100 dark:placeholder:text-neutral-500"
+							/>
+						</div>
+						<div class="flex flex-wrap items-center gap-2">
+							<button
+								data-status="all"
+								class="bg-(--primary) px-3 py-1.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-(--primary) cursor-pointer"
+							>
+								全部
+							</button>
+							{filterStatuses.map(s => (
+								<button
+									data-status={s}
+									class="inline-flex cursor-pointer items-center gap-1.5 bg-(--btn-regular-bg) px-3 py-1.5 text-sm font-medium text-(--btn-content) transition-colors duration-200 hover:bg-(--btn-regular-bg-hover)"
+								>
+									<Icon name={statusMeta[s].icon} class="text-[1rem]" />
+									{statusMeta[s].label}
+								</button>
+							))}
+						</div>
+					</project-filter>
+				)
+			}
+
+			<!-- 卡片网格 -->
+			{
+				sorted.length > 0 ? (
+					<div class="project-grid my-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+						{sorted.map(project => (
+							<ProjectCard project={project} />
+						))}
+					</div>
+				) : (
+					<div class="flex flex-col items-center justify-center py-16 text-neutral-400 dark:text-neutral-500">
+						<Icon name="material-symbols:widgets-rounded" class="mb-4 text-6xl opacity-50" />
+						<p class="text-lg">还没有配置项目</p>
+					</div>
+				)
+			}
+
+			<!-- 空结果提示（筛选后全被隐藏时显示） -->
+			<div
+				id="project-empty"
+				class="hidden flex-col items-center justify-center py-16 text-neutral-400 dark:text-neutral-500"
+			>
+				<Icon name="material-symbols:search-off-rounded" class="mb-3 text-5xl opacity-50" />
+				<p class="text-base">没有匹配的项目</p>
+			</div>
+		</div>
+	</div>
+
+	<!--
+    ⚠️ 不能放 slot="head"：Swup 不替换 head，导航进本页时 head 里的脚本不会执行，
+    自定义元素 project-filter 就永不定义、筛选完全失效（AGENTS 十-2 / 十-4）。
+    这里用 is:inline 放在容器内，Swup 会重新求值；customElements.get 判重避免重复定义。
+
+    🔴 is:inline **不转译，只能写纯 JS**（AGENTS 五-39）：
+    所以 ① 不能写 TS 类型断言 ② **不能用 class fields**（`onInput = () => {}` 是 ES2022，
+    虽然现代浏览器支持，但与本项目 gallery-filter 的写法保持一致、且避免任何解析差异，
+    这里全部改到 constructor 里 bind。）③ 不能用可选链赋值等新语法糖。
+  -->
+	<script is:inline>
+		if (!customElements.get("project-filter")) {
+			class ProjectFilter extends HTMLElement {
+				constructor() {
+					super()
+					this.activeStatus = "all"
+					this.query = ""
+					this.onClick = this.onClick.bind(this)
+					this.onInput = this.onInput.bind(this)
+				}
+
+				connectedCallback() {
+					this.addEventListener("click", this.onClick)
+					this.addEventListener("input", this.onInput)
+					// 首屏按默认条件应用一次（全部 + 空搜索 = 不隐藏任何卡）
+					this.apply()
+				}
+
+				disconnectedCallback() {
+					this.removeEventListener("click", this.onClick)
+					this.removeEventListener("input", this.onInput)
+				}
+
+				onInput(e) {
+					var input = e.target
+					if (!input || !input.hasAttribute || !input.hasAttribute("data-search")) return
+					this.query = String(input.value || "").trim().toLowerCase()
+					this.apply()
+				}
+
+				onClick(e) {
+					var target = e.target
+					var button = target && target.closest ? target.closest("button[data-status]") : null
+					if (!button) return
+					this.activeStatus = button.dataset.status || "all"
+
+					// 选中态：主色底白字；未选中：常规按钮色
+					var btns = this.querySelectorAll("button[data-status]")
+					for (var i = 0; i < btns.length; i++) {
+						var btn = btns[i]
+						var on = btn === button
+						btn.classList.toggle("bg-(--primary)", on)
+						btn.classList.toggle("text-white", on)
+						btn.classList.toggle("bg-(--btn-regular-bg)", !on)
+						btn.classList.toggle("text-(--btn-content)", !on)
+						btn.classList.toggle("hover:bg-(--btn-regular-bg-hover)", !on)
+					}
+					this.apply()
+				}
+
+				apply() {
+					// 卡片与空态都在同一个 .card-base 里，从这里找最稳（本元素自身可能被包在多层 div 内）
+					var scope = this.closest(".card-base") || document
+					var cards = scope.querySelectorAll(".project-card")
+					var visible = 0
+					for (var i = 0; i < cards.length; i++) {
+						var card = cards[i]
+						var status = card.dataset.status || ""
+						var haystack = card.dataset.name || ""
+						var statusOk = this.activeStatus === "all" || status === this.activeStatus
+						var searchOk = this.query === "" || haystack.indexOf(this.query) !== -1
+						var show = statusOk && searchOk
+						card.style.display = show ? "" : "none"
+						if (show) visible++
+					}
+					var empty = scope.querySelector("#project-empty")
+					if (empty) {
+						empty.classList.toggle("hidden", visible !== 0)
+						empty.classList.toggle("flex", visible === 0)
+					}
+				}
+			}
+			customElements.define("project-filter", ProjectFilter)
+		}
+	</script>
+</Layout>

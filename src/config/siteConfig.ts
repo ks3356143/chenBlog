@@ -67,5 +67,6 @@ export const siteConfig = {
         guestbook: true, // 留言板页面开关
         gallery:true, // 展示内容开关
         dynamic: true, // 动态（说说）页面开关
+        projects: true, // 项目展示页开关（关掉后 /projects/ 重定向到 404）
     },
 }

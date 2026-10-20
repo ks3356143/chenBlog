@@ -1356,3 +1356,39 @@ wrap 会把「推荐」徽标挤到自己一行 → 三张卡首行高度不齐�
 📌 **中文 slug 无问题**：26 篇是中文 slug，文件名与 git 存储都正常
 （`git -c core.quotepath=false ls-tree` 可见 `public/og/css100天-第13天.jpg`），
 URL 由 `encodeURIComponent` 编码，实测线上 `%E7%AC%AC13%E5%A4%A9` 返回 200。
+
+---
+
+### 五-67 项目页补到 8 个 + 两个布局坑（2026-10-21，V0.1.63）
+
+用户点名加 4 个仓库（meridian / CCNewTools / newToolforTest / codeStation），实际补成 8 个：
+
+| 项目 | 状态 | 依据 |
+|---|---|---|
+| ChenMeridian | 开发中 | README：Go + Huma + GORM + SQLite，React 19 + shadcn/ui |
+| CCNewTools | 已发布 | README：大纲(.docx) → 测试说明/测试记录两份 Word；Win/Linux/麒麟单文件 |
+| 亦林博客 | 开发中 | 本站 |
+| newToolforTest | 已归档 | 无 README（46B）；从 `版本记录.txt`（**GBK 编码**，需 `GetEncoding('GB18030')` 解）读到 V0.12→V0.19 的演进与 PyQt 属性 |
+| codeStation | 已归档 | 三仓配套：`codeStation-backend`(Django-ninja-extra) / `-fontend`(React+Vite) / `BackPlant`(Ant Design Pro)**合并成一张卡** |
+| testplantV1 | 已归档 | desc：测试管理平台 V1，AI 原型设计起步 |
+| cdtestplant_v1 | 已归档 | desc：后端 django-ninja-extra 改造 |
+| cdTestPlant3 | 已归档 | desc：里面有 3 个项目（Vue） |
+
+📌 **所有描述都来自 GitHub API 实测数据**（`/users/ks3356143/repos` + 各仓 README + 顶层目录树），
+不是凭印象写的。`codeStation` 的三个仓是同一项目的后端/前台/后台 → **合并成一张卡**更符合访客认知。
+
+⚠️ **顺带修掉一个既有错**：原 CCNewTools 卡的 `repo` 指向 `cdTestPlant3`，实际仓库是 `ks3356143/CCNewTools`。
+
+🔴 **坑一：中文标题被硬裁**（截图实测显示成「ChenMeridi…」）
+`overflow-wrap` 默认是 `normal`，浏览器**只在空格处折行** —— 而「ChenMeridian 测试管理工具」这类
+中英混排词中间没有空格 → 文字直接被裁在容器边缘。加 `break-words`（`overflow-wrap: break-word`）后按字折行。
+**判据**：`h2.scrollWidth > h2.clientWidth` 为真就是被裁；或直接看 `getBoundingClientRect().height` 有没有增加。
+
+🔴 **坑二：徽标与标题同行会挤掉一半宽度**
+标题可用宽度 = 卡宽 237 − 内边距 40 − 图标 48 − 间隙 12 = **135px**；
+徽标并排时再吃掉 41px（含 gap）→ 标题只剩 **94px**，长标题要折 **3 行**、把卡片拉得很高。
+修法：**把「推荐」徽标从标题行移到下面的状态行**（`flex flex-wrap`）→ 标题恢复 135px，
+实测 3 行降到 **2 行**。
+
+📌 排查这类问题要**逐级量宽度链**（h2 → 行 → 内容区 → 头部行 → article），
+我第一版只改了中间那层 `flex-1`、数字纹丝不动，就是因为在错误的一层上加属性。

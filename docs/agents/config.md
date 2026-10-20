@@ -1295,3 +1295,64 @@ DPR2 下需要 312px、刚好卡在 640/960 之间选 640，白付一倍体积�
 
 **顺带修的**：横幅 RSS 按钮原本在当前页跳转（`/rss.xml` 是纯 XML 文件，会把访客整个带离博客），
 已加 `target="_blank" rel="noopener"`，与左栏 meCard 的 RSS 按钮一致。
+---
+
+### 五-65 项目展示页 /projects/（2026-10-20，V0.1.62）
+
+参考站有 `/projects/`，本站原先零实现（3 个开源项目只藏在关于页 3 张 GitHub 卡片里）。
+
+**结构**：`src/config/projectsConfig.ts`（数据） + `src/pages/projects/index.astro`（页面）
++ `src/components/pages/ProjectCard.astro`（卡片）。**零新依赖**，仿相册那套「配置文件驱动」。
+
+能力：搜索（名称/简介/技术栈）+ 状态筛选（全部/已发布/开发中/计划中/已归档）+ 卡片含状态徽标、
+技术栈药丸、推荐角标、源码与演示链接。入口加在顶部菜单（「动态」之后）与 404 页快捷入口。
+
+🔴 **筛选脚本的两条硬约束**（两条都实测踩过）：
+1. **不能放 `slot="head"`** —— Swup 不替换 head，导航进本页时脚本不执行、自定义元素永不定义
+   （AGENTS 十-2 / 十-4）。用 `<script is:inline>` 放容器内 + `customElements.get` 判重。
+2. **`is:inline` 不转译，只能写纯 JS**（AGENTS 五-39）→ ① 不能写 TS 断言
+   ② **不能用 class fields**（`onInput = () => {}` 是 ES2022）→ 全部 `constructor` 里 `bind`
+   ③ 循环用 `for` 不用 `forEach` 里的箭头闭包（与项目既有 `gallery-filter` 写法保持一致）。
+
+⚠️ **筛选按钮只渲染「实际用到的状态」**：若某个状态零项目，按钮不出现——
+否则会有点进去是空列表的死筛选。
+
+⚠️ **卡片标题行不能 `flex-wrap`**：`CCNewTools 测试文档工具集` 这种长名必然折行，
+wrap 会把「推荐」徽标挤到自己一行 → 三张卡首行高度不齐（截图实测）。改成
+`flex items-baseline` + 标题 `min-w-0`（可折行）+ 徽标 `shrink-0`。
+实测 1440/1920 三卡**等高 401px / 354px**、徽标 top 一致（27px）。
+
+### 五-66 每篇文章独立分享图（2026-10-20，V0.1.62）
+
+**问题**：原先全站 45 页共用一张 `public/og-image.jpg` —— 分享任何文章，微信/X 的卡片都是同一张图。
+
+**做法**：`scripts/generate-og.mjs`（`npm run og`）生成 `public/og/<slug>.jpg`，1200×630。
+`SEO.astro` 按当前 URL 反查该文件**存在才替换**，不存在就用默认图。
+
+🔴 **为什么不直接裁封面**：4 张 800×800 抽象封面轮播给 28 篇用，裁成 1200×630 仍然只有 4 种、
+照样重复。改成「封面做背景 + **标题压在上面**」→ 每篇因标题不同而天然唯一。
+实测 28 篇的 `og:image` **28 个全不同**。
+
+🔴 **字体宽度系数必须偏保守**：第一版把 ASCII 记 0.55 个单位 →
+「CCNewTools V1.5.0 使用手册」被算成一行、实际渲染**溢出画布右侧被裁掉**。
+现在中文 1.0 / 大写与数字 0.68 / 小写 0.58 / 空格标点 0.42，每行 15 个单位（≈1000px 可用宽），
+超长标题自动折 2~3 行并按行数降字号（78/68/58）。
+
+⚠️ **meta 行要去重**：本篇 `category: "工具"` 且 `tags: [工具, 测试, 效率]` 也含「工具」，
+不去重会渲染成「工具 · 工具 · 测试」（截图实测到）。
+
+🔴 **`SEO.astro` 里两个易错点**：
+1. `findPostOgImage()` **不能直接读解构出来的 `url`** —— 解构在函数调用之后才发生，
+   会撞 TDZ（`Cannot access 'url' before initialization`）。用 `Astro.props.url ?? Astro.url`。
+2. **JSON-LD 的 `image` 也要一起换**：原先只读 `post.image`，而 28 篇的 `image` 全是空串 →
+   JSON-LD 永远写默认图、与页面上 `og:image` **不一致**。现在优先 `postOgImage`。
+
+⚠️ **必须用 fs 存在性判断**，不能无条件拼路径：新增文章忘了跑 `npm run og` 时，
+拼出来的 URL 会 404，社交爬虫拿不到图会退化成无图卡片 —— 宁可用默认图（优雅降级）。
+
+📌 **缓存**：宝塔 nginx.conf 的 `expires 30d` 静态资源规则命中 `.jpg`，`/og/*` 实测
+`Cache-Control: max-age=2592000`。分享图只在重新生成时变化，这个缓存是合适的，**不用改服务器**。
+
+📌 **中文 slug 无问题**：26 篇是中文 slug，文件名与 git 存储都正常
+（`git -c core.quotepath=false ls-tree` 可见 `public/og/css100天-第13天.jpg`），
+URL 由 `encodeURIComponent` 编码，实测线上 `%E7%AC%AC13%E5%A4%A9` 返回 200。

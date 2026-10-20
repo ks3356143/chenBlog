@@ -26,26 +26,20 @@ const status = statusMeta[project.status]
 		>
 			<Icon name={project.icon || "material-symbols:widgets-rounded"} class="text-[1.75rem]" />
 		</div>
-		<div class="min-w-0 flex-1">
-			{/* 标题与徽标同一行内基线对齐；标题允许换行（长名字如「CCNewTools 测试文档工具集」必然两行），
-			    徽标 shrink-0 不被压扁、且**不再 flex-wrap** —— 原先 wrap 会让徽标被挤到自己一行，
-			    三张卡的第一行高度因此不齐（截图实测）。 */}
-			<div class="mb-1 flex items-baseline gap-2">
-				<h2 class="min-w-0 text-lg leading-snug font-bold text-neutral-900 transition dark:text-neutral-100">
-					{project.name}
-				</h2>
-				{
-					project.featured && (
-						<span
-							class="mt-0.5 shrink-0 bg-(--primary) px-1.5 py-0.5 text-[0.65rem] font-medium text-white"
-							title="重点推荐"
-						>
-							推荐
-						</span>
-					)
-				}
-			</div>
-			<div class="flex items-center gap-1.5 text-xs">
+		{/* 🔴 min-w-0 必须有（否则长标题撑破卡片、grid 列宽被顶开）。
+		    实测本容器 135px（卡 237 − 内边距 40 − 图标 48 − 间隙 12）。 */}
+		<div class="min-w-0 w-full flex-1">
+			{/* 🔴 `break-words` 是必需的：中文默认 `overflow-wrap: normal`，只在空格处折行，
+			    「ChenMeridian 测试管理工具」词中间没空格 → 被硬裁成「ChenMeridi…」（截图实测）。
+			    加 break-words 后按字折行、标题完整。
+
+			⚠️ 徽标**移到下面状态行**，不再与标题同一行：
+			   原来并排时徽标吃掉 41px（含 gap），标题只剩 94px → 长标题要折 3 行、卡片被拉高。
+			   移到状态行后标题能用满 135px，实测 3 行降到 2 行。 */}
+			<h2 class="mb-1 text-lg leading-snug font-bold break-words text-neutral-900 transition dark:text-neutral-100">
+				{project.name}
+			</h2>
+			<div class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs">
 				<Icon
 					name={status.icon}
 					class={isActive ? "text-[0.9rem] text-(--primary)" : "text-[0.9rem] text-neutral-400 dark:text-neutral-500"}
@@ -54,6 +48,16 @@ const status = statusMeta[project.status]
 					{status.label}
 				</span>
 				{project.year && <span class="text-neutral-400 dark:text-neutral-500">· {project.year}</span>}
+				{
+					project.featured && (
+						<span
+							class="ml-0.5 bg-(--primary) px-1.5 py-0.5 text-[0.65rem] font-medium text-white"
+							title="重点推荐"
+						>
+							推荐
+						</span>
+					)
+				}
 			</div>
 		</div>
 	</div>

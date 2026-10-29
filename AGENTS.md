@@ -26,7 +26,7 @@ harness 注入链 = `~/.dsh/AGENTS.md` → `AGENTS.md` → `AGENTS.local.md`，*
 🔴 **动到下列任一类工作前，必须先 Read 对应分册**：改 markdown 插件链 / 部署 / 发稿与手册同步 / Swup 与重 init / 批量改写文件 / 验收取证。
 ⚠️ **改完本文件或 `AGENTS.local.md` 必须跑 `npm run docs:check`**（核注入预算 + 分册存在性 + 编号引用完整性）。原先"顶部 52 行第 X 趟流水账"已删（与 HANDOFF 第一节重复）→ **易变状态只看 `HANDOFF.md`。**
 
-> 本次交接（2026-10-12）：① 分层（六份分册与原文件 L196–末行逐字节相同，控制组校验过）② 上一任的跨会话记忆全部落盘进 `harness.md` + `AGENTS.local.md`（原先散在用户目录 `.qoder-cn`，卸载即消失）③ 清掉上一任专属提法（见文末附表）④ 产物基线与 `dist` 实测对齐。
+> 本次交接（2026-10-12）：六份分册与原文件逐字节相同（控制组校验过）；上一任的跨会话记忆已落盘进 `harness.md` + `AGENTS.local.md`（原先在 `.qoder-cn`，卸载即消失）。
 
 ## 📌 开始工作前先读 [`HANDOFF.md`](./HANDOFF.md)
 
@@ -40,7 +40,7 @@ harness 注入链 = `~/.dsh/AGENTS.md` → `AGENTS.md` → `AGENTS.local.md`，*
 个人博客，**纯静态站点**（Astro SSG），部署在阿里云 + 宝塔面板 + Nginx 上。
 
 - 线上地址：http://47.108.230.220/ （目前是 IP，**没有域名**）
-- 文章 28 篇（26 篇中文 URL 的 CSS100Day/CodePen + 2 篇 ASCII slug 的 `/posts/ccnewtools-manual*`），
+- 文章 30 篇（26 篇中文 URL 的 CSS100Day/CodePen + 3 篇 ASCII slug 的 `/posts/ccnewtools-manual*` + 1 篇 `/posts/chen-knowledge-base/`），
   UI 和提交信息全部为中文
 
 ### 参考源（用户说"参考"时，默认指这两个）
@@ -134,7 +134,7 @@ src/config/siteConfig.ts    # 站点总开关：分页数、图片格式、页�
 src/config/navBarConfig.ts  # 顶部菜单项（含「文章」子菜单）——改菜单只改这里
 src/config/           # 另有 backgroundWallpaper / commentConfig / effectsConfig / galleryConfig（相册清单，见五-28）
 public/gallery/<id>/  # 相册图片本体，按 1.jpg 2.jpg 序号命名；与 galleryConfig 的 id 一一对应
-src/content/posts/    # 28 篇文章（26 .md + 2 .mdx）；images/ 是空的历史遗留目录
+src/content/posts/    # 30 篇文章（28 .md + 2 .mdx）；images/ 是空的历史遗留目录
 src/content/spec/     # 单页内容（about 等）
 src/content/dynamic/  # 动态（说说）：一条一个 md，文件名 YYYY-MM-DD-HHMMSS.md 即条目 id
 src/pages/            # 路由：about / archive / categories / tags / series / dynamic / guestbook / gallery / posts/[...slug] / [...page]
@@ -177,7 +177,7 @@ src/utils/                  # content/cover/date/gallery/image/layout/toc/url �
 - **1** `site_url` 随环境变（dev `localhost:4321` / build `47.108.230.220`）→ 改地址必须同步改，否则外链、sitemap、RSS 全错乱。
 - **2** 封面路径以 `src/` 为基准。**3** 代码块超 15 行自动折叠（"代码消失"就是这个）。**6** 统一 webp q80。**7** `dist/` `.astro/` `node_modules/` 不入库。
 - **8** ⚠️ **Astro 7 下不能留空的 `<script></script>`** → `Cannot find the built path for …`，**整页含首页渲染失败**（Astro 6 容忍、7 报错）。
-- **9** 基线（2026-10-18 实测）**44 页 / 360 文件 / 21.69MB**，28 篇。**报数字必须带方法**（`du -sh` 按 4K 分块虚高）：`find dist -name index.html|wc -l`、`find dist -type f|wc -l`。⚠️ **加一条动态不动这些数字**。
+- **9** **报产物数字必须带方法**（`du -sh` 按 4K 分块虚高）：`find dist -name index.html|wc -l`、`find dist -type f|wc -l`。⚠️ **加一条动态不动这些数字**。
 - **10** `@astrojs/markdown-remark` **必须显式声明**。通则：`astro.config.mjs` 里 import 的每个包都要显式声明，**别赌 peer 自动安装**。
 - **11** `allowScripts` 钉精确版本（现只剩 `esbuild@0.28.2`）→ 升级忘了改，npm **静默跳过 postinstall**，只有全新克隆才崩。
 - **21** 🔴 **改 `src/plugins/**` 或 markdown 链 → 必须 `rm -f node_modules/.astro/data-store.json` 再构建 + grep 产物确认**（内容缓存在 `node_modules/.astro/`、**按内容哈希失效、插件源码变了它不管** → 退出码 0 但产物是旧的）。⚠️ **别在 dev 运行时删**；同族 `node_modules/.vite/` 会造成"整块功能静默消失、完全像 JS 回归"。
@@ -293,7 +293,7 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 > 🔴 改到任何文章 / 手册内容前先 Read `writing.md`：**八-9 的同步自检标准与「站内故意加」清单只能从那里读。**
 
 - 他说"发文章"时 **不要发前置问卷** —— 唯一必须问的是**归位（永久 URL）**。语法特性、摘要、分类、标签、日期一律自己定并事后说明。
-- **现状**：28 篇 = 26 `.md` + 2 `.mdx`，无草稿。`category` 两个值（设计灵感 26 / 工具 2）→ **再新增分类值先确认**（新值会立刻进分类栏 / `/categories/` / 归档筛选）。
+- **现状**：30 篇 = 28 `.md` + 2 `.mdx`，无草稿。`category` 三个值（设计灵感 26 / 工具 3 / 方法 1）→ **再新增分类值先确认**（新值会立刻进分类栏 / `/categories/` / 归档筛选）。
 - **分工**：他给 MD 正文 → 特殊语法（Mermaid / `$$` / `:::` / 图片网格 / `<github>` / 外链图）**我自己扫**，扫到就逐项验，**不许"配置装了就当它能用"**；`description` 没给就提草稿；tag「CSS100天」vs series「CSS100Day」两套写法别混。
 - ⚠️ **图片路径已在 2026-10-10 更正**（writing.md 原文还写着"本地路径我读不到"，**以这里为准**）：**会话附件发来的图，消息里那个绝对路径能直接读**（哪怕是微信/电脑管家临时目录）→ **别再让他"先放 `public/` 或改成 URL"**。只有他**口头写一个路径**时才受跨工具路径限制（`D:/xxx` vs `/d/xxx`，见 harness.md）。
 
@@ -318,7 +318,7 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 
 **图片唯一正确写法**：`![说明](/images/xxx.jpg)` + 文件放 `public/images/`。❌ 正文里 `<img src="./x.svg">` → 解析成 `/posts/<slug>/x.svg` → 404。✅ 写在 ``` 围栏里**无害**（不发请求 —— 曾害我误报"heart.svg 404"）。相对路径不行、**中文文件名也不行**（一组图放一个子目录，文件名 `NN-语义`）。`src/assets/covers/1,2,3.jpg` 是**站头轮播壁纸**不是文章封面。
 
-⚠️ **配置齐全但从未在生产用过**：**Mermaid、KaTeX、`:::` callout、图片网格** —— 28 篇零使用，四条渲染路径**零实战验证**，首篇用到必须在 `dev` 逐项确认再上线。**已在生产用的别混进去**：代码块折叠（28+ 产物含 `ec-collapse`）、`<github>` 卡片（`/about/` 实渲染 3 张）。
+⚠️ **配置齐全但从未在生产用过**：**Mermaid / KaTeX / `:::` callout / 图片网格** —— 30 篇零使用、**零实战验证**，首篇用到必须 `dev` 逐项确认。**已在生产用的别混进去**：代码块折叠（`ec-collapse`）、`<github>` 卡片（`/about/` 实渲染 3 张）。
 
 ## 九、长期结论与别再尝试的清单（**索引** — 全文 `docs/agents/todo.md`）
 
@@ -351,7 +351,7 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 - **2** ⚠️ **Swup 不替换 head，也默认不执行容器内新 script** → ① `slot="head"` 的脚本导航过去**永不执行**；② **组件的 scoped `<style>` 只存在于渲染了它的那一页的 head** → **只在部分页面渲染的组件，布局类与状态机类 CSS 必须进全局样式表**（两次真事故：PostCard 重叠 64px；`CoverImage` 遮罩规则缺失 → **图已下载解码、白遮罩永远盖着、转圈塌成 0px，看起来完全像"资源没加载"** → 排查顺序：**先读 `img.naturalWidth` 与遮罩的 `getComputedStyle().opacity`**，一个 >0 一个 =1 就一定是样式缺失，**别去查网络**；**Svelte 岛同罪且更隐蔽：其 scoped CSS 被内联进单页 head，见十-16**）。
 - **3** 别给 `<script>` 用 `define:vars` 传配置 → 会把脚本**内联进每一页**（曾重复嵌入 37 页）。配置在脚本里 `import`。
 - **4** **事件名三套并存，改前先 grep**：Swup4 原生 `swup:content:replace`；Swup3 旧名 `swup:contentReplaced`（12 个组件在听，Swup4 **不再派发**）；`astro:page-load`/`astro:after-swap`。SwupManager 统一桥接派发，消费组件一行未改。
-- **5** 过渡观感 = **1:1 照搬 blog.cuteleaf.cn 编译产物**。数值两边本来逐字节相同，**决定"跳不跳"的是挂载位置**。⚠️ **不要用 body/祖先元素的淡入淡出** → 实测 Swup 卡死 `is-rendering`、页面停在 opacity 0。
+- **5** 过渡观感 = **1:1 照搬参考站编译产物**。数值两边本来逐字节相同，**决定"跳不跳"的是挂载位置**。⚠️ **不要用 body/祖先元素的淡入淡出** → 实测 Swup 卡死 `is-rendering`、页面停在 opacity 0。
 - **6** 窗口缩放 = 冻结 + View Transitions morph（**Firefly 本体没做这块**）。⚠️ **必须只在 `innerWidth` 真变了才触发**（手机地址栏收放只改高度也触发 `resize` → 滚动中反复整页快照交叉淡化，2026-09-24 线上事故）。
 - **7** 同 URL 点击被 capture 监听拦截 → 平滑滚顶、不走 visit。**8** `prefers-reduced-motion: reduce` → 不初始化 Swup。
 - **9** 首页↔非首页横幅高矮过渡：`visit:end` 后 **500ms 才摘** `is-wallpaper-transitioning`（过渡 450ms，早摘会撤掉 transition 属性、高度瞬间跳变）。**非首页横幅比首页矮是设计如此**。
@@ -371,7 +371,7 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 - **15** ⚠️ **「内容随页面变、但位置在容器外」的 chrome 必须登记成 Swup container**（横幅标题 bug）。迷惑点：那层本来就带 `transition-swup-fade`、CSS 也照它写了 → 看起来"已在参与过渡"，**实际只是淡出淡入同一份内容**（表现为"有动画但字没换"、只有 F5 才对）。修法两处：post-meta **移进** overlay 容器 + `containers: ["#banner-overlay-container", "#swup-container"]`。
   - ⚠️ **登记成 container 前先查有没有代码把实例句柄挂在元素属性上**（打字机 `el.__typewriterInstance`）→ 节点被换掉后再也 destroy 不到，**留下孤儿定时器链**。判据：**每秒由打字机回调发起的 setTimeout 次数是否随导航递增**（实测 1→3→2→3→3 有界 = 正常）；**别用"动画还在跑"当判据**。
   - **刻意没照搬参考站的** `#banner-dim-container` / `#left|right-sidebar-dynamic` / `#floating-toc-wrapper`（**侧栏与悬浮目录是本站刻意留在容器外的**）→ 有依据的偏离，**别当漏改补上**。
-  - 验证**两向都要测**；核 overlay 容器在**全部 44 页**都存在；post-meta 是 `hidden lg:flex` → **375 下 `display:none` 属正常**。控制台 `[swup] No CSS animation duration…` 先确认**是不是自己探针注入了 `transition:none!important`**。
+  - 两向都要测；核 overlay 容器在**全部页**都存在；post-meta 是 `hidden lg:flex` → **375 下 `display:none` 属正常**。控制台 `[swup] No CSS animation duration…` 先确认**是不是自己探针注入了 `transition:none!important`**。
   - ⚠️ **同族第二处已修（2026-10-13）**：右栏卡片不随软导航更换（`isPostPage ? TOC : 日历`，≥1280px 可见）
     → `containers` 加 `#right-sidebar`。**光加 container 不够**：脚本重跑选择器要覆盖**所有** container、
     `SiteInfo` 要改 `onReinit` + 每轮先解绑、`SiderBarToc` 的 window 监听加哨兵。全文与实测数字在 `swup.md` 十-15 末段。
@@ -390,27 +390,12 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 | 长时间命令 | `pwsh` + `run_in_background` → `job_output`/`job_kill`；退出码看 `[exit code: N]`；长输出会被截尾并落盘。 |
 | 设计类流程 | 上一任的 `superpowers:brainstorming` **在这里没有同名技能**。语义照旧：**先扒参考实现 → 出短设计 → 停下等批准 → 再写代码**。可用 skill：`ui-ux-pro-max` / `frontend-design` / `design-taste-frontend` / `tailwind-4-docs` / `gsap-*`。 |
 | 部署类技能 | **仍用第六节那套手工流程**。上一任装过 `alibabacloud-ecs-code-deploy`（走 aliyun appmanager、要 AccessKey，与宝塔 + Nginx 手工配置可能冲突）；本环境没有它，也不需要。 |
-| MCP | 上一任配了 Context7（在线）与 GitHub（已禁用），都在 Qoder 内部；**本 harness 未接入**。扒 GitHub 用 `git clone --depth 1 --filter=blob:none --sparse` 只取所需目录。 |
+| MCP | **本 harness 未接入任何 MCP**。扒 GitHub 用 `git clone --depth 1 --filter=blob:none --sparse` 只取所需目录。 |
 
-✅ **原"一条尚未验证"已实测掉，且归因被推翻**：无头探针**造不出隐藏态**（`visibilityState` 恒 visible、开第二标签页不互藏、两种 CDP 覆盖分别被拒/无效）→ "隐藏标签页里 transition 不推进"在这里**不可能自然发生**。上一任看到的 `setTimeout` 拖到 ≥1s 是**真症状、错归因**：CPU 节流 20x 下定时器实测 752~4638ms，而 **transition 与 rAF 完全不受影响**。
+✅ **"隐藏标签页里 transition 不推进"已证伪**：无头探针造不出隐藏态（`visibilityState` 恒 visible）→ 这里不可能自然发生；上一任看到的是**真症状、错归因**（CPU 节流 20x 下定时器 752~4638ms，**transition 与 rAF 不受影响**）。
 🔴 **通则：别拿"页面被隐藏"当默认解释**；判据与复现见 `harness.md` **B-19**。
 
-## 知识库取用规则
+## 知识库（取用 / 采集 —— 全文 `docs/agents/writing.md` **八-10**）
 
-做界面设计前，先查知识库，不要凭空发挥：
-
-1. 入口：`E:\1.工作相关内容\★陈叫叫个人知识库\1-开发技术\前端\美观设计\README.md`
-2. 先按「按任务找」表定位到 1 篇最贴近的笔记，只读这一篇，不要整目录通读。
-3. 需要成体系时按「按颗粒度拼装」取用：基础定规则 → 页面定整屏 → 组件定手感 → 模式定反馈。
-4. 「案例」目录是外部参考：抄手法，不抄色值和尺寸。
-5. 知识库里没有的再自己设计；做完把可复用部分按「知识库采集规则」回写。
-
-## 知识库采集规则
-
-当本项目出现值得沉淀的内容（用户确认的设计理念、精巧方案、重要踩坑）：
-
-1. 在 `E:\1.工作相关内容\★陈叫叫个人知识库\0-收件箱\` 新建 md 文件，文件名 = 主题短语。
-2. 内容只写三段：来源（项目名 + 日期）、场景、想法（完整描述，含关键代码）。
-3. 不要自己分类，不要写到收件箱以外的目录，不要修改知识库其他文件。
-4. 涉及密钥、客户名、生产配置的内容必须脱敏。
-5. 没有写入权限时，按同样三段结构输出到对话里，由用户转交知识库。
+- **做界面前先查库**：入口 `E:\1.工作相关内容\★陈叫叫个人知识库\1-开发技术\前端\美观设计\README.md`，按「按任务找」定位 1 篇、**只读那篇**（别整目录通读）；成体系按「基础→页面→组件→模式」拼装；案例只抄手法不抄色值尺寸。
+- **采集**：值得沉淀的设计 / 踩坑只往 `0-收件箱\` 写三段（来源 / 场景 / 想法），**不分类、不动别的文件**，必须脱敏；无写权限就在对话里给。

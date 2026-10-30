@@ -3,7 +3,23 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-10-30 深夜（第二十一批：DSH 皮肤文改为「两张整屏大图 + 推荐深色」，已上线 V0.1.68）**。
+> 最后更新：**2026-10-30 深夜第二句（第二十二批：老测试平台存档文 + 项目内留一份，已上线 V0.1.69）**。
+>
+> **🔧 2026-10-30 深夜 第三句（用户「E:\pycharmProjects\cdtestplant_v1-AI 这里有个项目是之前老项目，你发一篇文章，然后在项目放进去，然后说明下是老的测试平台，老的！」）**：
+> 上线 **V0.1.69**，线上 **51/51 HTML md5 逐字节相同**。新篇 **`/posts/cdtestplant-v1/`**《测试管理平台 V1：一套已经老了的测评系统》，
+> **分类「工具」（第 4 篇，未新增分类值）**；2240 字 / 11 分钟；8 个 h2；4 张整屏图。
+> ① **两个落点都做了**：博客发文章 + **老项目根目录新增 `博客文章.md`**（正文同文、去掉 frontmatter 与站内专用 `.horizontal-scroll-container` 包裹、配图改走博客直链、顶部四行说明「这是老的 V1」）。
+>    ⚠️ **那个文件没有提交到 `cdtestplant_v1` 仓库**（他 23:28 刚提交过一笔，仓库是他的，留给他自己 add）。
+> ② **配图是真跑起来截的，不是扒旧手册**：便携 MySQL 8.4.3（`packagesInitialize/mysql-8.4.3-winx64`，`--port=3306`）+ Redis 5（`:6379`）+ `.venv` `manage.py runserver 8000` + `web/cdTMP` vite dev（`:3888`），
+>    Playwright 1440×900 @DPR2 → 2880×1800。四张：登录页（**裁掉四周留白**，1600×977）、项目工作区（树 + 用例表 + 关联问题单）、项目看板（14 用例 / 5 问题单 / 三轮次时间轴）、安全性检测分析（21 项 / 15 通过 / 1 风险 = 本机 `DEBUG=True`）。
+> ③ 🔴 **临时改过演示账号口令，收尾已原样写回**：特权账号登录要图形验证码，`/api/user/captcha` 返回的是 **base64 SVG**，直接解 `<text>` 就能拿到 4 位码（不必截图识别）。
+>    改前把 11 个账号的 `password` 哈希整表 dump 到 `%TEMP%\cdtp_pw_backup.json`，改完 `update(password=原哈希)` 写回，**实测 `check_password('临时口令') == False`**。四件套全停、端口 3306/6379/8000/3888 复查无监听。
+> ④ ⚠️ **树上的 `[被测件] [设] [项] [>]` 是字面文本不是破图标**：`src/layout/project-layout.vue:90-92,107` 直接写的 `[设]`/`[项]`/`[>]`，`requestfailed` 为 0 —— **别当缺陷修、别去查字体**。
+> ⑤ 🔴 **两个流程坑（这次都踩了）**：**`npm run og` 必须在 `npm run build` 之前跑**，否则 `og:image` 回落成全站通用的 `/og-image.jpg`（我这次先 build 后发现，重跑 og + 重建才修好）；
+>    **换掉原图后 `prose-thumb` 的模块级缓存会把旧 `height` 留在产物里**（1600×977 应为 391，产物仍是 400）→ 删 `node_modules/.astro/data-store.json` 重建即好（同五-21 的缓存族）。
+> ⑥ 门禁：`build` 0、`check` **0 error / 3 hint**、`tsc` **0**；产物断言 10 项（单 h1 / 正文 8 个 h2 / 4 图全带 srcset 且 `sizes=742px` / 2 个宽表容器 / 每篇 og / 弯引号 0 / 属性引号 0）；线上三档（1440 / 375 / 768）+ 软导航全过，横向溢出均 0px，断图 0、pageerror 0。
+> ⑦ **数字口径改了**：LOC 用 `Measure-Object -Line`（不含空行）实测 **18,403 行 / 238 个 .py（含 67 个迁移）**，与先前 `(Get-Content).Count` 的 20,200 差 1,797 行 —— 文章里写成「约 2.0 万行」避免两种口径打架。
+> ⑧ 其它真实数字：154 个接口（`SRS/10-接口清单.md` 行数）、38 个模型、七类文档、135 次提交、`dbdata.sql` 21MB。
 >
 > **🔧 2026-10-30 深夜 第二句（用户"文章方向不对，要改…主要给两种大图 显示几个皮肤全样 然后推荐下这个皮肤"）**：
 > 上线 **V0.1.68**，线上 **50/50 HTML md5 逐字节相同**。**同一 URL `/posts/dsh-interface-design/` 整体重写**（V0.1.67 那版「七处精心配置」细节拆解作废）。
@@ -1699,7 +1715,20 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（2026-10-18 傍晚C 实测；**线上 = V0.1.58**，已部署）
+## 三、当前状态快照（**2026-10-30 深夜第三句 实测；线上 = V0.1.69**，已部署）
+
+| 项 | 状态 |
+|---|---|
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`。第二十二批（V0.1.69 老平台文 + 项目内留副本）：**一笔提交，已推送、`HEAD == origin/main`、工作区 0** |
+| 工作区 | 本批动 **3 处**：新增 `src/content/posts/cdtestplant-v1.md`、`public/images/cdtestplant/`（4 图 + 8 缩略图）、`public/og/cdtestplant-v1.jpg` + `manifest.json`（31→32 条）；`package.json` 0.1.68→0.1.69。**仓库外**另有 `E:\pycharmProjects\cdtestplant_v1-AI\博客文章.md`（未提交到那个仓库）。**零依赖改动** |
+| 线上站点 | ✅ **2026-10-30 23:50 部署 V0.1.69**（替换前断言：新篇含标题与 `V0.1.69`、`dist.new/images/cdtestplant/01-login-full.webp` 在、`og/cdtestplant-v1.jpg` 在且被页面引用、旧版断言通过）。**线上 51/51 HTML md5 逐字节相同**（含 26 篇中文路径）；实测三档 1440/375/768：单 h1、正文 8 个 h2、4 图全加载（`ok=true`，桌面走 960 档 742px、手机走 640 档 309px）、横向溢出 0px、`og:image` = `/og/cdtestplant-v1.jpg`、pageerror 0、HTTP≥400 0；首页卡片 → 文章软导航后仍单 h1 / 4 图 / `V0.1.69` |
+| 本地构建 | V0.1.69 = **559 个文件 / 31,483,673 B（30.0MB）/ 50 个 `index.html`**；Pagefind 索引 **34 页**（+1）；32 篇文章；sitemap / rss 均含新篇。`check` **0 error / 3 hint**、`tsc` **0**、`docs:check` **0 error / 1 提醒（常驻层余量 97 B，没动）** |
+| 依赖 | 本批**零改动**；`npm outdated` 未跑（本批不涉及升级，下次开工补） |
+| dev / preview server | 本批起过 `npm run preview`（:4321）做三档验证，**收尾按 `node.exe` + `astro*bin*astro.mjs*preview*` 精确杀**；另起过老平台四件套（MySQL 3306 / Redis 6379 / runserver 8000 / vite 3888），**全部停，复查无监听、无残留进程** |
+| 服务器回滚资产 | `dist.old`（= V0.1.68）+ **74 个 `dist_backup_*`**（本批新增 1 个）。**一律保留，删需用户明确同意** |
+| 临时文件 | 收尾清：本地 `%TEMP%\cdtp_shot\`（探针脚本 + 4 张原始 PNG）、`%TEMP%\cdtp_pw_backup.json`、`%TEMP%\chenblog_dist.tar.gz`、本地 md5 清单；**服务器 `/tmp` 的 tar 与 md5 清单**。均已复查 = 0 |
+| 待用户拍板 | **① 老平台的公网演示实例要不要在文章里放链接**（我没放，只写「自签证书的演示实例」；`https://47.108.230.220/cdtestplant/` 是他自己部署的）· **② 项目里那份 `博客文章.md` 要不要提交/改文件名**（我按他原话放在仓库根，没 add）· 其余沿上一批：相册逐张文案 / 友链 / 打赏 / `pinned` / Twikoo 裸 `envId` / About 页身份口径 / 移动端 `.floating-controls-container` 压正文 32px（20px 于 `/about/`） |
+| 既存小坑 | 同上一批；本批新增两条**流程**坑进第十节候选：`og` 必须早于 `build`、换图后要清 `node_modules/.astro/data-store.json`（否则 `height` 属性留旧值） |
 
 | 项 | 状态 |
 |---|---|

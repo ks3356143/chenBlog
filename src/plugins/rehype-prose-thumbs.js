@@ -35,7 +35,13 @@ export default function rehypeProseThumbs() {
 			// 正文图实测桌面显示 **640px**、手机 324px。
 			// ⚠️ 这里写 640 而不是 660/768：sizes 一旦略大于 640，DPR1 下 need 就 >640，
 			// 引擎只能挑 960 档（9KB）而不是 640 档（5KB）—— 桌面每张白付 4KB、16 张≈64KB。
-			if (!node.properties.sizes) node.properties.sizes = "(min-width: 768px) 640px, 100vw"
+			// ⚠️ 文件名带 `-full` 的是「整屏截图」，CSS 让它通栏（约 742px @1440），
+			// sizes 必须跟着放大，否则 DPR1 下浏览器只挑 640 档、把图拉伸到 742 显示 = 糊。
+			// 2026-10-30 实测：写 640px 时 currentSrc 落 -640.webp、naturalWidth 640 而显示 742。
+			const isFullBleed = /-full\.[a-z]+$/i.test(src)
+			if (!node.properties.sizes) {
+				node.properties.sizes = isFullBleed ? "(min-width: 1024px) 742px, 100vw" : "(min-width: 768px) 640px, 100vw"
+			}
 
 			// width/height 换成**实际下发那一档**：三者（width、sizes、srcset 的 w）
 			// 数字互相矛盾时 Chromium 会把 naturalWidth 报成第三种值，

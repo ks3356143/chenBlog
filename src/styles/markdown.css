@@ -205,6 +205,30 @@ body.wallpaper-transparent .custom-markdown {
     }
 }
 
+/* ── 整屏截图（通栏大图）─────────────────────────────────────────────────
+ * 2026-10-30 新增：文章里的「整屏界面截图」需要占满正文栏，否则 640px 宽看不清。
+ *
+ * 为什么需要这条：rehype-prose-thumbs 会给每张正文图写死 width/height 属性
+ * （取的是**最小缩略图档** 640，用来防 CLS），浏览器因此把图渲染成 640px 宽，
+ * 而正文栏有 742px —— 对普通配图无妨，对"整屏展示"就是白丢 100px。
+ *
+ * 触发条件：文件名的 `-full` 后缀（如 01-aurora-full.webp）。
+ * ⚠️ 只用 CSS 覆盖**渲染宽度**，不动 width/height 属性 —— 属性仍然防 CLS
+ *   （比例是对的），只是显示宽度交给容器。
+ * ⚠️ 不放宽到所有图：普通配图小一点更好读，通栏会显得空。
+ */
+.custom-markdown figure:has(> img[src*="-full."]) img,
+.custom-markdown img[src*="-full."] {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+}
+
+/* 整屏图的图注也放宽，跟图同宽 */
+.custom-markdown figure:has(> img[src*="-full."]) figcaption {
+    max-width: 100%;
+}
+
 /*剧透效果*/
 .custom-markdown spoiler {
     --_spoiler-mask: var(--primary);

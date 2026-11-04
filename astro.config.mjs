@@ -68,10 +68,15 @@ export default defineConfig({
         },
     },
     integrations: [
-        mermaid({
-            theme: "forest",
-            autoTheme: true,
-        }),
+        // ── mermaid（按需启用，2026-11-04 改）──────────────────────────────
+        // astro-mermaid 用 injectScript('page', ...) 把客户端脚本注入**每一个页面**，
+        // 并在 config 里 optimizeDeps.include = ['mermaid'] → 整个 mermaid 进了主产物。
+        // 实测：产物里一个 646.6KB 的 mermaid chunk、52 个 HTML 对它引用数为 0，
+        // 同时是 vite「chunks larger than 500 kB」告警的唯一来源；
+        // 而全站 33 篇里 ```mermaid 围栏 0 个、pre.mermaid 0 个，这段脚本永远不会执行。
+        //
+        // 所以默认不挂载。以后要写 mermaid 图，把下面这行取消注释即可（功能完全保留）。
+        // mermaid({ theme: "forest", autoTheme: true }),
         icon({
             include: {
                 "material-symbols": ["*"],

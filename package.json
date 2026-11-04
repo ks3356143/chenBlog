@@ -1,7 +1,7 @@
 {
   "name": "chenblog",
   "type": "module",
-  "version": "0.1.75",
+  "version": "0.1.76",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build && node scripts/inject-preload.mjs && pagefind --site dist",

@@ -19,7 +19,9 @@ const { id, icon, ariaLabel, onclick, class: className = "" } = Astro.props
 	class:list={["floating-btn", className, "card-base flex items-center overflow-hidden transition"]}
 	onclick={onclick}
 >
-	<button aria-label={ariaLabel} class="h-full w-full cursor-pointer">
+	{/* 显式 min-h-[44px]：外包块虽是 3rem，实测内层按钮只量到 30px 高（图标撑不出高度），
+	    移动端点按偏小。44px 是 WCAG 2.1 AA 的触控下限。 */}
+	<button aria-label={ariaLabel} class="h-full min-h-[44px] w-full cursor-pointer">
 		<Icon name={icon} class="mx-auto" />
 	</button>
 </div>

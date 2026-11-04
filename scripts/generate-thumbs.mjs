@@ -23,7 +23,9 @@ import sharp from "sharp";
 // 依据实测的最大显示宽度：相册网格 301px、正文图 742px（桌面）→ 742×1.3≈960 已够，
 // 再大的档位无处显示、白占体积（正文图原图 1600px 只显示到 742px）。
 const WIDTHS = [640, 960];
-const QUALITY = 78;
+// 2026-11-04：78 → 70（P9）。实测相册 thumb 三张合计 348KB → 302KB（−13%），
+// 缩略图只在网格里显示 301px 宽，q70 与 q78 在这个尺寸下肉眼无差。
+const QUALITY = 70;
 const IMG_RE = /\.(jpe?g|png|webp|avif)$/i;
 // 生成物自己的命名：<原名>-<宽>.webp —— 必须排除，否则重跑会把缩略图当原图再缩一遍
 const THUMB_RE = /-\d+\.webp$/i;
@@ -37,7 +39,7 @@ let bytesBefore = 0;
 let bytesAfter = 0;
 
 /** 处理一个目录下的图片，输出到 <dir>/thumbs/ */
-async function processDir(dir, label) {
+async function processDir(dir, label, quality = QUALITY) {
 	const files = fs
 		.readdirSync(dir, { withFileTypes: true })
 		.filter((d) => d.isFile() && IMG_RE.test(d.name) && !THUMB_RE.test(d.name))
@@ -84,7 +86,7 @@ async function processDir(dir, label) {
 			}
 			const info = await sharp(src)
 				.resize({ width: w, withoutEnlargement: true })
-				.webp({ quality: QUALITY })
+				.webp({ quality })
 				.toFile(out);
 			made++;
 			smallest = Math.min(smallest, info.size);
@@ -108,7 +110,8 @@ if (fs.existsSync(GALLERY)) {
 		.filter((d) => d.isDirectory())
 		.map((d) => d.name)
 		.sort();
-	for (const album of albums) await processDir(path.join(GALLERY, album), `gallery/${album}`);
+	// 相册网格显示更小（301px），用更低的 66；正文图显示 742px，保持 70
+	for (const album of albums) await processDir(path.join(GALLERY, album), `gallery/${album}`, 66);
 }
 
 // ② 正文配图：public/images 下递归（子目录如 ccnewtools/）

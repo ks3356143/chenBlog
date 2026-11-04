@@ -275,3 +275,47 @@
         transition: none;
     }
 }
+
+/* ── 移动端触控目标补足（2026-11-04，P3）─────────────────────────────────
+   实测 375px 下：标签药丸 24px、分类药丸 28px、RSS 链接 19px、
+   标题锚点 31px、TOC 折叠按钮 30px，均低于可点按的舒适区。
+   这里只在 ≤767px 放大，桌面端保持原样（不改颜色/圆角/字号，只加最小高度）。 */
+@media (max-width: 767px) {
+    /* 标签药丸（PostCard 里的 #标签） */
+    .custom-markdown ~ * .btn-regular.h-6,
+    a.btn-regular.h-6 {
+        min-height: 32px;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    /* 分类栏药丸与首页按钮 */
+    .category-pill,
+    .category-link-home {
+        min-height: 32px;
+    }
+
+    /* 正文标题锚点：扩大点击区但视觉不变（负 margin 抵消 padding） */
+    .custom-markdown a.anchor {
+        display: inline-block;
+        min-height: 32px;
+        min-width: 24px;
+        padding: 6px 4px;
+        margin: -6px -4px;
+        vertical-align: middle;
+    }
+
+    /* 页脚 RSS 等行内链接 */
+    footer a.link,
+    .footer a.link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+    }
+
+    /* 悬浮目录折叠按钮 */
+    #floating-toc-wrapper button,
+    .floating-toc button {
+        min-height: 36px;
+    }
+}

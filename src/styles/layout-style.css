@@ -1,4 +1,21 @@
-/* 横幅高度：首页 / 非首页两套变量，切页时靠 is-wallpaper-transitioning 做高矮过渡（照搬参考站） */
+/* 横幅高度：首页 / 非首页两套变量，切页时靠 is-wallpaper-transitioning 做高矮过渡（照搬参考站）
+   ─────────────────────────────────────────────────────────────────────────
+   --banner-height-home 一共被覆盖 9 次（+ 下面 :root 的基准值，共 10 处赋值）。
+   改高度前先看这张表，别只改一处就以为生效：
+
+       默认（桌面 ≥1024，竖屏）      65vh   ← 本处基准值
+       ≤480 宽  小屏手机             70vh
+       481-640  大屏手机             75vh
+       641-767  超大手机/小竖板       72vh
+       768-1023 平板                 70vh   ← 与「小屏手机」同值但条件不同
+       横屏 ≤1023                    60vh
+       ≤500 高  极矮屏               85vh
+       501-600  矮屏                 80vh
+       601-700  中矮屏               75vh   ← 与「大屏手机」同值但条件不同
+       横屏且 ≤500 高                90vh
+
+   注意这些都是纯 vh，会叠加下面的 min-height（450/500/520/350/400/450/300px），
+   最终高度 = max(vh 换算值, min-height)。 */
 :root {
     --banner-height-home: 65vh;
     --banner-height-non-home: max(45vh, 380px);
@@ -36,7 +53,7 @@ html.is-wallpaper-transitioning .content-panel {
 /* 移动端横幅优化 - 小屏手机 (320px - 480px) */
 @media (max-width: 480px) {
     #wallpaper-wrapper {
-        --banner-height-home: 70vh; /* 保持较大高度优先显示banner */
+        --banner-height-home: 70vh; /* 平板 768-1023 */ /* 小屏手机 ≤480 */
         min-height: 450px;
         max-height: none; /* 移除最大高度限制 */
         top: 0 !important; /* 移动端从顶部开始，避免被导航栏覆盖 */
@@ -46,7 +63,7 @@ html.is-wallpaper-transitioning .content-panel {
 /* 移动端横幅优化 - 大屏手机 (481px - 640px) */
 @media (min-width: 481px) and (max-width: 640px) {
     #wallpaper-wrapper {
-        --banner-height-home: 75vh;
+        --banner-height-home: 75vh; /* 中矮屏 601-700 高 */ /* 大屏手机 481-640 */
         min-height: 500px;
         max-height: none;
         top: 0 !important;
@@ -56,7 +73,7 @@ html.is-wallpaper-transitioning .content-panel {
 /* 移动端横幅优化 - 超大屏手机/小平板 (641px - 767px) */
 @media (min-width: 641px) and (max-width: 767px) {
     #wallpaper-wrapper {
-        --banner-height-home: 72vh;
+        --banner-height-home: 72vh; /* 超大手机/小竖板 641-767 */
         min-height: 520px;
         max-height: none;
         top: 0 !important;
@@ -66,7 +83,7 @@ html.is-wallpaper-transitioning .content-panel {
 /* 平板设备横幅优化 (768px - 1023px) - Tailwind md 断点 */
 @media (min-width: 768px) and (max-width: 1023px) {
     #wallpaper-wrapper {
-        --banner-height-home: 70vh;
+        --banner-height-home: 70vh; /* 平板 768-1023 */
         min-height: 500px;
         top: 0 !important;
     }
@@ -90,7 +107,7 @@ html.is-wallpaper-transitioning .content-panel {
 @media (max-width: 1023px) and (orientation: landscape) {
     #wallpaper-wrapper {
         top: 0 !important; /* 横屏模式从顶部开始，避免被导航栏覆盖 */
-        --banner-height-home: 60vh;
+        --banner-height-home: 60vh; /* 横屏 ≤1023 */
     }
 }
 
@@ -98,7 +115,7 @@ html.is-wallpaper-transitioning .content-panel {
 /* 极小高度屏幕 (高度 ≤ 500px) */
 @media (max-height: 500px) {
     #wallpaper-wrapper {
-        --banner-height-home: 85vh; /* 占用更多高度确保banner显示 */
+        --banner-height-home: 85vh; /* 极矮屏 ≤500 高 */
         min-height: 350px !important;
     }
 }
@@ -106,7 +123,7 @@ html.is-wallpaper-transitioning .content-panel {
 /* 小高度屏幕 (高度 501px - 600px) */
 @media (min-height: 501px) and (max-height: 600px) {
     #wallpaper-wrapper {
-        --banner-height-home: 80vh;
+        --banner-height-home: 80vh; /* 矮屏 501-600 高 */
         min-height: 400px !important;
     }
 }
@@ -114,7 +131,7 @@ html.is-wallpaper-transitioning .content-panel {
 /* 中等高度屏幕 (高度 601px - 700px) */
 @media (min-height: 601px) and (max-height: 700px) {
     #wallpaper-wrapper {
-        --banner-height-home: 75vh;
+        --banner-height-home: 75vh; /* 中矮屏 601-700 高 */ /* 大屏手机 481-640 */
         min-height: 450px !important;
     }
 }
@@ -122,7 +139,7 @@ html.is-wallpaper-transitioning .content-panel {
 /* 横屏模式特殊处理 - 优先显示banner */
 @media (orientation: landscape) and (max-height: 500px) {
     #wallpaper-wrapper {
-        --banner-height-home: 90vh; /* 横屏时占用更多高度 */
+        --banner-height-home: 90vh; /* 横屏且 ≤500 高 */
         min-height: 300px !important;
     }
 }

@@ -319,3 +319,71 @@
         min-height: 36px;
     }
 }
+
+/* ── 移动端触控目标补足 · 第二批（2026-11-05）───────────────────────────
+   第一轮只覆盖了首页/归档/文章页。线上复测发现还有三类漏网：
+     · /about/   正文里的行内链接（Astro / Firefly / 邮箱）h=21px
+     · /projects/ 卡片底部「源码」链接 h=24px
+     · /dynamic/ 「全部年份」下拉 h=21px、作者名 h=20px
+   这些都在正文流里，整体加高会撑开行距，所以只做「点击区外扩」：
+   padding + 等量负 margin，视觉位置与行高完全不变。 */
+@media (max-width: 767px) {
+    .custom-markdown a:not(.anchor):not(.header-anchor),
+    .prose a:not(.anchor) {
+        display: inline-block;
+        padding: 6px 2px;
+        margin: -6px -2px;
+        min-height: 32px;
+        vertical-align: middle;
+    }
+
+    /* 项目卡片底部「源码 / 演示」链接 */
+    .project-card a.inline-flex,
+    a.inline-flex.items-center.gap-1\.5 {
+        min-height: 32px;
+    }
+
+    /* 动态页：年份下拉与作者名 */
+    .dynamic-year-trigger {
+        min-height: 32px;
+        display: inline-flex;
+        align-items: center;
+    }
+    a.dynamic-author {
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+    }
+}
+
+/* ── 移动端触控目标补足 · 第三批：留言页 Twikoo（2026-11-05）────────────
+   /guestbook/ 的评论区是 Twikoo 第三方组件，内部 33 个交互元素高度 12~24px。
+   这里**只覆盖尺寸**（min-height + inline-flex 居中），不动它的任何颜色、
+   布局结构与 JS —— Twikoo 升级后这些类名若变化，最坏结果是退回原样，不会坏功能。 */
+@media (max-width: 767px) {
+    .twikoo .tk-action-link,
+    .twikoo .tk-nick-link,
+    .twikoo .tk-sort-item,
+    .twikoo .tk-submit-action-icon,
+    .twikoo .tk-ruser {
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+    }
+    .twikoo .tk-sort-item {
+        padding: 0 8px;
+    }
+    /* 底部 "Twikoo" 署名不要放大，它是指向第三方的纯文字链接，不影响留言操作 */
+}
+
+/* ── 移动端触控目标补足 · 第四批：Twikoo 页脚署名（2026-11-05）────────────
+   前三批之后线上只剩 1 个 <32px 元素：评论区底部那个 16px 高的 "Twikoo"
+   纯文字链接（指向 twikoo.net）。它不影响任何留言操作，但既然目标是清零，
+   这里一并给到 32px —— 同样只加尺寸，不动颜色与结构。 */
+@media (max-width: 767px) {
+    .twikoo a[href*="twikoo"] {
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+    }
+}

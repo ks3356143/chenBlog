@@ -89,6 +89,41 @@ function wrap(text, maxUnits) {
 		}
 	}
 	if (cur) lines.push(cur)
+	// 行首标点搬到上一行末尾（CSS100Day(16) 的「、after…」实测把顿号甩到了行首）。
+	const NO_LINE_START = /^[、，。：；！？）」』》〉】…—·,.:;!?)\]}%]/
+	for (let i = 1; i < lines.length; i++) {
+		while (NO_LINE_START.test(lines[i]) && lines[i].length > 1) {
+			const moved = [...lines[i]][0]
+			lines[i - 1] += moved
+			lines[i] = [...lines[i]].slice(1).join("")
+		}
+	}
+	return fixOrphans(lines)
+}
+
+/**
+ * 消除孤字行（2026-11-04 加）。
+ *
+ * 起因：「Deepseek harness：极光和日间」按 15 单位切出第二行只有一个「间」，
+ * 渲染出来是标题下面孤零零挂一个字，很难看。同一类问题全站有十几篇
+ * （CSS100Day 系列按 `-` 切，末行常只剩 1~4 单位）。
+ *
+ * 规则：末行不足 2 个字（< 2 单位）时，从上一行末尾搬字下来补齐。
+ * 搬运只在**上一行仍有 2 个字以上**时进行，避免把上一行也搬空。
+ */
+function fixOrphans(lines) {
+	if (lines.length < 2) return lines
+	const minLast = 2
+	while (lines.length >= 2) {
+		const last = lines[lines.length - 1]
+		const prev = lines[lines.length - 2]
+		if ([...last].reduce((a, c) => a + charUnits(c), 0) >= minLast) break
+		const prevChars = [...prev]
+		if (prevChars.reduce((a, c) => a + charUnits(c), 0) < 2.5) break
+		const moved = prevChars.pop()
+		lines[lines.length - 2] = prevChars.join("")
+		lines[lines.length - 1] = moved + last
+	}
 	return lines
 }
 

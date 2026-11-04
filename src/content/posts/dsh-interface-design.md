@@ -1,7 +1,7 @@
 ---
-title: DSH 皮肤：极光与日间
+title: Deepseek harness：极光和日间
 published: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-04
 description: "同一套 DSH 桌面端界面，两套皮肤：深色极光 HUD、浅色日间玻璃。两张整屏图先看外观，再看它们在解决什么，最后说我为什么日常用深色那套。"
 tags: [设计, 界面, DSH]
 category: "设计灵感"

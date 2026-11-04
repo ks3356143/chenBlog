@@ -376,24 +376,11 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
     → `containers` 加 `#right-sidebar`。**光加 container 不够**：脚本重跑选择器要覆盖**所有** container、
     `SiteInfo` 要改 `onReinit` + 每轮先解绑、`SiderBarToc` 的 window 监听加哨兵。全文与实测数字在 `swup.md` 十-15 末段。
 
-## 附：本 harness（DeepSeek Harness）与上一任工具的差异
+## 附：本 harness（DSH）与上一任工具的差异
 
-2026-10-12 从 Qoder 接管。**项目规则一条没变，变的是"我能用什么工具"。** 下表全部经过本机实测：
-
-| 事项 | 现在（DSH） |
-|---|---|
-| 自动注入的指令 | `~/.dsh/AGENTS.md`（当前不存在）→ `AGENTS.md` → `AGENTS.local.md`，**合计封顶 65536 字节**。⚠️ `HANDOFF.md` 与 `docs/agents/*` **不会自动注入，要自己 Read**。 |
-| 上一任的跨会话记忆 | **本 harness 没有记忆功能** → 已全部落盘进 `docs/agents/harness.md` + `AGENTS.local.md`。**仓库文件是唯一载体，别再往任何外部记忆系统写。** |
-| 浏览器验证 | **2026-10-12 已装 DSH 的 playwright browser-use provider**（在 `~\.dsh\profiles\desktop\`，不在仓库内）。⚠️ **但本会话仍无工具** —— provider 不接管已活动 Session，**要新建/恢复 Session** 才出现 `mcp__playwright-mcp__*`。在那之前用 `npm run probe`（已实测跑通线上页截图与探针）。⚠️ **别改成 `headless: false`**：本机无完整版 `chromium-1243`，而 README 写「启动失败会**拒绝 Session 创建**」→ 会让新会话起不来。回滚备份 `~\.dsh\browser-plugin-profile-backup\`。细节见 `harness.md` C-1。 |
-| 右侧「浏览器」面板 | 桌面 profile **默认已启用**（用户按 **Ctrl+T**）。⚠️ 它**不给模型任何工具**（README：用户侧呈现状态），且与我经 MCP 起的浏览器**互不共享状态** → **别承诺"我帮你打开右侧浏览器"**，做不到；要两边看同一页面需改 `mode: attach`（未做）。 |
-| 停止后台任务 | `job_kill`：**同样只杀外壳、node 子进程照残留** → 九节的精确匹配流程原样适用。 |
-| 长时间命令 | `pwsh` + `run_in_background` → `job_output`/`job_kill`；退出码看 `[exit code: N]`；长输出会被截尾并落盘。 |
-| 设计类流程 | 上一任的 `superpowers:brainstorming` **在这里没有同名技能**。语义照旧：**先扒参考实现 → 出短设计 → 停下等批准 → 再写代码**。可用 skill：`ui-ux-pro-max` / `frontend-design` / `design-taste-frontend` / `tailwind-4-docs` / `gsap-*`。 |
-| 部署类技能 | **仍用第六节那套手工流程**。上一任装过 `alibabacloud-ecs-code-deploy`（走 aliyun appmanager、要 AccessKey，与宝塔 + Nginx 手工配置可能冲突）；本环境没有它，也不需要。 |
-| MCP | **本 harness 未接入任何 MCP**。扒 GitHub 用 `git clone --depth 1 --filter=blob:none --sparse` 只取所需目录。 |
-
-✅ **"隐藏标签页里 transition 不推进"已证伪**：无头探针造不出隐藏态（`visibilityState` 恒 visible）→ 这里不可能自然发生；上一任看到的是**真症状、错归因**（CPU 节流 20x 下定时器 752~4638ms，**transition 与 rAF 不受影响**）。
-🔴 **通则：别拿"页面被隐藏"当默认解释**；判据与复现见 `harness.md` **B-19**。
+> **全文已下沉到 `docs/agents/harness.md` 第四节（C 能力清单）**，改完跑 `npm run docs:check`。
+> 从 Qoder 接管（2026-10-12）后**项目规则一条没变，变的是工具**：注入口径、浏览器验证通道、停止后台任务、设计类流程、
+> 部署类技能与 MCP 现状全在那份里。`HANDOFF.md` 与 `docs/agents/*` **不自动注入，要自己 Read**。
 
 ## 知识库（取用 / 采集 —— 全文 `docs/agents/writing.md` **八-10**）
 

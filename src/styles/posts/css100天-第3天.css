@@ -1,0 +1,178 @@
+/* ===== CSS 变量 ===== */
+    :root {
+	--cubic-bezier: cubic-bezier(0.4, 0, 0.5, 1);
+}
+
+.demo-container {
+display: grid;
+place-content: center;
+background: #272c34;
+color: #fff;
+width: 400px;
+height: 400px;
+border-radius: 2px;
+}
+
+.circle {
+position: relative;
+border-radius: 50%;
+clip-path: circle(90px at 90px 90px);
+overflow: hidden;
+width: 180px;
+height: 180px;
+
+    .sky {
+    	background: #7ddffc;
+    	height: 124px;
+    	animation: sky-turns-black 4s var(--cubic-bezier) infinite;
+    	position: absolute;
+    	top: 0;
+    	left: 0;
+    	right: 0;
+    }
+
+    .sun {
+    	z-index: 2;
+    	position: absolute;
+    	top: 7px;
+    	left: 73px;
+    	width: 34px;
+    	height: 34px;
+    	border-radius: 50%;
+    	background: #ffef00;
+    	transform-origin: 50% 400%;
+    	animation: sun-goes-down 4s var(--cubic-bezier) infinite;
+    }
+
+    .side-left {
+    	position: absolute;
+    	background: #f4f4f4;
+    	height: 57px;
+    	width: 116px;
+    	top: 68px;
+    	left: 35px;
+    	clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    	animation: pyramide-shading 4s var(--cubic-bezier) infinite;
+    }
+
+    .side-right {
+    	position: absolute;
+    	top: 68px;
+    	left: 93px;
+    	height: 57px;
+    	width: 58px;
+    	background: #dddada;
+    	clip-path: polygon(30% 100%, 100% 100%, 0% 0%);
+    	animation: pyramide-shading 4s var(--cubic-bezier) infinite reverse;
+    }
+
+    .shadow {
+    	position: absolute;
+    	z-index: 2;
+    	top: 124px;
+    	left: -80px;
+    	height: 30px;
+    	width: 360px;
+    	background: rgba(0, 0, 0, 0.2);
+    	transform-origin: 50% 0;
+    	clip-path: polygon(115px 0%, 231px 0%, 80% 100%);
+    	animation: shadow-on-the-floor 4s var(--cubic-bezier) infinite;
+    }
+
+    .ground {
+    	position: absolute;
+    	z-index: 1;
+    	bottom: 0;
+    	left: 0;
+    	right: 0;
+    	height: 56px;
+    	background: #f0de75;
+    	animation: fading-sand 4s var(--cubic-bezier) infinite;
+    }
+
+}
+
+@keyframes sky-turns-black {
+0% {
+background: #272c34;
+}
+30% {
+background: #7ddffc;
+}
+70% {
+background: #7ddffc;
+}
+100% {
+background: #272c34;
+}
+}
+
+@keyframes sun-goes-down {
+0% {
+background: #f57209;
+transform: rotate(-70deg);
+}
+30% {
+background: #ffef00;
+transform: rotate(-28deg);
+}
+70% {
+background: #ffef00;
+}
+100% {
+background: #f57209;
+transform: rotate(70deg);
+}
+}
+
+@keyframes pyramide-shading {
+0% {
+background: #272c34;
+}
+30% {
+background: #f4f4f4;
+}
+70% {
+background: #dddada;
+}
+100% {
+background: #272c34;
+}
+}
+
+@keyframes fading-sand {
+0% {
+background: #272c34;
+}
+30% {
+background: #f0de75;
+}
+70% {
+background: #f0de75;
+}
+100% {
+background: #272c34;
+}
+}
+
+@keyframes shadow-on-the-floor {
+0% {
+transform: scaleY(0);
+clip-path: polygon(115px 0%, 231px 0%, 100% 100%);
+}
+30% {
+transform: scaleY(1);
+clip-path: polygon(115px 0%, 231px 0%, 80% 100%);
+}
+55% {
+transform: scaleY(0.4);
+}
+70% {
+transform: scaleY(1);
+}
+100% {
+transform: scaleY(0);
+clip-path: polygon(115px 0%, 231px 0%, 0% 100%);
+}
+}
+

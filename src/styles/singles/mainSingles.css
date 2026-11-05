@@ -656,3 +656,68 @@ body.immersive-reading .floating-controls-container .floating-btn {
     background-color: var(--primary-hover);
     color: #fff;
 }
+/* ══ 四条绚丽动效（2026-11-05 第三十一批）═════════════════════════════════════
+   用户拍板：① 回顶按钮滚动进度环 ② 主题切换圆形扩散 ③ 分类栏滑动指示器
+              ④ 导航栏滚动毛玻璃收缩；配色选「多色渐变」而不是纯主色。
+   四条全部零依赖（CSS + 原生 JS），全部受 prefers-reduced-motion 兜底。
+   下面每条都写了"为什么是这个数值"，改之前先读。 */
+
+/* ── ① 回顶按钮 · 滚动进度环 ─────────────────────────────────────────────────
+   🔴 **环不能画在按钮本身上**：FloatingButton 自带 overflow:hidden（收起动画要用），
+      环会被裁成方块。所以环是一个真实子元素 .btt-progress，靠负 inset 撑到按钮外，
+      再用 mask 双向合成（content-box xor）把中间挖空 → 只剩一圈环。
+   进度 = --scroll-progress(0~1)，由 BackToTop 里 rAF 节流后写入。
+   多色渐变跟 --hue 转（用 calc 偏移，不是写死度数）。 */
+#back-to-top-btn {
+    /* 兜底；真值由 JS 写 */
+    --scroll-progress: 0;
+}
+
+#back-to-top-btn .btt-progress {
+    position: absolute;
+    /* 🔴 inset 必须是 0，**不能是 -3px**：FloatingButton 自带 overflow:hidden，
+       负 inset 会被直接裁掉，环整个看不见（实测截图里只剩一个光秃秃的方块）。
+       贴边画反而更好看 —— 像一圈进度描边。 */
+    inset: 0;
+    padding: 3px;
+    border-radius: 0.25rem;
+    pointer-events: none;
+    z-index: 1;
+    -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    /* 亮段 = 已滚动（0 → progress*360），暗段 = 剩余轨道，两段在同一个角度交界。
+       🔴 暗段的起点**不能写 progress*360 + 4deg**：进度满 1 时 364deg 会绕回 0，
+          在环的起点留下一小截灰边（实测滚到底时左侧有一块淡紫色缺口）。
+          硬边交界对进度环来说正合适，不需要留缝。
+       🔴 末段颜色必须**回到与首段相同的色相**：写成 hue+180 时，100% 处首尾两色相差 180°，
+          环的左侧会留一条明显的断色（实测截图能看到粉色直接撞青色）。 */
+    background: conic-gradient(
+        from -90deg,
+        oklch(0.74 0.16 calc(var(--hue) + 0)) 0deg,
+        oklch(0.78 0.15 calc(var(--hue) + 60)) calc(var(--scroll-progress) * 120deg),
+        oklch(0.76 0.17 calc(var(--hue) + 120)) calc(var(--scroll-progress) * 240deg),
+        oklch(0.74 0.16 calc(var(--hue) + 0)) calc(var(--scroll-progress) * 360deg),
+        color-mix(in oklch, var(--primary) 16%, transparent) calc(var(--scroll-progress) * 360deg),
+        color-mix(in oklch, var(--primary) 16%, transparent) 360deg
+    );
+}
+
+/* 按钮出现时才显示环（hide 态整块收成 0 尺寸，环跟不出来） */
+#back-to-top-btn:not(.hide) .btt-progress {
+    opacity: 1;
+}
+
+/* 走到底：整圈发光，给一个"读完了"的反馈 */
+#back-to-top-btn[data-complete] {
+    box-shadow:
+        0 0 0 1px color-mix(in oklch, var(--primary) 45%, transparent),
+        0 0 16px -2px color-mix(in oklch, var(--primary) 55%, transparent);
+}

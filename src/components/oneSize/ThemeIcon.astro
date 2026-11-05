@@ -1,5 +1,19 @@
 ---
-
+// 主题切换按钮。2026-11-05 第三十一批：点击改成**圆形扩散揭幕**（View Transitions API）。
+//
+// 做法（零依赖、纯原生）：点按钮 → document.startViewTransition(() => 切 data-theme)
+//   → 新旧两帧各是一张快照，用 clip-path: circle() 让新帧从按钮中心扩散开。
+//   不支持的浏览器（旧 Safari / 旧 Firefox）走原有逻辑，**瞬间切换、不报错**。
+//
+// 🔴 四个必须记住的点：
+//   ① **必须给 ::view-transition-new(root) 加 clip-path 动画**，否则默认是交叉淡化，
+//      看起来不是"扩散"而只是"渐变"。
+//   ② `mix-blend-mode: normal` 必须显式写：Chrome 默认 root 过渡带 plus-lighter，
+//      某些底色组合下会闪白。
+//   ③ **reduced-motion 用户不要走 VT**：扩散对前庭敏感人群就是眩晕源。
+//      这条必须在 JS 里判 —— CSS 媒体查询管不住 startViewTransition（一调用就会跑）。
+//   ④ resize morph（SwupManager）也用 startViewTransition，但触发源不同
+//      （窗口 resize vs 点击），实际不会撞车，共用 root 过渡参数安全。
 ---
 
 <button id="themeToggle" type="button" class="btn-plain cursor-pointer p-2" aria-label="切换亮暗主题">
@@ -34,16 +48,81 @@
 	:global([data-theme="dark"]) .moon {
 		fill: currentColor;
 	}
+
+	/* ── 圆形扩散揭幕 ─────────────────────────────────────────────────────
+	   半径取到「按钮中心 → 视口最远角」，才保证整页被覆盖；数值由 JS 算好塞进 --vt-r。
+	   timing 用 cubic-bezier(0.22,1,0.36,1)（ease-out-quint）而不是线性：
+	   线性在收尾会明显拖沓，这条曲线前段快、后段稳稳停住。 */
+	:global(::view-transition-old(root)),
+	:global(::view-transition-new(root)) {
+		animation-duration: 520ms;
+		animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+		mix-blend-mode: normal;
+	}
+	:global(::view-transition-old(root)) {
+		z-index: 2;
+		animation: none;
+	}
+	:global(::view-transition-new(root)) {
+		z-index: 3;
+		animation: theme-reveal 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+
+	@keyframes theme-reveal {
+		from {
+			clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 50%));
+		}
+		to {
+			clip-path: circle(var(--vt-r, 100vmax) at var(--vt-x, 50%) var(--vt-y, 50%));
+		}
+	}
+
+	/* reduced-motion：JS 里根本不调用 VT，这条是双保险 */
+	@media (prefers-reduced-motion: reduce) {
+		:global(::view-transition-old(root)),
+		:global(::view-transition-new(root)) {
+			animation: none !important;
+		}
+	}
 </style>
 
 <script is:inline>
 	const setToggleListener = () => {
 		let toggleBtn = document.getElementById("themeToggle")
-		const handleToggleClick = () => {
+
+		const applyTheme = () => {
 			const element = document.documentElement
 			const isDark = element.dataset.theme === "dark"
 			element.dataset.theme = isDark ? "light" : "dark"
 			localStorage.setItem("theme", isDark ? "light" : "dark")
+		}
+
+		const handleToggleClick = () => {
+			const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+			const canVT = typeof document.startViewTransition === "function"
+			// 🔴 reduced-motion 或浏览器不支持 → 直接切（老行为），不碰 View Transition
+			if (reduce || !canVT || !toggleBtn) {
+				applyTheme()
+				return
+			}
+
+			// 扩散圆心 = 按钮中心；半径 = 到视口四个角里最远的那个
+			const r = toggleBtn.getBoundingClientRect()
+			const cx = r.left + r.width / 2
+			const cy = r.top + r.height / 2
+			const far = Math.max(
+				Math.hypot(cx, cy),
+				Math.hypot(window.innerWidth - cx, cy),
+				Math.hypot(cx, window.innerHeight - cy),
+				Math.hypot(window.innerWidth - cx, window.innerHeight - cy),
+			)
+			const root = document.documentElement
+			root.style.setProperty("--vt-x", cx + "px")
+			root.style.setProperty("--vt-y", cy + "px")
+			root.style.setProperty("--vt-r", Math.ceil(far) + "px")
+
+			// ⚠️ 回调里必须**同步**改好 DOM：异步改动会被算进新帧之后，扩散就看不见了
+			document.startViewTransition(applyTheme)
 		}
 
 		toggleBtn?.addEventListener("click", handleToggleClick)

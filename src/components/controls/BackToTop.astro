@@ -1,6 +1,11 @@
 ---
 import FloatingButton from "../commons/FloatingButton.astro"
-// 返回顶部的JS容器
+// 返回顶部按钮 + 滚动进度环（2026-11-05 第三十一批新增进度环）
+//
+// 进度环的画法：按钮本身带 overflow:hidden（收起动画要用），环画上去会被裁掉 →
+// 环用一个**真实的子元素** .btt-progress，靠负 inset 撑到按钮外面，
+// 再用 mask 双向合成（content-box xor）把中间挖空，只剩一圈环。
+// 进度由 JS 每帧写 --scroll-progress（0~1），CSS 里用 calc 乘到角度上。
 ---
 
 <FloatingButton
@@ -16,44 +21,82 @@ import FloatingButton from "../commons/FloatingButton.astro"
 		window.scroll({ top: 0, behavior: "smooth" })
 	}
 
-	// 返回顶部按钮
 	if (typeof window.BackToTopManager === "undefined") {
 		window.BackToTopManager = class BackToTopManager {
 			constructor() {
 				this.button = document.getElementById("back-to-top-btn")
+				this.ring = null
+				this.ticking = false
 				this.init()
 			}
 			init() {
 				if (!this.button) return
+				this.ensureRing()
 				this.setupScrollListener()
 			}
 
+			/** 进度环元素：只建一次，退出沉浸模式换 DOM 后由 onReinit 重新补 */
+			ensureRing() {
+				if (!this.button || this.button.querySelector(".btt-progress")) return
+				const ring = document.createElement("div")
+				ring.className = "btt-progress"
+				ring.setAttribute("aria-hidden", "true")
+				this.button.appendChild(ring)
+			}
+
+			/** 滚动进度：文档可滚距离为 0 时直接算 100%（短页面点上去就该是满环） */
+			updateProgress() {
+				this.ticking = false
+				const doc = document.documentElement
+				const max = doc.scrollHeight - window.innerHeight
+				const top = window.pageYOffset || doc.scrollTop
+				const p = max <= 0 ? 1 : Math.min(1, Math.max(0, top / max))
+				if (!this.button) return
+				this.button.style.setProperty("--scroll-progress", p.toFixed(4))
+				if (p >= 0.999) this.button.setAttribute("data-complete", "")
+				else this.button.removeAttribute("data-complete")
+			}
+
 			setupScrollListener() {
-				const updateVisibility = () => {
+				const onScroll = () => {
 					const scrollTop = window.pageYOffset || document.documentElement.scrollTop
 					// 当滚动超过200px则出现按钮
-					if (scrollTop > 200) {
-						this.button.classList.remove("hide")
-					} else {
-						this.button.classList.add("hide")
+					if (this.button) {
+						if (scrollTop > 200) this.button.classList.remove("hide")
+						else this.button.classList.add("hide")
+					}
+					if (!this.ticking) {
+						this.ticking = true
+						window.requestAnimationFrame(() => this.updateProgress())
 					}
 				}
-				window.addEventListener("scroll", updateVisibility, { passive: true })
+				// 元素在 Header 之外、永不被 Swup 换掉 → 整个文档只该绑一次
+				window.reinitOnce("back-to-top-scroll", () => {
+					window.addEventListener("scroll", onScroll, { passive: true })
+					window.addEventListener("resize", () => this.updateProgress(), { passive: true })
+					return true
+				})
+				onScroll()
+				this.updateProgress()
 			}
 		}
 	}
 
-	// 页面加载后初始化
-	document.addEventListener("DOMContentLoaded", () => {
-		new BackToTopManager()
-	})
-
-	// 如果页面已经加载完成，立即初始化
+	const bootBackToTop = () => new window.BackToTopManager()
 	if (document.readyState === "loading") {
-		document.addEventListener("DOMContentLoaded", () => {
-			new BackToTopManager()
-		})
+		document.addEventListener("DOMContentLoaded", bootBackToTop, { once: true })
 	} else {
-		new BackToTopManager()
+		bootBackToTop()
 	}
+
+	// 软导航后重绑（元素本身在容器外不会被换，但 ensureRing 要补一次，
+	// 因为沉浸模式退出时可能整块重建过）
+	window.onReinit(
+		"back-to-top",
+		() => {
+			const mgr = new window.BackToTopManager()
+			mgr.updateProgress()
+		},
+		{ delay: 80, immediate: false },
+	)
 </script>

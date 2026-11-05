@@ -67,7 +67,52 @@ import { navBarLinks } from "@/config/navBarConfig"
 	}
 
 	#nav {
-		transition: transform 0.4s ease;
+		transition:
+			transform 0.4s ease,
+			height 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+			background-color 0.28s ease,
+			box-shadow 0.28s ease;
+	}
+
+	#nav > div,
+	#nav a[aria-label="亦林 首页"] {
+		transition: height 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	/* ── ④ 导航栏滚动毛玻璃收缩（2026-11-05 第三十一批）───────────────────────
+	   滚过 60px：高度 4.5rem → 3.5rem、底色换成带透明度的毛玻璃、加一圈主色微光。
+	   多色：玻璃底里叠一层主色 → 偏移色相的极淡渐变，跟 --hue 一起转。
+
+	   🔴 **只写标准属性，不要再补 -webkit-backdrop-filter**：layout-style.css:211 记着这条坑 ——
+	   两行都写时 Lightning CSS 按构建目标只留 -webkit- 那条，而 Chromium 里
+	   getComputedStyle().backdropFilter 读到 "none" → 玻璃完全没生效（看着"淡但不糊"）。
+	   🔴 这里不能动 transform：下面脚本用 transform 做"下滑隐藏"，两者会打架。
+	      所以收缩只改 height / 背景 / 阴影。 */
+	#nav[data-scrolled] {
+		height: 3.5rem;
+		background-color: color-mix(in oklch, var(--card-bg) 72%, transparent);
+		background-image:
+			linear-gradient(
+				100deg,
+				color-mix(in oklch, var(--primary) 10%, transparent) 0%,
+				transparent 45%,
+				color-mix(in oklch, oklch(0.72 0.14 calc(var(--hue) + 70)) 12%, transparent) 100%
+			),
+			var(--nav-bg);
+		backdrop-filter: blur(14px) saturate(1.6);
+		box-shadow:
+			0 1px 0 color-mix(in oklch, var(--primary) 18%, transparent),
+			0 8px 24px -14px rgb(0 0 0 / 0.35);
+	}
+
+	/* 高度变了，内层那几个 h-18 与 logo 块也得跟着缩，否则内容会被裁。
+	   ⚠️ logo 从 h-13(52px) 缩到 2.75rem(44px)，不是缩成 3.5rem —— 写 3.5rem 等于把
+	      52px 撑到 56px，反而比原来更高（实测 logoHeight 56 就是这么来的）。 */
+	#nav[data-scrolled] > div {
+		height: 3.5rem;
+	}
+	#nav[data-scrolled] a[aria-label="亦林 首页"] {
+		height: 2.75rem;
 	}
 </style>
 
@@ -84,6 +129,11 @@ import { navBarLinks } from "@/config/navBarConfig"
 			navbar.style.transform = ""
 		}
 		lastScrollY = currentScrollY
+
+		// ④ 滚动毛玻璃收缩：只切一个属性，样式全交给 CSS
+		if (currentScrollY > 60) navbar.setAttribute("data-scrolled", "")
+		else navbar.removeAttribute("data-scrolled")
+
 		ticking = false
 	}
 	window.addEventListener(
@@ -96,4 +146,6 @@ import { navBarLinks } from "@/config/navBarConfig"
 		},
 		{ passive: true },
 	)
+	// 首帧也要跑一次：从锚点进页面时可能一上来就滚在半路
+	updateNavbar()
 </script>

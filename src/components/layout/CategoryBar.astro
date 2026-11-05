@@ -12,6 +12,11 @@ const categoriesUrl = url("/categories/")
 
 <div id="category-bar" data-home-path={homeUrl} data-archive-path={archiveUrl} class="card-base category-bar p-3">
 	<div class="flex items-center gap-2">
+		<!-- ③ 滑动指示器（2026-11-05 第三十一批）：一个绝对定位的主色块，
+		     由 JS 按当前激活 pill 的 offsetLeft/Width 定位；切分类时它滑过去而不是瞬跳。
+		     ⚠️ 它必须在 pill 之前、z-index 更低，否则会盖住文字。
+		     ⚠️ 只覆盖「首页 / 归档 / 分类」这三类，不含"更多"（那是跳转页不是筛选）。 -->
+		<div class="category-indicator" aria-hidden="true"></div>
 		<a
 			href={homeUrl}
 			class="category-link-home flex h-7 shrink-0 items-center justify-center px-2 py-1 text-sm transition-colors duration-150 ease-out"
@@ -64,7 +69,74 @@ const categoriesUrl = url("/categories/")
 	.category-bar {
 		/* 和slot内容间隔 */
 		margin-bottom: 1rem;
+		/* ③ 滑动指示器相对它定位（这里不能再加 padding，指示器的坐标按 padding-box 算） */
+		position: relative;
 	}
+
+	/* ── ③ 分类栏滑动指示器（2026-11-05 第三十一批）──────────────────────────
+	   原先是「激活的 pill 自己变成主色底」——切分类时是新旧两个色块同时闪一下，
+	   看着像抖。现在换成一块在主色渐变背景下滑动的色块，pill 文字颜色跟着转。
+
+	   🔴 三个必须记住的点：
+	   ① 指示器**放在横向滚动容器外**（.category-bar 的直接子元素），因为激活的 pill
+	      可能滚出可视区，指示器如果跟着滚就会被裁掉 → 它只画"看得见时才亮"。
+	      实现上由 updateIndicator() 判断可视性决定 opacity。
+	   ② 坐标必须用 **offsetLeft/offsetWidth**（相对 offsetParent），不要 getBoundingClientRect：
+	      后者含滚动位移，会因为 .category-scroll 的 scrollLeft 而漂。
+	   ③ .btn-plain 会盖显隐（AGENTS 五-20），指示器不带那个类，所以没问题。
+	   多色渐变：主色 → 偏移色相 → 主色，跟 --hue 一起转。 */
+	.category-indicator {
+		position: absolute;
+		/* 🔴 left:0 必须显式写：不写的话它是 left:auto，静态位置已经落在 padding box 内
+		   （12px padding + 1px border），再叠 translateX 就整体右移 13px
+		   （实测 width 对得上、left 恒偏 13）。 */
+		left: 0;
+		top: 0.75rem; /* = .category-bar 的 p-3 */
+		height: 1.75rem; /* = pill 的 h-7 */
+		border-radius: 0.25rem;
+		opacity: 0;
+		pointer-events: none;
+		z-index: 0;
+		transition:
+			transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+			width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+			opacity 0.2s ease;
+		background: linear-gradient(
+			100deg,
+			oklch(0.62 0.14 calc(var(--hue) + 0)),
+			oklch(0.66 0.15 calc(var(--hue) + 55)) 55%,
+			oklch(0.60 0.16 calc(var(--hue) + 110))
+		);
+		box-shadow: 0 4px 14px -6px color-mix(in oklch, var(--primary) 65%, transparent);
+	}
+	.category-indicator[data-visible] {
+		opacity: 1;
+	}
+
+	/* 有指示器时，pill 自己的主色底要撤掉（否则两层主色叠着过曝） */
+	.category-bar[data-has-indicator] .category-pill[data-active],
+	.category-bar[data-has-indicator] .category-link-home[data-active] {
+		background: transparent;
+		border-color: transparent;
+		color: #fff;
+	}
+	.category-bar[data-has-indicator] .category-pill[data-active]:hover,
+	.category-bar[data-has-indicator] .category-link-home[data-active]:hover {
+		background: transparent;
+		border-color: transparent;
+		color: #fff;
+		opacity: 1;
+	}
+
+	/* pill 要压在指示器上面，否则文字被盖住 */
+	.category-bar .category-pill,
+	.category-bar .category-link-home,
+	.category-bar .category-divider,
+	.category-bar .more-divider {
+		position: relative;
+		z-index: 1;
+	}
+
 	.category-divider {
 		width: 1px;
 		align-self: stretch;
@@ -256,6 +328,53 @@ const categoriesUrl = url("/categories/")
 		scroll.scrollTo({ left: Math.max(0, scrollLeft), behavior })
 	}
 
+	/**
+	 * ③ 滑动指示器：把 .category-indicator 摆到当前激活的 pill 上。
+	 *
+	 * 🔴 坐标用 offsetLeft / offsetWidth，**不要用 getBoundingClientRect**：
+	 *    pill 在 .category-scroll 里，rect 含 scrollLeft 位移，横滚一下指示器就漂了。
+	 * 🔴 激活的 pill 可能滚出可视区（分类多时）→ 那时整块指示器淡出，
+	 *    否则它会贴在容器边缘冒充一个"激活项"。
+	 * ⚠️ 指示器是 .category-bar 的直接子元素，而 pill 的 offsetParent 是 .category-scroll
+	 *    （它带 overflow，成为 offsetParent）→ 要把 scroll 的 offsetLeft 与 scrollLeft 都补上。
+	 */
+	function updateIndicator(bar: HTMLElement) {
+		const indicator = bar.querySelector<HTMLElement>(".category-indicator")
+		const scroll = bar.querySelector<HTMLElement>(".category-scroll")
+		if (!indicator) return
+
+		const active =
+			bar.querySelector<HTMLAnchorElement>(".category-pill[data-active]") ||
+			bar.querySelector<HTMLAnchorElement>(".category-link-home[data-active]")
+
+		// 软高亮（文章页）不算激活：那种情况下面板不该有滑块
+		if (!active) {
+			indicator.removeAttribute("data-visible")
+			bar.removeAttribute("data-has-indicator")
+			return
+		}
+
+		bar.setAttribute("data-has-indicator", "")
+
+		// 基础坐标：bar 的 padding（p-3 = 12px）+ pill 在滚动容器里的位置 - 滚动位移
+		const barRect = bar.getBoundingClientRect()
+		const activeRect = active.getBoundingClientRect()
+		const x = activeRect.left - barRect.left
+		const w = activeRect.width
+
+		// 可视性：pill 完全落在滚动容器可视区内才算
+		let visible = true
+		if (scroll && scroll.contains(active)) {
+			const sr = scroll.getBoundingClientRect()
+			visible = activeRect.left >= sr.left - 1 && activeRect.right <= sr.right + 1
+		}
+
+		indicator.style.width = w + "px"
+		indicator.style.transform = `translateX(${x}px)`
+		if (visible) indicator.setAttribute("data-visible", "")
+		else indicator.removeAttribute("data-visible")
+	}
+
 	function updateCategoryBar(currentUrl = new URL(window.location.href)) {
 		const bar = document.getElementById("category-bar")
 		if (!bar) return
@@ -268,6 +387,8 @@ const categoriesUrl = url("/categories/")
 
 		setActiveCategory(bar, currentUrl)
 		scrollActiveCategoryIntoView(bar)
+		// ③ 指示器要在高亮算完之后摆，且滚动容器可能刚被 scrollTo 挪过 → 下一帧再量
+		requestAnimationFrame(() => updateIndicator(bar))
 	}
 
 	function initCategoryBarInteractions() {
@@ -357,6 +478,9 @@ const categoriesUrl = url("/categories/")
 		} else {
 			fadeRight.removeAttribute("data-visible")
 		}
+
+		// ③ 横滚之后 pill 的屏幕位置变了 → 指示器要重摆（否则会漂在旧位置）
+		updateIndicator(bar)
 	}
 	window.onReinit("category-bar", updateCategoryBar)
 	initCategoryBarInteractions()
@@ -364,6 +488,18 @@ const categoriesUrl = url("/categories/")
 	// 原来这里跟 updateCategoryBar 一起挂在 astro:page-load 上，每换一次页就多一组
 	// wheel/scroll/resize 监听 → 鼠标横滚的位移按访问页数叠加（2026-10-01 查出）
 	window.reinitOnce("category-bar-scroll", initScrollFeatures)
+	// 窗口尺寸变化 → pill 的 px 位置全变，指示器必须重摆（这里只绑一次）
+	window.reinitOnce("category-bar-indicator-resize", () => {
+		window.addEventListener(
+			"resize",
+			() => {
+				const bar = document.getElementById("category-bar")
+				if (bar) updateIndicator(bar)
+			},
+			{ passive: true },
+		)
+		return true
+	})
 	// 在 Swup 导航时同步分类栏的高亮（参考站：visit:start 只刷高亮，不做显隐）
 	function setupSwupEarlyUpdate() {
 		if (!window.swup?.hooks) return

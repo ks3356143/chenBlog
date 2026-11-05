@@ -29,7 +29,13 @@
     --deep-text: #19251f;
     /* 原 #3a9371（= 参考站 oklch(.6 .1 165)）只用在 `:active`（按下瞬间）。
        --primary 调深后它反而比 hover 态更亮，按下会"跳一下发亮" → 跟 --primary-hover 对齐。 */
-    --title-active: #005e4d;
+    --title-active: oklch(0.43 0.0813 calc(var(--hue) - 0.26));
+    /* 品牌色相。175 = 原来写死的 --primary（#00705c）oklch 色相，
+       即「没动过」的状态；显示设置面板拖色相条改的就是它，
+       下面那一族 oklch 变量整片跟着转（2026-11-05 接入设置面板时改的）。
+       ⚠️ 数值与偏移不是估的：逐个由原 hex 反解出 okLCH 再回代验证，
+       在 --hue:175 时渲染出来与改动前的十六进制值逐字节相同（往返一致），
+       所以「不碰设置」= 视觉零变化。 */
     --hue: 175;
     --code-font-size: 0.875rem;
 
@@ -52,24 +58,26 @@
        对白底 6.05 / 对 --page-bg 5.26 / 对 --btn-regular-bg 5.27 / 对其 hover 态 4.57，
        且当**背景**用时上面的白字同样是 6.05（旧值是 2.48，最差的一处反而改进了）。
        要回退：把这行换回 #00ba99，并删掉下面的 --primary-hover。 */
-    --primary: #00705c;
-    --primary-hover: #005e4d;
-    --plain-bg: oklch(0.9 0.05 175);
-    --btn-plain-bg-hover: #def4ed;
-    --btn-plain-bg-active: #f3fbf7;
-    --selection-bg: #c0e9d6;
+    --primary: oklch(0.487 0.0921 calc(var(--hue) - 0.41));
+    --primary-hover: oklch(0.43 0.0813 calc(var(--hue) - 0.26));
+    --plain-bg: oklch(0.9 0.05 var(--hue));
+    --btn-plain-bg-hover: oklch(0.95 0.025 calc(var(--hue) - 0.26));
+    --btn-plain-bg-active: oklch(0.98 0.01 calc(var(--hue) - 10.12));
+    --selection-bg: oklch(0.9 0.05 calc(var(--hue) - 9.53));
     --codeblock-bg: oklch(0.17 0.015 var(--hue));
     --panel-bg: #ffffffd2;
     --page-bg: #e9f1ed;
     --card-bg: #fff;
     --card-bg-rgb: 255, 255, 255;
     --line-divider: rgba(0, 0, 0, 0.08);
-    --btn-regular-bg: #e0f4ea;
+    --btn-regular-bg: oklch(0.95 0.025 calc(var(--hue) - 10.56));
     /* 原 #008760 对 --btn-regular-bg 只有 3.95（它几乎只当文字色用：行内代码、表格表头、
-       chip、pinned 徽标）→ 压到同色相 L23%：对 chip 4.65 / 对白 5.33。 */
-    --btn-content: #007a5c;
-    --btn-regular-bg-hover: #c0e9d6;
-    --btn-regular-bg-active: #9cdfc1;
+       chip、pinned 徽标）→ 压到同色相 L23%：对 chip 4.65 / 对白 5.33。
+       ⚠️ 它比 --primary 偏了 6.8° 色相（原 hex 就不是纯同色相）——这个偏移原样保留，
+       否则改色相时这一族会与改动前的观感对不上。 */
+    --btn-content: oklch(0.515 0.104 calc(var(--hue) - 6.83));
+    --btn-regular-bg-hover: oklch(0.9 0.05 calc(var(--hue) - 9.53));
+    --btn-regular-bg-active: oklch(0.85 0.08 calc(var(--hue) - 10));
     --btn-card-bg-hover: #fcf7f8;
     --btn-card-bg-active: #cbe5dd;
     --line-color: rgba(0, 0, 0, 0.1);
@@ -98,21 +106,21 @@
 
 :root[data-theme="dark"] {
     /* 主题 */
-    --primary: #0dcaa9;
-    --plain-bg: oklch(0.4 0.08 175);
-    --btn-plain-bg-hover: #19342d;
-    --btn-plain-bg-active: #1b2a23;
-    --selection-bg: #0a553d;
+    --primary: oklch(0.75 0.1398 calc(var(--hue) + 0.12));
+    --plain-bg: oklch(0.4 0.08 var(--hue));
+    --btn-plain-bg-hover: oklch(0.3 0.036 calc(var(--hue) + 0.08));
+    --btn-plain-bg-active: oklch(0.27 0.024 calc(var(--hue) - 10.84));
+    --selection-bg: oklch(0.4 0.0798 calc(var(--hue) - 9.8));
     --codeblock-bg: oklch(0.17 0.015 var(--hue));
     --panel-bg: #171717f2;
     --page-bg: #080f0c;
     --card-bg: #161f1b;
     --card-bg-rgb: 22, 31, 27;
     --line-divider: rgba(255, 255, 255, 0.08);
-    --btn-regular-bg: #243b31;
-    --btn-content: #6cc29e;
-    --btn-regular-bg-hover: #2d493d;
-    --btn-regular-bg-active: #37584a;
+    --btn-regular-bg: oklch(0.33 0.034 calc(var(--hue) - 9.69));
+    --btn-content: oklch(0.75 0.1 calc(var(--hue) - 10.1));
+    --btn-regular-bg-hover: oklch(0.38 0.04 calc(var(--hue) - 9.43));
+    --btn-regular-bg-active: oklch(0.43 0.045 calc(var(--hue) - 9.21));
     --btn-card-bg-hover: #1d332d;
     --btn-card-bg-active: #264139;
     --content-meta: rgba(255, 255, 255, 0.6);
@@ -120,7 +128,7 @@
     --license-block-bg: var(--codeblock-bg);
 
     /* 同上一组，暗色自己的取值（参考站暗色 :root.dark 原值） */
-    --primary-hover: #0ab394;
+    --primary-hover: oklch(0.685 0.1287 calc(var(--hue) - 0.76));
     --enter-btn-bg: var(--btn-regular-bg);
     --enter-btn-bg-hover: var(--btn-regular-bg-hover);
     --enter-btn-bg-active: var(--btn-regular-bg-active);

@@ -1,0 +1,883 @@
+---
+import { Icon } from "astro-icon/components"
+// 显示设置面板（2026-11-05 新增）。
+//
+// 结构对照参考站 firefly.cuteleaf.cn 的 DisplaySettingsIntegrated：
+//   <div id="display-setting" class="float-panel float-panel-closed absolute ...">
+//   tab 栏 = 「外观 / 壁纸 / 特效」，每个分区 = .section-title + 控件，
+//   每个 section-title 右侧带一个「重置此项」按钮（参考站是 aria-label="Reset to Default"）。
+//
+// 🔴 **只做本站真能生效的开关**。参考站还有 壁纸模式(4 种) / 全屏布局 / 壁纸透明度 /
+//    背景模糊度 / 卡片透明度 / 樱花特效 / 音乐 / 翻译 —— 本站没有对应实现
+//    （没有 fullscreen/overlay 壁纸分支、没有樱花层、没有音乐播放器），
+//    装上去就是死开关，点了一点反应都没有。故一律不做，面板里 6 个控件全部有真实效果。
+//
+// 🔴 **面板必须挂在 Header 里**（不是 FloatingControls）：参考站的 #display-setting
+//    就在 #nav 内部（实测 HTML 里 面板位置 87197 落在 <nav> 与 </nav> 之间），
+//    而 Header 在 Swup 容器外、永不被替换 → 面板状态（哪个 tab、开着没开）跨软导航保持，
+//    不用任何 reinit。开关本身写 localStorage，与参考站键名一致。
+//
+// ⚠️ 面板一律直角（AGENTS 五-16③：本站 --radius-large 从未定义，全站直角）。
+// ⚠️ 本组件的 CSS 必须 is:global：面板里的控件（.float-panel / .section-title /
+//    .hue-slider-shell / .custom-scrollbar / .toggle-switch）是跨组件复用的类名，
+//    且 PostPage 的 #post-list-container 根本不在本组件里。
+---
+
+<!-- 开关按钮：照参考站 #display-settings-switch 的四件套（aria-controls / aria-expanded /
+     btn-plain 尺寸与相邻的搜索、主题按钮同档）。⚠️ 它和面板必须包在同一个不带定位的
+     wrapper 里：面板是 position:absolute，包一层 relative 会让 right:1rem 变成相对 wrapper
+     而不是相对 #nav，位置整体偏一格。 -->
+<button
+	id="display-settings-switch"
+	type="button"
+	class="btn-plain cursor-pointer p-2"
+	aria-label="显示设置"
+	aria-controls="display-setting"
+	aria-expanded="false"
+	title="显示设置"
+>
+	<Icon name="material-symbols:palette-outline" class="text-2xl" aria-hidden="true" />
+</button>
+
+<div
+	id="display-setting"
+	class="float-panel float-panel-closed"
+	data-floating-panel=""
+	data-floating-panel-trigger="display-settings-switch"
+	inert
+	aria-hidden="true"
+>
+	<!-- tab 栏：tab index 与参考站一致（外观 / 壁纸 / 特效） -->
+	<div class="dp-tabs">
+		<button type="button" class="dp-tab is-active" data-dp-tab="appearance" aria-selected="true">
+			<Icon name="material-symbols:palette-outline" aria-hidden="true" />
+			<span class="truncate">外观</span>
+		</button>
+		<button type="button" class="dp-tab" data-dp-tab="wallpaper" aria-selected="false">
+			<Icon name="material-symbols:wallpaper" aria-hidden="true" />
+			<span class="truncate">壁纸</span>
+		</button>
+		<button type="button" class="dp-tab" data-dp-tab="effects" aria-selected="false">
+			<Icon name="material-symbols:auto-awesome" aria-hidden="true" />
+			<span class="truncate">特效</span>
+		</button>
+	</div>
+
+	<!-- ===== 外观 ===== -->
+	<div class="dp-panel is-active" data-dp-panel="appearance">
+		<div class="section-title">
+			主题色相
+			<button type="button" class="dp-reset" data-dp-reset="hue" aria-label="重置主题色相" title="重置">
+				<Icon name="material-symbols:restart-alt" aria-hidden="true" />
+			</button>
+			<div id="hueValue" class="dp-hue-value">175</div>
+		</div>
+		<div class="hue-slider-shell">
+			<input
+				id="colorSlider"
+				type="range"
+				min="0"
+				max="360"
+				step="5"
+				value="175"
+				class="slider"
+				aria-label="主题色相"
+				style="width: 100%"
+			/>
+		</div>
+
+		<div class="section-title">
+			文章布局
+			<button type="button" class="dp-reset" data-dp-reset="layout" aria-label="重置文章布局" title="重置">
+				<Icon name="material-symbols:restart-alt" aria-hidden="true" />
+			</button>
+		</div>
+		<div class="dp-row">
+			<button type="button" class="dp-choice" data-dp-layout="list">
+				<Icon name="material-symbols:format-list-bulleted" aria-hidden="true" />
+				<span>列表</span>
+			</button>
+			<button type="button" class="dp-choice" data-dp-layout="grid">
+				<Icon name="material-symbols:apps" aria-hidden="true" />
+				<span>网格</span>
+			</button>
+		</div>
+
+		<div class="section-title">
+			卡片样式
+			<button type="button" class="dp-reset" data-dp-reset="cardBorder" aria-label="重置卡片样式" title="重置">
+				<Icon name="material-symbols:restart-alt" aria-hidden="true" />
+			</button>
+		</div>
+		<button type="button" class="dp-switch" data-dp-toggle="cardBorder">
+			<span class="text-sm flex-1">卡片边框和阴影</span>
+			<span class="toggle-switch" aria-hidden="true"><span></span></span>
+		</button>
+	</div>
+
+	<!-- ===== 壁纸 ===== -->
+	<div class="dp-panel" data-dp-panel="wallpaper">
+		<div class="section-title">
+			横幅设置
+			<button type="button" class="dp-reset" data-dp-reset="bannerTitle" aria-label="重置横幅设置" title="重置">
+				<Icon name="material-symbols:restart-alt" aria-hidden="true" />
+			</button>
+		</div>
+		<button type="button" class="dp-switch" data-dp-toggle="bannerTitle">
+			<span class="text-sm flex-1">首页壁纸标题</span>
+			<span class="toggle-switch" aria-hidden="true"><span></span></span>
+		</button>
+		<p class="dp-hint">关闭后首页横幅只留壁纸图与波浪，不显示标题与副标题。</p>
+	</div>
+
+	<!-- ===== 特效 ===== -->
+	<div class="dp-panel" data-dp-panel="effects">
+		<div class="section-title">
+			特效开关
+			<button type="button" class="dp-reset" data-dp-reset="fx" aria-label="重置特效开关" title="重置">
+				<Icon name="material-symbols:restart-alt" aria-hidden="true" />
+			</button>
+		</div>
+		<button type="button" class="dp-switch" data-dp-toggle="waves">
+			<span class="text-sm flex-1">水波纹动画</span>
+			<span class="toggle-switch" aria-hidden="true"><span></span></span>
+		</button>
+		<button type="button" class="dp-switch" data-dp-toggle="gradient">
+			<span class="text-sm flex-1">渐变过渡</span>
+			<span class="toggle-switch" aria-hidden="true"><span></span></span>
+		</button>
+		<p class="dp-hint">
+			水波纹开时渐变过渡自动让位（参考站同款：两者同时开会叠出一条脏边）。
+		</p>
+	</div>
+</div>
+
+<script is:inline>
+	// 首帧前套用已保存的所有设置。必须在这里（而不是组件脚本）跑：
+	// 面板是 is:inline 且位于 head 之后，越早越好，否则主题色相会「先绿后紫」闪一下。
+	;(function applyDisplaySettingsEarly() {
+		var d = document.documentElement
+		function read(k) {
+			try {
+				return localStorage.getItem(k)
+			} catch (e) {
+				return null
+			}
+		}
+		// 主题色相：写到 :root 的行内 --hue，global.css 里那一族 oklch 全部跟着转
+		var hue = read("hue")
+		if (hue !== null && /^\d+$/.test(hue)) d.style.setProperty("--hue", hue)
+		// 下面四个是布尔开关 → 用 class 驱动（写在 global.css，跨页生效）
+		if (read("wavesEnabled") === "false") d.setAttribute("data-waves-enabled", "false")
+		if (read("gradientEnabled") === "false") d.setAttribute("data-gradient-enabled", "false")
+		if (read("bannerTitleEnabled") === "false") d.setAttribute("data-banner-title-enabled", "false")
+		// ⚠️ 极性与参考站相反：参考站默认**没有**卡片边框，靠 .enable-card-border 加上；
+		// 本站 .card-base 本来就带边框和阴影 → 默认即「有」，所以只在**关闭**时挂类。
+		if (read("cardBorderEnabled") === "false") d.classList.add("disable-card-border")
+	})()
+</script>
+
+<script>
+	import { displaySettings, displaySettingsKeys as KEYS } from "@/config/displaySettings"
+
+	type Layout = "list" | "grid"
+
+	const root = document.documentElement
+
+	// ---------- 存储 ----------
+	const read = (key: string, fallback: string): string => {
+		try {
+			return localStorage.getItem(key) ?? fallback
+		} catch {
+			return fallback
+		}
+	}
+	const write = (key: string, value: string) => {
+		try {
+			localStorage.setItem(key, value)
+		} catch {
+			/* 隐私模式下写不进去，忽略即可 */
+		}
+	}
+
+	// ---------- 主题色相 ----------
+	const hueValue = document.getElementById("hueValue") as HTMLDivElement | null
+	const colorSlider = document.getElementById("colorSlider") as HTMLInputElement | null
+
+	const applyHue = (hue: number) => {
+		root.style.setProperty("--hue", String(hue))
+		if (hueValue) hueValue.textContent = String(hue)
+		if (colorSlider) colorSlider.value = String(hue)
+	}
+
+	const savedHue = read(KEYS.hue, "")
+	applyHue(savedHue && /^\d+$/.test(savedHue) ? parseInt(savedHue, 10) : displaySettings.hue)
+
+	colorSlider?.addEventListener("input", () => {
+		const hue = parseInt(colorSlider.value, 10)
+		applyHue(hue)
+		write(KEYS.hue, String(hue))
+		syncDirty()
+	})
+
+	// ---------- 文章布局 ----------
+	const listContainer = () => document.getElementById("post-list-container")
+
+	// 与 PostPage 里那段「首帧应用」用同一套类名；这里多一层淡出（参考站的
+	// .layout-switching 过渡：先加类 → 200ms 后换布局 → 下一帧摘类）
+	const applyLayoutToDom = (layout: Layout) => {
+		const c = listContainer()
+		if (!c) return
+		c.classList.remove("list-mode", "grid-mode", "post-grid-auto", "flex", "flex-col", "gap-4", "md:gap-4")
+		if (layout === "grid") {
+			c.classList.add("grid-mode", "post-grid-auto")
+		} else {
+			c.classList.add("list-mode", "flex", "flex-col", "gap-4", "md:gap-4")
+		}
+	}
+
+	const currentLayout = (): Layout => {
+		const c = listContainer()
+		if (!c) return read(KEYS.postListLayout, displaySettings.postListLayout.default) as Layout
+		if (c.classList.contains("grid-mode")) return "grid"
+		if (c.classList.contains("list-mode")) return "list"
+		return read(KEYS.postListLayout, displaySettings.postListLayout.default) as Layout
+	}
+
+	/** 外部（面板按钮）入口：保存 + 切换。文章页没有容器 → 只存不切，回首页生效。 */
+	const setPostListLayout = (layout: Layout) => {
+		write(KEYS.postListLayout, layout)
+		const c = listContainer()
+		if (!c) {
+			syncDirty()
+			return
+		}
+		if (currentLayout() === layout) {
+			// 已经是目标布局，只补一次类名（防止首帧脚本没跑到）
+			applyLayoutToDom(layout)
+			syncDirty()
+			return
+		}
+		c.classList.add("layout-switching")
+		window.setTimeout(() => {
+			applyLayoutToDom(layout)
+			requestAnimationFrame(() => {
+				const el = listContainer()
+				if (el) el.classList.remove("layout-switching")
+			})
+			syncDirty()
+		}, 200)
+	}
+	;(window as unknown as { setPostListLayout: typeof setPostListLayout }).setPostListLayout = setPostListLayout
+
+	document.querySelectorAll<HTMLButtonElement>("[data-dp-layout]").forEach(btn => {
+		btn.addEventListener("click", () => setPostListLayout(btn.dataset.dpLayout as Layout))
+	})
+
+	// ---------- 布尔开关 ----------
+	type BoolKey = "waves" | "gradient" | "bannerTitle" | "cardBorder"
+
+	const applyBool = (key: BoolKey, on: boolean) => {
+		if (key === "waves") {
+			if (on) root.removeAttribute("data-waves-enabled")
+			else root.setAttribute("data-waves-enabled", "false")
+			if (!on) write(KEYS.wavesEnabled, "false")
+		} else if (key === "gradient") {
+			if (on) root.removeAttribute("data-gradient-enabled")
+			else root.setAttribute("data-gradient-enabled", "false")
+			if (!on) write(KEYS.gradientEnabled, "false")
+		} else if (key === "bannerTitle") {
+			if (on) root.removeAttribute("data-banner-title-enabled")
+			else root.setAttribute("data-banner-title-enabled", "false")
+			if (!on) write(KEYS.bannerTitleEnabled, "false")
+		} else {
+			root.classList.toggle("disable-card-border", !on)
+			if (!on) write(KEYS.cardBorderEnabled, "false")
+		}
+	}
+
+	const boolState = (key: BoolKey): boolean => {
+		if (key === "waves") return read(KEYS.wavesEnabled, "true") !== "false"
+		if (key === "gradient") return read(KEYS.gradientEnabled, "true") !== "false"
+		if (key === "bannerTitle") return read(KEYS.bannerTitleEnabled, "true") !== "false"
+		return read(KEYS.cardBorderEnabled, "true") !== "false"
+	}
+
+	document.querySelectorAll<HTMLButtonElement>("[data-dp-toggle]").forEach(btn => {
+		btn.addEventListener("click", () => {
+			const key = btn.dataset.dpToggle as BoolKey
+			const next = !boolState(key)
+			applyBool(key, next)
+			// 打开时把存储值删掉，回到「跟随默认」，与参考站的 null 语义一致
+			if (next) {
+				try {
+					localStorage.removeItem(
+						key === "waves"
+							? KEYS.wavesEnabled
+							: key === "gradient"
+								? KEYS.gradientEnabled
+								: key === "bannerTitle"
+									? KEYS.bannerTitleEnabled
+									: KEYS.cardBorderEnabled
+					)
+				} catch {
+					/* ignore */
+				}
+			}
+			syncSwitchStates()
+			syncDirty()
+		})
+	})
+
+	// ---------- 重置（每个 section 右侧那枚按钮） ----------
+	const resets: Record<string, () => void> = {
+		hue: () => {
+			applyHue(displaySettings.hue)
+			try {
+				localStorage.removeItem(KEYS.hue)
+			} catch {
+				/* ignore */
+			}
+		},
+		layout: () => {
+			try {
+				localStorage.removeItem(KEYS.postListLayout)
+			} catch {
+				/* ignore */
+			}
+			const def = listContainer()?.getAttribute("data-default-layout") || displaySettings.postListLayout.default
+			setPostListLayout(def as Layout)
+		},
+		cardBorder: () => {
+			applyBool("cardBorder", true)
+			try {
+				localStorage.removeItem(KEYS.cardBorderEnabled)
+			} catch {
+				/* ignore */
+			}
+			syncSwitchStates()
+		},
+		bannerTitle: () => {
+			applyBool("bannerTitle", true)
+			try {
+				localStorage.removeItem(KEYS.bannerTitleEnabled)
+			} catch {
+				/* ignore */
+			}
+			syncSwitchStates()
+		},
+		fx: () => {
+			applyBool("waves", true)
+			applyBool("gradient", true)
+			try {
+				localStorage.removeItem(KEYS.wavesEnabled)
+				localStorage.removeItem(KEYS.gradientEnabled)
+			} catch {
+				/* ignore */
+			}
+			syncSwitchStates()
+		},
+	}
+	document.querySelectorAll<HTMLButtonElement>("[data-dp-reset]").forEach(btn => {
+		btn.addEventListener("click", () => {
+			resets[btn.dataset.dpReset || ""]?.()
+			syncDirty()
+		})
+	})
+
+	// ---------- 面板显示状态同步 ----------
+	// 参考站用的是 data-floating-panel + inert + aria-hidden + aria-expanded 四件套
+	// （AGENTS 五-16 末条：Header 在容器外，浮层跳页后不自动清，所以状态要显式收回来）
+	const panel = document.getElementById("display-setting")
+	const trigger = document.getElementById("display-settings-switch")
+
+	const setPanelOpen = (open: boolean) => {
+		if (!panel) return
+		panel.classList.toggle("float-panel-closed", !open)
+		panel.toggleAttribute("inert", !open)
+		panel.setAttribute("aria-hidden", open ? "false" : "true")
+		trigger?.setAttribute("aria-expanded", open ? "true" : "false")
+		document.body.classList.toggle("display-panel-open", open)
+	}
+
+	trigger?.addEventListener("click", e => {
+		e.stopPropagation()
+		setPanelOpen(trigger.getAttribute("aria-expanded") !== "true")
+	})
+	document.addEventListener("click", e => {
+		if (!panel || panel.classList.contains("float-panel-closed")) return
+		const t = e.target as Element
+		if (panel.contains(t) || trigger?.contains(t)) return
+		setPanelOpen(false)
+	})
+	document.addEventListener("keydown", e => {
+		if (e.key === "Escape" && panel && !panel.classList.contains("float-panel-closed")) setPanelOpen(false)
+	})
+
+	// tab 切换
+	document.querySelectorAll<HTMLButtonElement>("[data-dp-tab]").forEach(btn => {
+		btn.addEventListener("click", () => {
+			const name = btn.dataset.dpTab
+			document.querySelectorAll<HTMLButtonElement>("[data-dp-tab]").forEach(b => {
+				const on = b.dataset.dpTab === name
+				b.classList.toggle("is-active", on)
+				b.setAttribute("aria-selected", on ? "true" : "false")
+			})
+			document.querySelectorAll<HTMLDivElement>("[data-dp-panel]").forEach(p => {
+				p.classList.toggle("is-active", p.dataset.dpPanel === name)
+			})
+		})
+	})
+
+	// ---------- 状态回显 ----------
+	function syncSwitchStates() {
+		document.querySelectorAll<HTMLButtonElement>("[data-dp-toggle]").forEach(btn => {
+			const on = boolState(btn.dataset.dpToggle as BoolKey)
+			btn.classList.toggle("is-on", on)
+			btn.setAttribute("aria-pressed", on ? "true" : "false")
+		})
+	}
+
+	// 有改动过的项 → 它的重置按钮才亮（参考站同款：默认 opacity-0 pointer-events-none disabled）
+	function syncDirty() {
+		const dirty: Record<string, boolean> = {
+			hue: read(KEYS.hue, "") !== "",
+			layout: read(KEYS.postListLayout, "") !== "",
+			cardBorder: read(KEYS.cardBorderEnabled, "") !== "",
+			bannerTitle: read(KEYS.bannerTitleEnabled, "") !== "",
+			fx: read(KEYS.wavesEnabled, "") !== "" || read(KEYS.gradientEnabled, "") !== "",
+		}
+		document.querySelectorAll<HTMLButtonElement>("[data-dp-reset]").forEach(btn => {
+			const on = !!dirty[btn.dataset.dpReset || ""]
+			btn.classList.toggle("is-available", on)
+			btn.toggleAttribute("disabled", !on)
+		})
+		const layout = currentLayout()
+		document.querySelectorAll<HTMLButtonElement>("[data-dp-layout]").forEach(b => {
+			b.classList.toggle("is-active", b.dataset.dpLayout === layout)
+		})
+	}
+
+	syncSwitchStates()
+	syncDirty()
+
+	// 软导航后：新容器带着服务端默认类名 → 重新套一次用户选择（不写存储，只重放）
+	window.onReinit(
+		"display-settings-layout",
+		() => {
+			const c = listContainer()
+			if (!c) return
+			const saved = read(KEYS.postListLayout, "")
+			if (saved === "list" || saved === "grid") applyLayoutToDom(saved)
+			syncDirty()
+		},
+		{ delay: 60 }
+	)
+</script>
+
+<style is:global>
+	/* ===== 面板外壳（照参考站 .float-panel，但直角） ===== */
+	.float-panel {
+		position: absolute;
+		top: calc(var(--spacing, 0.25rem) * 21);
+		right: 1rem;
+		width: 20rem;
+		/* ⚠️ 面板的 offsetParent 不是 #nav，而是 #nav 内部那层 `relative ... justify-between`
+		   （实测 320px 视口下它只有 288px 宽），所以百分比要按它算、不能按 100vw 算：
+		   写 max-width: calc(100vw - 2rem) 时 320px 下算出 288px = offsetParent 整宽，
+		   再叠 right:1rem 就顶到视口左侧外面（实测 left:-4）。改成 100%（= 288px）后
+		   上限是 272px，right:1rem 一定还留得下。 */
+		max-width: calc(100% - 1rem);
+		max-height: 80vh;
+		overflow-y: auto;
+		padding: 0 0.75rem 0.75rem;
+		border: 1px solid var(--line-divider);
+		background-color: var(--card-bg);
+		box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+		transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+		z-index: 40;
+	}
+
+	/* 关闭态：参考站是 translateY(-0.25rem) + opacity 0 + pointer-events none。
+	   ⚠️ 用 opacity/visibility/transform 而不是 display:none —— 后者没有可插值属性，
+	   过渡根本不跑（AGENTS 五-41）。 */
+	.float-panel-closed {
+		opacity: 0;
+		visibility: hidden;
+		transform: translateY(-0.25rem);
+		pointer-events: none;
+	}
+	.float-panel-closed * {
+		pointer-events: none;
+	}
+
+	/* ===== tab 栏 ===== */
+	.dp-tabs {
+		display: flex;
+		gap: 0.25rem;
+		border-bottom: 1px solid var(--line-divider);
+		padding-top: 0.75rem;
+		padding-bottom: 0.25rem;
+		margin-bottom: 0.75rem;
+	}
+	.dp-tab {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.375rem;
+		padding: 0.5rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--grey-5);
+		transition: background-color 0.15s, color 0.15s;
+		cursor: pointer;
+	}
+	.dp-tab svg {
+		font-size: 1.5rem;
+	}
+	.dp-tab:hover {
+		background-color: var(--btn-plain-bg-hover);
+		color: var(--grey-7);
+	}
+	:root[data-theme="dark"] .dp-tab:hover {
+		color: var(--grey-3);
+	}
+	.dp-tab.is-active {
+		background-color: var(--btn-plain-bg-hover);
+		color: var(--primary);
+	}
+
+	/* ===== 分区 ===== */
+	.dp-panel {
+		display: none;
+	}
+	.dp-panel.is-active {
+		display: block;
+	}
+
+	.section-title {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 0.75rem;
+		margin-bottom: 0.6rem;
+		font-size: 1rem;
+		font-weight: 600;
+		color: oklch(0.2 0.02 var(--hue));
+	}
+	:root[data-theme="dark"] .section-title {
+		color: oklch(0.96 0.02 var(--hue));
+	}
+	/* 参考站的 .section-title:before 是一条 0.25rem 宽的主色小竖条 */
+	.section-title::before {
+		content: "";
+		flex-shrink: 0;
+		width: 0.25rem;
+		height: 1rem;
+		background: var(--primary);
+		border-radius: 0.125rem;
+	}
+	/* 重置按钮占 1.5rem 见方；未改动时隐藏（参考站 opacity-0 pointer-events-none disabled） */
+	.dp-reset {
+		width: 1.5rem;
+		height: 1.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--btn-content);
+		background-color: var(--btn-regular-bg);
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 0.15s, transform 0.15s;
+		cursor: pointer;
+	}
+	.dp-reset.is-available {
+		opacity: 1;
+		pointer-events: auto;
+	}
+	.dp-reset:active {
+		transform: scale(0.9);
+	}
+	.dp-hue-value {
+		margin-left: auto;
+		min-width: 2.75rem;
+		padding: 0.125rem 0.5rem;
+		background-color: var(--btn-regular-bg);
+		color: var(--btn-content);
+		font-weight: 700;
+		font-size: 0.8125rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.15s;
+	}
+
+	/* ===== 色相条 =====
+	   参考站的 .slider 在这三个 CSS 文件里 0 条规则（实测），外壳只有一层
+	   bg-[oklch(0.80_0.10_0)] 的实色底 → 原生 range + accent-color 就是它所呈现的样子。
+	   本站照做，只额外给轨道加了色相预览：没有预览的色相条等于盲拖。
+	   这是**有依据的偏离**，不是自创。 */
+	.hue-slider-shell {
+		width: 100%;
+		height: 1.5rem;
+		padding: 0 0.25rem;
+		display: flex;
+		align-items: center;
+		background: oklch(0.8 0.1 0);
+		/* 色相预览：0→360° 全色环 */
+		background-image: linear-gradient(
+			to right,
+			oklch(0.8 0.1 0),
+			oklch(0.8 0.1 60),
+			oklch(0.8 0.1 120),
+			oklch(0.8 0.1 180),
+			oklch(0.8 0.1 240),
+			oklch(0.8 0.1 300),
+			oklch(0.8 0.1 360)
+		);
+		user-select: none;
+	}
+	:root[data-theme="dark"] .hue-slider-shell {
+		background: oklch(0.7 0.1 0);
+		background-image: linear-gradient(
+			to right,
+			oklch(0.7 0.1 0),
+			oklch(0.7 0.1 60),
+			oklch(0.7 0.1 120),
+			oklch(0.7 0.1 180),
+			oklch(0.7 0.1 240),
+			oklch(0.7 0.1 300),
+			oklch(0.7 0.1 360)
+		);
+	}
+	.hue-slider-shell input:focus-visible {
+		outline: none;
+	}
+	.hue-slider-shell:has(> input:focus-visible) {
+		outline: 2px solid var(--primary);
+		outline-offset: 2px;
+	}
+	.slider {
+		-webkit-appearance: none;
+		appearance: none;
+		height: 0.5rem;
+		background: transparent;
+		cursor: pointer;
+	}
+	.slider::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 0.75rem;
+		height: 1.25rem;
+		background: #fff;
+		border: 2px solid var(--primary);
+		box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+	}
+	.slider::-moz-range-thumb {
+		width: 0.75rem;
+		height: 1.25rem;
+		background: #fff;
+		border: 2px solid var(--primary);
+		border-radius: 0;
+		box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+	}
+
+	/* ===== 两选一（列表 / 网格） ===== */
+	.dp-row {
+		display: flex;
+		gap: 0.5rem;
+	}
+	.dp-choice {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0.75rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		background-color: var(--btn-regular-bg);
+		color: var(--btn-content);
+		transition: all 0.15s;
+		cursor: pointer;
+	}
+	.dp-choice:hover {
+		background-color: var(--btn-regular-bg-hover);
+	}
+	.dp-choice.is-active {
+		background-color: var(--btn-regular-bg-hover);
+		color: var(--primary);
+	}
+	.dp-choice:not(.is-active) {
+		opacity: 0.6;
+	}
+	.dp-choice svg {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	/* ===== 开关行 ===== */
+	.dp-switch {
+		width: 100%;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0.5rem;
+		color: var(--text-color);
+		transition: background-color 0.15s;
+		cursor: pointer;
+		text-align: left;
+	}
+	.dp-switch:hover {
+		background-color: var(--btn-plain-bg-hover);
+	}
+	.toggle-switch {
+		flex-shrink: 0;
+		width: 2.25rem;
+		height: 1.25rem;
+		background-color: var(--btn-regular-bg);
+		position: relative;
+		transition: background-color 0.2s;
+	}
+	.toggle-switch > span {
+		position: absolute;
+		top: 0.125rem;
+		left: 0.125rem;
+		width: 1rem;
+		height: 1rem;
+		background-color: #fff;
+		transition: transform 0.2s;
+	}
+	.dp-switch.is-on .toggle-switch {
+		background-color: var(--primary);
+	}
+	.dp-switch.is-on .toggle-switch > span {
+		transform: translateX(1rem);
+	}
+	.dp-hint {
+		font-size: 0.75rem;
+		line-height: 1.5;
+		color: var(--grey-6);
+		padding: 0.5rem 0.5rem 0;
+	}
+
+	/* ===== 滚动条（照参考站 .custom-scrollbar） ===== */
+	#display-setting {
+		scrollbar-width: thin;
+		scrollbar-color: rgb(0 0 0 / 0.2) transparent;
+	}
+	:root[data-theme="dark"] #display-setting {
+		scrollbar-color: rgb(255 255 255 / 0.2) transparent;
+	}
+	#display-setting::-webkit-scrollbar {
+		width: 6px;
+	}
+	#display-setting::-webkit-scrollbar-track {
+		background: 0 0;
+	}
+	#display-setting::-webkit-scrollbar-thumb {
+		background: rgb(0 0 0 / 0.2);
+	}
+
+	/* ===== 开关类驱动的全局效果 ===== */
+	/* 水波纹：参考站是 display:none!important / block!important 两个方向都写死，
+	   因为 .waves 本身在别处有 display 声明。这里同款。 */
+	html[data-waves-enabled="false"] #header-waves {
+		display: none !important;
+	}
+	html[data-gradient-enabled="false"] #wallpaper-gradient {
+		display: none !important;
+	}
+	html[data-banner-title-enabled="false"] .banner-home-text-overlay {
+		display: none !important;
+	}
+	/* 卡片边框与阴影：极性与参考站相反（见组件头注释），默认有，关掉才挂类 */
+	html.disable-card-border .card-base {
+		border-color: transparent !important;
+		box-shadow: none !important;
+	}
+
+	/* ===== 文章列表：网格模式 =====
+	   参考站这套规则是 scoped 的（带 data-astro-cid），本站必须写进全局：
+	   卡片属于 PostCard 组件、容器属于 PostPage 组件，两边 scoped 都覆盖不到对方。
+	   ⚠️ 全部 !important：global.css 里列表模式的 .has-cover .post-card-image
+	   已经带 !important，且这里要压过 md 断点里那组 width。 */
+	.post-grid-auto {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(var(--post-card-min-width, 320px), 1fr));
+		gap: 1rem;
+	}
+	/* 切布局时的淡出（参考站 .layout-switching） */
+	#post-list-container.layout-switching {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	#post-list-container.grid-mode {
+		display: grid !important;
+		grid-template-columns: repeat(auto-fill, minmax(var(--post-card-min-width, 320px), 1fr)) !important;
+		gap: 1rem !important;
+	}
+	#post-list-container.grid-mode .post-card-wrapper {
+		flex-direction: column-reverse !important;
+		height: 100% !important;
+		justify-content: flex-end !important;
+	}
+	#post-list-container.grid-mode .post-card-content {
+		width: 100% !important;
+		height: auto !important;
+		flex-grow: 1 !important;
+		padding: 1rem !important;
+	}
+	/* 封面从「右侧竖条」变「整卡顶部横幅」——参考站 grid-mode 的核心那一条 */
+	#post-list-container.grid-mode .has-cover .post-card-image {
+		position: relative !important;
+		top: auto !important;
+		bottom: auto !important;
+		right: auto !important;
+		left: auto !important;
+		width: 100% !important;
+		margin: 0 !important;
+		aspect-ratio: 2 !important;
+		border-radius: 0 !important;
+		max-height: none !important;
+	}
+	/* 无封面的卡片：右侧进入按钮是 absolute 的 52px，内容要给它让位 */
+	#post-list-container.grid-mode .no-cover .post-card-content {
+		width: calc(100% - 4rem) !important;
+	}
+	/* ⚠️ 标题是 `.post-card-wrapper > .post-card-content > a.link-primary`（包在 content 里），
+	   不是 wrapper 的直接子元素 —— 写成 `>` 一条都命中不了（第一版就这么写错，产物里量字号仍是 1.5rem）。 */
+	#post-list-container.grid-mode .post-card-content > a.link-primary {
+		font-size: 1.35rem !important;
+		line-height: 1.75rem !important;
+		margin-bottom: 0.5rem !important;
+	}
+	/* 列表模式标题左侧那条主色竖线：网格模式下卡片窄，竖线会顶到封面上，
+	   参考站同样是 .grid-mode .post-card-title:before{display:none!important} */
+	#post-list-container.grid-mode .post-card-content > a.link-primary::before {
+		display: none !important;
+	}
+	#post-list-container.grid-mode .description {
+		flex-grow: 0 !important;
+		-webkit-line-clamp: 2 !important;
+		line-clamp: 2 !important;
+		font-size: 0.875rem !important;
+		margin-bottom: 0.5rem !important;
+	}
+	#post-list-container.grid-mode .stats {
+		margin-top: auto !important;
+	}
+	/* 网格模式卡片更窄 → 元数据跟着缩一档，否则日期和分类会换行 */
+	#post-list-container.grid-mode .post-meta {
+		gap: 0.5rem !important;
+		margin-bottom: 0.5rem !important;
+	}
+	#post-list-container.grid-mode .post-meta .meta-icon {
+		width: 1.5rem !important;
+		height: 1.5rem !important;
+		margin-right: 0.25rem !important;
+	}
+</style>

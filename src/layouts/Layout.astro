@@ -73,7 +73,7 @@ const isHomePage = pathname === "/" || /^\/\d+$/.test(pathname)
     <slot slot="head" name="head" />
     <Header />
     <div id="progress-bar"></div>
-    <div class="relative z-10 w-full overflow-hidden opacity-100">
+    <div id="banner-zone" class="relative z-10 w-full overflow-hidden opacity-100">
         <Cover bannerPostMeta={bannerPostMeta} isPostPage={isPostPage} isHomePage={isHomePage} />
         <Waves />
     </div>

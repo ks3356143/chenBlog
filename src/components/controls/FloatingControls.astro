@@ -3,6 +3,7 @@ import type { MarkdownHeading } from "astro"
 import BackToTop from "@/components/controls/BackToTop.astro"
 import BackToHome from "@/components/controls/BackToHome.astro"
 import FloatingToc from "@/components/controls/FloatingToc.astro"
+import ImmersiveReading from "@/components/features/ImmersiveReading.astro"
 
 // 用于控制右下角浮动菜单媒体查询css样式
 
@@ -15,6 +16,7 @@ const { headings } = Astro.props
 
 <div class="floating-controls-container">
 	<FloatingToc headings={headings ?? []} />
+	<ImmersiveReading />
 	<BackToHome />
 	<BackToTop />
 </div>

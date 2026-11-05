@@ -4,6 +4,7 @@ import Search from "@/components/controls/Search.svelte"
 import Menu from "@/assets/menu.svg"
 import MobileMenu from "@/components/headers/MobileMenu.astro"
 import DropdownMenu from "@/components/headers/DropdownMenu.astro"
+import DisplaySettings from "@/components/features/DisplaySettings.astro"
 import { navBarLinks } from "@/config/navBarConfig"
 ---
 
@@ -42,6 +43,9 @@ import { navBarLinks } from "@/config/navBarConfig"
 				<Search client:load />
 				<div class="flex items-center justify-center space-x-1">
 					<ThemeIcon />
+					<!-- 显示设置开关 + 面板。整组放在导航栏里（照参考站 #display-setting 的位置），
+					     Header 在 Swup 容器外 → 面板开合状态跨软导航保持，不需要任何 reinit。 -->
+					<DisplaySettings />
 					<div id="nav-menu-panel" class="lg:hidden">
 						<div class="btn-plain cursor-pointer p-2">
 							<Menu />

@@ -152,14 +152,20 @@
     height: 100%;
     object-fit: cover;
 }
-.cover-image-container .loading-spinner {
-    transition: opacity 0.3s ease-out;
+/* LQIP 占位层：对照参考站 `.lqip-placeholder{z-index:0;transition:opacity .5s ease-out}`
+   与 `.lqip-placeholder.loaded{opacity:0}`，时长与缓动逐字相同。 */
+.cover-image-container .lqip-placeholder {
+    z-index: 0;
+    transition: opacity 0.5s ease-out;
 }
-.cover-image-container[data-loading="false"] .loading-spinner {
+/* 双保险：JS 加 .loaded、或 data-loading 翻成 false，任一成立就淡出。
+   （五-35「任何终态都要摘掉遮罩」的教训 —— 只靠单一信号会永久盖住图） */
+.cover-image-container .lqip-placeholder.loaded,
+.cover-image-container[data-loading="false"] .lqip-placeholder {
     opacity: 0;
     pointer-events: none;
 }
-.cover-image-container[data-error="true"] .loading-spinner {
+.cover-image-container[data-error="true"] .lqip-placeholder {
     display: none;
 }
 .cover-image-container[data-error="true"] .error-message {
@@ -184,20 +190,6 @@
 }
 .cover-image-container[data-error="true"] img[data-remote="true"] {
     display: none;
-}
-.cover-image-container .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid oklch(0.9 0.05 var(--hue));
-    border-top-color: oklch(0.6 0.15 var(--hue));
-    border-radius: 50%;
-    animation: cover-spin 0.8s linear infinite;
-}
-/* 名字独立于 markdown-extend.styl 里 Mermaid 用的 @keyframes spin，不共用一个全局动画 */
-@keyframes cover-spin {
-    to {
-        transform: rotate(360deg);
-    }
 }
 @media (min-width: 768px) {
     .cover-image-container {
@@ -532,4 +524,83 @@
             0 4px 14px -2px color-mix(in oklch, var(--primary) 30%, transparent),
             0 0 0 1px color-mix(in oklch, var(--primary) 18%, transparent);
     }
+}
+
+/* ── 沉浸阅读（2026-11-05）· 1:1 对照参考站 body.immersive-reading 那一族规则 ────────
+   参考站源码：Layout.CnNANU9e.css 的 `body.immersive-reading ...` 段。
+   隐藏清单逐条对过本站产物，有 id 的全在；参考站独有的（bg-player / l2d-widget /
+   sakura / spine-model / license-container）不写空选择器，避免"看着对齐其实没对象"。
+
+   ⚠️ 与 #reading-progress 的关系：**保留**（本站特有，沉浸模式更需要它）。
+   ⚠️ #floating-toc-wrapper 收起是本站在参考站基础上的**有意偏离**：参考站另开一套
+      #immersive-toc，本站已有悬浮目录，藏掉比再造一套少维护一层。 */
+body.immersive-reading {
+    background-color: var(--page-bg) !important;
+}
+
+body.immersive-reading #nav,
+body.immersive-reading #banner-zone,
+body.immersive-reading #left-sidebar,
+body.immersive-reading #right-sidebar,
+body.immersive-reading #mobile-bottom-sidebar,
+body.immersive-reading #category-bar-wrapper,
+body.immersive-reading #header-waves,
+body.immersive-reading #wallpaper-gradient,
+body.immersive-reading #banner-images-container,
+body.immersive-reading #banner-overlay-container,
+body.immersive-reading #floating-toc-wrapper,
+body.immersive-reading .footer {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* 内容面板顶到视口顶部（参考站同时清掉 --content-top） */
+body.immersive-reading .content-panel {
+    top: 1rem !important;
+    min-height: calc(100vh - 1rem) !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    --content-top: 1rem !important;
+}
+
+body.immersive-reading #main-grid,
+body.immersive-reading #content-wrapper,
+body.immersive-reading #swup-container {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* 单栏：参考站 display:flex + column + gap:0 */
+body.immersive-reading #main-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+}
+
+/* 正文宽度：参考站 --immersive-reading-width 默认 46rem */
+body.immersive-reading #post-container {
+    width: 100% !important;
+    max-width: var(--immersive-reading-width, 46rem) !important;
+    margin: 0 auto !important;
+    background-color: var(--card-bg) !important;
+}
+
+/* 沉浸态按钮保持可见（参考站 .floating-btn { z-index: 50 }） */
+body.immersive-reading .floating-controls-container .floating-btn {
+    position: relative;
+    z-index: 50;
+}
+
+/* 退出按钮的"已开启"态：与参考站 .toggled 同语义 —— 主色底 + 白字 */
+.floating-btn.toggled {
+    background-color: var(--primary);
+    color: #fff;
+}
+.floating-btn.toggled:hover {
+    background-color: var(--primary-hover);
+    color: #fff;
 }

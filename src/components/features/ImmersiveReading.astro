@@ -1,0 +1,107 @@
+---
+// 沉浸阅读（2026-11-05）。
+//
+// 结构 1:1 对照参考站 firefly.cuteleaf.cn 的编译产物：
+//   · 按钮     #immersive-reading-btn（参考站 title="进入沉浸阅读"，onclick=toggleImmersiveReading()）
+//   · 状态类   body.immersive-reading
+//   · JS       /_astro/ImmersiveReading.astro_astro_type_script_index_0_lang.B7aFlC6_.js
+//   · CSS      参考站 Layout.CnNANU9e.css 的 `body.immersive-reading ...` 那一族规则
+//              → 本站写进 src/styles/singles/mainSingles.css 末尾（全局，Swup 不换 head）
+//
+// 参考站那串"要隐藏的元素"逐条对过本站，有 id 的一个不少：左右侧栏 / 移动底部堆 /
+// 分类栏 / 波浪 / 壁纸渐变 / 横幅图 / 横幅文案层。参考站有而本站没有的（bg-player /
+// l2d-widget / sakura / spine-model / license-container）不写空选择器。
+//
+// 与现有实现的冲突处理（3 处，已核对，都不是硬塞）：
+//   ① #reading-progress 保留 —— 沉浸模式更需要它；参考站没这条所以无从对照。
+//   ② #card-spotlight 在 #page-shell 内，沉浸模式无卡片网格，自然不亮，不用特殊处理。
+//   ③ 悬浮按钮组保留（参考站同样是 `.floating-controls-container .floating-btn { z-index: 50 }`），
+//      但把 #floating-toc-wrapper 收起来 —— 参考站是另开一套 #immersive-toc，
+//      本站已有悬浮目录，藏掉它比再建一套少一层维护面（有意偏离，已登记）。
+import FloatingButton from "@/components/commons/FloatingButton.astro"
+---
+
+<FloatingButton
+	id="immersive-reading-btn"
+	icon="material-symbols:fullscreen-rounded"
+	ariaLabel="进入沉浸阅读"
+	class="hide"
+/>
+
+<script is:raw is:inline>
+	// 参考站状态机（ImmersiveReading.js）逐条对齐：enter / exit / toggle / 按钮显隐 / Esc 退出 / 窄屏自动退出
+	var IMMERSIVE = (window.__immersive || (window.__immersive = { isOn: false, prevScroll: 0 }))
+
+	function immersiveEligible() {
+		// 参考站：只在内页（有 #post-container）+ 宽度 >= 1024 时显示
+		return !!document.getElementById("post-container") && window.innerWidth >= 1024
+	}
+
+	function immersiveSyncBtn() {
+		var btn = document.getElementById("immersive-reading-btn")
+		if (!btn) return
+		if (!immersiveEligible() && !IMMERSIVE.isOn) btn.classList.add("hide")
+		else btn.classList.remove("hide")
+		var label = IMMERSIVE.isOn ? "退出沉浸阅读" : "进入沉浸阅读"
+		var b = btn.querySelector("button")
+		if (b) {
+			b.setAttribute("aria-label", label)
+			b.setAttribute("title", label)
+		}
+		btn.classList.toggle("toggled", IMMERSIVE.isOn)
+	}
+
+	function enterImmersive() {
+		if (IMMERSIVE.isOn || !immersiveEligible()) return
+		IMMERSIVE.isOn = true
+		IMMERSIVE.prevScroll = window.scrollY
+		document.body.classList.add("immersive-reading")
+		window.scrollTo({ top: 0, behavior: "instant" })
+		document.dispatchEvent(new CustomEvent("immersiveReadingChange", { detail: { on: true } }))
+		immersiveSyncBtn()
+	}
+
+	function exitImmersive() {
+		if (!IMMERSIVE.isOn) return
+		IMMERSIVE.isOn = false
+		document.body.classList.remove("immersive-reading")
+		window.scrollTo({ top: IMMERSIVE.prevScroll || 0, behavior: "instant" })
+		document.dispatchEvent(new CustomEvent("immersiveReadingChange", { detail: { on: false } }))
+		immersiveSyncBtn()
+	}
+
+	function toggleImmersive() {
+		IMMERSIVE.isOn ? exitImmersive() : enterImmersive()
+	}
+
+	window.toggleImmersiveReading = toggleImmersive
+	window.enterImmersiveReading = enterImmersive
+	window.exitImmersiveReading = exitImmersive
+
+	// 事件委托：整个文档只挂一次（按钮随 Swup 容器换新）
+	window.reinitOnce("immersive-reading-click", function () {
+		document.addEventListener("click", function (e) {
+			var btn = e.target && e.target.closest ? e.target.closest("#immersive-reading-btn") : null
+			if (!btn) return
+			e.preventDefault()
+			toggleImmersive()
+		})
+		document.addEventListener("keydown", function (e) {
+			if (e.key === "Escape" && IMMERSIVE.isOn) exitImmersive()
+		})
+		window.addEventListener(
+			"resize",
+			function () {
+				if (IMMERSIVE.isOn && window.innerWidth < 1024) exitImmersive()
+				immersiveSyncBtn()
+			},
+			{ passive: true }
+		)
+	})
+
+	// 每趟导航后重新同步（新页面可能不是文章页 → 状态要退出、按钮要藏）
+	window.onReinit("immersive-reading-sync", function () {
+		if (IMMERSIVE.isOn && !document.getElementById("post-container")) exitImmersive()
+		immersiveSyncBtn()
+	})
+</script>

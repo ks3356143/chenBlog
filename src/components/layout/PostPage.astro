@@ -3,6 +3,7 @@ import type { CollectionEntry } from "astro:content"
 import PostCard from "@/components/layout/PostCard.astro"
 import { url } from "@/utils/url-utils"
 import { getPostCover } from "@/utils/cover-utils"
+import { displaySettings } from "@/config/displaySettings"
 // 该文件主要用于渲染分页文章
 
 const { page } = Astro.props // 传入的分页后的文章
@@ -12,11 +13,21 @@ type PostEntry = CollectionEntry<"posts">
 
 // 容器布局基本设置
 const baseClass = `flex flex-col gap-4 md:gap-4 list-mode`
+
+// 网格 / 列表切换（2026-11-05 新增）。data-* 属性名与取值全部照参考站
+// #post-list-container 上那一组（data-mobile-breakpoint / data-force-grid-below
+// 是我们自己加的，因为参考站把 780 与 380 写死在脚本里，本站要能在配置里改）。
+const layoutCfg = displaySettings.postListLayout
 ---
 
 <div
 	id="post-list-container"
-	data-default-layout="list"
+	data-default-layout={layoutCfg.default}
+	data-mobile-default-layout={layoutCfg.mobile}
+	data-mobile-breakpoint={layoutCfg.mobileBreakpoint}
+	data-force-grid-below={layoutCfg.forceGridBelow}
+	data-column-width={layoutCfg.columnWidth}
+	style={`--post-card-min-width: ${layoutCfg.columnWidth}px;`}
 	class:list={["mb-4 transition-all duration-500 ease-in-out", baseClass]}
 >
 	{
@@ -40,3 +51,34 @@ const baseClass = `flex flex-col gap-4 md:gap-4 list-mode`
 		))
 	}
 </div>
+
+<!-- 首帧前套用已保存的布局，防刷新时先画列表再跳成网格（照参考站的原位做法：
+     紧贴容器、同步执行、全程关 transition）。⚠️ is:inline 且不写 TS（五-39）。
+     这段在容器之后，所以执行时 #post-list-container 一定已经在 DOM 里。
+     「未存过 + 与默认一致」直接 return，避免给首屏加一次无谓的重排。 -->
+<script is:inline>
+	;(function applySavedLayout() {
+		var c = document.getElementById("post-list-container")
+		if (!c) return
+		var def = c.getAttribute("data-default-layout") || "list"
+		var mob = c.getAttribute("data-mobile-default-layout") || def
+		var breakpoint = parseInt(c.getAttribute("data-mobile-breakpoint") || "780", 10)
+		var forceGrid = parseInt(c.getAttribute("data-force-grid-below") || "380", 10)
+		var saved = null
+		try {
+			saved = localStorage.getItem("postListLayout")
+		} catch (e) {}
+		var effective = saved || (window.innerWidth < breakpoint ? mob : def)
+		if (window.innerWidth < forceGrid) effective = "grid"
+		if (!saved && effective === def) return
+		c.style.transition = "none"
+		c.classList.remove("list-mode", "grid-mode", "post-grid-auto", "flex", "flex-col", "gap-4", "md:gap-4")
+		if (effective === "grid") {
+			c.classList.add("grid-mode", "post-grid-auto")
+		} else {
+			c.classList.add("list-mode", "flex", "flex-col", "gap-4", "md:gap-4")
+		}
+		void c.offsetHeight
+		c.style.transition = ""
+	})()
+</script>

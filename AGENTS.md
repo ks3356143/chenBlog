@@ -26,7 +26,7 @@ harness 注入链 = `~/.dsh/AGENTS.md` → `AGENTS.md` → `AGENTS.local.md`，*
 🔴 **动到下列任一类工作前，必须先 Read 对应分册**：改 markdown 插件链 / 部署 / 发稿与手册同步 / Swup 与重 init / 批量改写文件 / 验收取证。
 ⚠️ **改完本文件或 `AGENTS.local.md` 必须跑 `npm run docs:check`**（核注入预算 + 分册存在性 + 编号引用完整性）。原先"顶部 52 行第 X 趟流水账"已删（与 HANDOFF 第一节重复）→ **易变状态只看 `HANDOFF.md`。**
 
-> 本次交接（2026-10-12）：六份分册与原文件逐字节相同（控制组校验过）；上一任的跨会话记忆已落盘进 `harness.md` + `AGENTS.local.md`（原先在 `.qoder-cn`，卸载即消失）。
+> 交接（2026-10-12）：六份分册与原文件逐字节相同；上一任记忆已落盘进 `harness.md` + `AGENTS.local.md`。
 
 ## 📌 开始工作前先读 [`HANDOFF.md`](./HANDOFF.md)
 
@@ -82,7 +82,7 @@ harness 注入链 = `~/.dsh/AGENTS.md` → `AGENTS.md` → `AGENTS.local.md`，*
 | 页面过渡 | Swup **4.10.0**（脚本重执行改为自己写容器作用域钩子，**2026-09-30 弃用 `@swup/scripts-plugin`**，原因见第十节 11） |
 | 其他 | Fancybox 图库、astro-icon 1.2.0 + Iconify |
 
-> 2026-09-21 做过一次全量依赖升级，`npm audit` 从 21 个漏洞（2 critical）降到 **0**（**当时快照，非现状**），
+> 2026-09-21 全量依赖升级：`npm audit` 从 21 个漏洞降到 **0**（**当时快照**），
 > 并通过干净 `npm ci` + 构建验证。升级中的坑与版本天花板全部记在第五、九节。
 
 **注意**：Tailwind 4 + Astro 7 + Svelte 5 都是较新的大版本，网上很多教程是旧版写法，改配置前先确认版本。
@@ -102,7 +102,7 @@ npm run covers     # 由 src/assets/postImages/covers/*.svg 重生成列表页�
 npm run new:post -- --day 29 --title "标题"   # 文章脚手架（ASCII slug + 只写 9 个真在用的 frontmatter）
 ```
 
-**验证手段只有三样**：`dev` 看效果 + `build` 确认能构建通过 + `npm run check` 查类型。没有 lint / test 脚本，也没有部署脚本。
+**验证手段三样**：`dev` 看效果 + `build` 确认能构建 + `check` 查类型。无 lint / test / 部署脚本。
 
 > `npm run check` 当前基线：**0 error / 3 条 hint**，**这 3 条是故意留的、别当 error 追**：
 > ① `SiteStatus.astro:123` `siteStartDate` 是 `define:vars` 注入的（tsc 看不到但运行时真有）；②③ `meCard` / `CopyShare`
@@ -139,18 +139,18 @@ src/content/dynamic/  # 动态（说说）：一条一个 md，文件名 YYYY-MM
 src/pages/            # 路由：about / archive / categories / tags / series / dynamic / guestbook / gallery / posts/[...slug] / [...page]
 src/pages/api/dynamic.json.ts  # 动态数据端点：build 时预渲染成 dist/api/dynamic.json
 src/pages/rss.xml.js  # RSS 已实现
-src/components/pages/dynamic/  # DynamicFeed.svelte（取数+分页）+ DynamicItemTemplate.astro（<template> 骨架）
-src/components/card/  # 侧栏卡片：SiteStatus / Calender / DynamicSidebar（最新动态）/ SiteInfo（站点信息，均构建期静态）
+src/components/pages/dynamic/  # DynamicFeed.svelte + DynamicItemTemplate.astro
+src/components/card/  # 侧栏卡片：SiteStatus / Calender / DynamicSidebar / SiteInfo（构建期静态）
 src/layouts/          # BaseLayout.astro + Layout.astro
 src/plugins/          # 8 个自研 remark/rehype 插件（见下）
-src/modules.d.ts      # 只有一条 declare module "@rehype-callouts-theme"（给 astro check 用，三节有说明）
+src/modules.d.ts      # 一条 declare module（给 astro check 用，见三节）
 public/assets/js/reinit.js  # ⚠️「导航后重 init」注册表：onReinit/reinitOnce 的唯一实现，BaseLayout head 同步加载（十-14）
 scripts/generate-icons.mjs  # 由 public/favicon.svg 生成全套图标（npm run icons）
 scripts/generate-covers.mjs # 由 src/assets/postImages/covers/*.svg 生成自动封面 webp（npm run covers）
 scripts/new-post.mjs        # 文章脚手架（npm run new:post）
 scripts/check-docs.mjs      # 文档自检：注入预算 + 分册存在性 + 编号引用完整性（npm run docs:check）
 scripts/probe.mjs           # 定宽浏览器探针（Playwright）：给 URL/宽度，返回计算样式、溢出、元素计数
-pagefind.yml                # 搜索索引排除规则（KaTeX、data-pagefind-ignore、搜索面板自身）
+pagefind.yml                # 搜索索引排除规则
 src/styles/                 # CSS + 一处 Stylus（markdown-extend.styl）
 src/utils/                  # content/cover/date/gallery/image/layout/toc/url 工具函数
 ```
@@ -250,6 +250,10 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 
 **任一命中即停手，直接输出已有结论，不再发起新命令**：① 连续 3 个动作无新增可交付结论 ② 同一问题第 3 次查询无新增条目 ③ 调研/清单类满 15 分钟 ④ 材料已够填输出结构（未核实项标注即可）。
 ⚠️ 触发信号是「我又想再查一个关键词」。**0 命中 = 不存在 = 直接写。**
+
+### ⚡ 效率纪律（2026-11-05 立）
+
+**墙钟 ≈ 往返次数 × 单次成本**，少做一次往返比优化命令更有用。四条细则见 `collab.md` 七-补二。🔴 但**完整 build / 全站扫描 / 逐张看图不许省**。
 ### 收尾铁律（用户说「下班 / 结束会话 / 收工 / 今天到这儿」时必须跑完，不要只回一句再见）
 
 1. **清临时文件** — 本地与服务器 `/tmp` 下本次的 tar / curl html / 探测脚本；**临时脚本别丢进项目根**。⚠️ **回滚资产不算临时文件**（`dist.old`、`dist_backup_*`、stash 一律保留；**只有用户明确说"清掉备份"才删**，拿不准就保留并告知）。
@@ -385,9 +389,7 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 
 ## 附：本 harness（DSH）与上一任工具的差异
 
-> **全文已下沉到 `docs/agents/harness.md` 第四节（C 能力清单）**，改完跑 `npm run docs:check`。
-> 从 Qoder 接管（2026-10-12）后**项目规则一条没变，变的是工具**：注入口径、浏览器验证通道、停止后台任务、设计类流程、
-> 部署类技能与 MCP 现状全在那份里。`HANDOFF.md` 与 `docs/agents/*` **不自动注入，要自己 Read**。
+> 全文见 `docs/agents/harness.md` 第四节。**项目规则没变，变的是工具**（注入口径 / 验证通道 / 停后台 / 部署技能 / MCP 现状）。`HANDOFF.md` 与 `docs/agents/*` **不自动注入，要自己 Read**。
 
 ## 知识库（取用 / 采集 —— 全文 `docs/agents/writing.md` **八-10**）
 

@@ -8,7 +8,7 @@
 > **🔧 2026-11-05 夜间（第三十三批：按用户逐条反馈改四项，已上线 V0.1.86）**
 > 用户看完清单只挑了四条要改（②③⑪⑫），其余"不说的就很好不用改"。
 > ② **LQIP 撤掉、转圈回来**：用户原话「我觉得还是转圈好」。恢复 `.spinner`（40px、主色边框、
->    `cover-spin 0.8s`），**删掉 `src/utils/lqip-utils.ts` 与全部 LQIP 代码**。
+>    `cover-spin 0.8s`），**删掉 LQIP 工具模块与全部 LQIP 代码**。
 >    双信号仍在：`.loaded` 类 或 `data-loading="false"` 任一成立就隐藏。
 > ③ **按钮统一 + tab 动画**：
 >    · 「粗细不一致」的实测真因：两个按钮外框都是 **40×40**、svg 都是 **24×24**，差在**笔画重量** ——
@@ -111,7 +111,7 @@
 >    `#banner-overlay-container` 都盖不到它 → 补 `id="banner-zone"` 一起藏。
 >    ⚠️ **有意偏离**：参考站另开一套 `#immersive-toc`，本站已有悬浮目录 → 直接藏掉（少维护一层），已在 CSS 注释登记。
 >    ⚠️ 参考站独有的 `#bg-player` / `l2d-widget` / `sakura` / `spine-model` / `license-container` 本站没有，**不写空选择器**。
-> ② **LQIP 占位**（替换原转圈）`src/utils/lqip-utils.ts`（新建）+ `CoverImage.astro` + `mainSingles.css`。
+> ② **LQIP 占位**（替换原转圈；⚠️ **已被第三十三批撤销、改回转圈**，`lqip-utils.ts` 已删除）+ `CoverImage.astro` + `mainSingles.css`。
 >    sharp `.resize(3,1).raw()` 采三色 → `linear-gradient(135deg, c1 0%, c2 50%, c3 100%)`；
 >    规则与参考站 `.lqip-placeholder{z-index:0;transition:opacity .5s ease-out}` 逐字对齐。
 >    🔴 **淡出必须双信号**：`.loaded` 类 **或** `data-loading="false"` 任一成立才淡出（五-35 的教训：
@@ -2039,7 +2039,7 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 | 项 | 状态 |
 |---|---|
 | 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`。第三十三批（V0.1.86 按反馈改四项）：**一笔提交 `360511c`，已推送、`HEAD == origin/main`、工作区计数 0** |
-| 工作区 | 本批动 **21 项**：改 `commons/CoverImage.astro`(+8/−24)、`features/CardSpotlight.astro`(+15/−11)、`features/DisplaySettings.astro`(+44/−1)、`styles/singles/mainSingles.css`(+54/−16)、5 篇 post frontmatter 各 +1 行（插 `image`）、`package.json`；**删** `src/utils/lqip-utils.ts`；**新增** 5 张封面 SVG + 5 张 webp。**零依赖改动** |
+| 工作区 | 本批动 **21 项**：改 `commons/CoverImage.astro`(+8/−24)、`features/CardSpotlight.astro`(+15/−11)、`features/DisplaySettings.astro`(+44/−1)、`styles/singles/mainSingles.css`(+54/−16)、5 篇 post frontmatter 各 +1 行（插 `image`）、`package.json`；**删** LQIP 工具模块（`utils/lqip-utils`，已不存在）；**新增** 5 张封面 SVG + 5 张 webp。**零依赖改动** |
 | 线上站点 | ✅ **2026-11-05 21:12 部署 V0.1.86**（替换前 **5 组断言**：`0.1.86` 必须在 / `0.1.85` 不在 / `cover-spin` 必须在 / `lqip-placeholder` 必须不在 / `dp-panel-in` 必须在 / 5 张新封面都在）。**线上实测**：转圈 10 个、LQIP 0、图标 `mingcute:palette-line`、五篇各用 cover-5~9、tab 动画 `dp-panel-in`、浅色 spotlight `soft-light`、`pageerror 0`。HTTP 200 |
 | 本地构建 | V0.1.86 = **541 个文件 / 51 个 `index.html` / pagefind 51**（+38 = 5 张新封面的 webp 变体 35 个 + 3）。`build` **0 warn 0 error**、`check` **0 error / 3 hint**、`tsc` **0** |
 | 依赖 | 本批**零改动**，`package.json` 只动 version。天花板不变：`mermaid 11.17.2` / `typescript 6.0.3`；`astro` 7.4.5 已是最新 |

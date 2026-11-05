@@ -3,9 +3,33 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-05 傍晚（第三十批：卡片 hover 去上浮改辉光+流光，已上线 V0.1.83）**。
+> 最后更新：**2026-11-05 傍晚（第三十一批：四条绚丽动效，已上线 V0.1.84）**。
 >
-> **🔧 2026-11-05 傍晚（第三十批：卡片 hover 去上浮、改辉光 + 循环流光，已上线 V0.1.83）**
+> **🔧 2026-11-05 傍晚（第三十一批：四条绚丽动效，已上线 V0.1.84）**
+> 用户问「还有什么优化绚丽的」，我给了四条（全部零依赖、纯 CSS + 原生 JS），他全选，
+> 配色定「多色渐变」（全跟 `--hue` 走，不引入新色系）。
+> ① **回顶按钮 · 滚动进度环** `BackToTop.astro` + `mainSingles.css`：注入 `.btt-progress`，
+>    `conic-gradient` 按 `--scroll-progress` 画亮段、余下淡轨道，mask 双向合成挖空成一圈；到底整圈发光。
+>    🔴 三个坑：**环不能用负 inset**（`FloatingButton` 自带 overflow:hidden，会被裁成光秃秃的方块）；
+>    **暗段起点不能 `+4deg`**（满格 364deg 绕回 0，左侧留灰边）；
+>    **末段色相必须回到首段**（写 `hue+180` 时 100% 处首尾差 180°，环左侧一条断色）。
+> ② **主题切换 · 圆形扩散** `ThemeIcon.astro`：`startViewTransition` + `clip-path: circle()`
+>    从按钮中心扩散到视口最远角。🔴 **reduced-motion 与不支持 VT 的浏览器必须在 JS 里分流**
+>    （CSS 媒体查询管不住 startViewTransition，一调用就会跑）。⚠️ `mix-blend-mode:normal` 必写（否则闪白）。
+> ③ **分类栏 · 滑动指示器** `CategoryBar.astro`：主色渐变色块滑到当前 pill，pill 文字转白。
+>    🔴 **必须显式 `left:0`**（不写时 static 位置已在 padding box 内，再叠 translateX 右移 13px）；
+>    🔴 **坐标用 `getBoundingClientRect` 差值，不用 `offsetLeft`**（pill 在滚动容器里，横滚后会漂）。
+>    激活 pill 滚出可视区时整块淡出；横滚 / resize / 软导航后都重摆。
+> ④ **导航栏 · 滚动毛玻璃收缩** `Header.astro`：滚过 60px → 高度 72→56、`blur(14px) saturate(1.6)`、
+>    主色渐变叠层 + 微光 + 下投影。🔴 **logo 缩到 2.75rem 不是 3.5rem**（原本 h-13=52px，写 3.5rem 反而更高）；
+>    🔴 **只写标准 backdrop-filter 不补 -webkit-**（`layout-style.css:211` 的坑）；
+>    🔴 **不碰 transform**（脚本用它做下滑隐藏）。
+> 📋 验收：本地 + 线上同口径全过 —— 环 0→0.4998→1.0000（到底 `data-complete`）；导航 72→56 + 玻璃生效 + logo 44；
+> 分类指示器 `aligned: true`（首页 / 归档 / 软导航回来都对）；主题 `canVT: true`、`vtX 1298 / vtR 1560`、light→dark；
+> 深色下四条全在；`pageerror 0`。基线 **503 文件 / 51 index / pagefind 51**；
+> `build` 0 / `check` 0 error 3 hint；回滚资产 **91 个**；提交 **`485ebb3`**，`HEAD == origin/main`。
+> ⚠️ **ThemeIcon 行尾又翻了一次**（索引 LF、我写成 CRLF）→ 改完先跑 `git ls-files --eol`，比 `diff --numstat` 更早暴露。
+>> **🔧 2026-11-05 傍晚（第三十批：卡片 hover 去上浮、改辉光 + 循环流光，已上线 V0.1.83）**
 > 用户原话：「首页卡片 hover 时候微微上移我不喜欢，改为 hover 绚丽一点的阴影、流光都可以，反正不要微微上动」。
 > 🔴 **这一条是"用户否决了我上午刚做的效果"，别再改回去**：上午那版 `translate: 0 -2px` 已彻底删除。
 > - **辉光**：多层替换原来只有一层的阴影 —— 1px 主色描边 + 6px/20px 中距离光晕 + 14px/40px 远处柔光 + 一道黑色浅影。
@@ -1963,22 +1987,22 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-05 傍晚第三十批实测；线上 = V0.1.83**，已部署）
+## 三、当前状态快照（**2026-11-05 傍晚第三十一批实测；线上 = V0.1.84**，已部署）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`。第三十批（V0.1.83 卡片 hover 去上浮）：**一笔提交 `160feaa`，已推送、`HEAD == origin/main`、工作区计数 0**。同日前两笔：`57a7302`（V0.1.82 功能）+ `80ba3b2`（V0.1.82 文档） |
-| 工作区 | 本批动 **2 个文件**（+123/−71）：`styles/singles/mainSingles.css`（+122/−70：删掉上浮那两段重复规则、重写为辉光 + 流光）、`package.json`（0.1.82→0.1.83）。**零依赖改动** |
-| 线上站点 | ✅ **2026-11-05 17:36 部署 V0.1.83**（替换前 **4 条断言**：`0.1.83` 必须在、`0.1.82` 必须不在、`card-sheen` 必须在 `_astro/*.css`、`translate:0 -2px` 必须不在）。**线上实测**：`sameX/sameY/sameW/sameH` 全 true、`translate: none`、辉光 4 层、`borderColor oklch(.444 .084 174.59 / .49)`、流光 `afterAnim: card-sheen`、5 次采样 `tx = -348/56/321/400/-407`（确实在扫）、网格模式同样 `sameY: true`、`pageerror 0`。HTTP 200 |
-| 本地构建 | V0.1.83 = **502 个文件 / 51 个 `index.html` / pagefind 51**（与 V0.1.82 同，本批只动 CSS）。`build` **0 warn 0 error**、`check` **0 error / 3 hint** |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`。第三十一批（V0.1.84 四条绚丽动效）：**一笔提交 `485ebb3`，已推送、`HEAD == origin/main`、工作区计数 0**。同日更早三笔：`160feaa`（V0.1.83 hover 重做）+ `57a7302`（V0.1.82 功能）+ `d90b0d9`/`80ba3b2`（文档） |
+| 工作区 | 本批动 **6 个文件**（+397/−22）：`controls/BackToTop.astro`(+61/−18)、`headers/Header.astro`(+53/−1)、`layout/CategoryBar.astro`(+136/−0)、`oneSize/ThemeIcon.astro`(+81/−2)、`styles/singles/mainSingles.css`(+65/−0)、`package.json`(0.1.83→0.1.84)。**零依赖改动** |
+| 线上站点 | ✅ **2026-11-05 18:35 部署 V0.1.84**（替换前 **7 条断言**：`0.1.84` 必须在、`0.1.83` 必须不在、`btt-progress` / `theme-reveal` / `category-indicator` / `data-scrolled` 必须在 `_astro/*.css`）。**线上实测**：环 `0.4998 → 1.0000` + `data-complete`；导航 72→56 + `blur(14px) saturate(1.6)`；分类指示器 `aligned: true`；主题 `canVT:true`、`vtX 1298px / vtR 1560px`、light→dark 生效；`pageerror 0`。HTTP 200 |
+| 本地构建 | V0.1.84 = **503 个文件 / 51 个 `index.html` / pagefind 51**（比上批 +1：`CategoryBar` 的 JS chunk）。`build` **0 warn 0 error**、`check` **0 error / 3 hint** |
 | 依赖 | 本批**零改动**，`package.json` 只动 version。天花板不变：`mermaid 11.17.2` / `typescript 6.0.3`；`astro` 7.4.5 已是最新 |
-| dev / preview server | 本批起过 `npm run preview`（:4321）做 hover 探针与逐帧截图，**收尾按 `node.exe` + `astro*bin*astro.mjs*preview*` 精确杀掉并复查计数 = 0** |
-| 服务器回滚资产 | `dist.old`（= V0.1.82）+ **90 个 `dist_backup_*`**（本批新增 1 个）。**一律保留，删需用户明确同意** |
-| 临时文件 | 收尾清 `%TEMP%` 下 `probe-hover*.mjs` / `probe-loop.mjs` / `probe-sheen.mjs` / `shot2.mjs` / `shot-sheen.mjs` / `pxdiff.mjs` / `px.mjs` / `zoom.mjs` / `diag-sheen.mjs` / `live-hover.mjs` / `cm3.txt` / `dep3.sh` / `h-ms.css` + 全部 `hv-*.png` `sw-*.png` `sh-*.png` `pd-*.png` `fr-*.png` `z-*.png` `lv-*.png` + `chenblog_dist.tar.gz` |
-| 待用户拍板 | **本批新增 0 条**（这是用户当场提的否决，已按他要求改完）。**沿上批仍未答**：移动端 `.floating-controls-container` 压正文 32px · 相册逐张文案 · `/friends/` · `/sponsor/` · Twikoo 裸 `envId` 同域反代 · About 页身份口径 · About 页配图 |
-| 既存小坑 | 同上一批。本批**新增两条要记住的**：① **流光行程 ±50% 不是 ±150%**（translateX 百分比相对自身宽度，±150% 有 2/3 在卡外看不见）；② **改完文件先 `git diff --numstat`** —— 本次整块重写又触发了一次行尾归一化（236/184），按 HEAD 原始字节拼回后降到 122/70 |
+| dev / preview server | 本批起过 `npm run preview`（:4321）做逐帧截图与探针，**收尾按 `node.exe` + `astro*bin*astro.mjs*preview*` 精确杀掉并复查计数 = 0** |
+| 服务器回滚资产 | `dist.old`（= V0.1.83）+ **91 个 `dist_backup_*`**（本批新增 1 个）。**一律保留，删需用户明确同意** |
+| 临时文件 | 收尾清 `%TEMP%` 下 `probe-fx.mjs` / `probe-theme.mjs` / `probe-final.mjs` / `live-fx.mjs` / `shot-ring.mjs` / `shot-nav.mjs` / `shot-cat.mjs` / `cm5.txt` / `dep4.sh` / `idx-theme.astro` + 全部 `fx-*.png` `ring-*.png` `nav-*.png` `cat-*.png` `th-*.png` `fin-*.png` `L-*.png` + `chenblog_dist.tar.gz` |
+| 待用户拍板 | **本批新增 0 条**（四条都是他当场全选）。**沿上批仍未答**：移动端 `.floating-controls-container` 压正文 32px · 相册逐张文案 · `/friends/` · `/sponsor/` · Twikoo 裸 `envId` 同域反代 · About 页身份口径 · About 页配图 |
+| 既存小坑 | 同上一批。本批**新增三条要记住的**：① **环不能用负 inset**（overflow:hidden 会裁）；② **分类指示器必须显式 `left:0`** 且坐标用 rect 差值不用 offsetLeft；③ **改完先跑 `git ls-files --eol`** —— 它比 `diff --numstat` 更早暴露行尾翻转（本批 ThemeIcon 就翻了一次） |
 
 ---
 ## 四、维护本文件的规矩

@@ -3,7 +3,49 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-05 中午（第二十七批：四条交互增强，已上线 V0.1.80）**。
+> 最后更新：**2026-11-05 下午（第二十八批：三条动效，已上线 V0.1.81）**。
+>
+> **🔧 2026-11-05 下午（第二十八批：滚动渐入 / 数字滚动 / 聚光光晕，已上线 V0.1.81）**
+> 用户点做三条动效，并明确要求第 3 条与昨天那条「卡片 hover 上浮 + 边框发光」不冲突。
+> ① **滚动渐入** `src/components/features/ScrollReveal.astro`（新建）+ `Layout.astro` 挂载。
+>    IntersectionObserver、位移仅 14px、缓动 `cubic-bezier(0.4,0,0.2,1)`（参考站全站默认语言）、
+>    命中即 `unobserve` 不重播。目标只挑列表块：`#post-list-container > *` / `.project-grid > *` /
+>    `#content-wrapper .grid.grid-cols-1 > *` / `.series-acc`（**不碰 sticky/fixed 元素** —— 加 transform 会让 sticky 失效）。
+>    🔴 **三个必须记住的坑（都实测踩过）**：
+>    · **`<style>` 必须 `is:global`**：被标记的卡片属于 PostCard 等别的组件，Astro 默认会给本组件样式补
+>      `data-astro-cid-<本组件>`，而那些元素身上没有这个 cid → 规则一条都不命中（实测 cid 在 index.html 出现 **0 次**、opacity 恒 1、动画从未播放）。
+>    · **无 JS 必须可见**：初始隐藏由 `html.reveal-ready` 门控，这个类只有脚本跑起来才加 → 脚本没跑/报错时内容照常显示（已用 `javaScriptEnabled:false` 验过）。
+>    · **`rootMargin` 上边要扩到 10000px**：用 `0px 0px -80px 0px` 时，快速滚动跨过去的元素在任一帧都没进过视口
+>      → 永远停在 `opacity:0`（实测滚到底 done 只有 5/10）。上边扩出去后 10/10 全完成。
+> ② **数字滚动计数** `src/components/features/CountUp.astro`（新建）+ `archive.astro` 加统计条。
+>    三项：文章 33 / 分类 3 / 总字数 77,829（**口径与 SiteStatus 卡片一致**，否则同站两处报不同字数会被当 bug）。
+>    **SSR 输出的是最终值**（无 JS / 慢网 / 报错都读到真数），JS 跑起来才先归零再滚；千位逗号跟着滚；只播一次。
+>    🔴 **两个坑**：`getSortedPostsList()` **主动删掉了 body** → 拿它算字数恒为 0（第一版产物就是 `data-count-to="0"`，
+>    必须改用 `getSortedPosts()`）；归零脚本要**紧接着统计条同步执行**，等 CountUp 那个 80ms 的 onReinit
+>    会看到「33 → 0 → 滚上来」三段跳。
+> ③ **鼠标聚光光晕** `CardSpotlight.astro`（新建）+ `mainSingles.css` 两段规则。
+>    全屏 `fixed` 径向渐变层 + `mix-blend-mode:screen`，指针位置只改两个 CSS 变量；每张卡按"到矩形最近点距离 < 260px"加 `.is-near`。
+>    🔴 **与「hover 上浮」的取舍（明确分工，别再改乱）**：
+>    **上浮 2px + 边框 55% = 鼠标正悬停的那一张**（局部、明确的选中感）；
+>    **聚光层 + 邻卡边框 32% = 整片网格的空间感**（全局、余光级氛围）。
+>    同一张卡两者都命中时，hover 那条写在后面覆盖 → 不会出现边框亮两次过曝、也不会浮起与光晕打架。
+>    ⚠️ 为什么不做"每张卡跟随鼠标的径向渐变"：10 张卡 × 每帧 setProperty = 强制重绘掉帧；
+>    改成**一个统一层**后成本恒定、与卡片数无关。
+>    🔴 **两个坑**：`z-index:1` 会被 `#page-shell`（z-20）整片盖住 → 实测像素差异**止于 y=597**（正好横幅底边）、卡片区差值为 0；
+>    但改成 body 末尾的全屏 fixed 又会把深色横幅一起洗白（横幅区像素差最大 **102**）→ 最终**装进 `#page-shell` 内部**、
+>    z-index 取 5（只在内容区、低于 #nav 的 z-30），实测横幅 diff=2（噪声级）、卡片中心 `#161F1B → #183F36`。
+>    第二个坑：组件装在 page-shell 内部后，脚本求值时后面的卡片还没解析 → `collect()` 拿到空数组、near 恒 0 → 改走 `DOMContentLoaded`。
+> 📋 **验收（本地 + 线上同口径）**：
+> - `build` **0 warn 0 error**；`check` **0 error / 3 hint**；基线 **501 文件 / 51 index.html / 4 css / pagefind 51**。
+> - 12 页 × 3 档 = **36 组**：全 200、h1 恰好 1、溢出 0px、pageerror **0**。
+> - 逐条：滚动渐入 10/10 完成且全部 opacity 1、回滚不重播；数字滚动采样到完整中间序列（25,016 → 41,915 → … → 77,829），
+>   reduced-motion 与禁用 JS 都直接显示终值；聚光深色下 `opacity 1` + `2 张 near` + 指针跟随（300,500 实时同步），
+>   亮色/触屏/reduced-motion 三种情况都不生效。
+> - **线上 51/51 HTML 与本地 dist 逐字节相同**；线上 pagefind.js 200。
+> - 部署走标准流程（替换前 **8 条断言**，含 pagefind 目录存在性）；回滚资产 **88 个**；提交 **`2e33b17`**，`HEAD == origin/main`。
+> - ⚠️ **中途有一次部署在断言处中止**（我漏跑完整 `npm run build`，dist 里没有 pagefind 目录 → 断言拦住，dist 未切换）。
+>   补跑完整构建后重传，第二次通过。**教训：打包前必须确认 `dist/pagefind/` 存在，那是 `npm run build` 的一部分、`astro build` 不含**。
+> - ⚠️ **线上 `/about/` 有 6 条 GitHub API CORS 报错**：已查证 **`dist.old`（V0.1.80）里同样有 6 处** → **既存问题、非本批引入**，未修。
 >
 > **🔧 2026-11-05 中午（第二十七批：四条交互增强，已上线 V0.1.80）**
 > 用户点做四条（明确排除「中文阅读排版」；「相关文章推荐」已有 `RecommendedPost.astro`，不重做）。

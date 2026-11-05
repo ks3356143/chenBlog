@@ -3,9 +3,25 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-05 傍晚（第三十一批：四条绚丽动效，已上线 V0.1.84）**。
+> 最后更新：**2026-11-05 傍晚（第三十二批：修圆角回归，已上线 V0.1.85）**。
 >
-> **🔧 2026-11-05 傍晚（第三十一批：四条绚丽动效，已上线 V0.1.84）**
+> **🔧 2026-11-05 傍晚（第三十二批：修圆角回归，已上线 V0.1.85）**
+> 用户发截图指出「分类栏激活块怎么变圆角了，直角风格呢」。
+> 核查：**是我这轮新加的两个元素自己写了 border-radius**，不是既有样式被改坏。
+> - `.category-indicator`（分类滑动指示器）`0.25rem` → `0`
+> - `.btt-progress`（回顶进度环）`0.25rem` → `0`
+> - 顺带清掉 V0.1.82 面板里 `.section-title::before` 的 `0.125rem`（4px 宽竖条圆了看不出，口径该一致）
+> 🔴 **审核结论**：其余圆角全部是**既有**的（`toc.css` 0.875rem / `Calender` 0.25rem /
+> `global.css` 0.75rem / `main.css` 3px / fancybox 等），逐条 `git show HEAD:` 比对过、没动，
+> **不要顺手把它们也改成直角** —— 那是刻意保留的设计（TOC 药丸、图库圆角等）。
+> 📋 验收：本地 + 线上 `border-radius` 实测全为 `0px`（指示器 / 进度环 / 面板竖条三处），
+> 指示器 `aligned: true`，`pageerror 0`；**92 个回滚资产**；提交 **`db0a4f5`**，`HEAD == origin/main`。
+> ⚠️ **部署时断言写错过一次**：`grep -qF "border-radius:.25rem"` 命中的是 **Calender 卡片**那个既有的，
+> 不是本批改的两处 → 误报 FAIL、中止在替换前（dist 未切换，正是断言该起的作用）。
+> 改成精确匹配 `.category-indicator...border-radius:` / `.btt-progress...border-radius:` 才通过。
+> **教训：断言要钉在"这一处选择器"上，别用全文件 grep 一个通用值。**
+> ⚠️ `mainSingles.css` 又被编辑工具整片翻成 CRLF（119/117 假 diff）→ 按 HEAD 原始字节重建后降到 3/1。
+>> **🔧 2026-11-05 傍晚（第三十一批：四条绚丽动效，已上线 V0.1.84）**
 > 用户问「还有什么优化绚丽的」，我给了四条（全部零依赖、纯 CSS + 原生 JS），他全选，
 > 配色定「多色渐变」（全跟 `--hue` 走，不引入新色系）。
 > ① **回顶按钮 · 滚动进度环** `BackToTop.astro` + `mainSingles.css`：注入 `.btt-progress`，
@@ -1987,22 +2003,22 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-05 傍晚第三十一批实测；线上 = V0.1.84**，已部署）
+## 三、当前状态快照（**2026-11-05 傍晚第三十二批实测；线上 = V0.1.85**，已部署）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`。第三十一批（V0.1.84 四条绚丽动效）：**一笔提交 `485ebb3`，已推送、`HEAD == origin/main`、工作区计数 0**。同日更早三笔：`160feaa`（V0.1.83 hover 重做）+ `57a7302`（V0.1.82 功能）+ `d90b0d9`/`80ba3b2`（文档） |
-| 工作区 | 本批动 **6 个文件**（+397/−22）：`controls/BackToTop.astro`(+61/−18)、`headers/Header.astro`(+53/−1)、`layout/CategoryBar.astro`(+136/−0)、`oneSize/ThemeIcon.astro`(+81/−2)、`styles/singles/mainSingles.css`(+65/−0)、`package.json`(0.1.83→0.1.84)。**零依赖改动** |
-| 线上站点 | ✅ **2026-11-05 18:35 部署 V0.1.84**（替换前 **7 条断言**：`0.1.84` 必须在、`0.1.83` 必须不在、`btt-progress` / `theme-reveal` / `category-indicator` / `data-scrolled` 必须在 `_astro/*.css`）。**线上实测**：环 `0.4998 → 1.0000` + `data-complete`；导航 72→56 + `blur(14px) saturate(1.6)`；分类指示器 `aligned: true`；主题 `canVT:true`、`vtX 1298px / vtR 1560px`、light→dark 生效；`pageerror 0`。HTTP 200 |
-| 本地构建 | V0.1.84 = **503 个文件 / 51 个 `index.html` / pagefind 51**（比上批 +1：`CategoryBar` 的 JS chunk）。`build` **0 warn 0 error**、`check` **0 error / 3 hint** |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`。第三十二批（V0.1.85 修圆角回归）：**一笔提交 `db0a4f5`，已推送、`HEAD == origin/main`、工作区计数 0**。同日更早：`485ebb3`（V0.1.84 四条动效）+ `5eedaf1`（文档）+ `160feaa`（V0.1.83）+ `57a7302`（V0.1.82） |
+| 工作区 | 本批动 **4 个文件**（+10/−4）：`layout/CategoryBar.astro`(+3/−1)、`styles/singles/mainSingles.css`(+3/−1)、`features/DisplaySettings.astro`(+3/−1)、`package.json`(0.1.84→0.1.85)。**零依赖改动** |
+| 线上站点 | ✅ **2026-11-05 18:56 部署 V0.1.85**（替换前 **4 条断言**：`0.1.85` 必须在、`0.1.84` 必须不在、`.category-indicator` 与 `.btt-progress` 的 `border-radius` 必须为 0）。**线上实测**：两处半径均 `0px`、指示器 `aligned:true`、面板竖条 `0px`、`pageerror 0`。HTTP 200 |
+| 本地构建 | V0.1.85 = **503 个文件 / 51 个 `index.html` / pagefind 51**。`build` **0 warn 0 error**、`check` **0 error / 3 hint** |
 | 依赖 | 本批**零改动**，`package.json` 只动 version。天花板不变：`mermaid 11.17.2` / `typescript 6.0.3`；`astro` 7.4.5 已是最新 |
-| dev / preview server | 本批起过 `npm run preview`（:4321）做逐帧截图与探针，**收尾按 `node.exe` + `astro*bin*astro.mjs*preview*` 精确杀掉并复查计数 = 0** |
-| 服务器回滚资产 | `dist.old`（= V0.1.83）+ **91 个 `dist_backup_*`**（本批新增 1 个）。**一律保留，删需用户明确同意** |
-| 临时文件 | 收尾清 `%TEMP%` 下 `probe-fx.mjs` / `probe-theme.mjs` / `probe-final.mjs` / `live-fx.mjs` / `shot-ring.mjs` / `shot-nav.mjs` / `shot-cat.mjs` / `cm5.txt` / `dep4.sh` / `idx-theme.astro` + 全部 `fx-*.png` `ring-*.png` `nav-*.png` `cat-*.png` `th-*.png` `fin-*.png` `L-*.png` + `chenblog_dist.tar.gz` |
-| 待用户拍板 | **本批新增 0 条**（四条都是他当场全选）。**沿上批仍未答**：移动端 `.floating-controls-container` 压正文 32px · 相册逐张文案 · `/friends/` · `/sponsor/` · Twikoo 裸 `envId` 同域反代 · About 页身份口径 · About 页配图 |
-| 既存小坑 | 同上一批。本批**新增三条要记住的**：① **环不能用负 inset**（overflow:hidden 会裁）；② **分类指示器必须显式 `left:0`** 且坐标用 rect 差值不用 offsetLeft；③ **改完先跑 `git ls-files --eol`** —— 它比 `diff --numstat` 更早暴露行尾翻转（本批 ThemeIcon 就翻了一次） |
+| dev / preview server | 本批起过 `npm run preview`（:4321）核对圆角，**收尾已按 `node.exe` + `astro*bin*astro.mjs*preview*` 精确杀掉并复查计数 = 0** |
+| 服务器回滚资产 | `dist.old`（= V0.1.84）+ **92 个 `dist_backup_*`**（本批新增 1 个）。**一律保留，删需用户明确同意** |
+| 临时文件 | 收尾清 `%TEMP%` 下 `shot-square.mjs` / `chk-panel.mjs` / `live-sq.mjs` / `cm7.txt` / `dep5.sh` / `dep6.sh` / `h-ms3.css` + `sq-*.png` / `Lsq-*.png` + `chenblog_dist.tar.gz`；服务器 `/tmp` 已清（上一次中止时留下的 tar 也在这次脚本里删掉） |
+| 待用户拍板 | **本批新增 0 条**。**沿上批仍未答**：移动端 `.floating-controls-container` 压正文 32px · 相册逐张文案 · `/friends/` · `/sponsor/` · Twikoo 裸 `envId` 同域反代 · About 页身份口径 · About 页配图 |
+| 既存小坑 | 同上一批。本批**新增两条**：① **新加元素必须显式 `border-radius: 0`**（本站直角口径，浏览器默认虽是 0，但写 `0.25rem` 这种"顺手圆一下"就是回归）；② **部署断言要钉在具体选择器上**，用全文件 `grep -qF "border-radius:.25rem"` 会命中 Calender 卡片那个既有的值 → 误报 FAIL |
 
 ---
 ## 四、维护本文件的规矩

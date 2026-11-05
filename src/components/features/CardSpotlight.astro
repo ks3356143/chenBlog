@@ -1,0 +1,133 @@
+---
+// 鼠标聚光光晕（2026-11-05 新增）。
+//
+// 只做两件事，成本都是恒定的（与卡片数量无关）：
+// ① 一个全屏 fixed 的 #card-spotlight 层，跟着指针移动（只改两个 CSS 变量）；
+// ② 每张卡按"离指针多远"加 / 摘一个 .is-near 类（只改 class，不写行内样式）。
+//
+// 三条硬约束：
+// · **只在深色模式生效**：亮色底上这种发光会显脏（参考站也没有）。切到亮色时整层淡出。
+// · **只在能 hover 的指针设备生效**：触屏没有"鼠标位置"这个概念，硬算会得到奇怪的结果。
+// · **`pointer-events: none`**：光晕层绝不拦截点击；它挂在 z-index 1，正文与卡片都在更高层。
+//
+// 🔴 **光晕层必须写在脚本之前**：本组件是 is:inline 脚本，在解析到它的位置就立即执行，
+//    那一瞬间后面的 <div> 还没进 DOM → getElementById 拿到 null → 整个初始化静默不执行
+//    （第一版就这么写的：产物里元素在、opacity 恒 0、near 恒 0）。
+---
+
+<!-- 光晕层本身。aria-hidden + pointer-events:none：对读屏与鼠标交互都不可见 -->
+<div id="card-spotlight" aria-hidden="true"></div>
+
+<script is:inline>
+	function setupCardSpotlight() {
+		var layer = document.getElementById("card-spotlight");
+		if (!layer) return;
+
+		// 触屏 / 无 hover 能力：直接把层去掉，一条监听都不挂
+		if (!window.matchMedia("(hover: hover)").matches) {
+			layer.remove();
+			return;
+		}
+
+		var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+		// 指针到卡片的"靠近"判定半径（px）。取 260：比卡片半宽略大，
+		// 效果是鼠标停在两张卡之间时两边都会微微亮起，像手电筒的光斑而不是逐卡高亮。
+		var NEAR_RADIUS = 260;
+		var ticking = false;
+		var px = 0;
+		var py = 0;
+		var cards = [];
+
+		function isDark() {
+			return document.documentElement.getAttribute("data-theme") === "dark";
+		}
+
+		function collect() {
+			cards = Array.prototype.slice.call(
+				document.querySelectorAll(".post-card-wrapper, .project-card, .btn-card")
+			);
+		}
+
+		function clearNear() {
+			cards.forEach(function (c) {
+				c.classList.remove("is-near");
+			});
+		}
+
+		function update() {
+			ticking = false;
+			if (!isDark()) {
+				layer.classList.remove("is-on");
+				clearNear();
+				return;
+			}
+
+			layer.style.setProperty("--spot-x", px + "px");
+			layer.style.setProperty("--spot-y", py + "px");
+			layer.classList.add("is-on");
+
+			for (var i = 0; i < cards.length; i++) {
+				var r = cards[i].getBoundingClientRect();
+				// 视口外的卡直接跳过（避免为看不到的东西做几何计算）
+				if (r.bottom < -NEAR_RADIUS || r.top > window.innerHeight + NEAR_RADIUS) {
+					cards[i].classList.remove("is-near");
+					continue;
+				}
+				// 到矩形最近点的距离（不是到中心：宽卡片用中心会显得判定太迟钝）
+				var dx = Math.max(r.left - px, 0, px - r.right);
+				var dy = Math.max(r.top - py, 0, py - r.bottom);
+				var dist = Math.sqrt(dx * dx + dy * dy);
+				cards[i].classList.toggle("is-near", dist < NEAR_RADIUS);
+			}
+		}
+
+		function schedule(e) {
+			if (e) {
+				px = e.clientX;
+				py = e.clientY;
+			}
+			if (ticking) return;
+			ticking = true;
+			requestAnimationFrame(update);
+		}
+
+		if (reduce) {
+			// reduced-motion：不追踪光晕，只保证类名干净
+			return;
+		}
+
+		collect();
+		document.addEventListener("pointermove", schedule, { passive: true });
+		document.addEventListener("pointerleave", function () {
+			layer.classList.remove("is-on");
+			clearNear();
+		});
+
+		// 主题切换时立刻响应（亮色 → 收光）
+		new MutationObserver(function () {
+			schedule();
+		}).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+	}
+
+	// 🔴 不能在这里直接调 setupCardSpotlight()：本组件现在插在 #page-shell **内部**
+	// （全屏 fixed 会把深色横幅一起洗白，必须只罩内容区），而脚本求值时后面的卡片
+	// 还没解析进 DOM → collect() 拿到空数组 → near 恒为 0（实测）。
+	// 等 DOM 解析完再初始化；软导航由下面的 onReinit 重新收集。
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", setupCardSpotlight, { once: true });
+	} else {
+		setupCardSpotlight();
+	}
+
+	// 软导航后卡片整片换新，重新收集（函数内部 collect() 会重新查 DOM）
+	window.onReinit(
+		"card-spotlight",
+		function () {
+			var layer = document.getElementById("card-spotlight");
+			if (!layer || !window.matchMedia("(hover: hover)").matches) return;
+			setupCardSpotlight();
+		},
+		{ delay: 120, immediate: false }
+	);
+</script>

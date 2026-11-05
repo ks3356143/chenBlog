@@ -427,3 +427,109 @@
             0 0 0 1px color-mix(in oklch, var(--primary) 18%, transparent);
     }
 }
+
+/* ── 卡片 hover 微交互：轻微上浮 + 边框发光（2026-11-05）──────────────
+   调性对齐参考站：不倾斜、不缩放卡片本体（只有封面图在卡片内部自己缩放，
+   见 PostCard 的 group-hover:scale-110），只做「抬 2px + 边框亮成主色」两件事。
+   尺寸取 Tailwind 的 2px（--spacing 0.5）= 参考站 hover:-translate-y-1 的一半，
+   原因是我们卡片更密集（列表 10 张/页），1 再往上会显得整页在抖。
+
+   ⚠️ 用 translate 属性（Tailwind v4 的写法）而不是 transform：卡片内部已有的
+   .post-card-image 等元素自带 transform（封面缩放），外层若也写 transform 会互相覆盖。
+   ⚠️ 只在 (hover: hover) 下生效：触屏设备的 sticky hover 会让卡片卡在浮起态。 */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .post-card-wrapper,
+    .project-card,
+    .btn-card {
+        transition:
+            translate 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+            border-color 0.22s ease,
+            box-shadow 0.22s ease;
+    }
+
+    .post-card-wrapper:hover,
+    .project-card:hover,
+    .btn-card:hover {
+        translate: 0 -2px;
+        border-color: color-mix(in oklch, var(--primary) 45%, var(--line-divider));
+        box-shadow:
+            0 4px 12px -2px color-mix(in oklch, var(--primary) 22%, transparent),
+            0 2px 4px -2px rgb(0 0 0 / 0.06);
+    }
+
+    /* 暗色下底色更暗，同样的阴影看不见 → 提高主色占比、收窄扩散 */
+    :root[data-theme="dark"] .post-card-wrapper:hover,
+    :root[data-theme="dark"] .project-card:hover,
+    :root[data-theme="dark"] .btn-card:hover {
+        border-color: color-mix(in oklch, var(--primary) 55%, transparent);
+        box-shadow:
+            0 4px 14px -2px color-mix(in oklch, var(--primary) 30%, transparent),
+            0 0 0 1px color-mix(in oklch, var(--primary) 18%, transparent);
+    }
+}
+
+/* ── 鼠标聚光光晕（2026-11-05）· 只在深色模式、只在能 hover 的指针设备 ────────────
+   与昨天那条「卡片上浮 2px + 边框发光」的关系（明确取舍，别再改乱）：
+
+   · **不叠加、分工**：上浮 + 边框亮 = **鼠标正悬停的那一张**（局部、明确的"选中感"）；
+     聚光 + 邻卡微亮 = **整片网格的空间感**（全局、余光级的氛围）。
+     两者同时命中同一张卡时，hover 那条优先级更高（写在后面覆盖），所以不会出现
+     "边框亮两次导致过曝"或"上浮与光晕打架"的观感 —— 只有一张卡在浮，其余在角落里被手电扫到。
+
+   · **为什么不做"每张卡跟随鼠标的径向渐变"**：那需要给每张卡写 CSS 变量并逐帧 setProperty，
+     10 张卡 × 每帧 = 强制重绘，实测掉帧。改成**一个统一的 spotlight 层**（fixed + mix-blend-mode），
+     一张图跟着指针移动，合成器只做一次位移 —— 成本恒定，与卡片数量无关。
+
+   · 深色限定：亮色底上这种发光会显脏（参考站也没有），所以只在 [data-theme="dark"] 生效。 */
+
+/* 光晕层：铺满内容区（不拦截指针事件），只在深色模式显示。
+   🔴 z-index 必须 **高于页面内容、低于 #nav（z-30）**：
+   第一版写 z-index:1 → 被 #page-shell（z-20）整片盖住，实测"有光晕 vs 无光晕"
+   像素差异区止于 y=597（正好是横幅底边），卡片区差值为 0。
+   ⚠️ 但它也**不能**挂在 body 末尾做全屏 fixed：那样会把深色横幅一起洗白
+   （实测横幅区像素差最大 102）。装在 #page-shell 内部 = 只覆盖内容区，
+   横幅、导航、侧栏都不受影响。 */
+#card-spotlight {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    background: radial-gradient(
+        520px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+        color-mix(in oklch, var(--primary) 18%, transparent) 0%,
+        color-mix(in oklch, var(--primary) 7%, transparent) 38%,
+        transparent 70%
+    );
+    mix-blend-mode: screen;
+}
+
+:root[data-theme="dark"] #card-spotlight.is-on {
+    opacity: 1;
+}
+
+/* 靠近指针的卡片：边框提亮 + 极轻的内发光（由 JS 按距离给每张卡加 .is-near） */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    :root[data-theme="dark"] .post-card-wrapper.is-near,
+    :root[data-theme="dark"] .project-card.is-near,
+    :root[data-theme="dark"] .btn-card.is-near {
+        border-color: color-mix(in oklch, var(--primary) 32%, transparent);
+        box-shadow:
+            0 0 0 1px color-mix(in oklch, var(--primary) 10%, transparent),
+            0 2px 10px -4px color-mix(in oklch, var(--primary) 30%, transparent);
+    }
+
+    /* 🔴 真正悬停的那张：用昨天那条 hover 规则压在上面（未加 !important，
+         靠"同类属性但更具体的选择器 + 书写顺序在后"取胜）——
+         这样光晕只做背景氛围，绝不会跟 hover 的浮起抢视觉重心。 */
+    :root[data-theme="dark"] .post-card-wrapper:hover,
+    :root[data-theme="dark"] .project-card:hover,
+    :root[data-theme="dark"] .btn-card:hover {
+        translate: 0 -2px;
+        border-color: color-mix(in oklch, var(--primary) 55%, transparent);
+        box-shadow:
+            0 4px 14px -2px color-mix(in oklch, var(--primary) 30%, transparent),
+            0 0 0 1px color-mix(in oklch, var(--primary) 18%, transparent);
+    }
+}

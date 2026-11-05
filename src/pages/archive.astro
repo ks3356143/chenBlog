@@ -1,11 +1,40 @@
 ---
 import Layout from "@/layouts/Layout.astro"
-import { getSortedPostsList } from "@/utils/content-utils"
+import { getSortedPosts, getSortedPostsList, getCategoryList } from "@/utils/content-utils"
 import ArchivePannel from "@/components/controls/ArchivePannel.svelte"
+import CountUp from "@/components/features/CountUp.astro"
 
 // 归档页面，根据-年份分区、根据-每个博客分行
 
 const sortedPostList = await getSortedPostsList()
+const categoryList = await getCategoryList()
+
+// 统计条（2026-11-05）：三个数字都在这里算好，SSR 直接输出最终值（无 JS 也能读到真数），
+// 客户端 CountUp 再负责把"从 0 滚上来"演出来。
+// 总字数的口径与 SiteStatus 卡片保持一致（剔代码块与内联代码，只数中英文实字），
+// 否则同一站两个地方报不同的字数会被当成 bug。
+// ⚠️ 必须用 getSortedPosts() 而不是 getSortedPostsList()：后者**主动删掉了 body**，
+//    拿它算字数恒为 0（第一版就是这么写的，产物里 data-count-to="0"）。
+let totalWords = 0
+for (const post of await getSortedPosts()) {
+	const body = post.body
+	if (body) {
+		const text = body
+			.replace(/```[\s\S]*?```/g, "")
+			.replace(/`[^`]*`/g, "")
+			.replace(/\s+/g, " ")
+			.trim()
+		const cn = text.match(/[\u4e00-\u9fa5]/g) || []
+		const en = text.match(/[a-zA-Z]/g) || []
+		totalWords += cn.length + en.length
+	}
+}
+
+const archiveStats = [
+	{ id: "archive-posts", label: "文章", value: sortedPostList.length, suffix: "篇" },
+	{ id: "archive-categories", label: "分类", value: categoryList.length, suffix: "个" },
+	{ id: "archive-words", label: "总字数", value: totalWords, suffix: "字" },
+]
 
 // 这三个值在纯静态构建下**恒为空**（Astro.url 构建期不带查询串），只当服务端那一遍的初值用；
 // 真实筛选由 ArchivePannel 在客户端读 window.location.search。见该组件 resolveFilters() 的注释。
@@ -16,6 +45,43 @@ const uncategorizedFilter = searchParams.has("uncategorized")
 ---
 
 <Layout title="归档-亦林">
+	<!-- 统计条：数字滚动计数。value 在构建期算好，SSR 出真值；data-count-to 给客户端用 -->
+	<div class="card-base mb-4 px-8 py-5">
+		<div class="grid grid-cols-3 gap-4">
+			{
+				archiveStats.map(stat => (
+					<div class="flex flex-col items-center gap-1">
+						<div class="flex items-baseline gap-1">
+							<span
+								id={stat.id}
+								class="text-2xl font-bold tabular-nums text-(--primary) md:text-3xl"
+								data-count-to={stat.value}
+							>
+								{stat.value.toLocaleString("en-US")}
+							</span>
+							<span class="text-xs text-50 md:text-sm">{stat.suffix}</span>
+						</div>
+						<span class="text-xs text-50 md:text-sm">{stat.label}</span>
+					</div>
+				))
+			}
+		</div>
+	</div>
+
+	<!-- 🔴 归零必须**紧接着**统计条同步执行，不能等 CountUp 那个 80ms 的 onReinit：
+	     否则读者会看到「33 → 0 → 滚上来」的三段跳（SSR 值先画出来，再被打回 0）。
+	     同步脚本在解析到此处即执行，元素已在 DOM 里但通常还没绘制 → 首帧就是 0，不会闪。
+	     reduced-motion 下不归零（直接显示真值，脚本也不动画）。 -->
+	<script is:inline>
+		(function () {
+			if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+			document.querySelectorAll("[data-count-to]").forEach(function (el) {
+				if (el.getAttribute("data-count-done") === "true") return;
+				el.textContent = "0";
+			});
+		})();
+	</script>
+
 	<!-- client:load 是必需的：没有时间指令的框架组件只出静态 HTML、客户端零 JS，筛选就永远跑不起来。
 	     SSR 那一遍仍输出完整时间线，所以普通 /archive/ 没有水合空窗；带查询串时水合后立即收窄。 -->
 	<ArchivePannel
@@ -25,4 +91,5 @@ const uncategorizedFilter = searchParams.has("uncategorized")
 		uncategorized={uncategorizedFilter}
 		client:load
 	/>
+	<CountUp />
 </Layout>

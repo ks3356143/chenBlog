@@ -1,0 +1,79 @@
+---
+// 数字滚动计数（2026-11-05 新增）。
+//
+// 调性对齐参考站：缓动与全站一致（cubic-bezier(0.4, 0, 0.2, 1)）、时长 1.1s、
+// 不做弹跳不做回弹。参考站本身没有计数器，所以按它的动效语言自建。
+//
+// 关键取舍：
+// ① **SSR 输出的是最终值**（不是 0）—— 无 JS / 慢网 / 脚本报错时读者看到的是真数字，
+//    而不是一排 0。JS 跑起来后才会先归零再往上滚。
+// ② **千位分隔符跟着滚**（77,829 滚动过程中也是逗号格式），用同一个 formatter 输出。
+// ③ **只播一次**：IntersectionObserver 命中即 unobserve；回滚上去不重播。
+// ④ **reduced-motion 直切**：不动画、直接显示最终值。
+---
+
+<script is:inline>
+	function formatCount(n) {
+		return Math.round(n).toLocaleString("en-US");
+	}
+
+	// easeOutCubic：起步快、收尾稳，与参考站的动效语言一致（不要 elastic / back）
+	function easeOutCubic(t) {
+		return 1 - Math.pow(1 - t, 3);
+	}
+
+	function animateCount(el) {
+		var to = Number(el.getAttribute("data-count-to"));
+		if (!isFinite(to)) return;
+		if (el.getAttribute("data-count-done") === "true") return;
+		el.setAttribute("data-count-done", "true");
+
+		var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+		if (reduce) {
+			el.textContent = formatCount(to);
+			return;
+		}
+
+		var duration = Number(el.getAttribute("data-count-duration")) || 1100;
+		var start = null;
+		el.textContent = formatCount(0);
+		function step(ts) {
+			if (start === null) start = ts;
+			var t = Math.min(1, (ts - start) / duration);
+			el.textContent = formatCount(to * easeOutCubic(t));
+			if (t < 1) requestAnimationFrame(step);
+			else el.textContent = formatCount(to);
+		}
+		requestAnimationFrame(step);
+	}
+
+	function setupCounters() {
+		var nodes = document.querySelectorAll("[data-count-to]");
+		if (!nodes.length) return;
+
+		var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+		if (reduce || !("IntersectionObserver" in window)) {
+			nodes.forEach(animateCount);
+			return;
+		}
+
+		var io = new IntersectionObserver(
+			function (entries) {
+				entries.forEach(function (entry) {
+					if (!entry.isIntersecting) return;
+					animateCount(entry.target);
+					io.unobserve(entry.target);
+				});
+			},
+			// 上边扩到 10000px：快速滚动跨过去的元素在任一帧里可能都没进过视口，
+			// 用 0 会永远停在初始值（滚动渐入那个组件同一处坑，见 ScrollReveal.astro）
+			{ rootMargin: "10000px 0px -40px 0px", threshold: 0.01 }
+		);
+		nodes.forEach(function (el) {
+			// 已经播过的不重复观察（软导航回来时 HTML 是新的一份，属性也会重置，所以这层是兜底）
+			if (el.getAttribute("data-count-done") !== "true") io.observe(el);
+		});
+	}
+
+	window.onReinit("count-up", setupCounters, { delay: 80 });
+</script>

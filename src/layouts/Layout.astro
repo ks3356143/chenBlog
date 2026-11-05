@@ -21,6 +21,10 @@ import CategoryBar from "@/components/layout/CategoryBar.astro"
 import Footer from "@/components/layout/Footer.astro"
 // 浮动栏
 import FloatingControls from "@/components/controls/FloatingControls.astro"
+// 滚动渐入：放在 Layout 顶层（Swup 容器之外）→ 脚本只求值一次，
+// 靠 onReinit 在每趟软导航后重新标记新插入的列表项
+import ScrollReveal from "@/components/features/ScrollReveal.astro"
+import CardSpotlight from "@/components/features/CardSpotlight.astro"
 
 // 中间部分-分类导航栏是否显示根据配置
 const showCategoryBar = !!siteConfig.categoryBar
@@ -86,6 +90,11 @@ const isHomePage = pathname === "/" || /^\/\d+$/.test(pathname)
             id="page-shell"
             class="xl:[92vw] pointer-events-auto relative z-20 mx-auto w-full max-w-(--page-width)"
         >
+            <!-- 聚光光晕层：必须放在 #page-shell **内部**（不是 body 末尾）。
+                 fixed + 全屏时它会连横幅一起照亮 —— 实测 banners 区像素差最大 102，
+                 深色壁纸被洗白，而需求只要"卡片网格上的光晕"。装进 page-shell 后
+                 它只覆盖内容区，横幅与导航不受影响。 -->
+            <CardSpotlight />
             <div
                 id="main-grid"
                 class="right-0 left-0 mx-auto grid w-full grid-cols-1 grid-rows-[auto_1fr_auto] gap-4 px-2 transition duration-700 md:grid-cols-[17.5rem_1fr] md:px-4 lg:grid-rows-[auto] xl:grid-cols-[17.5rem_1fr_17.5rem]"
@@ -162,4 +171,5 @@ const isHomePage = pathname === "/" || /^\/\d+$/.test(pathname)
 
     <!-- 浮动片区 -->
     <FloatingControls headings={headings} />
+    <ScrollReveal />
 </BaseLayout>

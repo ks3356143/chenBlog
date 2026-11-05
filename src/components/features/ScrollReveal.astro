@@ -1,0 +1,104 @@
+---
+// 滚动渐入（2026-11-05 新增）。
+//
+// 调性对齐参考站：缓动用它全站默认的 cubic-bezier(0.4, 0, 0.2, 1)、位移只有 14px、
+// 不做缩放不做旋转 —— 参考站本身没有滚动渐入（它只有 .onload-animation 那种"加载即播"），
+// 所以这里按它的缓动语言自建，不另起一套观感。
+//
+// 三条硬约束（都踩过或差点踩到）：
+// ① **无 JS 必须照常可见**：初始隐藏由 <html class="reveal-ready"> 门控，这个类只有脚本跑起来才加。
+//    脚本没跑 / 报错 / 被拦截 → 类不存在 → CSS 那两条隐藏规则一条都不匹配 → 内容正常显示。
+// ② **只触发一次**：IntersectionObserver 命中即 unobserve，回滚上去不再重播。
+// ③ **prefers-reduced-motion 直切**：JS 里直接加 done、根本不 observe；
+//    同时 CSS 里也有 !important 兜底（防 JS 还没跑到时闪一下）。
+---
+
+<script is:inline>
+	// 目标元素：只挑"列表型内容块"，绝不碰 sticky/fixed 元素
+	// （给 sticky 元素加 transform 会让它失效，给 fixed 元素加会改变它的定位基准）
+	var REVEAL_SELECTOR = [
+		"#post-list-container > *",
+		".project-grid > *",
+		"#content-wrapper .grid.grid-cols-1 > *",
+		".series-acc",
+	].join(", ");
+
+	function setupScrollReveal() {
+		var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+		// 把这一趟要参与渐入的元素标出来（每次导航容器整片换新，所以每次都要重标）
+		var nodes = [];
+		document.querySelectorAll(REVEAL_SELECTOR).forEach(function (el) {
+			el.setAttribute("data-reveal", "");
+			nodes.push(el);
+		});
+		if (!nodes.length) return;
+
+		// reduced-motion：不 observe，直接判完成；<html> 上的门控类也不加 → 内容一直是可见的
+		if (reduce || !("IntersectionObserver" in window)) {
+			nodes.forEach(function (el) {
+				el.setAttribute("data-reveal-done", "");
+			});
+			return;
+		}
+
+		document.documentElement.classList.add("reveal-ready");
+
+		var io = new IntersectionObserver(
+			function (entries) {
+				entries.forEach(function (entry) {
+					if (!entry.isIntersecting) return;
+					entry.target.setAttribute("data-reveal-done", "");
+					io.unobserve(entry.target); // 只播一次
+				});
+			},
+			// rootMargin 的**上边扩到 10000px** 是关键，别改成 0：
+			// 快速滚动 / 从锚点直接落到页面中部时，被"一步跨过去"的元素在任一帧里都没进过视口，
+			// 用 0 的话它们会永远停在 opacity:0（实测滚到底后 done 只有 5/10，前 5 张永久隐形）。
+			// 上边扩出去之后，"已经滚过去"的元素一进观察集合就立刻算 intersecting → 直接判完成。
+			// 下边 -80px 保留：等元素真进视口再动，用户才不会"看着它突然跳一下"。
+			{ rootMargin: "10000px 0px -80px 0px", threshold: 0.01 }
+		);
+		nodes.forEach(function (el) {
+			io.observe(el);
+		});
+	}
+
+	// 首屏 + 每次软导航都重跑；旧的 observer 里的元素已被移出文档，不会泄漏（它们会被 GC）
+	window.onReinit("scroll-reveal", setupScrollReveal, { delay: 60 });
+</script>
+
+<!-- ⚠️ 必须 is:global：被标记的卡片属于 PostCard / ProjectCard 等**别的组件**，
+     Astro 默认会给本组件的 <style> 选择器补上 data-astro-cid-<本组件>，
+     而那些元素身上没有这个 cid → 三条规则一条都不命中（实测 index.html 里该 cid 出现 0 次、
+     firstOpacity 恒为 1、动画从未播放）。这是十-2 那条「scoped CSS 只作用于渲染它的那一页」
+     的同族坑，只是这次连"同一页"都不成立。 -->
+<style is:global>
+	/* 基础态：位移与透明度都走同一个缓动，与参考站全站默认的 transition 语言一致 */
+	[data-reveal] {
+		transition:
+			opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+			transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	/* 只在脚本就绪（html.reveal-ready）且未完成时才藏起来 */
+	html.reveal-ready [data-reveal]:not([data-reveal-done]) {
+		opacity: 0;
+		transform: translateY(14px);
+	}
+
+	html.reveal-ready [data-reveal-done] {
+		opacity: 1;
+		transform: none;
+	}
+
+	/* 兜底：即使脚本还没跑到加类那一步，reduced-motion 用户也绝不看动画 */
+	@media (prefers-reduced-motion: reduce) {
+		html.reveal-ready [data-reveal],
+		html.reveal-ready [data-reveal]:not([data-reveal-done]) {
+			opacity: 1 !important;
+			transform: none !important;
+			transition: none !important;
+		}
+	}
+</style>

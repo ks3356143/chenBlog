@@ -22,6 +22,8 @@
 	let pf = null;
 
 	const RESULT_LIMIT = 12;
+	/** 平台快捷键前缀：macOS 显示 ⌘K，其余显示 Ctrl K */
+	let modKey = $state("Ctrl");
 
 	// 只要有关键词就显示结果层（桌面端），移动端由按钮控制。
 	// 不依赖 focus 事件翻状态：焦点事件在某些环境（未聚焦的 iframe、iOS Safari）不触发，
@@ -97,6 +99,53 @@
 		loading = false;
 	}
 
+	/**
+	 * 快捷键唤起搜索：Ctrl+K / ⌘K。
+	 * 输入框内按下时不抢（浏览器原生的"跳到地址栏"只在我们不 preventDefault 时生效），
+	 * 但本站是全站顶栏入口，用户在正文里按也要能唤起，所以除了焦点确实在搜索框时都接管。
+	 */
+	/**
+	 * 标题高亮：Pagefind 只给 excerpt 打 <mark>，标题（meta.title）是原样字符串。
+	 * 这里按查询词切开后自己包 <mark>，样式与 excerpt 的命中词同一套（见 style 里的 .search-panel mark）。
+	 * 转义只做一次、切分按字面量——别先拼 HTML 再 replace，否则标题里的 `&` `<` 会被当标签解析。
+	 */
+	function highlightTitle(title, q) {
+		const text = String(title || "");
+		const needle = String(q || "").trim();
+		if (!needle) return escapeHtml(text);
+		const lower = text.toLowerCase();
+		const lowNeedle = needle.toLowerCase();
+		let out = "";
+		let i = 0;
+		while (i < text.length) {
+			const at = lower.indexOf(lowNeedle, i);
+			if (at === -1) {
+				out += escapeHtml(text.slice(i));
+				break;
+			}
+			out += escapeHtml(text.slice(i, at));
+			out += "<mark>" + escapeHtml(text.slice(at, at + needle.length)) + "</mark>";
+			i = at + needle.length;
+		}
+		return out;
+	}
+
+	function escapeHtml(s) {
+		return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+	}
+
+	function focusSearch() {
+		ensureIndex();
+		mobileOpen = true;
+		// tick 而不是 rAF：后台标签页 rAF 会被节流，面板开了光标却没进去
+		tick().then(() => {
+			const el = window.innerWidth >= 1024 ? desktopInput : mobileInput;
+			(el || desktopInput || mobileInput)?.focus();
+			// 已有内容时全选，方便直接覆盖重搜
+			(el || desktopInput || mobileInput)?.select?.();
+		});
+	}
+
 	/** @param {KeyboardEvent} e */
 	function onKeydown(e) {
 		if (e.key === "Escape") {
@@ -116,13 +165,25 @@
 	}
 
 	onMount(() => {
+		if (/Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent)) modKey = "⌘";
+
 		const onDocClick = e => {
 			if (!/** @type {any} */(e.target)?.closest?.("[data-search-root]")) closeAll();
 		};
+		// Ctrl+K / ⌘K：全站唤起。用 reinitOnce 语义——Header 在 Swup 容器外，
+		// 搜索岛只在首屏挂一次，这个监听也就只该挂一次（onMount 已在岛内，天然只跑一次）。
+		const onShortcut = e => {
+			const k = (e.key || "").toLowerCase();
+			if (k !== "k" || !(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
+			e.preventDefault();
+			focusSearch();
+		};
+		document.addEventListener("keydown", onShortcut);
 		document.addEventListener("click", onDocClick);
 		// Header 在 Swup 容器外不会被替换，切页后手动收一次
 		document.addEventListener("swup:contentReplaced", closeAll);
 		return () => {
+			document.removeEventListener("keydown", onShortcut);
 			document.removeEventListener("click", onDocClick);
 			document.removeEventListener("swup:contentReplaced", closeAll);
 		};
@@ -150,13 +211,24 @@
 			inputmode="search"
 			placeholder="搜索"
 			aria-label="站内搜索"
+			aria-keyshortcuts="Control+K Meta+K"
 			autocomplete="off"
-			class="h-full w-40 border-0 bg-transparent pl-8 text-base font-bold outline-none transition-all duration-200
+			class="h-full w-40 border-0 bg-transparent pl-8 pr-14 text-base font-bold outline-none transition-all duration-200
 			       placeholder:text-30 focus:w-60 active:w-60"
 			bind:value={query}
 			onfocus={ensureIndex}
 			onkeydown={onKeydown}
 		/>
+		<!-- 快捷键提示：输入框失焦且为空时显示，聚焦后让位给文字（w-60 时右侧仍有空位） -->
+		{#if !query.trim()}
+			<kbd
+				class="pointer-events-none absolute right-2.5 hidden items-center gap-0.5 text-[11px] font-medium leading-none text-30 lg:flex"
+				aria-hidden="true"
+			>
+				<span class="rounded-sm border border-(--line-divider) bg-(--card-bg)/60 px-1 py-0.5">{modKey}</span>
+				<span class="rounded-sm border border-(--line-divider) bg-(--card-bg)/60 px-1 py-0.5">K</span>
+			</kbd>
+		{/if}
 	</div>
 
 	<!-- 移动：按钮。外层容器才带 lg:hidden——按钮自己有 .btn-plain{display:flex}，
@@ -222,7 +294,10 @@
 					{:else if loading}
 						<p class="px-3 py-6 text-center text-sm text-30">搜索中…</p>
 					{:else if !query.trim()}
-						<p class="px-3 py-6 text-center text-sm text-30">输入关键词开始搜索，↑↓ 选择、Esc 关闭</p>
+						<p class="px-3 py-6 text-center text-sm text-30">
+							输入关键词开始搜索，↑↓ 选择、Esc 关闭
+							<span class="mt-1 block text-xs text-30/80">快捷键 {modKey}+K 随时唤起</span>
+						</p>
 					{:else if !results.length}
 						<p class="px-3 py-6 text-center text-sm text-30">没有找到「{query.trim()}」相关内容</p>
 					{:else}
@@ -236,7 +311,7 @@
 										onclick={closeAll}
 									>
 										<span class="truncate text-sm font-bold text-90 group-hover:text-(--primary)">
-											{r.meta?.title || r.url}
+											{@html highlightTitle(r.meta?.title || r.url, query)}
 										</span>
 										{#if r.sub_result?.length}
 											<span class="line-clamp-2 text-xs leading-relaxed text-30">
@@ -283,5 +358,12 @@
 		background: none;
 		color: var(--primary);
 		font-weight: 700;
+	}
+
+	/* 标题里的命中词：加一层浅品牌底，与正文摘录的纯色高亮区分开（标题更重、摘要更轻） */
+	:global(.search-panel mark) {
+		background-color: color-mix(in oklch, var(--primary) 12%, transparent);
+		border-radius: 2px;
+		padding: 0 1px;
 	}
 </style>

@@ -1,0 +1,95 @@
+---
+// 阅读进度条（文章页专属，2026-11-05 新增）。
+//
+// 调性对齐参考站：2px 细线贴顶、无背景轨道、品牌色、完成后带一层同色柔光。
+// 与 transctions.css 里的 #progress-bar 是**两回事**：那个是 Swup 切页进度条
+// （3px、切页时出现、由 SwupManager 用 WAAPI 驱动），这个是文章滚动进度，两者共存不冲突。
+//
+// 位置：放在文章页自己的 markup 里（#swup-container 内）→ 只在文章页存在，
+// 切到别的页自然消失，不用在 Layout 里判 isPostPage。
+// 脱离文档流用 position: fixed，所以嵌套深度不影响定位。
+---
+
+<div
+	id="reading-progress"
+	aria-hidden="true"
+	class="pointer-events-none fixed top-0 left-0 z-[9000] h-0.5 w-full"
+>
+	<div
+		id="reading-progress-fill"
+		class="h-full w-full origin-left"
+		style="transform: scaleX(0)"
+	></div>
+</div>
+
+<script is:inline>
+	// 每次进入文章页本脚本都会重新求值：函数声明会被重新定义（覆盖旧的同名全局），
+	// 而 reinitOnce 里注册的监听只在文档生命周期内挂一次、回调每次都调「当前」的全局函数，
+	// 所以既不会叠监听，也不会用到过期闭包。
+	function updateReadingProgress() {
+		var bar = document.getElementById("reading-progress");
+		var fill = document.getElementById("reading-progress-fill");
+		var article = document.getElementById("post-container");
+		if (!bar || !fill) return;
+		// 非文章页（或文章容器还没渲染出来）：确保线条是收起的
+		if (!article) {
+			fill.style.transform = "scaleX(0)";
+			bar.classList.remove("is-complete");
+			return;
+		}
+
+		var rect = article.getBoundingClientRect();
+		var top = rect.top + window.scrollY;
+		var articleH = article.offsetHeight;
+		// 起点：文章顶部与视口顶对齐；终点：文章底部与视口底对齐。
+		// 这样"读到文章最后一屏"正好是 100%，不受评论区高度影响。
+		var start = top;
+		var end = top + articleH - window.innerHeight;
+
+		var p;
+		if (end <= start) {
+			// 文章比一屏还短：滚到它的位置就算读完
+			p = window.scrollY >= start ? 1 : 0;
+		} else {
+			p = (window.scrollY - start) / (end - start);
+		}
+		p = p < 0 ? 0 : p > 1 ? 1 : p;
+
+		fill.style.transform = "scaleX(" + p + ")";
+		bar.classList.toggle("is-complete", p >= 0.995);
+	}
+
+	window.reinitOnce("reading-progress-listen", function () {
+		var ticking = false;
+		function tick() {
+			ticking = false;
+			updateReadingProgress();
+		}
+		function schedule() {
+			if (ticking) return;
+			ticking = true;
+			requestAnimationFrame(tick);
+		}
+		window.addEventListener("scroll", schedule, { passive: true });
+		window.addEventListener("resize", schedule, { passive: true });
+		schedule();
+	});
+
+	// 软导航换页后立即重算一次（滚回顶部 → 归零；进新文章 → 按新高度算）
+	window.onReinit("reading-progress", updateReadingProgress, { immediate: false });
+</script>
+
+<style>
+	#reading-progress-fill {
+		background-color: color-mix(in oklch, var(--primary) 40%, transparent);
+		transition:
+			background-color 0.3s ease,
+			box-shadow 0.3s ease;
+	}
+
+	/* 读完：满色 + 同色柔光（与参考站 #progress-bar 的 box-shadow 同配方） */
+	#reading-progress.is-complete #reading-progress-fill {
+		background-color: var(--primary);
+		box-shadow: 0 0 8px color-mix(in oklch, var(--primary) 60%, transparent);
+	}
+</style>

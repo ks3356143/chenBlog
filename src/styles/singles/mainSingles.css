@@ -387,3 +387,43 @@
         min-height: 32px;
     }
 }
+
+/* ── 卡片 hover 微交互：轻微上浮 + 边框发光（2026-11-05）──────────────
+   调性对齐参考站：不倾斜、不缩放卡片本体（只有封面图在卡片内部自己缩放，
+   见 PostCard 的 group-hover:scale-110），只做「抬 2px + 边框亮成主色」两件事。
+   尺寸取 Tailwind 的 2px（--spacing 0.5）= 参考站 hover:-translate-y-1 的一半，
+   原因是我们卡片更密集（列表 10 张/页），1 再往上会显得整页在抖。
+
+   ⚠️ 用 translate 属性（Tailwind v4 的写法）而不是 transform：卡片内部已有的
+   .post-card-image 等元素自带 transform（封面缩放），外层若也写 transform 会互相覆盖。
+   ⚠️ 只在 (hover: hover) 下生效：触屏设备的 sticky hover 会让卡片卡在浮起态。 */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .post-card-wrapper,
+    .project-card,
+    .btn-card {
+        transition:
+            translate 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+            border-color 0.22s ease,
+            box-shadow 0.22s ease;
+    }
+
+    .post-card-wrapper:hover,
+    .project-card:hover,
+    .btn-card:hover {
+        translate: 0 -2px;
+        border-color: color-mix(in oklch, var(--primary) 45%, var(--line-divider));
+        box-shadow:
+            0 4px 12px -2px color-mix(in oklch, var(--primary) 22%, transparent),
+            0 2px 4px -2px rgb(0 0 0 / 0.06);
+    }
+
+    /* 暗色下底色更暗，同样的阴影看不见 → 提高主色占比、收窄扩散 */
+    :root[data-theme="dark"] .post-card-wrapper:hover,
+    :root[data-theme="dark"] .project-card:hover,
+    :root[data-theme="dark"] .btn-card:hover {
+        border-color: color-mix(in oklch, var(--primary) 55%, transparent);
+        box-shadow:
+            0 4px 14px -2px color-mix(in oklch, var(--primary) 30%, transparent),
+            0 0 0 1px color-mix(in oklch, var(--primary) 18%, transparent);
+    }
+}

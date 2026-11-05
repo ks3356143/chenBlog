@@ -10,6 +10,16 @@ interface Props {
 }
 
 const { seriesName, posts, currentPostId } = Astro.props
+
+// 当前篇在系列里的位置（1-based）。currentPostId 传空或不在系列里时按 0 处理，
+// 此时不显示「第 N/M 篇」，但手风琴照常展开（兼容其它调用方）。
+const currentIndex = currentPostId ? posts.findIndex((p) => p.id === currentPostId) : -1
+const hasPosition = currentIndex >= 0
+const positionLabel = hasPosition ? `第 ${currentIndex + 1} / ${posts.length} 篇` : ""
+
+// 系列内的前 / 后篇（按 seriesOrder 排，与文章页底部按发布时间排的「上/下一篇」是两回事）
+const prevPost = hasPosition && currentIndex > 0 ? posts[currentIndex - 1] : null
+const nextPost = hasPosition && currentIndex < posts.length - 1 ? posts[currentIndex + 1] : null
 ---
 
 {
@@ -28,6 +38,16 @@ const { seriesName, posts, currentPostId } = Astro.props
 				<span class="font-bold text-base text-black/80 transition group-hover:text-(--primary) dark:text-white/80">
 					属于系列：{seriesName}
 				</span>
+				{
+					hasPosition && (
+						<span
+							class="shrink-0 rounded-sm bg-(--btn-regular-bg) px-1.5 py-0.5 text-xs font-medium tabular-nums text-(--primary)"
+							title={`本系列共 ${posts.length} 篇，当前是第 ${currentIndex + 1} 篇`}
+						>
+							{positionLabel}
+						</span>
+					)
+				}
 				<span class="ml-auto shrink-0 rounded-full bg-(--btn-regular-bg) px-2 py-0.5 text-xs text-(--btn-content) transition">
 					{posts.length}
 				</span>
@@ -91,6 +111,61 @@ const { seriesName, posts, currentPostId } = Astro.props
 					}
 				</ol>
 			</div>
+
+			{
+				hasPosition && (prevPost || nextPost) && (
+					<div class="series-stepper grid grid-cols-2 border-t border-(--line-divider)">
+						{prevPost ? (
+							<a
+								href={getPostUrlBySlug(prevPost.id)}
+								class="group/step flex min-w-0 items-center gap-1.5 px-3 py-2 text-left transition-colors hover:bg-(--btn-plain-bg-hover)"
+								title={`系列上一篇：${prevPost.data.title}`}
+							>
+								<Icon
+									name="material-symbols:chevron-left-rounded"
+									aria-hidden="true"
+									class="shrink-0 text-lg text-(--primary) transition group-hover/step:-translate-x-0.5"
+								/>
+								<span class="flex min-w-0 flex-col">
+									<span class="text-[11px] leading-none text-30">系列上一篇</span>
+									<span class="mt-0.5 truncate text-xs font-medium text-black/75 dark:text-white/75">
+										{prevPost.data.title}
+									</span>
+								</span>
+							</a>
+						) : (
+							<span class="flex items-center gap-1.5 px-3 py-2 text-[11px] text-30">
+								<Icon name="material-symbols:chevron-left-rounded" aria-hidden="true" class="shrink-0 text-lg opacity-30" />
+								已是系列第一篇
+							</span>
+						)}
+						{nextPost ? (
+							<a
+								href={getPostUrlBySlug(nextPost.id)}
+								class="group/step flex min-w-0 items-center justify-end gap-1.5 border-l border-(--line-divider) px-3 py-2 text-right transition-colors hover:bg-(--btn-plain-bg-hover)"
+								title={`系列下一篇：${nextPost.data.title}`}
+							>
+								<span class="flex min-w-0 flex-col items-end">
+									<span class="text-[11px] leading-none text-30">系列下一篇</span>
+									<span class="mt-0.5 truncate text-xs font-medium text-black/75 dark:text-white/75">
+										{nextPost.data.title}
+									</span>
+								</span>
+								<Icon
+									name="material-symbols:chevron-right-rounded"
+									aria-hidden="true"
+									class="shrink-0 text-lg text-(--primary) transition group-hover/step:translate-x-0.5"
+								/>
+							</a>
+						) : (
+							<span class="flex items-center justify-end gap-1.5 border-l border-(--line-divider) px-3 py-2 text-[11px] text-30">
+								已是系列最后一篇
+								<Icon name="material-symbols:chevron-right-rounded" aria-hidden="true" class="shrink-0 text-lg opacity-30" />
+							</span>
+						)}
+					</div>
+				)
+			}
 		</div>
 	)
 }

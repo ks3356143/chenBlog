@@ -3,9 +3,67 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-05 下午（第二十八批：三条动效，已上线 V0.1.81）**。
+> 最后更新：**2026-11-05 傍晚（第二十九批：沉浸阅读 / LQIP / 显示设置面板 / 列表网格，已上线 V0.1.82）**。
 >
-> **🔧 2026-11-05 下午（第二十八批：滚动渐入 / 数字滚动 / 聚光光晕，已上线 V0.1.81）**
+> **🔧 2026-11-05 傍晚（第二十九批：沉浸阅读 / LQIP / 设置面板 / 列表网格，已上线 V0.1.82）**
+> 用户点六条参考站效果，逐条对齐 firefly.cuteleaf.cn 编译产物。**实际做 4 条，2 条按用户决定跳过**（⑥⑤）。
+> ③ 原计划做 Swup 预加载，核完前提不成立 → 报给用户，用户选择**跳过**（详见下方「已放弃」）。
+> ① **沉浸阅读** `src/components/features/ImmersiveReading.astro`（新建）+ `FloatingControls.astro` 挂载
+>    + `mainSingles.css` 那一族 `body.immersive-reading` 规则 + `Layout.astro` 给横幅外层补 `id="banner-zone"`。
+>    状态机逐字移植参考站 `ImmersiveReading.astro_astro_type_script_index_0_lang.B7aFlC6_.js`：
+>    `IMMERSIVE` 单例 / `immersiveEligible()`（有 `#post-container` 且 ≥1024px）/ enter·exit·toggle /
+>    `reinitOnce` 挂 click+Esc+resize / `onReinit` 同步按钮态。**只读、不改任何数据**。
+>    🔴 **两个坑**：① 选择器写 `footer` 一条都不命中 —— 本站页脚是 `<div class="footer">`，`<footer>` 标签数 **0**；
+>    ② 藏了壁纸图却留下 **405px 空条** —— 横幅外层 div 原本没有 id，`#banner-images-container` /
+>    `#banner-overlay-container` 都盖不到它 → 补 `id="banner-zone"` 一起藏。
+>    ⚠️ **有意偏离**：参考站另开一套 `#immersive-toc`，本站已有悬浮目录 → 直接藏掉（少维护一层），已在 CSS 注释登记。
+>    ⚠️ 参考站独有的 `#bg-player` / `l2d-widget` / `sakura` / `spine-model` / `license-container` 本站没有，**不写空选择器**。
+> ② **LQIP 占位**（替换原转圈）`src/utils/lqip-utils.ts`（新建）+ `CoverImage.astro` + `mainSingles.css`。
+>    sharp `.resize(3,1).raw()` 采三色 → `linear-gradient(135deg, c1 0%, c2 50%, c3 100%)`；
+>    规则与参考站 `.lqip-placeholder{z-index:0;transition:opacity .5s ease-out}` 逐字对齐。
+>    🔴 **淡出必须双信号**：`.loaded` 类 **或** `data-loading="false"` 任一成立才淡出（五-35 的教训：
+>    只靠单一信号失效时遮罩永久盖住图）。产物侧 `lqip-placeholder` **11 处**、旧 spinner **0 处**。
+> ③ **显示设置面板** `src/components/features/DisplaySettings.astro`（新建，883 行）+ `src/config/displaySettings.ts`（新建）
+>    + `Header.astro` 挂载 + `global.css` 的 `--hue` 系列变量改成由 `--hue` 计算。
+>    🔴 **位置照参考站**：`#display-setting` 在 `#nav` **内部**（实测参考站面板位置 87197 落在 `<nav>` 与 `</nav>` 之间），
+>    Header 在 Swup 容器外 → 面板开合 / tab 状态跨软导航保持，**零 reinit**。
+>    三个 tab（外观/壁纸/特效）+ 6 个控件，**全部有真实效果**：主题色相 / 文章布局 / 卡片边框 / 首页壁纸标题 / 水波纹 / 渐变过渡。
+>    🔴 **参考站面板里还有壁纸模式(4种)/全屏布局/透明度/模糊度/樱花/音乐/翻译 —— 一件都没做**：本站没有对应实现
+>    （没有 fullscreen/overlay 壁纸分支、没有樱花层、没有播放器），装上去就是**死开关**（点了一点反应没有）。这是有依据的裁剪，不是漏做。
+>    🔴 **色相变量改造的硬约束**：原 `--primary` 等 14 个写死 hex 逐个反解成 okLCH 且**回代验证往返一致**
+>    （`--hue:175` 时渲染出来与改动前逐字节相同），所以「不碰设置」= 视觉零变化。**别把这些 hex 改回去**，那会让色相条失效。
+>    对比度已按 0-360° 全色环实测：`--primary` 对白底最低 **5.99**（hue 195）、`--btn-content` 对 `--btn-regular-bg` 最低 **4.53** —— 都过 AA。
+>    🔴 **面板宽度坑**：它的 offsetParent 不是 `#nav` 而是 nav 内部那层 `relative ...`（320px 视口下只有 288px 宽）
+>    → `max-width` 必须写 `calc(100% - 1rem)`；写 `calc(100vw - 2rem)` 会算出 288px 顶到视口外（实测 left:-4）。
+> ④ **列表 / 网格切换** `PostPage.astro` + `displaySettings.ts` + DisplaySettings 里的 `.grid-mode` 规则。
+>    `#post-list-container` 补齐参考站那组 data 属性（`data-mobile-default-layout="grid"` / `data-column-width="320"` /
+>    `--post-card-min-width`）；紧跟容器一段 `is:inline` 同步脚本**首帧前套用已存布局**防刷新闪烁（照参考站原位做法）。
+>    `.grid-mode` 把封面从「右侧竖条」变「整卡顶部横幅」`aspect-ratio:2`；参考站那 25 条 **scoped** 规则改写成全局。
+>    ⚠️ **标题选择器踩过坑**：标题是 `.post-card-wrapper > .post-card-content > a.link-primary`，
+>    写成 `.post-card-wrapper > a.link-primary` 一条都不命中（第一版产物里字号仍 1.5rem）。
+>    ⚠️ 移动端默认网格是照参考站的（断点 780 不是 768，<380 强制网格），**没存过设置时 375px 打开就是网格**，这是设计。
+> 📋 **验收（本地 + 线上同口径）**：
+> - `build` **0 warn 0 error**；`check` **0 error / 3 hint**；基线 **502 文件 / 51 index.html / 9 css（含 pagefind 3 个）/ pagefind 51**。
+>   ⚠️ 总文件数 501→502、css 4→9：前者是新增的 `DisplaySettings...js` chunk，后者是统计口径把 `dist/pagefind/*.css` 也算进来了（一直存在，非新增）。
+> - 本地 14 步探针全绿：面板 6 控件逐项实测生效、列表↔网格双向切换 + 刷新保持 + 软导航保持、320/375 面板不溢出、
+>   `pageerror 0`、`overflowX 0`。沉浸：进前后侧栏/横幅/导航 display 翻转、`contentTop 419→16`、正文宽 736（=46rem）、Esc 全复原。
+> - **线上复验同口径全过**：`0.1.82` 显示在站点信息卡、面板 320px 不溢出、网格 400px×2 列、375px 默认网格 359px、
+>   沉浸 `contentTop 16` / `postW 736`、滚动条溢出 0、`pageerror 0`。
+> - 部署走标准流程（替换前 **6 条断言**，含 `0.1.82` 必须在、`0.1.81` 必须不在）；回滚资产 **89 个**；提交 **`57a7302`**，`HEAD == origin/main`。
+> - ⚠️ **两次部署失误，都是自己抓到的**：① 改完 `package.json` 版本号后忘了重建就打包 → 首页仍写 0.1.81，重建后重传；
+>    ② 编辑 `mainSingles.css` / `PostPage.astro` 时行尾被整片归一化（`242/171` 的假 diff），按原始字节修回，降到 `90/19` 真改动。
+>    教训重申：**改完先 `git diff --numstat`**，每个文件只应有真正动过的那几行。
+> 🚫 **已放弃（用户明确说跳过，别再当待办）**：
+> - **Swup 预加载**：用户原以为「swup 自带 preload-plugin」。**实测不成立** —— `node_modules/@swup` 目录不存在、
+>   swup 核心 `Swup.module.js` 里 `preload`/`prefetch` 各 **0** 次、`package.json` 只有 `swup ^4.10.0`。
+>   `@swup/preload-plugin` 是独立包（3.2.12，6350 B bundle）。参考站**确实用了**它（`SwupPreloadPlugin.DLed3hvq.js`，
+>   `{preloadHoveredLinks:true, preloadVisibleLinks:true}`），但装上要引新依赖 + 51 页 gzip 中位 50KB 的投机流量 → **用户选择跳过**。
+> - **顶部渐变高光**：参考站 CSS 有 `.top-gradient-highlight`（fixed 180px 渐变），但**它的 HTML、文章页、9 个 JS chunk 里该 class 全部 0 命中**
+>   → 参考站自己从未启用（注释写「只在 full 和 semifull 模式下显示」，实际 `data-wallpaper-mode="banner"`）。且与本站 `#reading-progress` 抢顶部 → **不做**。
+> - **通用 widget 折叠**：参考站 15 个 widget 里 `data-is-collapsed` 真正为 `true` 的只有 tags 一个；
+>   本站在 `Category.astro` 已有同款（`collapsedHeight = "7.5rem"`，与参考站数值一样）→ 抽通用 wrapper 是纯重构、视觉零变化 → **不做**。
+>
+> **🔧 2026-11-05 下午（第二十八批：三条动效，已上线 V0.1.81）**
 > 用户点做三条动效，并明确要求第 3 条与昨天那条「卡片 hover 上浮 + 边框发光」不冲突。
 > ① **滚动渐入** `src/components/features/ScrollReveal.astro`（新建）+ `Layout.astro` 挂载。
 >    IntersectionObserver、位移仅 14px、缓动 `cubic-bezier(0.4,0,0.2,1)`（参考站全站默认语言）、
@@ -1881,55 +1939,22 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-10-30 深夜第三句 实测；线上 = V0.1.69**，已部署）
+## 三、当前状态快照（**2026-11-05 傍晚第二十九批实测；线上 = V0.1.82**，已部署）
+
+> ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`。第二十二批（V0.1.69 老平台文 + 项目内留副本）：**一笔提交，已推送、`HEAD == origin/main`、工作区 0** |
-| 工作区 | 本批动 **3 处**：新增 `src/content/posts/cdtestplant-v1.md`、`public/images/cdtestplant/`（4 图 + 8 缩略图）、`public/og/cdtestplant-v1.jpg` + `manifest.json`（31→32 条）；`package.json` 0.1.68→0.1.69。**仓库外**另有 `E:\pycharmProjects\cdtestplant_v1-AI\博客文章.md`（未提交到那个仓库）。**零依赖改动** |
-| 线上站点 | ✅ **2026-10-30 23:50 部署 V0.1.69**（替换前断言：新篇含标题与 `V0.1.69`、`dist.new/images/cdtestplant/01-login-full.webp` 在、`og/cdtestplant-v1.jpg` 在且被页面引用、旧版断言通过）。**线上 51/51 HTML md5 逐字节相同**（含 26 篇中文路径）；实测三档 1440/375/768：单 h1、正文 8 个 h2、4 图全加载（`ok=true`，桌面走 960 档 742px、手机走 640 档 309px）、横向溢出 0px、`og:image` = `/og/cdtestplant-v1.jpg`、pageerror 0、HTTP≥400 0；首页卡片 → 文章软导航后仍单 h1 / 4 图 / `V0.1.69` |
-| 本地构建 | V0.1.69 = **559 个文件 / 31,483,673 B（30.0MB）/ 50 个 `index.html`**；Pagefind 索引 **34 页**（+1）；32 篇文章；sitemap / rss 均含新篇。`check` **0 error / 3 hint**、`tsc` **0**、`docs:check` **0 error / 1 提醒（常驻层余量 97 B，没动）** |
-| 依赖 | 本批**零改动**；`npm outdated` 未跑（本批不涉及升级，下次开工补） |
-| dev / preview server | 本批起过 `npm run preview`（:4321）做三档验证，**收尾按 `node.exe` + `astro*bin*astro.mjs*preview*` 精确杀**；另起过老平台四件套（MySQL 3306 / Redis 6379 / runserver 8000 / vite 3888），**全部停，复查无监听、无残留进程** |
-| 服务器回滚资产 | `dist.old`（= V0.1.68）+ **74 个 `dist_backup_*`**（本批新增 1 个）。**一律保留，删需用户明确同意** |
-| 临时文件 | 收尾清：本地 `%TEMP%\cdtp_shot\`（探针脚本 + 4 张原始 PNG）、`%TEMP%\cdtp_pw_backup.json`、`%TEMP%\chenblog_dist.tar.gz`、本地 md5 清单；**服务器 `/tmp` 的 tar 与 md5 清单**。均已复查 = 0 |
-| 待用户拍板 | **① 老平台的公网演示实例要不要在文章里放链接**（我没放，只写「自签证书的演示实例」；`https://47.108.230.220/cdtestplant/` 是他自己部署的）· **② 项目里那份 `博客文章.md` 要不要提交/改文件名**（我按他原话放在仓库根，没 add）· 其余沿上一批：相册逐张文案 / 友链 / 打赏 / `pinned` / Twikoo 裸 `envId` / About 页身份口径 / 移动端 `.floating-controls-container` 压正文 32px（20px 于 `/about/`） |
-| 既存小坑 | 同上一批；本批新增两条**流程**坑进第十节候选：`og` 必须早于 `build`、换图后要清 `node_modules/.astro/data-store.json`（否则 `height` 属性留旧值） |
-
-| 项 | 状态 |
-|---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`。**第十三批一笔**：`f1fd836`（V0.1.58 封面加载失败文案 + 本地图回退）。**已推送、`HEAD == origin/main`、工作区计数 0** |
-| 工作区 | 第十三批 **动 3 个文件**：`components/commons/CoverImage.astro`（**+15/-3**：补 `.error-message` DOM、`data-error` 对全部图生效、回退图条件去掉 `!isLocal`）、`styles/singles/mainSingles.css`（**+14/-0**：`img[data-cover-img]` 断图隐藏 + 回退图显示）、`package.json`（0.1.58）。文档动 `config.md`（**新增五-61**，119640→123451 B）、`AGENTS.md`（**等长替换** 五-60→五-61，57882 B 不变）、`HANDOFF.md`。**零依赖改动** |
-| 文档分层 | `docs:check` **0 error / 1 提醒**（注入链 63407 B，余量 **62 B**）。⚠️ 常驻层只剩 62 B，**任何新增都只能先下沉分册**；本批仍只做等长替换（五-58→五-59）。V0.1.56 的全部知识点写进 `config.md` **五-59**（含依赖二分的四行表格） |
-| 浏览器能力 | 同前（`npm run probe` + 本地 `astro preview`；browser-use MCP 仍等他新建 Session）。⚠️ **`harness.md` B-29 已累到九条**，本批最后两条最要命：**⑦ Svelte 条件展开属性 `{...cond ? {k:v} : {}}` 把共享 chunk 撑 +6.7KB**（三元 `undefined` 才不拉 helper；改完必 `stat` 一下 `dist/_astro/client.*.js`）；**⑨ Node 里对字符串调 `.join?.('')` → `undefined` 被 `?? ''` 兜成空串**，把 8 个 URL 全报成「0 处外链、0 字节」的假绿 → **0 命中同时把分母也打成 0 就是探针坏了**；另 `grep opener` 会命中 **`noopener` 自身**（排除 `no` 前缀后真命中仅 1 处，是 twikoo 自己写 `.opener=null`） |
-| 线上站点 | ✅ **2026-10-18 17:19 部署 V0.1.58**（**替换前 20+ 条断言全过**：文件数 **364** / `index.html` 44 / 字节 **22,699,653** / error-message **28** / fallback-image **28（改前 0）** / 文案 **28** / `loadingfalse` 产物 **5 个** / **注释泄漏 0** / sitemap 44·41 / twikoo 同步标签 0 / 二维码 `src` 0 / `target=_blank` 全带 rel）。**线上 364/364 md5 逐字节相同**。线上实测：V0.1.58、首页 error-message 10 + fallback-image 10、**断图后 3/3 全对**（回退图 `320×240` 有真实像素、文案 `flex`、原图 `none`）、pageerror 0 |
-| 本地构建 | V0.1.58 = **45 page(s) / 44 个 `index.html` / 364 文件 / 真实字节 22,699,653（21.65MB）**；`404.html = 133,399 B`；sitemap **44 URL / 41 lastmod**；`check` 0 error 3 hint、`tsc` 0、`docs:check` 0 error。⚠️ **文件数从 360 → 364 是预期的**：多的 4 个是 `loadingfalse*` 回退图的尺寸变体（改前本地图根本不生成回退图）。**基线已更新为 364**，别再按 360 判断 |
-| 服务器配置 | 本批**没动服务器配置**（只换 dist）。上一次改动仍是 10-18 下午放开 vhost 的 `error_page 404 /404.html;`（已备份 `/root/html_chenblog.com.conf.bak2-20261018_131441`，`nginx -t` 过） |
-| 依赖 | **本批升过一次（保守）**：`npm update --package-lock-only` → `npm ci` → `npm run build`（干净装，退出码全 0）。升了 `@astrojs/mdx 8.1.0`、`@astrojs/svelte 9.1.0`、`svelte 5.57.2`、`katex 0.18.11`、`sanitize-html 2.18.1`、`markdown-it 15.0.3`、`prettier 3.9.10` 等；`mermaid 11.17.2` / `typescript 6.0.3` 按天花板**没动**。🔴 **`astro` 钉 `7.3.5`**：7.3.6 起会多产出一个零引用的 `_astro/Search.*.css`（详见五-59 D 的二分表）。审计 **21 条（5 low / 15 mod / 1 high）**，比上午少 2；唯一 high 是 `stylus→glob` 的 CLI 注入，构建期不走命令行、不进 dist，**判不动**；`audit fix --force` 仍禁用 |
-| dev / preview server | 本批为做视觉 A/B 起过一次 `npm run preview`（:4321），**收尾按「`node.exe` + `astro*bin*astro.mjs*preview*`」精确杀掉并复查 astro 进程 = 0、:4321 监听 = 0**。⚠️ 起服务时我第一发用了臆造的 `astro/vendor/...` 路径 → 直接 000 连不上，改用 `npm run preview` 才对（别猜入口路径） |
-| 服务器回滚资产 | **实测（10-18 17:19 部署 V0.1.58 后）**：`dist.old` = **V0.1.57**；备份目录 **63 个**（`find . -maxdepth 1 -name "*dist_backup*"`）。合计 **1.4G**，磁盘 32%。**一律保留，删需用户明确同意**；⚠️ 数回滚资产用 `find` 不用 glob（`deploy.md` 六-⑦） |
-| 临时文件 | 收尾已清：本地 `.tmp-probe/` 整目录删除并复查 = 0；`%TEMP%` 下 `preview.log`/`audit.json`/`chenblog-deploy-v56`/`extimg`/`sharp` 临时脚本清理；服务器 `/tmp` 复查 = 0（tar 与 deploy 脚本**跑成功后才删**，`rc=$?` 判据） |
-| 待用户拍板 | ✅ **又清账四项（2026-10-18 傍晚 V0.1.56）**：~~sitemap 零 lastmod~~ → **41/44 条补上**（五-59 A）· ~~88 个 img 缺 width/height~~ → **站内全补，相册 CLS 降 36 倍**（五-59 B；远程 12 处因在 CSS 演示框内固定尺寸、零收益而不改）· ~~`focus-ring-inset` 死类~~ → **已删并补 `:focus-visible`**· ~~`tsconfig` React jsx 残留~~ → **已删**· ~~⑦ 依赖升级~~ → **已升（astro 钉 7.3.5）**。详见顶部第十一批B 与 **五-59**。**以下仍未答**：**② 相册逐张文案**（他给文案 + 同时加 `galleryConfig` 字段并开灯箱 caption）· **③ B 档功能**：友链 / 项目 / 打赏 / 书签导航 / B站 / 番组 / VNDB / MyAnimeList · **⑤「截图取自 v1.4.0」那句留不留** · **⑥ 画廊交互取舍** · **⑧ Twikoo 裸 `envId IP:8099` 同域反代 / 面板 IP 白名单 / `90a38e5` 提交消息强推** · **⑨ 真机观感**（累计八处）：三篇旧文章正文复原、侧栏分类卡、移动端搜索按钮、页脚与仓库卡片新窗口行为、**「阅读」按钮与序号块新增的浅绿底色**、**移动端菜单面板新增的 1px 边框**、**主色变深后的整体观感**、**相册页图片不再跳动**（CLS 修复的肉眼版） |
-| 既存小坑 | **只还剩这些，别再当新发现重提**：`--radius-large` **刻意不补**（直角口径，五-16③，`docs:check` 扫到属**预期项**）；`data-code` 的 `0x7F` **已证伪不是缺陷**（五-55）；`/site.webmanifest` Content-Type 缺映射（要动 nginx mime.types）；重复 id `announcement` / `cardTags`（九·补② 已降级）；单分类卡收起态更高（已判降级）；每页两个 `<title>`（45/45 复验、内容一致，已降级）；**远程 12 张图无 width/height**（在 CSS 演示框内被固定尺寸约束，零收益，**故意不改**）。✅ **本批已清**：`focus-ring-inset` 死类、`tsconfig` React jsx 残留、sitemap 零 lastmod、88 个 img 缺宽高 |
-
-| 项 | 状态 |
-|---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`（别信文档里的 SHA）。**本批一笔**：`a3818c9` 分页页补独立 title（V0.1.42）；**已推送，`HEAD == origin/main`**。今日更早：动态 0.1.31 / meCard 社交按钮 0.1.32 / 波纹高度 0.1.33 / 二维码浮层动效 0.1.34 / PostMeta 间距 0.1.35 / 手册同步 v1.4.0 0.1.36 / 暂无标签间距 0.1.37 / 顶部三平台说明 0.1.38 / 手册同步 v1.4.1 0.1.39 / SEO 元数据 0.1.40 / `og:type` 0.1.41 / 分页 title 0.1.42 |
-| 工作区 | 本批 `src/` **只动 1 个文件**：`pages/[...page].astro`（补 `第N页-亦林`，+4/-1）；加 `package.json`(+lock) 版本号 0.1.42。文档动 `HANDOFF.md` / `docs/agents/harness.md`（新增 **B-21 / B-22**）。**零依赖改动**；新增 `scripts/gateway-check.mjs` + `package.json` 的 `gateway:check` 命令（本批，纯脚本、不进构建产物）。⚠️ 仓库外还改了 DSH：`~/.dsh/profiles/desktop/cordis.patch.yml`（补 7 个模型的 `reasoningEfforts` + 8 个模型 `maxTokens` 256000→64000，**不入库**，备份 `.bak-before-maxtokens-20261013_194212`）与 `resources/app.asar` 的等长补丁（**已重启生效**，见 harness.md B-21） |
-| 文档分层 | `AGENTS.md` **56548 B** + `AGENTS.local.md` 5029 B = **合计 61577 B < 65536 B**（`npm run docs:check` 实测 0 error / 0 warn，**尚可用 1911 B**）。⚠️ 第二条批曾把余量吃到 665 B（每次跑都告警），**本批靠"只往分册写、不往常驻层写"把它养回 1911 B** —— 往后加内容仍要优先下沉分册。六份分册与旧版 162KB `AGENTS.md`（`dfc013a`）**逐行比对**：`config`/`collab`/`writing`/`swup` **各 0 处未命中**；`deploy.md` 5 行 / `todo.md` 4 行未命中，逐条核实为**有意的脱敏与改名**（`.qoder-cn` 记忆路径 → `AGENTS.local.md`、`TaskStop` → `job_kill`、"Qoder 自身" → "harness 自身"）。⚠️ **头部原先那句"逐字节相同"不实**（与同一段"清掉上一任专属提法"自相矛盾），第二批已改准。`docs:check` 现有**七道闸**（含第二批补的 A/B 编号引用 / 表格竖线 / 余量告警，细节 `harness.md` **B-20**） |
-| 上一任的记忆 | **已全部落盘进仓库**：`docs/agents/harness.md`（B-1~**B-22** / A-1~**A-9** / C 能力清单）+ `AGENTS.local.md`。**3 个 Qoder 独有技能审定：不迁**（ts/CI/jq 套话、WordPress 关键词套路、React/CRA 模板，与本栈和口味冲突），但**反推出 4 条真缺陷**（`npm audit` 过期数字 / `audit fix --force` 会降 mermaid / SEO C / SEO D）。原件备份 `C:\Users\31429\.dsh\qoder-memories-backup\`（记忆 22 文件 + 技能 15 文件 = 37；**Qoder 已删净，别清**） |
-| 浏览器能力 | **2026-10-12 已装 DSH 的 playwright browser-use provider**（`~\.dsh\profiles\desktop\`，不在仓库内；装前 5 文件备份在 `~\.dsh\browser-plugin-profile-backup\`）。⚠️ **本会话仍无工具** —— provider 不接管已活动 Session，**要新建/恢复 Session** 才出现 `mcp__playwright-mcp__*`（约 70 个：navigate / snapshot / take_screenshot / evaluate / click…）。⚠️ **别改成 `headless: false`**：本机无完整版 `chromium-1243`，README 写「启动失败会拒绝 Session 创建」→ 新会话会起不来。右侧「浏览器」面板桌面 profile 默认已启用（用户 Ctrl+T），但**它不给模型任何工具**、与我的 MCP 浏览器**不共享状态**。当前可用通道：`npm run probe -- <url> <宽> <高> [--also <宽> <高>] [--sel <css>]`（已实测线上首页/手册页 + 三张截图：`h1=1`、破图 0、`overflowX=0`、宽表容器 3 个都 `scrollable:true`（1029/726/1089 vs 容器 309）、10 张封面 `realBug:false`）。⚠️ **别用 `file://` 验 dist**（根绝对路径解析到盘符根 → 假破图 + 2193px 假溢出），见 harness.md B-13 / C-1 / C-1b |
-| 线上站点 | ✅ **2026-10-13 18:06 部署 V0.1.42**（第六节原子替换 + **替换前断言全过**：新 dist 必须含 `第2页-亦林` 与 `0.1.42`、必须**不含** `0.1.41`、首页 `<title>` 必须仍是 `<title>亦林 YILIn</title>` 不被分页前缀污染）。**从本机打公网 IP 实测**：首页 200、站点信息卡 `V0.1.42`、`<title>亦林 YILIn</title>` + `og:type=website`；`/2/` 200、`<title>第2页-亦林</title>`、canonical `/2/`；`/3/` 200、`<title>第3页-亦林</title>`、canonical `/3/`；`/posts/ccnewtools-manual/` 200、title 仍是文章自己的、`og:type=article`。⬅️ 上一趟（V0.1.41 `og:type`）的核验在第二节 |
-| 本地构建 | 本批**真跑了** `npm run build`：退出码 0，**43 页 / 357 文件**（与上批一致），Pagefind 索引 **29 页**。产物核验：**43 页 43 个不同 `<title>`**（此前 41 个，`/2/` `/3/` 与首页撞名），每页 `<title>` 个数均为 1。⚠️ `npm run check` **本批未跑**（改动只在 `.astro` 的 frontmatter 一行）；若要补跑，基线应为 **0 error / 4 hint** |
-| 文档自检 | `npm run docs:check` = **0 error / 0 warn**（harness.md 解析出 **31 个** A/B 小节，控制组通过；注入链 61577 B / 65536 B，**尚可用 1911 B**）。⚠️ 第二批那条"余量只剩 665 B"的告警**已消除**：本批未往 `AGENTS.md` 加任何内容（B-21/B-22 全写进分册），而 AGENTS.md 上次瘦身后为 56548 B |
-| 服务器配置 | **未动**（只换 dist；没碰 Nginx / 宝塔）。缓存策略文件与 vhost 备份位置见 AGENTS 六节（值已脱敏，展开版在私密记录里）。原先那条 `reinit.js` 12h 缓存隐患已用**构建期哈希**解掉，无需改服务器 |
-| 依赖 | 本批**零改动**。基线仍是 `@astrojs/check@0.9.10` devDep、`allowScripts` 钉 `esbuild@0.28.2`、干净 `npm ci` 695 包 |
-| dev / preview server | 本批起了 `npm run preview`（:4321）做验证，**收尾时按「`node.exe` + `astro\bin\astro.mjs` + `preview`」精确杀掉并复查残留 = 0**（宽匹配会把自己的 shell 吃掉，见 AGENTS 九节依赖坑③）。当前 dev 与 preview **都已停，:4321 空闲** |
-| 服务器回滚资产 | `dist.old` + **39 个 `dist_backup_*`** = **40 个**（本批新增 `dist_backup_20261013_180610`；最老仍是 `20260920_234618`）。全部保留，**删需用户明确同意**。回滚一行见 `AGENTS.local.md`（不入库） |
-| 临时文件 | **本批已清并复查（本地 `cb*` = 0，服务器 `/tmp/cb*` = 0）**：本地 `%TEMP%` 下 `cb.tar.gz` + 4 个探查脚本（`cb_find_maxtokens.mjs` / `cb_models.mjs` / `cb_read_catalog.mjs` / `cb_shape.mjs`）；服务器 `/tmp/cb.tar.gz` + `/tmp/cb_deploy.sh`。⚠️ **回滚资产不算临时文件，不删**（`dist.old` / `dist_backup_*`）。⚠️ 老坑仍在：**node 读不了 bash 的 `/tmp`**（解析成 `E:\tmp` → ENOENT），跨工具传文件一律 `process.env.TEMP`。⚠️ 部署脚本的自我删除要放在**跑完之后**由外部执行——`bash` 边读边执行时删自己会读不到尾行。⚠️ 本批为查 DSH 缺陷在 `%TEMP%\chenblog_sess\` 留了一批**只读**分析脚本与 asar 读取器（`sess_dump.mjs` / `asar.mjs` / `inplace2.mjs` / `patches_final.json` 等），**它们是修 DSH 的作业凭据，重启验证通过前别删** |
-| 排查方法类坑位 | 本批新增三条，细节都在 **AGENTS 五-36 / 五-37 / 十-14**，此处只留索引：**`:hover` 态画下划线不能用 `border-bottom`（inline border 撑高行盒）**、**`forwards` 把 transform 永久留在元素上 = 常驻合成层**、**`navigating()` 的假设对全新 key 不成立（module 脚本晚一个宏任务）**。另有两条工具性坑：隐藏标签页 `setTimeout` 节流到 ≥1s（探针会 15s 超时，改用 `getAnimations().currentTime` 驱动）、`:hover` 不能用 JS 触发所以只能"手动施加同组声明"做等价验证 |
-| 待用户拍板 | ⓪c **【第二批 SEO 审计产物】**：~~**E** `og:type` 全站 0/43 缺失~~ → **已完成（V0.1.41）**；~~**F** 首页分页 `/2/` `/3/` 的 `<title>` 与首页完全相同~~ → **已完成（V0.1.42）**，全站 43 页 43 个不同 title。⚠️ **别与九节那条"每页两个 `<title>`（内容一致）"混为一谈**，那是重复标签、已列"看过选择不做"，这是两条不同的东西 ⓪e ~~【新·本批，等他操作】DSH 的 400 补丁要重启才生效~~ → **已完成（2026-10-13 晚间）**：他已退出 DSH、覆盖 `app.asar` 并重启，**三项复检全过**（字节级守卫 5/5、diff 只落那两个文件、补丁生效后 0 空块 0 新错）。`reasoningEfforts` 配置**下次请求即生效**（日志已见 `reasoningEffort:"max"`）。**遗留一条**：⚠️ **DSH 升级会覆盖 asar → 补丁会丢**，跑 `npm run gateway:check` 可一眼看出（它会报「app.asar 补丁状态：还是未打补丁的原盘」）；若被覆盖，补丁构造记录全在 `harness.md` **B-21**（含三个硬教训），按它重打即可，原盘备份 `app.asar.bak-before-pi-ai-fix-20261013_134330` ⓪d ~~常驻层预算怎么处理~~ → **已按 ① 轻量腾挪解决**（余量回到 1911 B，告警消失）。⓪a ~~要不要装 DSH 的 browser-use 插件~~ → **已装好并挂载完毕**（playwright provider）。**下一步在他手上：新建或恢复一个 Session**，实测 `mcp__playwright-mcp__browser_navigate` 等工具是否出现；若新会话创建失败，用 `~\.dsh\browser-plugin-profile-backup\` 覆盖回滚（大概率是 `headless` 被改成了 false）。⓪a2 **要不要改成"我和用户看同一个浏览器"** → 需把 config 换成 `mode: attach` 并自己起一个带调试端口的浏览器（Edge 可行但未实测）；不做则两边永远是两个独立上下文 ⓪b **评论区 OwO 表情面板 21 张图没有 `alt` 属性**（按容器分组实测确认全是 `.OwO-item`，文章与站点内容图零缺失）→ 属第三方组件，**我没动代码** ① **手册现在每节之间有一条分节线（10 条，照他手册原样同步；旧版站内只有 1 条）**——观感变了，要不要滤掉说一声 ② **V0.1.26 两条复测**（文章页→主页的封面；框选/点击文字是否还跳，见 16.）③ 新文章肉眼验收（11.）④ **灯箱真人点击**（12.）⑤ 第8天宽表要不要一起包（13.）⑥ `propse-base` 拼错要不要补（14.）⑦ 侧栏卡片不随软导航更换（9.）⑧ PostCard 加密文章锁图标（AGENTS 五-5）⑨ 全站 title 带不带后缀（SEO）⑩ **meCard 那排的真人反馈**（手机扫二维码能不能扫上、QQ 复制在他自己浏览器里的提示条观感）——我这边只能证明图解码正常、退路走得到；⑪ **列表卡上那句「暂无标签」是假的**（`PostCard.astro:81` 调 PostMeta 时不传 tags，而他 27 篇全都有标签）→ 要么把 tags 传进去显示、要么卡片不显示这一格（`showTags={false}`），等他定 |
-| 既存小坑 | `--radius-large` / `--panel-border-color` 未定义（AGENTS 五-16）——表格那行 `border-radius` 因此整条无效、实际直角，**正好符合站内"面板一律直角"口径，别当缺陷补变量**；`tsconfig.json` react jsx 残留无影响；`src/content/posts/images/` 空目录；`/site.webmanifest` 的 Content-Type 缺 webmanifest 映射（要动 nginx mime.types）；重复 id `announcement`/`cardTags`（九节已判定降级：无脚本查询、无死控件）；单分类时分类卡收起态反而更高（**现在已有第二个分类，这条要复验是否还成立**） |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`。第二十九批（V0.1.82 沉浸阅读 / LQIP / 设置面板 / 列表网格）：**一笔提交 `57a7302`，已推送、`HEAD == origin/main`、工作区计数 0** |
+| 工作区 | 本批动 **12 个文件**（+1280 / −50）：新增 `features/ImmersiveReading.astro`（107 行）、`features/DisplaySettings.astro`（883 行）、`config/displaySettings.ts`（41 行）、`utils/lqip-utils.ts`（59 行）；改 `commons/CoverImage.astro`(+19/−6)、`controls/FloatingControls.astro`(+2)、`headers/Header.astro`(+4)、`layout/PostPage.astro`(+43/−1)、`layouts/Layout.astro`(+1/−1，补 `id="banner-zone"`)、`styles/global.css`(+30/−22，`--hue` 系列改 oklch)、`styles/singles/mainSingles.css`(+90/−19)、`package.json`(0.1.81→0.1.82)。**零依赖改动**（`@swup/preload-plugin` 用户选择跳过，未安装） |
+| 线上站点 | ✅ **2026-11-05 16:47 部署 V0.1.82**（替换前 **6 条断言**：`display-settings-switch` / `dp-tab` / `0.1.82` / `lqip-placeholder` / `post-grid-auto` 必须在，`0.1.81` 必须不在）。**线上实测**：站点信息卡 `V0.1.82`；面板 320px 不溢出（right 1346 / vw 1440）；网格 `400px 400px` 两列、封面 `position:relative` 宽 398、`aspect-ratio 2/1`；375px 默认网格 359px 单列、面板 left 19 / right 339 不溢出；沉浸 `contentTop 419→16`、`postW 736`、导航/侧栏/横幅 display 全 none、Esc 全复原；`overflowX 0`、`pageerror 0`。HTTP 200 |
+| 本地构建 | V0.1.82 = **502 个文件 / 30,224,763 B（28.8 MB）/ 51 个 `index.html` / pagefind 51**。⚠️ 与上批「501」差 1 = 新增的 `DisplaySettings...js` chunk；上批记的「4 css」是旧口径，现按 `dist` 全量数得 **9**（多了 3 个 `dist/pagefind/*.css`，一直存在、非本批新增）。`build` **0 warn 0 error**、`check` **0 error / 3 hint** |
+| 依赖 | 本批**零改动**，`package.json` 只动 version。天花板不变：`mermaid 11.17.2` / `typescript 6.0.3`。`astro` 本会话开工时已是最新 **7.4.5**（无更新可升） |
+| dev / preview server | 本批起过 `npm run preview`（:4321）做 14 步探针与截图，**收尾按 `node.exe` + `astro*bin*astro.mjs*preview*` 精确杀掉并复查计数 = 0** |
+| 服务器回滚资产 | `dist.old`（= V0.1.81）+ **89 个 `dist_backup_*`**（本批新增 1 个）。磁盘 **15G/40G（39%）**。**一律保留，删需用户明确同意** |
+| 临时文件 | 收尾清 `%TEMP%` 下的探针脚本（`probe-dp.mjs` / `probe-dark.mjs` / `probe-reg.mjs` / `probe-live.mjs` / `probe-diag.mjs` / `probe-border.mjs` / `shot-dp.mjs` / `commitmsg.txt` / `deploy.sh` / `head-*.css|astro`）+ 10 张 `dp-*.png` / 4 张 `live-*.png` + `chenblog_dist.tar.gz`；服务器 `/tmp` 的 tar 已在部署脚本内删除。**回滚资产不算临时文件，不删** |
+| 待用户拍板 | **本批新增 0 条**（六条效果里 ⑤⑥ 与 ③ 都是用户当场拍过板才跳过的，已记在第一节「已放弃」）。**沿上批仍未答**：移动端 `.floating-controls-container` 压正文 32px（20px 于 `/about/`）· 相册逐张文案 · `/friends/` · `/sponsor/` · Twikoo 裸 `envId` 同域反代 · About 页身份口径 · About 页配图 |
+| 既存小坑 | 同上一批，**别再当新发现重提**：`--radius-large` 刻意不补（直角口径）· `/about/` 6 条 GitHub API CORS（`dist.old` 同样有，既存）· `/site.webmanifest` Content-Type · 重复 id · 单分类卡收起态 · 每页两个 `<title>`。本批**新增一条要记住的**：**改完文件先 `git diff --numstat`** —— 编辑器/脚本会把混合行尾整片归一化，`mainSingles.css` 曾出现 `242/171` 的假 diff、`PostPage.astro` 方向改反一次，按原始字节修回后降到 `90/19` |
 
 ---
 

@@ -62,18 +62,16 @@ harness 注入链 = `~/.dsh/AGENTS.md` → `AGENTS.md` → `AGENTS.local.md`，*
    （例如窗口缩放 morph 就是 Firefly 本体没有的，见第十节 6）。
 3. 参考站自身也是 Astro + Swup + Tailwind，对比时**只看它编译后的产物**，别被别的技术栈的教程带偏。
 4. 页面过渡这一项已有更细的"1:1 照搬"结论与踩坑，统一见第十节 5。
-5. ⚠️ **照抄参考站要连 Tailwind 的数值类一起核，别只核结构**（2026-10-10 波纹那条）：
-   同一行 `class` 里的 `max-h-*` / `min-h-*` / `h-[Nvh]` 这类**尺寸类**走样时不报错、不告警，只是"看着小一圈"。
-   本次 `#header-waves` 我们写 `max-h-12.5`（50px 上限），参考站是 `max-h-37.5 min-h-12.5`（150px 上限 / 50px 下限），
-   于是横幅下那道波纹带一直比参考站矮 2.7 倍。
-   → 核法：把两边的**渲染高度量出来对比**（定宽定高 iframe + `getBoundingClientRect`，`vh` 类必须给 iframe 真实高度才准），
+5. ⚠️ **照抄参考站要连 Tailwind 的数值类一起核，别只核结构**：同一行 `class` 里的 `max-h-*` / `min-h-*` / `h-[Nvh]`
+   走样时**不报错、不告警，只是"看着小一圈"**（本站 `#header-waves` 曾因此比参考站矮 2.7 倍，详见五-44）。
+   → 核法：把两边的**渲染高度量出来对比**（定宽定高 iframe + `getBoundingClientRect`；`vh` 类必须给 iframe 真实高度），
      光比源码字符串会漏掉 `--spacing` 换算这一层（Tailwind v4 里 `12.5` = 50px、`37.5` = 150px）。
 
 ## 二、技术栈
 
 | 层 | 选型 |
 |---|---|
-| 框架 | Astro **7.3.4**（SSG，非 SSR） |
+| 框架 | Astro **7.3.5**（SSG，非 SSR）— **每次会话查更新并升级**，见第九节 |
 | 交互组件 | Svelte 5.57.1（runes 语法）+ `@astrojs/svelte` 9.0.1 |
 | 样式 | Tailwind CSS **4.3.3**（`@tailwindcss/vite`，**v4 无 tailwind.config.js**，配置写在 CSS 里） |
 | 语言 | TypeScript **6.0.3**（⚠️ 不能升 7，见第九节） |
@@ -116,7 +114,8 @@ npm run new:post -- --day 29 --title "标题"   # 文章脚手架（ASCII slug +
 查漏洞要**显式换官方源**（默认 registry 是 npmmirror，它不实现 audit 接口，会报 `404 NOT_IMPLEMENTED` 而不是给结论）：
 `npm audit --registry=https://registry.npmjs.org` —— **每次现跑、别引用旧数字**（2026-10-12 实测 **23 条 / 退出码 1**；2026-09-21 那次是 0）。⚠️ **禁用 `npm audit fix --force`**（会把 mermaid 降级撞第九节天花板，细则见 `todo.md`）。
 
-🔴 **每天开工跑 `npm outdated` + 上面那条 audit（都只读）**；**`Latest` 不是升级目标**（mermaid/ts 撞天花板），大版本升级要他点头（细则 `todo.md`）。
+🔴 **每天开工跑 `npm outdated` + 上面那条 audit（都只读）**；大版本升级要他点头，`Latest` 不是升级目标（mermaid/ts 撞天花板）。
+🔴 **两个例外（见第九节）**：`astro` 每次会话查更新、有新版就升；**Twikoo 反向冻结**，不许动。
 
 ⚠️ **`dev` 下站内搜索一定不可用**：Pagefind 索引是 `astro build` 之后才生成的，dev 服务不认 `dist/pagefind/`，
 组件会显示"开发模式下没有搜索索引"——**这是设计，不是 bug**（参考站在 dev 下塞假结果，我们塞真提示）。
@@ -325,6 +324,10 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 > 易变状态与待拍板清单在 `HANDOFF.md` 第一节。这里只留"不看就会重犯"的结论。
 
 **🔴 版本天花板（撞过墙）**：`mermaid` **11.17.2**（`astro-mermaid` peer 只允许 `^10||^11`）；`typescript` **6.0.3**（`@astrojs/svelte` peer 只允许 `^5.3.3||^6.0.0`）。硬升 → `npm ci` ERESOLVE（TS 7 那次实测删掉 `node_modules` 后**装不回来**）。
+
+**🔴 两条版本约定（2026-11-05 定案，别搞反，细则 `config.md` 五-59 D / `todo.md` 九节）**
+- **`astro` 要升**：**每次会话开工查更新，有新版就升**；升完过 build / check / 产物核验 / **线上复验**才报完成。旧结论「钉 7.3.5 不升」**作废**。
+- **Twikoo 冻结**：前端 `twikoo.nocss.js` 1.7.7 + 服务端 `tkserver` 1.7.7 **保持现状 —— 不升级、不换方案、不折腾**。唯一例外是**明确安全漏洞 + 他当次点头**。评估数据存 `HANDOFF.md`，**别再调研、别在体检里提**。
 
 **🔴 依赖纪律（三条能毁项目）**
 - **增量安装不可信，只有干净 `npm ci` 算验证过**（`npm install` 遇 peer 冲突只 warn 一行就静默放行、构建照过，换台机器就失败）。正确序列（**只装一次**）：`npm update --package-lock-only` → `npm ci` → `npm run build`。⚠️ 别先 `npm update` 再 `rm -rf node_modules && npm ci`（白等 3 分钟）、别在 `ci` 前手动删（ci 自己会清）。

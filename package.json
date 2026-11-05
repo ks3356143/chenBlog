@@ -1,7 +1,7 @@
 {
   "name": "chenblog",
   "type": "module",
-  "version": "0.1.78",
+  "version": "0.1.79",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build && node scripts/inject-preload.mjs && pagefind --site dist",
@@ -26,7 +26,7 @@
     "@astrojs/svelte": "^9.0.0",
     "@fancyapps/ui": "^6.1.14",
     "@tailwindcss/vite": "^4.3.1",
-    "astro": "7.3.5",
+    "astro": "7.4.5",
     "astro-expressive-code": "^0.44.2",
     "astro-icon": "^1.1.5",
     "markdown-it": "^15.0.2",

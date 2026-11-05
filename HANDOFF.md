@@ -3,9 +3,38 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-05 傍晚（第三十二批：修圆角回归，已上线 V0.1.85）**。
+> 最后更新：**2026-11-05 夜间（第三十三批：按反馈改四项，已上线 V0.1.86）**。
 >
-> **🔧 2026-11-05 傍晚（第三十二批：修圆角回归，已上线 V0.1.85）**
+> **🔧 2026-11-05 夜间（第三十三批：按用户逐条反馈改四项，已上线 V0.1.86）**
+> 用户看完清单只挑了四条要改（②③⑪⑫），其余"不说的就很好不用改"。
+> ② **LQIP 撤掉、转圈回来**：用户原话「我觉得还是转圈好」。恢复 `.spinner`（40px、主色边框、
+>    `cover-spin 0.8s`），**删掉 `src/utils/lqip-utils.ts` 与全部 LQIP 代码**。
+>    双信号仍在：`.loaded` 类 或 `data-loading="false"` 任一成立就隐藏。
+> ③ **按钮统一 + tab 动画**：
+>    · 「粗细不一致」的实测真因：两个按钮外框都是 **40×40**、svg 都是 **24×24**，差在**笔画重量** ——
+>      太阳（实心填充）ink **4.51%**，`material-symbols:palette-outline` **4.80%**（重 6%）。
+>      换成 `mingcute:palette-line`（**4.61%**），同为描边风格、最接近。
+>      📌 **方法**：同尺寸渲染后统计深色像素占比（`ink%`），比肉眼比"粗细"可靠。
+>    · tab 切换原来只有 `display:none↔block`，没有任何过渡 → 给新面板加 `dp-panel-in`
+>      （262ms 淡入 + 上移 6px）+ tab 底下主色短线滑出。
+>      🔴 **必须用 animation 不能用 transition**：`display` 从 `none` 变化时 transition 不跑（五-41）。
+> ⑪ **浅色模式也有一点点光晕**：
+>    · CSS：同一层两套强度 —— 深色主色 18% + `screen`（原值不动）；浅色白光 33% + `soft-light`。
+>      🔴 亮底上**不能叠主色**（会发脏），要叠白；`screen` 在白底会把整片洗成纯白，必须换 `soft-light`。
+>    · JS：去掉 `if (!isDark()) return` 早退；邻卡微亮 `.is-near` **仍只给深色**。
+>    · 实测（纯卡片区、噪声底 0、屏蔽卡片 hover）：深色 avg **11.02** / 浅色 **2.81** ≈ 25%。
+>      📌 **测光晕必须先屏蔽卡片 hover**，否则量到的是卡片辉光不是 spotlight（第一版就栽在这）。
+> ⑫ **最近 5 篇换专属封面**：原来这五篇 `image` 是空串 → 落到 `getPostCover` 轮播兜底、
+>    跟老文章撞图。新画 5 张 SVG（沿用现有视觉语言：深底 + 主色线框 + 无焦点方构图 800×800）：
+>    cover-5 文档卡片栈 / cover-6 时间轴+存档箱 / cover-7 深色 HUD 叠浅色玻璃窗 /
+>    cover-8 散落小卡收束成"库" / cover-9 docx→用例树→两份 Word。
+>    webp 合计 **41.7KB**（单张 6.5~9.1KB）。⚠️ **改完必须跑 `npm run covers`**，只改 SVG 不重渲染等于没改。
+> 📋 验收：全站 **153/153**（51 页 × 3 断点）状态码 200 / h1 恰好 1 / 溢出 0 / 破图 0 / pageerror 0；
+> 站内 **231** 个链接资源 0 个 4xx；`build` 0 / `check` 0 error 3 hint；
+> 基线 **541 文件**（+38：5 张新封面的 webp 变体 35 + 其余）；回滚资产 **93 个**；
+> 提交 **`360511c`**，`HEAD == origin/main`。线上复验：转圈回来、LQIP 归零、
+> 图标 `mingcute:palette-line`、5 张新封面各自到位、tab 动画 `dp-panel-in`、浅色 spotlight `soft-light`。
+>> **🔧 2026-11-05 傍晚（第三十二批：修圆角回归，已上线 V0.1.85）**
 > 用户发截图指出「分类栏激活块怎么变圆角了，直角风格呢」。
 > 核查：**是我这轮新加的两个元素自己写了 border-radius**，不是既有样式被改坏。
 > - `.category-indicator`（分类滑动指示器）`0.25rem` → `0`
@@ -2003,22 +2032,22 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-05 傍晚第三十二批实测；线上 = V0.1.85**，已部署）
+## 三、当前状态快照（**2026-11-05 夜间第三十三批实测；线上 = V0.1.86**，已部署）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`。第三十二批（V0.1.85 修圆角回归）：**一笔提交 `db0a4f5`，已推送、`HEAD == origin/main`、工作区计数 0**。同日更早：`485ebb3`（V0.1.84 四条动效）+ `5eedaf1`（文档）+ `160feaa`（V0.1.83）+ `57a7302`（V0.1.82） |
-| 工作区 | 本批动 **4 个文件**（+10/−4）：`layout/CategoryBar.astro`(+3/−1)、`styles/singles/mainSingles.css`(+3/−1)、`features/DisplaySettings.astro`(+3/−1)、`package.json`(0.1.84→0.1.85)。**零依赖改动** |
-| 线上站点 | ✅ **2026-11-05 18:56 部署 V0.1.85**（替换前 **4 条断言**：`0.1.85` 必须在、`0.1.84` 必须不在、`.category-indicator` 与 `.btt-progress` 的 `border-radius` 必须为 0）。**线上实测**：两处半径均 `0px`、指示器 `aligned:true`、面板竖条 `0px`、`pageerror 0`。HTTP 200 |
-| 本地构建 | V0.1.85 = **503 个文件 / 51 个 `index.html` / pagefind 51**。`build` **0 warn 0 error**、`check` **0 error / 3 hint** |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`。第三十三批（V0.1.86 按反馈改四项）：**一笔提交 `360511c`，已推送、`HEAD == origin/main`、工作区计数 0** |
+| 工作区 | 本批动 **21 项**：改 `commons/CoverImage.astro`(+8/−24)、`features/CardSpotlight.astro`(+15/−11)、`features/DisplaySettings.astro`(+44/−1)、`styles/singles/mainSingles.css`(+54/−16)、5 篇 post frontmatter 各 +1 行（插 `image`）、`package.json`；**删** `src/utils/lqip-utils.ts`；**新增** 5 张封面 SVG + 5 张 webp。**零依赖改动** |
+| 线上站点 | ✅ **2026-11-05 21:12 部署 V0.1.86**（替换前 **5 组断言**：`0.1.86` 必须在 / `0.1.85` 不在 / `cover-spin` 必须在 / `lqip-placeholder` 必须不在 / `dp-panel-in` 必须在 / 5 张新封面都在）。**线上实测**：转圈 10 个、LQIP 0、图标 `mingcute:palette-line`、五篇各用 cover-5~9、tab 动画 `dp-panel-in`、浅色 spotlight `soft-light`、`pageerror 0`。HTTP 200 |
+| 本地构建 | V0.1.86 = **541 个文件 / 51 个 `index.html` / pagefind 51**（+38 = 5 张新封面的 webp 变体 35 个 + 3）。`build` **0 warn 0 error**、`check` **0 error / 3 hint**、`tsc` **0** |
 | 依赖 | 本批**零改动**，`package.json` 只动 version。天花板不变：`mermaid 11.17.2` / `typescript 6.0.3`；`astro` 7.4.5 已是最新 |
-| dev / preview server | 本批起过 `npm run preview`（:4321）核对圆角，**收尾已按 `node.exe` + `astro*bin*astro.mjs*preview*` 精确杀掉并复查计数 = 0** |
-| 服务器回滚资产 | `dist.old`（= V0.1.84）+ **92 个 `dist_backup_*`**（本批新增 1 个）。**一律保留，删需用户明确同意** |
-| 临时文件 | 收尾清 `%TEMP%` 下 `shot-square.mjs` / `chk-panel.mjs` / `live-sq.mjs` / `cm7.txt` / `dep5.sh` / `dep6.sh` / `h-ms3.css` + `sq-*.png` / `Lsq-*.png` + `chenblog_dist.tar.gz`；服务器 `/tmp` 已清（上一次中止时留下的 tar 也在这次脚本里删掉） |
-| 待用户拍板 | **本批新增 0 条**。**沿上批仍未答**：移动端 `.floating-controls-container` 压正文 32px · 相册逐张文案 · `/friends/` · `/sponsor/` · Twikoo 裸 `envId` 同域反代 · About 页身份口径 · About 页配图 |
-| 既存小坑 | 同上一批。本批**新增两条**：① **新加元素必须显式 `border-radius: 0`**（本站直角口径，浏览器默认虽是 0，但写 `0.25rem` 这种"顺手圆一下"就是回归）；② **部署断言要钉在具体选择器上**，用全文件 `grep -qF "border-radius:.25rem"` 会命中 Calender 卡片那个既有的值 → 误报 FAIL |
+| dev / preview server | 本批起过 `npm run preview`（:4321）做逐帧截图与像素差测量，**收尾已精确杀掉并复查计数 = 0** |
+| 服务器回滚资产 | `dist.old`（= V0.1.85）+ **93 个 `dist_backup_*`**（本批新增 1 个）。**一律保留，删需用户明确同意** |
+| 临时文件 | 收尾清 `%TEMP%` 下 `v-spinner.mjs` / `v-tab.mjs` / `v-glow*.mjs` / `v-noise.mjs` / `v-four.mjs` / `v-cards.mjs` / `check-covers*.mjs` / `live-v86.mjs` / `ink.mjs` / `icon-*.mjs|html|json` / `look9.mjs` / `linkcheck2.mjs` / `scan-final.mjs` / `cm9.txt` / `dep7.sh` / `page-list.txt` / `prev-dist.txt` / `covers*.png` / `sp-*.png` / `glow-*.png` / `g3-*.png` / `g4-*.png` / `btn-*.png` / `panel-tab.png` / `cards-*.png` / `icon-*.png` / `chenblog_dist.tar.gz` |
+| 待用户拍板 | **本批新增 0 条**（四条都是他点名的）。**沿上批仍未答**：移动端 `.floating-controls-container` 压正文 32px · 相册逐张文案 · `/friends/` · `/sponsor/` · Twikoo 裸 `envId` 同域反代 · About 页身份口径 · About 页配图 |
+| 既存小坑 | 同上一批。本批**新增三条方法类**：① **测光晕要先屏蔽卡片 hover**，否则量到的是卡片辉光；② **图标"粗细"要量化**（同尺寸渲染后数深色像素占比），肉眼比不可靠；③ **改 SVG 封面必须跑 `npm run covers`**，只改源不重渲染等于没改 |
 
 ---
 ## 四、维护本文件的规矩

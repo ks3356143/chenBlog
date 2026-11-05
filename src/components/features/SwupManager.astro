@@ -99,11 +99,54 @@
             if (nav) nav.style.transform = ""
         })
 
+        // 分页页之间跳转（/ → /2/ → /3/）：落到**列表顶部**，不是文档顶部。
+        // 本站横幅 65vh，回 0 等于让访客每翻一页都重看一遍横幅才够得着列表
+        // （2026-11-06 用户报「点分页突然跳到顶部，你觉得该这样设计吗」= 不该）。
+        //
+        // 🔴 必须同时做两件事，只做一件都无效：
+        //   ① `visit.scroll.reset = false` —— Swup 4 的 renderPage 末尾会执行内置
+        //      `scrollToContent()`，默认 `window.scrollTo({top:0})`，会把这里任何提前滚动覆盖掉
+        //      （第一版只改了 visit:start，实测落点仍是 0，就是它干的；源码见
+        //       node_modules/swup/dist/Swup.module.js 里的 `D` / `scroll:top`）。
+        //   ② 真正定位放在 `content:scroll` 钩子里 —— 那时新内容已经进 DOM，能拿新页几何；
+        //      而 visit:start 里那一滚仍保留，用来在替换前就把视口挪走，防止看到旧页中途位置。
+        const pathOf = (u: string) => {
+            const p = new URL(u, window.location.href).pathname.replace(/\/+$/, "")
+            return p || "/"
+        }
+        const isListPage = (p: string) => p === "/" || /^\/\d+$/.test(p)
+        const listNav = { pending: false }
+        /** 列表顶部 = 内容面板上沿 − 导航条高 − 8px。
+            三个分页页的横幅高度相同，所以这条在替换前后算出来是同一个值。 */
+        const scrollToContentTop = () => {
+            const panel = document.querySelector(".content-panel")
+            if (!panel) return
+            const nav = document.getElementById("nav")
+            const navH = nav ? nav.getBoundingClientRect().height : 72
+            const top = window.scrollY + panel.getBoundingClientRect().top - navH - 8
+            window.scrollTo({ top: Math.max(0, top), behavior: "instant" })
+        }
+
+        swup.hooks.on("content:scroll", () => {
+            if (!listNav.pending) return
+            listNav.pending = false
+            scrollToContentTop()
+        })
+
         // 回顶放在 visit:start（与点击同一个任务、下一帧绘制之前），浏览器永远不会画出
         // "旧页滚到一半"的样子。之前把回顶留在淡出窗口里，横幅静止不动时就会看到整屏跳一下
         swup.hooks.on("visit:start", visit => {
             startProgressBar()
-            if (window.innerWidth >= 768) window.scrollTo({ top: 0, behavior: "instant" })
+
+            const fromPath = pathOf(window.location.href)
+            const toPath = pathOf(visit.to.url)
+            if (isListPage(fromPath) && isListPage(toPath)) {
+                visit.scroll.reset = false
+                listNav.pending = true
+                scrollToContentTop()
+            } else if (window.innerWidth >= 768) {
+                window.scrollTo({ top: 0, behavior: "instant" })
+            }
 
             // 首页↔非首页：横幅高度在两套变量间切换，过渡类只在切页期间挂上（照搬参考站）
             const targetPath = new URL(visit.to.url, window.location.href).pathname

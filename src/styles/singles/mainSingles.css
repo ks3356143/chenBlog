@@ -380,93 +380,144 @@
     }
 }
 
-/* ── 卡片 hover 微交互：轻微上浮 + 边框发光（2026-11-05）──────────────
-   调性对齐参考站：不倾斜、不缩放卡片本体（只有封面图在卡片内部自己缩放，
-   见 PostCard 的 group-hover:scale-110），只做「抬 2px + 边框亮成主色」两件事。
-   尺寸取 Tailwind 的 2px（--spacing 0.5）= 参考站 hover:-translate-y-1 的一半，
-   原因是我们卡片更密集（列表 10 张/页），1 再往上会显得整页在抖。
+/* ── 卡片 hover 微交互：主色辉光 + 循环流光（2026-11-05 改）──────────────────
+   🔴 **绝对不要再加任何位移**：用户明确说不喜欢"微微上移"（原 translate: 0 -2px 已删）。
+   现在只做两件事 —— ① 多层主色辉光（1px 描边 + 中距离光晕 + 远处柔光）；
+   ② 一条斜向流光从左扫到右，2.2s 一轮、悬停期间循环。
 
-   ⚠️ 用 translate 属性（Tailwind v4 的写法）而不是 transform：卡片内部已有的
-   .post-card-image 等元素自带 transform（封面缩放），外层若也写 transform 会互相覆盖。
-   ⚠️ 只在 (hover: hover) 下生效：触屏设备的 sticky hover 会让卡片卡在浮起态。 */
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+   分工（别再改乱）：
+   · 辉光 + 流光 = **鼠标正悬停的那一张**（局部、明确的选中感）
+   · #card-spotlight + .is-near = **整片网格的氛围**（全局、余光级，只在深色模式）
+
+   ⚠️ 流光靠 ::after 绝对定位 + transform 动画，**必须有 overflow:hidden** 才不会甩到卡外；
+      .post-card-wrapper 本来就带，.project-card 没有 → 下面补一条。
+   ⚠️ 用 transform 不用 left/width：前者走合成器，不触发重排。
+   ⚠️ `.btn-card`（分页箭头 / 上下篇 / 404 链接）**不给流光**：那些是窄条按钮，
+      一条斜光扫过会像高频闪烁，只留辉光。
+   ⚠️ 辉光在 (hover: hover) 下就给（含 reduced-motion 用户：那只是阴影淡入，不是运动）；
+      流光额外要求 prefers-reduced-motion: no-preference。 */
+@media (hover: hover) {
     .post-card-wrapper,
     .project-card,
     .btn-card {
         transition:
-            translate 0.22s cubic-bezier(0.4, 0, 0.2, 1),
-            border-color 0.22s ease,
-            box-shadow 0.22s ease;
+            border-color 0.24s ease,
+            box-shadow 0.24s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .post-card-wrapper:hover,
     .project-card:hover,
     .btn-card:hover {
-        translate: 0 -2px;
         border-color: color-mix(in oklch, var(--primary) 45%, var(--line-divider));
         box-shadow:
-            0 4px 12px -2px color-mix(in oklch, var(--primary) 22%, transparent),
-            0 2px 4px -2px rgb(0 0 0 / 0.06);
+            0 0 0 1px color-mix(in oklch, var(--primary) 32%, transparent),
+            0 6px 20px -6px color-mix(in oklch, var(--primary) 42%, transparent),
+            0 14px 40px -12px color-mix(in oklch, var(--primary) 28%, transparent),
+            0 2px 6px -2px rgb(0 0 0 / 0.06);
     }
 
-    /* 暗色下底色更暗，同样的阴影看不见 → 提高主色占比、收窄扩散 */
+    /* 暗色下底色更暗，同一套阴影会整片糊掉 → 提高主色占比、收窄扩散。
+       ⚠️ 这条同时是 .is-near（后面那段）的"压顶条"：两者特异性相同（都是 0,4,0），
+          靠**书写顺序在 .is-near 之后**取胜 —— 见下面聚光段末尾那条同值重复。 */
     :root[data-theme="dark"] .post-card-wrapper:hover,
     :root[data-theme="dark"] .project-card:hover,
     :root[data-theme="dark"] .btn-card:hover {
-        border-color: color-mix(in oklch, var(--primary) 55%, transparent);
+        border-color: color-mix(in oklch, var(--primary) 60%, transparent);
         box-shadow:
-            0 4px 14px -2px color-mix(in oklch, var(--primary) 30%, transparent),
-            0 0 0 1px color-mix(in oklch, var(--primary) 18%, transparent);
+            0 0 0 1px color-mix(in oklch, var(--primary) 40%, transparent),
+            0 0 18px -2px color-mix(in oklch, var(--primary) 42%, transparent),
+            0 10px 30px -10px color-mix(in oklch, var(--primary) 46%, transparent);
     }
 }
 
-/* ── 卡片 hover 微交互：轻微上浮 + 边框发光（2026-11-05）──────────────
-   调性对齐参考站：不倾斜、不缩放卡片本体（只有封面图在卡片内部自己缩放，
-   见 PostCard 的 group-hover:scale-110），只做「抬 2px + 边框亮成主色」两件事。
-   尺寸取 Tailwind 的 2px（--spacing 0.5）= 参考站 hover:-translate-y-1 的一半，
-   原因是我们卡片更密集（列表 10 张/页），1 再往上会显得整页在抖。
-
-   ⚠️ 用 translate 属性（Tailwind v4 的写法）而不是 transform：卡片内部已有的
-   .post-card-image 等元素自带 transform（封面缩放），外层若也写 transform 会互相覆盖。
-   ⚠️ 只在 (hover: hover) 下生效：触屏设备的 sticky hover 会让卡片卡在浮起态。 */
+/* 流光：一条斜向高光带扫过整张卡。
+   浅色卡上必须带主色才看得见（纯白扫光在白底上等于没有），
+   峰值 56% 是实测出来的：38% 时与基线像素差 avg 只有 3.9、肉眼几乎看不出；
+   56% 时 avg 14.2、30% 的像素被改变 —— 够亮但不至于盖住文字。 */
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-    .post-card-wrapper,
-    .project-card,
-    .btn-card {
-        transition:
-            translate 0.22s cubic-bezier(0.4, 0, 0.2, 1),
-            border-color 0.22s ease,
-            box-shadow 0.22s ease;
+    .project-card {
+        /* post-card-wrapper 自带 overflow-hidden；project-card 没有，不补就会甩到相邻卡上 */
+        overflow: hidden;
     }
 
-    .post-card-wrapper:hover,
-    .project-card:hover,
-    .btn-card:hover {
-        translate: 0 -2px;
-        border-color: color-mix(in oklch, var(--primary) 45%, var(--line-divider));
-        box-shadow:
-            0 4px 12px -2px color-mix(in oklch, var(--primary) 22%, transparent),
-            0 2px 4px -2px rgb(0 0 0 / 0.06);
+    .post-card-wrapper::after,
+    .project-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        /* 压过封面上那两层 z-10 / z-20 遮罩；pointer-events:none 保证不挡点击 */
+        z-index: 30;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateX(-50%);
+        --sheen-peak: color-mix(in oklch, var(--primary) 56%, transparent);
+        --sheen-soft: color-mix(in oklch, var(--primary) 20%, transparent);
+        background: linear-gradient(
+            100deg,
+            transparent 38%,
+            var(--sheen-soft) 46%,
+            var(--sheen-peak) 50%,
+            var(--sheen-soft) 54%,
+            transparent 62%
+        );
     }
 
-    /* 暗色下底色更暗，同样的阴影看不见 → 提高主色占比、收窄扩散 */
-    :root[data-theme="dark"] .post-card-wrapper:hover,
-    :root[data-theme="dark"] .project-card:hover,
-    :root[data-theme="dark"] .btn-card:hover {
-        border-color: color-mix(in oklch, var(--primary) 55%, transparent);
-        box-shadow:
-            0 4px 14px -2px color-mix(in oklch, var(--primary) 30%, transparent),
-            0 0 0 1px color-mix(in oklch, var(--primary) 18%, transparent);
+    :root[data-theme="dark"] .post-card-wrapper::after,
+    :root[data-theme="dark"] .project-card::after {
+        --sheen-peak: color-mix(in oklch, var(--primary) 50%, transparent);
+        --sheen-soft: color-mix(in oklch, var(--primary) 14%, transparent);
+    }
+
+    /* 🔴 **循环扫光**，不是一次性：
+       第一版写成 `animation: card-sheen 0.75s`（只扫一次），鼠标一移上去光就闪过去了，
+       肉眼基本捕不到 —— 等于白做。用户要的是"hover 时绚丽的流光"，得在悬停期间一直动。 */
+    .post-card-wrapper:hover::after,
+    .project-card:hover::after {
+        opacity: 1;
+        animation: card-sheen 2.2s cubic-bezier(0.4, 0, 0.3, 1) infinite;
     }
 }
 
+/* 扫光全程只改 transform / opacity → 合成器处理，不重排。
+   🔴 **行程必须正好是 ±50%，不能是 ±150%**（这一条踩了两次，记牢）：
+   光带在 gradient 的 36%~64%（峰值 50%），元素宽 = 卡宽 W。
+   translate 相对**自身宽度**，tx 的可见窗口是 [-0.5W, +0.5W]。
+   写 ±150% = 行程 3W，可见窗只占 1/3 → 9 个采样点里 7 个落在卡外，
+   实测"hover 上去什么也看不见"。改成 ±50% 后**整段行程都可见**，从左边沿扫到右边沿。
+   · 60% 之后先把 opacity 降到 0 再回左侧：顺序反了会看到一条光倒着飞回去。
+   · 一轮 2.2s，其中约 1.2s 在扫，1s 待机 —— 悬停久了是"隔一会儿扫一次"的呼吸感。 */
+@keyframes card-sheen {
+    0% {
+        transform: translateX(-50%);
+        opacity: 0;
+    }
+    4% {
+        opacity: 1;
+    }
+    56% {
+        transform: translateX(50%);
+        opacity: 1;
+    }
+    60% {
+        transform: translateX(50%);
+        opacity: 0;
+    }
+    61% {
+        transform: translateX(-50%);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(-50%);
+        opacity: 0;
+    }
+}
 /* ── 鼠标聚光光晕（2026-11-05）· 只在深色模式、只在能 hover 的指针设备 ────────────
-   与昨天那条「卡片上浮 2px + 边框发光」的关系（明确取舍，别再改乱）：
+   与「卡片辉光 + 流光」的关系（明确取舍，别再改乱）：
 
-   · **不叠加、分工**：上浮 + 边框亮 = **鼠标正悬停的那一张**（局部、明确的"选中感"）；
+   · **不叠加、分工**：辉光 + 流光 = **鼠标正悬停的那一张**（局部、明确的"选中感"）；
      聚光 + 邻卡微亮 = **整片网格的空间感**（全局、余光级的氛围）。
      两者同时命中同一张卡时，hover 那条优先级更高（写在后面覆盖），所以不会出现
-     "边框亮两次导致过曝"或"上浮与光晕打架"的观感 —— 只有一张卡在浮，其余在角落里被手电扫到。
+     "边框亮两次导致过曝"的观感 —— 只有一张卡在亮，其余在角落里被手电扫到。
 
    · **为什么不做"每张卡跟随鼠标的径向渐变"**：那需要给每张卡写 CSS 变量并逐帧 setProperty，
      10 张卡 × 每帧 = 强制重绘，实测掉帧。改成**一个统一的 spotlight 层**（fixed + mix-blend-mode），
@@ -512,17 +563,18 @@
             0 2px 10px -4px color-mix(in oklch, var(--primary) 30%, transparent);
     }
 
-    /* 🔴 真正悬停的那张：用昨天那条 hover 规则压在上面（未加 !important，
-         靠"同类属性但更具体的选择器 + 书写顺序在后"取胜）——
-         这样光晕只做背景氛围，绝不会跟 hover 的浮起抢视觉重心。 */
+    /* 🔴 真正悬停的那张要把 .is-near 压回去。
+       两者特异性**相同**（都是 0,4,0：:root + 属性 + 类 + 伪类），所以只能靠**书写顺序**——
+       上面那段辉光规则写在前面，这里必须原样再写一遍（值必须与上面逐字一致，否则两处会漂）。
+       ⚠️ 这里**没有** translate：用户 2026-11-05 明确不要位移。 */
     :root[data-theme="dark"] .post-card-wrapper:hover,
     :root[data-theme="dark"] .project-card:hover,
     :root[data-theme="dark"] .btn-card:hover {
-        translate: 0 -2px;
-        border-color: color-mix(in oklch, var(--primary) 55%, transparent);
+        border-color: color-mix(in oklch, var(--primary) 60%, transparent);
         box-shadow:
-            0 4px 14px -2px color-mix(in oklch, var(--primary) 30%, transparent),
-            0 0 0 1px color-mix(in oklch, var(--primary) 18%, transparent);
+            0 0 0 1px color-mix(in oklch, var(--primary) 40%, transparent),
+            0 0 18px -2px color-mix(in oklch, var(--primary) 42%, transparent),
+            0 10px 30px -10px color-mix(in oklch, var(--primary) 46%, transparent);
     }
 }
 

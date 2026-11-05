@@ -3,7 +3,31 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-05 傍晚（第二十九批：沉浸阅读 / LQIP / 显示设置面板 / 列表网格，已上线 V0.1.82）**。
+> 最后更新：**2026-11-05 傍晚（第三十批：卡片 hover 去上浮改辉光+流光，已上线 V0.1.83）**。
+>
+> **🔧 2026-11-05 傍晚（第三十批：卡片 hover 去上浮、改辉光 + 循环流光，已上线 V0.1.83）**
+> 用户原话：「首页卡片 hover 时候微微上移我不喜欢，改为 hover 绚丽一点的阴影、流光都可以，反正不要微微上动」。
+> 🔴 **这一条是"用户否决了我上午刚做的效果"，别再改回去**：上午那版 `translate: 0 -2px` 已彻底删除。
+> - **辉光**：多层替换原来只有一层的阴影 —— 1px 主色描边 + 6px/20px 中距离光晕 + 14px/40px 远处柔光 + 一道黑色浅影。
+>   暗色另有一套（主色占比更高、加一圈 18px 紧贴发光），因为同一套阴影在深底上会整片糊掉。
+> - **流光**：`::after` 一条 100deg 斜向光带，2.2s 一轮 `infinite`，悬停期间反复从左扫到右。
+>   🔴 **两个坑，都踩了**：
+>   ① **行程必须 ±50%，不能 ±150%**：`translateX` 的百分比相对**元素自身宽度**，
+>      而光带在 gradient 的 46%~54%、元素宽 = 卡宽 W → 可见窗口只有 [-0.5W, +0.5W]。
+>      写 ±150% 时 2/3 行程在卡外，实测 9 个采样点里 7 个 `opacity:1` 但 `tx` 在 ±1100（卡外）
+>      → **"hover 上去什么也看不见"**。改 ±50% 后整段可见。
+>   ② **浅色峰值 56%，不是 26%/38%**：38% 时与基线的像素差 `avg` 只有 3.9、肉眼几乎看不出；
+>      56% 时 `avg 14.2 / 30% 像素被改变` —— 够亮但没盖住文字（截图逐帧核过）。
+>   ③ **必须 `infinite`**：第一版写成 0.75s 单次，鼠标一移上去光已经闪完了，等于没做。
+> - **拒绝位移的判据写进验收**：hover 前后卡片 `getBoundingClientRect()` 的 x/y/w/h **四项全等**，`translate` 始终 `none`。
+>   线上实测 likewise：`sameX/sameY/sameW/sameH` 全 true、`translate: none`、`sheenMoving: true`（5 次采样 tx = -348/56/321/400/-407）。
+> - **范围克制**：`.btn-card`（分页箭头 / 上下篇 / 404 链接）**只给辉光不给流光** —— 窄条按钮上一条斜光扫过像高频闪烁。
+>   `.project-card` 补 `overflow: hidden`（原本没有，流光会甩到相邻卡片上）。
+> - **reduced-motion**：这类用户**仍有辉光**（阴影淡入不是运动），但流光整条不播（实测 `animCount 0`、`afterAnim: none`）。
+> - 📋 基线 **502 文件 / 51 index.html / pagefind 51**；`build` 0 warn 0 error、`check` 0 error 3 hint；
+>   回滚资产 **90 个**；提交 **`160feaa`**，`HEAD == origin/main`。
+> - ⚠️ **同时清掉一处既存重复**：`mainSingles.css` 里「卡片 hover 微交互」那两段在 HEAD 里就已**逐字重复**
+>   （产物 CSS 里 `translate:0 -2px` 出现 2 次）→ 本次整块重写时一并消掉，diff 从 236/184 降到 122/70。
 >
 > **🔧 2026-11-05 傍晚（第二十九批：沉浸阅读 / LQIP / 设置面板 / 列表网格，已上线 V0.1.82）**
 > 用户点六条参考站效果，逐条对齐 firefly.cuteleaf.cn 编译产物。**实际做 4 条，2 条按用户决定跳过**（⑥⑤）。
@@ -1939,25 +1963,24 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-05 傍晚第二十九批实测；线上 = V0.1.82**，已部署）
+## 三、当前状态快照（**2026-11-05 傍晚第三十批实测；线上 = V0.1.83**，已部署）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`。第二十九批（V0.1.82 沉浸阅读 / LQIP / 设置面板 / 列表网格）：**一笔提交 `57a7302`，已推送、`HEAD == origin/main`、工作区计数 0** |
-| 工作区 | 本批动 **12 个文件**（+1280 / −50）：新增 `features/ImmersiveReading.astro`（107 行）、`features/DisplaySettings.astro`（883 行）、`config/displaySettings.ts`（41 行）、`utils/lqip-utils.ts`（59 行）；改 `commons/CoverImage.astro`(+19/−6)、`controls/FloatingControls.astro`(+2)、`headers/Header.astro`(+4)、`layout/PostPage.astro`(+43/−1)、`layouts/Layout.astro`(+1/−1，补 `id="banner-zone"`)、`styles/global.css`(+30/−22，`--hue` 系列改 oklch)、`styles/singles/mainSingles.css`(+90/−19)、`package.json`(0.1.81→0.1.82)。**零依赖改动**（`@swup/preload-plugin` 用户选择跳过，未安装） |
-| 线上站点 | ✅ **2026-11-05 16:47 部署 V0.1.82**（替换前 **6 条断言**：`display-settings-switch` / `dp-tab` / `0.1.82` / `lqip-placeholder` / `post-grid-auto` 必须在，`0.1.81` 必须不在）。**线上实测**：站点信息卡 `V0.1.82`；面板 320px 不溢出（right 1346 / vw 1440）；网格 `400px 400px` 两列、封面 `position:relative` 宽 398、`aspect-ratio 2/1`；375px 默认网格 359px 单列、面板 left 19 / right 339 不溢出；沉浸 `contentTop 419→16`、`postW 736`、导航/侧栏/横幅 display 全 none、Esc 全复原；`overflowX 0`、`pageerror 0`。HTTP 200 |
-| 本地构建 | V0.1.82 = **502 个文件 / 30,224,763 B（28.8 MB）/ 51 个 `index.html` / pagefind 51**。⚠️ 与上批「501」差 1 = 新增的 `DisplaySettings...js` chunk；上批记的「4 css」是旧口径，现按 `dist` 全量数得 **9**（多了 3 个 `dist/pagefind/*.css`，一直存在、非本批新增）。`build` **0 warn 0 error**、`check` **0 error / 3 hint** |
-| 依赖 | 本批**零改动**，`package.json` 只动 version。天花板不变：`mermaid 11.17.2` / `typescript 6.0.3`。`astro` 本会话开工时已是最新 **7.4.5**（无更新可升） |
-| dev / preview server | 本批起过 `npm run preview`（:4321）做 14 步探针与截图，**收尾按 `node.exe` + `astro*bin*astro.mjs*preview*` 精确杀掉并复查计数 = 0** |
-| 服务器回滚资产 | `dist.old`（= V0.1.81）+ **89 个 `dist_backup_*`**（本批新增 1 个）。磁盘 **15G/40G（39%）**。**一律保留，删需用户明确同意** |
-| 临时文件 | 收尾清 `%TEMP%` 下的探针脚本（`probe-dp.mjs` / `probe-dark.mjs` / `probe-reg.mjs` / `probe-live.mjs` / `probe-diag.mjs` / `probe-border.mjs` / `shot-dp.mjs` / `commitmsg.txt` / `deploy.sh` / `head-*.css|astro`）+ 10 张 `dp-*.png` / 4 张 `live-*.png` + `chenblog_dist.tar.gz`；服务器 `/tmp` 的 tar 已在部署脚本内删除。**回滚资产不算临时文件，不删** |
-| 待用户拍板 | **本批新增 0 条**（六条效果里 ⑤⑥ 与 ③ 都是用户当场拍过板才跳过的，已记在第一节「已放弃」）。**沿上批仍未答**：移动端 `.floating-controls-container` 压正文 32px（20px 于 `/about/`）· 相册逐张文案 · `/friends/` · `/sponsor/` · Twikoo 裸 `envId` 同域反代 · About 页身份口径 · About 页配图 |
-| 既存小坑 | 同上一批，**别再当新发现重提**：`--radius-large` 刻意不补（直角口径）· `/about/` 6 条 GitHub API CORS（`dist.old` 同样有，既存）· `/site.webmanifest` Content-Type · 重复 id · 单分类卡收起态 · 每页两个 `<title>`。本批**新增一条要记住的**：**改完文件先 `git diff --numstat`** —— 编辑器/脚本会把混合行尾整片归一化，`mainSingles.css` 曾出现 `242/171` 的假 diff、`PostPage.astro` 方向改反一次，按原始字节修回后降到 `90/19` |
+| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`。第三十批（V0.1.83 卡片 hover 去上浮）：**一笔提交 `160feaa`，已推送、`HEAD == origin/main`、工作区计数 0**。同日前两笔：`57a7302`（V0.1.82 功能）+ `80ba3b2`（V0.1.82 文档） |
+| 工作区 | 本批动 **2 个文件**（+123/−71）：`styles/singles/mainSingles.css`（+122/−70：删掉上浮那两段重复规则、重写为辉光 + 流光）、`package.json`（0.1.82→0.1.83）。**零依赖改动** |
+| 线上站点 | ✅ **2026-11-05 17:36 部署 V0.1.83**（替换前 **4 条断言**：`0.1.83` 必须在、`0.1.82` 必须不在、`card-sheen` 必须在 `_astro/*.css`、`translate:0 -2px` 必须不在）。**线上实测**：`sameX/sameY/sameW/sameH` 全 true、`translate: none`、辉光 4 层、`borderColor oklch(.444 .084 174.59 / .49)`、流光 `afterAnim: card-sheen`、5 次采样 `tx = -348/56/321/400/-407`（确实在扫）、网格模式同样 `sameY: true`、`pageerror 0`。HTTP 200 |
+| 本地构建 | V0.1.83 = **502 个文件 / 51 个 `index.html` / pagefind 51**（与 V0.1.82 同，本批只动 CSS）。`build` **0 warn 0 error**、`check` **0 error / 3 hint** |
+| 依赖 | 本批**零改动**，`package.json` 只动 version。天花板不变：`mermaid 11.17.2` / `typescript 6.0.3`；`astro` 7.4.5 已是最新 |
+| dev / preview server | 本批起过 `npm run preview`（:4321）做 hover 探针与逐帧截图，**收尾按 `node.exe` + `astro*bin*astro.mjs*preview*` 精确杀掉并复查计数 = 0** |
+| 服务器回滚资产 | `dist.old`（= V0.1.82）+ **90 个 `dist_backup_*`**（本批新增 1 个）。**一律保留，删需用户明确同意** |
+| 临时文件 | 收尾清 `%TEMP%` 下 `probe-hover*.mjs` / `probe-loop.mjs` / `probe-sheen.mjs` / `shot2.mjs` / `shot-sheen.mjs` / `pxdiff.mjs` / `px.mjs` / `zoom.mjs` / `diag-sheen.mjs` / `live-hover.mjs` / `cm3.txt` / `dep3.sh` / `h-ms.css` + 全部 `hv-*.png` `sw-*.png` `sh-*.png` `pd-*.png` `fr-*.png` `z-*.png` `lv-*.png` + `chenblog_dist.tar.gz` |
+| 待用户拍板 | **本批新增 0 条**（这是用户当场提的否决，已按他要求改完）。**沿上批仍未答**：移动端 `.floating-controls-container` 压正文 32px · 相册逐张文案 · `/friends/` · `/sponsor/` · Twikoo 裸 `envId` 同域反代 · About 页身份口径 · About 页配图 |
+| 既存小坑 | 同上一批。本批**新增两条要记住的**：① **流光行程 ±50% 不是 ±150%**（translateX 百分比相对自身宽度，±150% 有 2/3 在卡外看不见）；② **改完文件先 `git diff --numstat`** —— 本次整块重写又触发了一次行尾归一化（236/184），按 HEAD 原始字节拼回后降到 122/70 |
 
 ---
-
 ## 四、维护本文件的规矩
 
 1. **每次会话结束前更新**：改「最后更新」日期、刷新第三节状态快照、

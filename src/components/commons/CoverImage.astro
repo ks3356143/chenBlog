@@ -7,10 +7,8 @@ import type { ImageFormat, ResponsiveImageLayout } from "@/types/config"
 import { getImageFormat, getFallbackFormat, getImageQuality, shouldAddNoReferrer } from "@/utils/image-utils"
 import { url } from "@/utils/url-utils"
 import { siteConfig } from "@/config/siteConfig"
-// LQIP 占位（2026-11-05）：对照参考站 `.lqip-placeholder` 的内联渐变。
-// 原来的转圈 spinner 换掉 —— 两者的信息量一样（都是"图还没来"），但渐变更接近图本身，
-// 加载完成时不会有"白底上突然冒出个转圈"的视觉噪音。
-import { getLqipGradient } from "@/utils/lqip-utils"
+// 加载占位（2026-11-05 第三十三批）：**转圈**。
+// 中途做过一版 LQIP 采样渐变，用户看完说"还是转圈好" → 恢复 spinner，LQIP 相关代码全部删除。
 
 interface Props {
 	id?: string
@@ -93,13 +91,6 @@ const quality = preview ? Math.round(configQuality * 0.9) : configQuality
 // 是否显示加载动画
 const showLoading = true
 
-// LQIP 采样（只对本地图做：远程图拿不到本地路径，且跨域取图会拖慢构建）
-let lqipGradient: string | null = null
-if (isLocal && img) {
-	const absPath = path.join(process.cwd(), "src", basePath, src)
-	lqipGradient = await getLqipGradient(absPath)
-}
-
 // 检查回退图片是否需要 referrerpolicy
 const fallbackReferrerPolicy =
 	isFallbackPublic && fallbackPath && shouldAddNoReferrer(url(fallbackPath)) ? "no-referrer" : undefined
@@ -113,16 +104,9 @@ const remoteReferrerPolicy = !isLocal && shouldAddNoReferrer(isPublic ? url(src)
 	class:list={[className, "cover-image-container relative overflow-hidden"]}
 	data-loading={showLoading ? "true" : "false"}
 >
-	<!-- LQIP 占位：形态与参考站一致（inset-0 绝对层 + 内联 135deg 三段渐变 + 加载完成后淡出） -->
-	{
-		showLoading && (
-			<div
-				class="lqip-placeholder absolute inset-0 z-0 pointer-events-none"
-				style={lqipGradient ? `background: ${lqipGradient}` : "background-color: var(--card-bg);"}
-				aria-hidden="true"
-			/>
-		)
-	}
+	<!-- 加载转圈：绝对定位居中（.spinner 的尺寸/颜色/动画全在 mainSingles.css 里，
+	     必须放全局样式表 —— Swup 不换 head，scoped 版本在别的页会丢） -->
+	{showLoading && <div class="spinner z-10" aria-hidden="true" />}
 
 	<div class="error-message absolute inset-x-0 bottom-0 z-20 hidden items-center justify-center pb-3">
 		<span
@@ -221,9 +205,9 @@ const remoteReferrerPolicy = !isLocal && shouldAddNoReferrer(isPublic ? url(src)
 
 			const hideLoading = () => {
 				container.setAttribute("data-loading", "false")
-				// 对照参考站：加载完成给占位层加 .loaded，由 CSS 淡出（transition:opacity .5s ease-out）
-				const lqip = container.querySelector(".lqip-placeholder")
-				if (lqip) lqip.classList.add("loaded")
+				// 双信号：data-loading 由 CSS 消费，这里再给转圈加 .loaded 多一层保险
+				const spinner = container.querySelector(".spinner")
+				if (spinner) spinner.classList.add("loaded")
 			}
 
 			// 出错时**必须先摘掉加载态**，否则遮罩 + 转圈会永远盖在上面（既不报错也不消失）。

@@ -152,23 +152,39 @@
     height: 100%;
     object-fit: cover;
 }
-/* LQIP 占位层：对照参考站 `.lqip-placeholder{z-index:0;transition:opacity .5s ease-out}`
-   与 `.lqip-placeholder.loaded{opacity:0}`，时长与缓动逐字相同。 */
-.cover-image-container .lqip-placeholder {
-    z-index: 0;
-    transition: opacity 0.5s ease-out;
+/* 封面加载转圈（2026-11-05 第三十三批：用户明确要求"还是转圈好"，LQIP 已下线）。
+   ⚠️ spinner 绝对定位居中，容器必须 relative（CoverImage 已带）。
+   ⚠️ 名字独立于 markdown-extend.styl 里 Mermaid 用的 @keyframes spin，不共用一个全局动画。 */
+.cover-image-container .spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: -20px 0 0 -20px;
+    width: 40px;
+    height: 40px;
+    border: 3px solid oklch(0.9 0.05 var(--hue));
+    border-top-color: oklch(0.6 0.15 var(--hue));
+    border-radius: 50%;
+    animation: cover-spin 0.8s linear infinite;
 }
-/* 双保险：JS 加 .loaded、或 data-loading 翻成 false，任一成立就淡出。
-   （五-35「任何终态都要摘掉遮罩」的教训 —— 只靠单一信号会永久盖住图） */
-.cover-image-container .lqip-placeholder.loaded,
-.cover-image-container[data-loading="false"] .lqip-placeholder {
+@keyframes cover-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+/* 双保险：JS 加 .loaded 类、或 data-loading 翻成 false，任一成立就藏掉。
+   （五-35「任何终态都要摘掉遮罩」的教训 —— 只靠单一信号会永久盖住） */
+.cover-image-container .spinner.loaded,
+.cover-image-container[data-loading="false"] .spinner {
     opacity: 0;
-    pointer-events: none;
+    visibility: hidden;
+    transition:
+        opacity 0.3s ease-out,
+        visibility 0s 0.3s;
 }
-.cover-image-container[data-error="true"] .lqip-placeholder {
+.cover-image-container[data-error="true"] .spinner {
     display: none;
-}
-.cover-image-container[data-error="true"] .error-message {
+}.cover-image-container[data-error="true"] .error-message {
     display: flex;
 }
 .cover-image-container[data-error="true"] .fallback-image {
@@ -523,7 +539,10 @@
      10 张卡 × 每帧 = 强制重绘，实测掉帧。改成**一个统一的 spotlight 层**（fixed + mix-blend-mode），
      一张图跟着指针移动，合成器只做一次位移 —— 成本恒定，与卡片数量无关。
 
-   · 深色限定：亮色底上这种发光会显脏（参考站也没有），所以只在 [data-theme="dark"] 生效。 */
+   · 🔴 2026-11-05 第三十三批：**不再深色限定**。用户要"浅色也有一点、但别太强烈"。
+     做法是同一个层两套强度（不复制 DOM）：深色主色 18%（原值不动）；浅色改用**更淡的白光**
+     并压到一半以下 —— 亮底上叠主色会发脏，叠白才有"被照亮"的感觉。
+     mix-blend-mode 也分开：深色 screen（叠加发光）、浅色 soft-light（只提亮不动色相）。 */
 
 /* 光晕层：铺满内容区（不拦截指针事件），只在深色模式显示。
    🔴 z-index 必须 **高于页面内容、低于 #nav（z-30）**：
@@ -548,7 +567,26 @@
     mix-blend-mode: screen;
 }
 
-:root[data-theme="dark"] #card-spotlight.is-on {
+/* ── 浅色模式的"一点点光晕"（2026-11-05 第三十三批新增）──────────────────
+   用户原话：「深色模式有光晕，浅色模式稍微有那么一点点光晕比较好，但是不要太强烈」。
+   做法：同一个 #card-spotlight 层换一套更弱的白光，**不复制 DOM、不多挂监听**。
+   🔴 三个数值都是相对深色那套砍下来的，别再往上加：
+   · 半径 520 → 400（光斑更小更收敛）
+   · 峰值 18% 主色 → 33% 白。实测（纯卡片区、噪声底 0、屏蔽卡片 hover）：深色 11.0 / 浅色 3.9 ≈ 深色的 35% —— 用户要的"一点点"
+   · blend 用 soft-light 而不是 screen —— screen 在白底上会把整片洗成纯白，soft-light 只提亮。
+   实测与"无光晕"基线的像素差见 HANDOFF：浅色 avg 明显低于深色，肉眼是"微微一亮"。 */
+:root:not([data-theme="dark"]) #card-spotlight {
+    background: radial-gradient(
+        400px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+        rgb(255 255 255 / 0.33) 0%,
+        rgb(255 255 255 / 0.125) 40%,
+        transparent 66%
+    );
+    mix-blend-mode: soft-light;
+}
+
+/* 开启条件去掉主题限定（原来只写 :root[data-theme="dark"] → 浅色点了没反应） */
+#card-spotlight.is-on {
     opacity: 1;
 }
 

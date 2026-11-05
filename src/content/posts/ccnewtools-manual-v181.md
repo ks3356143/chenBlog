@@ -5,6 +5,7 @@ updated: 2026-10-25
 description: "离线测试文档工具集 v1.8.1：工具一把第三方测试大纲（.docx）解析成用例树，核对可疑步骤后生成测试说明与测试记录两份 Word；工具二从大纲 / 记录 / 回归说明生成四类需求追踪表。核对页改两栏布局 + 全局参数抽屉，全程不联网。"
 tags: [工具, 测试, 效率]
 category: "工具"
+image: "assets/postImages/covers/cover-9.webp"
 draft: false
 ---
 

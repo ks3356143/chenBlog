@@ -5,6 +5,7 @@ updated: 2026-10-30
 description: "老项目的存档。V1 从 2024 年 7 月进内网，到 2026 年 10 月加完 GB/T 28452-2012 三级那十条，停在 V0.1.2：约 2 万行 Python、3.5 万行前端、154 个接口、七类测评文档。它现在不再长新功能了。"
 tags: [测试平台, Django, Vue, 存档]
 category: "工具"
+image: "assets/postImages/covers/cover-6.webp"
 draft: false
 ---
 

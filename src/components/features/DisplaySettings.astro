@@ -36,7 +36,7 @@ import { Icon } from "astro-icon/components"
 	aria-expanded="false"
 	title="显示设置"
 >
-	<Icon name="material-symbols:palette-outline" class="text-2xl" aria-hidden="true" />
+	<Icon name="mingcute:palette-line" class="text-2xl" aria-hidden="true" />
 </button>
 
 <div
@@ -551,11 +551,54 @@ import { Icon } from "astro-icon/components"
 	}
 
 	/* ===== 分区 ===== */
+	/* ── tab 面板切换动画（2026-11-05 第三十三批：用户指出"切换没有动画"）──
+	   🔴 原来只写 `display:none` / `display:block`，切换是硬跳、没有任何过渡。
+	   改法：保留 display 切换（面板高度差很大 —— 外观 326 / 壁纸 221 / 特效 257，
+	   用叠层或高度过渡都会让面板在这三种高度之间抖），但给**新出现的那一屏**
+	   加一个 262ms 的淡入 + 上移 6px。
+	   为什么只做入场、不做出场：出场必须让旧面板继续占位，会跟新面板打架；
+	   而人眼对"新内容淡入"的感知远强于"旧内容淡出"，只做入场完全够。
+	   ⚠️ 用 animation 而不是 transition：display 从 none 变化时 transition 不跑
+	      （AGENTS 五-41 就是这个坑）。 */
 	.dp-panel {
 		display: none;
 	}
 	.dp-panel.is-active {
 		display: block;
+		animation: dp-panel-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+	@keyframes dp-panel-in {
+		from {
+			opacity: 0;
+			transform: translateY(6px);
+		}
+		to {
+			opacity: 1;
+			transform: none;
+		}
+	}
+
+	/* tab 按钮本身的切换反馈：当前项底下一条主色短线滑出 */
+	.dp-tab {
+		position: relative;
+	}
+	.dp-tab::after {
+		content: "";
+		position: absolute;
+		left: 50%;
+		bottom: 0.125rem;
+		height: 2px;
+		width: 0;
+		background: var(--primary);
+		transform: translateX(-50%);
+		transition:
+			width 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+			opacity 0.2s ease;
+		opacity: 0;
+	}
+	.dp-tab.is-active::after {
+		width: 1.25rem;
+		opacity: 1;
 	}
 
 	.section-title {

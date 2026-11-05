@@ -108,29 +108,88 @@
         //      `scrollToContent()`，默认 `window.scrollTo({top:0})`，会把这里任何提前滚动覆盖掉
         //      （第一版只改了 visit:start，实测落点仍是 0，就是它干的；源码见
         //       node_modules/swup/dist/Swup.module.js 里的 `D` / `scroll:top`）。
-        //   ② 真正定位放在 `content:scroll` 钩子里 —— 那时新内容已经进 DOM，能拿新页几何；
-        //      而 visit:start 里那一滚仍保留，用来在替换前就把视口挪走，防止看到旧页中途位置。
+        //   ② 真正定位放在 `content:scroll` 钩子里 —— 那时新内容已经进 DOM，能拿新页几何。
         const pathOf = (u: string) => {
             const p = new URL(u, window.location.href).pathname.replace(/\/+$/, "")
             return p || "/"
         }
         const isListPage = (p: string) => p === "/" || /^\/\d+$/.test(p)
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)")
         const listNav = { pending: false }
+
         /** 列表顶部 = 内容面板上沿 − 导航条高 − 8px。
             三个分页页的横幅高度相同，所以这条在替换前后算出来是同一个值。 */
-        const scrollToContentTop = () => {
+        const contentTopTarget = () => {
             const panel = document.querySelector(".content-panel")
-            if (!panel) return
+            if (!panel) return -1
             const nav = document.getElementById("nav")
             const navH = nav ? nav.getBoundingClientRect().height : 72
-            const top = window.scrollY + panel.getBoundingClientRect().top - navH - 8
-            window.scrollTo({ top: Math.max(0, top), behavior: "instant" })
+            return Math.max(0, Math.round(window.scrollY + panel.getBoundingClientRect().top - navH - 8))
+        }
+
+        // 自定义平滑滚动：原生 behavior:"smooth" 的时长由浏览器定（2000px 会拖到 700ms+），
+        // 这里用 rAF + easeInOutCubic 自己控时长，快而不生硬（用户 2026-11-06 要求「加上平滑滚动」）。
+        // ⚠️ 动画期间每帧写 behavior:"instant"：写 smooth 会叠加浏览器的滚动动画，变成拖影。
+        let scrollRaf = 0
+        let scrollAnimating = false
+        const smoothScrollTo = (top: number) => {
+            cancelAnimationFrame(scrollRaf)
+            const target = Math.max(0, Math.round(top))
+            const startY = window.scrollY
+            const delta = target - startY
+            if (reducedMotion.matches || Math.abs(delta) < 24) {
+                scrollAnimating = false
+                window.scrollTo({ top: target, behavior: "instant" })
+                return
+            }
+            const dur = Math.min(520, 240 + Math.abs(delta) * 0.13)
+            const t0 = performance.now()
+            const ease = (p: number) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2)
+            scrollAnimating = true
+            const step = (now: number) => {
+                const p = Math.min(1, (now - t0) / dur)
+                window.scrollTo({ top: Math.round(startY + delta * ease(p)), behavior: "instant" })
+                if (p < 1) scrollRaf = requestAnimationFrame(step)
+                else {
+                    scrollAnimating = false
+                    window.scrollTo({ top: target, behavior: "instant" })
+                }
+            }
+            scrollRaf = requestAnimationFrame(step)
+        }
+
+        // ── 切页骨架屏（用户 2026-11-06 报「列表空白时间长、没有炫酷的加载态」）
+        // .transition-main 会整体淡出（120ms），而新 HTML 要等网络往返（线上 600~900ms）→ 列表区全空。
+        // 骨架挂在 #center-content（不是 #swup-container）才不会被一起淡出；
+        // CSS 里它是 fixed + 背景色 → 平滑滚动在它背后进行，视口里始终是完整加载态。
+        // 只在「出发页或目标页是列表页」时显示：骨架是列表形状，套在文章页上会误导。
+        const setLoading = (on: boolean) => {
+            if (on) {
+                const sk = document.getElementById("page-skeleton")
+                const col = document.getElementById("center-content")
+                const nav = document.getElementById("nav")
+                if (sk && col) {
+                    const r = col.getBoundingClientRect()
+                    // 用 nav 的 **offsetHeight**（不受 transform 影响）而不是 getBoundingClientRect：
+                    // 滚动到底点分页时，导航条此刻可能还带着 translateY(-100%) 的收起位移，
+                    // rect.bottom ≤ 0 → 量出来是 0，骨架会顶到视口最上沿、被 fixed 导航条盖住标题行
+                    // （实测第一版就是这样，.ps-head「载入中」整行看不见）。
+                    // link:click 里已经会把 nav 的 transform 清空，所以用它的布局高度是稳的。
+                    const navH = nav ? nav.offsetHeight : 72
+                    sk.style.setProperty("--sk-left", `${Math.round(r.left)}px`)
+                    sk.style.setProperty("--sk-width", `${Math.round(r.width)}px`)
+                    sk.style.setProperty("--sk-top", `${Math.round(navH) + 8}px`)
+                }
+            }
+            document.documentElement.classList.toggle("is-loading", on)
         }
 
         swup.hooks.on("content:scroll", () => {
             if (!listNav.pending) return
             listNav.pending = false
-            scrollToContentTop()
+            const target = contentTopTarget()
+            // 平滑滚动可能还在飞（点击那一刻就起滚了）；还在动就别打断，否则会顿一下
+            if (target >= 0 && !scrollAnimating && Math.abs(window.scrollY - target) > 2) smoothScrollTo(target)
         })
 
         // 回顶放在 visit:start（与点击同一个任务、下一帧绘制之前），浏览器永远不会画出
@@ -140,10 +199,13 @@
 
             const fromPath = pathOf(window.location.href)
             const toPath = pathOf(visit.to.url)
+            if (isListPage(fromPath) || isListPage(toPath)) setLoading(true)
+
             if (isListPage(fromPath) && isListPage(toPath)) {
                 visit.scroll.reset = false
                 listNav.pending = true
-                scrollToContentTop()
+                const target = contentTopTarget()
+                if (target >= 0) smoothScrollTo(target)
             } else if (window.innerWidth >= 768) {
                 window.scrollTo({ top: 0, behavior: "instant" })
             }
@@ -156,6 +218,11 @@
                 document.body.classList.toggle("is-home", targetIsHome)
             }
         })
+
+        // 新内容一进 DOM 就撤骨架；失败/中断也要撤，否则会一直盖着（漏了这条就是"永远加载中"）
+        swup.hooks.on("page:view", () => setLoading(false))
+        swup.hooks.on("visit:fail", () => setLoading(false))
+        swup.hooks.on("visit:abort", () => setLoading(false))
 
         swup.hooks.on("visit:end", () => {
             finishProgressBar()

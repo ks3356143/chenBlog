@@ -3,7 +3,48 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-05 上午（第二十六批：astro 7.3.5→7.4.5 升级并上线 V0.1.79）**。
+> 最后更新：**2026-11-05 中午（第二十七批：四条交互增强，已上线 V0.1.80）**。
+>
+> **🔧 2026-11-05 中午（第二十七批：四条交互增强，已上线 V0.1.80）**
+> 用户点做四条（明确排除「中文阅读排版」；「相关文章推荐」已有 `RecommendedPost.astro`，不重做）。
+> 调性一律对齐参考站 firefly.cuteleaf.cn 的编译产物，不自创。
+> ① **阅读进度条** `src/components/features/ReadingProgress.astro`（新建）+ `[...slug].astro` 插入。
+>    2px、fixed 贴顶、`z-[9000]`；中途 = 主色 40% 透明度，读完 = 满色 + `box-shadow 0 0 8px` 同色柔光
+>    （柔光配方照抄参考站 `#progress-bar` 的 `color-mix(in oklch,var(--primary) 60%,transparent)`）。
+>    **只在文章页存在**（组件放在文章页 markup 里，不进 Layout）→ 产物实测 33 篇有、19 页无。
+>    进度算法：起点=文章顶部对齐视口顶，终点=文章底部对齐视口底，**不受评论区高度影响**。
+>    ⚠️ **踩过一个坑**：最初给填充层写 Tailwind 的 `scale-x-0`，而 JS 用 `style.transform=scaleX()` 覆盖 →
+>    内联覆盖成功但初始类名残留会让首帧宽度为 0 且 calc 出错（实测 `fill.w=0` 直到读完才 1440）。
+>    改成初始 `style="transform: scaleX(0)"` 后 25%/50%/100% 分别是 360/720/1440，与视口宽严格成比例。
+>    滚动用 `requestAnimationFrame` 节流（passive 监听），`reinitOnce` 只挂一次监听、`onReinit` 换页重算。
+> ② **Ctrl+K 搜索** `src/components/controls/Search.svelte`。
+>    快捷键 Ctrl+K / ⌘K（macOS 自动切显示），全站唤起；`tick()` 后聚焦（不用 rAF，后台标签页会被节流）。
+>    入口提示：输入框右侧 `kbd` 徽标 `Ctrl`+`K`（失焦空值时显示，亮暗两套、只有 `lg` 断点显示）。
+>    命中高亮：**标题原本不高亮**（Pagefind 只给 excerpt 打 `<mark>`）→ 新增 `highlightTitle()`
+>    按字面量切分、**每段先 escapeHtml 再包 `<mark>`**（不拼 HTML 再 replace，否则标题里的 `&`/`<` 会被当标签）。
+>    样式：`mark` 主色加粗 + `color-mix(primary 12%)` 浅底 + 2px 圆角。实测搜「测试」→ 7 条结果 / 13 处高亮（标题 1 处）。
+> ③ **系列内进度** `src/components/misc/SeriesNav.astro`。
+>    头部加「第 N / M 篇」徽标（`tabular-nums`）；底部新增 `.series-stepper` 两列：系列上一篇 / 下一篇
+>    （按 `seriesOrder` 排，与文章页底部按发布时间排的「上/下一篇」是两回事，语义不同不能混）。
+>    边界：第一篇左格显示「已是系列第一篇」（灰、箭头 30% 透明），最后一篇右格同理。
+>    单篇系列（`posts.length===1`）不渲染 stepper；未设 series 的文章整个导航盒都不渲染（同原逻辑）。
+>    实测：第 8 天 = 第 6/25 篇，prev 指向第 7 天、next 第 9 天，点击真跳转；第 2 天 = 第 1/25 篇且左格是边界文案。
+> ④ **卡片 hover 微交互** `src/styles/singles/mainSingles.css` 末尾新增。
+>    只做两件事：`translate: 0 -2px` + 边框亮成 `color-mix(primary 45%, line-divider)` + 品牌色投影。
+>    **不倾斜、不缩放卡片本体**（封面图仍由卡片内部自己的 `group-hover:scale-110` 负责）。
+>    用 `translate` 属性而不是 `transform`（Tailwind v4 语义，且卡片内已有 transform 的元素不会互相覆盖）。
+>    包 `@media (hover: hover) and (prefers-reduced-motion: no-preference)` → 触屏的 sticky hover 不会卡住浮起态（实测 375 下 `translate: none`）。
+>    覆盖 `.post-card-wrapper` / `.project-card` / `.btn-card` 三类。暗色单独提亮边框到 55%、阴影 30%。
+> 📋 **验收（本地 + 线上同口径，全绿）**：
+> - `build` **0 warn 0 error**；`check` **0 error / 3 hint**（基线不变）；版本 `0.1.79 → 0.1.80`；
+>   基线仍是 **501 文件 / 51 index.html / 4 css**（四条改动没加产物文件）。
+> - 13 页 × 3 档 = **39 组**：全 200、h1 恰好 1、横向溢出 0px、pageerror **0**。
+> - 逐条：进度条 2px / 50% 时 720px / 读完满色 `rgb(0,112,92)` 且 `is-complete` ✓；
+>   Ctrl+K 聚焦到「站内搜索」、搜「测试」7 条结果 + 13 处高亮 ✓；系列第 6/25 + 前后篇 href 正确 ✓；
+>   hover `translate: 0px -2px`、边框像素 `#EBEBEB → #81B1A9`（线上实测同值）、卡片高度不变、矩阵无倾斜 ✓。
+> - **线上 51/51 HTML 与本地 dist 逐字节相同**；线上 375 档触控目标 `smallCount` 与上一版完全一致（1/2/14/9/28/7），未恶化。
+> - 部署走标准流程（替换前 6 条断言）；回滚资产 **86 个** `dist_backup_*` + `dist.old` 未动。
+> - 提交 **`bd3da08`**，已 push，`HEAD == origin/main`。
 >
 > **🔧 2026-11-05 上午（第二十六批：astro 升级 7.3.5 → 7.4.5，已上线 V0.1.79）**
 > 🔴 **按用户新定的规矩执行第一次「每次会话查 astro 更新并升级」**：`npm outdated` 显示 astro 7.3.5 → **7.4.5**，

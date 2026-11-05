@@ -3,7 +3,40 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-05 夜间（第三十三批：按反馈改四项，已上线 V0.1.86）**。
+> 最后更新：**2026-11-06 凌晨（第三十四批：分页底边裁切 / 滚动提示 / 工作站进项目页，已上线 V0.1.88）**。
+>
+> **🔧 2026-11-06 凌晨（第三十四批：分页底边被裁 + 首页「滚动查看更多」+ WorkStationForOne 进项目页，V0.1.88）**
+> 上一会话因上下文超限卡死，交接文件在 `C:\Users\31429\Desktop\temp\chenBlog-会话交接-20261105.md`。
+> ① **分页按钮「底部边框没了」的真因（第二次报，这次量到根上）**：
+>    `.btn-card` 的辉光是 `0 0 0 1px` 描边 + `0 6px 20px -6px` / `0 14px 40px -12px` 两层扩散，
+>    **画在元素框外**；而分页是 `#center-content`（`overflow-hidden`，兜横滚条用的）的最后一个元素，
+>    此前 0 底部留白 → 实测 `clip 底边 == 分页底边`（room **0px**），
+>    4× 像素采样：左/右/上都有 1px 主色线（rgb 140,187,177），**底边整条是页面底色**。
+>    修法：分页外层加 `pb-5`（20px，实测辉光到 16px 才回到噪声级）→ room 变 **20px**，
+>    四边像素全部有描边。**不改父级 overflow-hidden**（那是给分类横滚条兜底的）。
+> ② **首页横幅「滚动查看更多」**（`src/components/features/ScrollHint.astro` 新建 + `layout-style.css` 末尾一族规则）。
+>    玻璃胶囊 + 「滚动查看更多」+ 主色相双色渐变的箭头徽标，呼吸 = 胶囊光晕涨落 + 箭头上下浮 + 一圈外扩光环，
+>    三条动画同 2.8s 同相位；`prefers-reduced-motion` 全关。
+>    🔴 **定位基准踩了两个坑，都记在组件头注释里**：
+>    · 照参考站 `fixed + bottom:5rem` → 它是按 100vh 全屏壁纸写的，本站横幅 65vh，会掉进卡片区；
+>    · 按「波峰 + 14px」→ 1366×768 只剩 **27px** 空档，胶囊压到上面的玻璃药丸按钮（band 实测 27）；
+>    · 最终以**内容面板上沿**为基准：`bottom: calc(100% - var(--banner-height-home) + 4.25rem)`。
+>      ⚠️ 不能写固定 `3.5rem`：手机上 `--banner-height-home` 被 @media 抬到 75/80/85vh（量在 `#wallpaper-wrapper` 上），
+>      而 `.content-panel` 的 top 用的是 **:root 那份 65vh** → 375×667 面板上沿 378 而横幅底 500（差 122px），
+>      固定值会让胶囊整条钻到卡片底下（第一版就是这么错的）。
+>    · ≤480px 间距降到 4px（375×667 面板上沿与按钮之间只剩 41px）；**≤645px 高直接不显示**
+>      （360×640 只剩 34px、320×568 是 −1px，塞不进去就别挤按钮行）。
+>    · 显隐走 CSS `body:not(.is-home)`（节点在 Swup 容器外、软导航不替换，用 SSR 条件会留残影）。
+>    实测：滚过 80px 淡出、回顶恢复、点击滚到 `#main-grid`（y=529）、软导航去文章页 `display:none`、回首页恢复、
+>    一次滚动只触发 1 个 scroll 回调（`reinitOnce` 没叠监听）。
+> ③ **`/projects/` 新增 WorkStationForOne**（`projectsConfig.ts`，`id: workstation-for-one`，置顶 + 状态「开发中」）。
+>    文案与数字全部取自 `E:\Chentools项目\WorkStationForOne` 的 README / package.json（v0.70.1、Electron 45、React 19、
+>    node:sqlite、FSRS-6），仓库 `github.com/ks3356143/WorkStationForOne`（`git ls-remote` 已确认可达）。项目页 8 → **9 张卡**。
+> ④ **5 张未提交封面（app-5~9.webp）一并提交**：上一会话做的「去掉模糊黑边、按保留左半裁切填满」，逻辑已完成。
+> 📋 验收：`build` 0 warn 0 error（52 page built）；`check` **0 error / 3 hint**（基线不变）；
+> 基线 **541 文件 / 51 index.html / pagefind 51**；16 页 × 3 档 = **48 组**全绿
+> （200 / h1 恰好 1 / 横向溢出 0 / 破图 0 / pageerror 0）；项目页 `overflowX 0`、h1=1、筛选仍是 4 个（无死筛选）。
+
 >
 > **🔧 2026-11-05 夜间（第三十三批：按用户逐条反馈改四项，已上线 V0.1.86）**
 > 用户看完清单只挑了四条要改（②③⑪⑫），其余"不说的就很好不用改"。

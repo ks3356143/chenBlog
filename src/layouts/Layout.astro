@@ -4,6 +4,7 @@ import BaseLayout from "./BaseLayout.astro"
 import Header from "@/components/headers/Header.astro"
 import Cover from "@/components/Cover.astro"
 import Waves from "@/components/headers/Waves.astro"
+import ScrollHint from "@/components/features/ScrollHint.astro"
 // 左边栏
 import MeCard from "@/components/card/meCard.astro"
 import Category from "@/components/card/Category.astro"
@@ -76,6 +77,10 @@ const isHomePage = pathname === "/" || /^\/\d+$/.test(pathname)
     <div id="banner-zone" class="relative z-10 w-full overflow-hidden opacity-100">
         <Cover bannerPostMeta={bannerPostMeta} isPostPage={isPostPage} isHomePage={isHomePage} />
         <Waves />
+        {/* 「滚动查看更多」：挂在这里（#banner-zone 内、Swup 容器外）才不会被软导航反复替换；
+            显隐由 CSS 的 body:not(.is-home) 决定，组件里没有 isHomePage 条件。
+            详见 src/components/features/ScrollHint.astro 顶部注释。 */}
+        <ScrollHint />
     </div>
     <!-- 主内容：绝对定位。
          起点 = 横幅高 - 3.5rem（照 firefly.cuteleaf.cn 的 .content-panel：

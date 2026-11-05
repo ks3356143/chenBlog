@@ -50,6 +50,18 @@ export const projectsConfig = {
 	description: "这里展示我开发过的项目与工具",
 	projects: [
 		{
+			id: "workstation-for-one",
+			name: "WorkStationForOne 个人工作站",
+			description:
+				"个人 AI 工作站：Windows 上把今日看板、任务清单、Agent 工作区、笔记库与闪卡复习收进一个窗口。Agent 视图直接驱动本机 Claude Code / Codex CLI 对话，工具调用逐次审批、写入前自动留检查点可回退；数据全部落在本机 SQLite，不上传遥测。",
+			status: "developing",
+			tech: ["Electron 45", "React 19", "TypeScript", "SQLite", "AI Agent", "FSRS-6"],
+			repo: "https://github.com/ks3356143/WorkStationForOne",
+			year: "2026",
+			featured: true,
+			icon: "material-symbols:space-dashboard-rounded",
+		},
+		{
 			id: "meridian",
 			name: "ChenMeridian 测试管理工具",
 			description:

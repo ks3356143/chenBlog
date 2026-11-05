@@ -1,0 +1,68 @@
+---
+// 首页横幅「滚动查看更多」提示（2026-11-06 新增）
+//
+// 用户需求原话：「箭头位置能否做一个箭头然后描述，滚动查看更多，然后要炫酷一点，
+// 箭头有呼吸感，颜色好看点」。
+//
+// 🔴 四条结构性约束，改动前先看：
+// ① **必须挂在 #banner-zone 里、Swup 容器之外**（Layout 里 Cover 与 Waves 之后）。
+//    挂在 #banner-overlay-container（Swup container）里会被每次软导航整片换掉，
+//    动画得重跑、监听要重绑；挂外面则一次渲染、全程复用 —— 参考站
+//    #scroll-down-indicator 也是「始终渲染，显示与否交给 CSS」。
+// ② **显示条件只能走 CSS `body:not(.is-home)`**，不能写 `isHomePage &&`：
+//    这个节点在容器外，软导航不会被替换；用 SSR 条件渲染会出现「从文章页回首页
+//    提示不出现 / 从首页去文章页提示还在」两种残留（同 AGENTS 十-15 横幅标题那类）。
+// ③ **位置基准是「内容面板上沿」，不是视口、也不是波峰**：
+//    参考站 `position:fixed; bottom:5rem` 是按 100vh 全屏壁纸写的，本站横幅是 65vh，
+//    照抄会掉到卡片区里。而按波浪高度算（`bottom: 波高 + 14px`）在 1366×768 这种
+//    矮屏上只剩 27px 空档、会压到上面的玻璃药丸按钮上（实测 band=27）。
+//    内容面板上沿 = 横幅高 − 3.5rem（layout-style.css 的 .content-panel），
+//    固定让出 3.5rem + 12px 就与视口高矮无关，最高只会落在波浪带上（玻璃胶囊压水纹，好看且可读）。
+// ④ **本站「面板一律直角」不适用于横幅玻璃件**：这条沿用 .banner-link 的胶囊口径
+//    （它就在提示正上方 40px），两边形状要一致，别一个圆一个方。
+import { Icon } from "astro-icon/components"
+---
+
+<a id="scroll-hint" class="scroll-hint" href="#main-grid" aria-label="滚动查看更多">
+	<span class="scroll-hint-text">滚动查看更多</span>
+	<span class="scroll-hint-arrow" aria-hidden="true">
+		<Icon name="material-symbols:keyboard-arrow-down-rounded" />
+	</span>
+</a>
+
+<script>
+	// 滚过 80px 就淡出：此时横幅已出视野大半，留着只会压在卡片上
+	const HIDE_AFTER = 80
+	const reduced = window.matchMedia("(prefers-reduced-motion: reduce)")
+
+	function syncScrollHint() {
+		const hint = document.getElementById("scroll-hint")
+		if (!hint) return
+		hint.classList.toggle("is-hidden", window.scrollY > HIDE_AFTER)
+	}
+
+	/** 点击滚到内容区起点。用 #main-grid 而不是 scrollIntoView：
+	    nav 是 fixed h-18，scrollIntoView 会把标题顶到导航条底下。 */
+	function scrollToContent(e: Event) {
+		e.preventDefault()
+		const target = document.getElementById("main-grid")
+		if (!target) return
+		const nav = document.getElementById("nav")
+		const offset = (nav ? nav.getBoundingClientRect().height : 72) + 16
+		const top = target.getBoundingClientRect().top + window.scrollY - offset
+		const behavior: ScrollBehavior = reduced.matches ? "auto" : "smooth"
+		window.scrollTo({ top: Math.max(0, top), behavior })
+	}
+
+	// 元素在 Swup 容器外、永不被换掉 → 两个监听整个文档只该绑一次
+	window.reinitOnce("scroll-hint", () => {
+		const hint = document.getElementById("scroll-hint")
+		if (!hint) return false
+		window.addEventListener("scroll", syncScrollHint, { passive: true })
+		hint.addEventListener("click", scrollToContent)
+		syncScrollHint()
+		return true
+	})
+	// 软导航后滚动位置被 Swup 重置，补一次状态（一次性判据，重复调用无副作用）
+	syncScrollHint()
+</script>

@@ -267,3 +267,183 @@ html.is-wallpaper-transitioning .content-panel {
         transform: translateY(0);
     }
 }
+
+/* ── 横幅「滚动查看更多」提示（2026-11-06 新增，用户要求：箭头 + 描述、有呼吸感、颜色好看）
+   ─────────────────────────────────────────────────────────────────────────────
+   🔴 参考站**没有可直接照搬的**：它的 #scroll-down-indicator 全套规则都锁在
+      `html[data-wallpaper-mode=fullscreen]` 下（本站恒为 banner 模式，抄过来 assembly 不出效果）。
+      形状与材质沿用正上方 40px 的 .banner-link 玻璃胶囊（同一块壁纸上两个控件要同一套语言）。
+
+   🔴 定位基准是**内容面板上沿**，不是视口、也不是波峰：
+      · 参考站 `position:fixed; bottom:5rem` 是按 100vh 全屏壁纸写的 → 本站 65vh 会掉进卡片区；
+      · 按波高算（bottom = 波高 + 14px）在 1366×768 只剩 27px 空档，会压到玻璃药丸按钮上（实测 band=27）；
+      · 内容面板上沿 = 横幅高 − 3.5rem（见本文件上方 .content-panel）→ 固定让出
+        `3.5rem + 12px`，与视口高矮、波高、断点全都无关，最差也只是压在波浪纹上（玻璃底照样可读）。
+
+   ⚠️ 只写标准 backdrop-filter，不补 -webkit-（本文件 211 行的坑）。 */
+.scroll-hint {
+    position: absolute;
+    left: 50%;
+    /* 🔴 必须用「内容面板上沿」当基准，别写固定的 3.5rem：
+       · 桌面：横幅高 = 65vh，面板上沿 = 65vh − 3.5rem，两种写法重合；
+       · 手机上横幅高被 @media(max-height) 抬到 75/80/85vh（量在 #wallpaper-wrapper 上），
+         而 .content-panel 的 top 用的是 **:root 那一份 65vh** → 面板上沿比
+         「横幅高 − 3.5rem」高出上百 px（375×667 实测：面板 378 vs 横幅底 500）。
+         写成固定值提示会整条钻到卡片底下（第一版就这么错了）。
+       下面这行 = 横幅区高度 − 面板上沿 + 12px 间距，与断点、屏高、波高全都无关。 */
+    bottom: calc(100% - var(--banner-height-home) + 4.25rem);
+    translate: -50% 0;
+    z-index: 30;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.3rem 0.45rem 0.3rem 0.85rem;
+    border: 1px solid rgb(255 255 255 / 0.26);
+    border-radius: 9999px;
+    background: linear-gradient(135deg, rgb(255 255 255 / 0.17), rgb(255 255 255 / 0.05));
+    color: rgb(255 255 255 / 0.94);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    /* 呼吸的第一层：整颗胶囊的光晕在涨落（2.8s 与箭头的环同频，不同相位会看着像两处故障） */
+    animation: scroll-hint-breathe 2.8s ease-in-out infinite;
+    transition:
+        opacity 0.4s ease,
+        visibility 0.4s ease,
+        translate 0.4s ease,
+        background-color 0.25s ease;
+}
+
+.scroll-hint-text {
+    text-shadow: 0 1px 6px rgb(0 0 0 / 0.45);
+}
+
+/* 箭头徽标：主色相驱动的双色渐变（本站既定语言「多色渐变但全跟 --hue 走」）。
+   🔴 亮度必须自己定（0.82 / 0.72），不能用 var(--primary)：亮色主题下它是 L0.487 的深绿，
+      压在壁纸照片上糊成一块；这里要的是「亮但不刺眼」的薄荷→青。 */
+.scroll-hint-arrow {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 9999px;
+    background: linear-gradient(140deg, oklch(0.86 0.11 var(--hue)), oklch(0.74 0.15 calc(var(--hue) + 42)));
+    color: oklch(0.28 0.05 var(--hue));
+    box-shadow: 0 0 10px -2px oklch(0.8 0.13 var(--hue) / 0.65);
+    animation: scroll-hint-bob 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.scroll-hint-arrow svg {
+    width: 1.05rem;
+    height: 1.05rem;
+}
+
+/* 呼吸的第二层：从徽标背后荡开的一圈光环，纯装饰不占位 */
+.scroll-hint-arrow::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    border: 1px solid oklch(0.86 0.11 var(--hue) / 0.75);
+    animation: scroll-hint-ring 2.8s ease-out infinite;
+    pointer-events: none;
+}
+
+.scroll-hint:hover {
+    background: linear-gradient(135deg, rgb(255 255 255 / 0.27), rgb(255 255 255 / 0.1));
+    border-color: rgb(255 255 255 / 0.42);
+}
+
+.scroll-hint:hover .scroll-hint-arrow {
+    box-shadow: 0 0 16px -1px oklch(0.82 0.14 var(--hue) / 0.8);
+}
+
+.scroll-hint:focus-visible {
+    outline: 2px solid rgb(255 255 255 / 0.85);
+    outline-offset: 3px;
+}
+
+/* 只首页显示。**不能用 SSR 条件渲染**：这个节点在 Swup 容器之外，软导航不会被替换，
+   条件渲染会出现「文章页回首页不出现 / 首页去文章页还留着」的残留。 */
+body:not(.is-home) .scroll-hint {
+    display: none;
+}
+
+/* 滚过 80px 就收起来（JS 挂 .is-hidden），别压着卡片 */
+.scroll-hint.is-hidden {
+    opacity: 0;
+    visibility: hidden;
+    translate: -50% -0.5rem;
+    pointer-events: none;
+}
+
+@keyframes scroll-hint-breathe {
+    0%,
+    100% {
+        box-shadow:
+            0 0 0 1px rgb(255 255 255 / 0.06),
+            0 0 12px -6px oklch(0.8 0.13 var(--hue) / 0.5);
+    }
+    50% {
+        box-shadow:
+            0 0 0 1px rgb(255 255 255 / 0.18),
+            0 0 22px -2px oklch(0.82 0.14 var(--hue) / 0.75);
+    }
+}
+
+@keyframes scroll-hint-bob {
+    0%,
+    100% {
+        translate: 0 -1px;
+    }
+    50% {
+        translate: 0 3px;
+    }
+}
+
+@keyframes scroll-hint-ring {
+    0% {
+        opacity: 0.7;
+        scale: 1;
+    }
+    70%,
+    100% {
+        opacity: 0;
+        scale: 1.85;
+    }
+}
+
+/* 减少动效：不播呼吸，静态也照样能看见、能点（只去掉运动，不改配色） */
+@media (prefers-reduced-motion: reduce) {
+    .scroll-hint,
+    .scroll-hint-arrow,
+    .scroll-hint-arrow::after {
+        animation: none;
+    }
+    .scroll-hint.is-hidden {
+        translate: -50% 0;
+    }
+}
+
+/* 手机窄屏：面板上沿与玻璃药丸按钮之间只剩 ~41px（375×667 实测），
+   12px 间距会把胶囊压到按钮上 → 缩到 4px（34px 胶囊 + 4px = 38px，刚好放下）。 */
+@media (max-width: 480px) {
+    .scroll-hint {
+        bottom: calc(100% - var(--banner-height-home) + 3.75rem);
+    }
+}
+
+/* 极矮屏（≤645px 高：320×568、360×640、横屏手机）：那点空档连胶囊都放不下，
+   按钮本身已经压到面板上沿了（360×640 实测间隙 34px、320×568 是 −1px）→ 直接不显示，
+   别让一个硬塞不进去的控件去挤按钮行。 */
+@media (max-height: 645px) {
+    .scroll-hint {
+        display: none;
+    }
+}

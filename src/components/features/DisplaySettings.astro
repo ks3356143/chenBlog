@@ -578,7 +578,9 @@ import { Icon } from "astro-icon/components"
 		width: 0.25rem;
 		height: 1rem;
 		background: var(--primary);
-		border-radius: 0.125rem;
+		/* 直角：本站口径（AGENTS 五-16③）。参考站这里是 0.125rem，
+		   但 4px 宽的竖条圆了也看不出来，留着反而破坏一致性。 */
+		border-radius: 0;
 	}
 	/* 重置按钮占 1.5rem 见方；未改动时隐藏（参考站 opacity-0 pointer-events-none disabled） */
 	.dp-reset {

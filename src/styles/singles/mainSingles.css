@@ -680,7 +680,9 @@ body.immersive-reading .floating-controls-container .floating-btn {
        贴边画反而更好看 —— 像一圈进度描边。 */
     inset: 0;
     padding: 3px;
-    border-radius: 0.25rem;
+    /* 🔴 直角：与按钮本体的直角一致（本站一律直角口径，见 AGENTS 五-16③）。
+       mask 挖空出来的因此是方角环 —— 这正是 FloatingButton 现在的形状。 */
+    border-radius: 0;
     pointer-events: none;
     z-index: 1;
     -webkit-mask:

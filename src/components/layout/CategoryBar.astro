@@ -93,7 +93,9 @@ const categoriesUrl = url("/categories/")
 		left: 0;
 		top: 0.75rem; /* = .category-bar 的 p-3 */
 		height: 1.75rem; /* = pill 的 h-7 */
-		border-radius: 0.25rem;
+		/* 🔴 直角。本站面板一律直角（AGENTS 五-16③：--radius-large 从未定义，
+		   全站靠直角口径），这里第一版写了 0.25rem「顺手圆一下」→ 与全站观感打架。 */
+		border-radius: 0;
 		opacity: 0;
 		pointer-events: none;
 		z-index: 0;

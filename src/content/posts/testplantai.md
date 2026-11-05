@@ -5,7 +5,7 @@ updated: 2026-11-04
 description: "软件第三方测试管理平台的深度拆解：12 个模块的真实能力、4 处和常规做法相反的取舍——文档结构即数据模型、三层快照、双层标识、时间推导。附 23 张线上界面截图。"
 tags: [测试平台, Go, 数据建模, 工具]
 category: "工具"
-image: "assets/postImages/covers/cover-5.webp"
+image: "assets/postImages/covers/app-5.webp"
 draft: false
 ---
 

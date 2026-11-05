@@ -1,4 +1,9 @@
 // 由 src/assets/postImages/covers/cover-*.svg 渲染列表页的自动封面素材（webp）。
+//
+// ⚠️ 本目录里还有一组 **app-*.webp**（app-5 ~ app-9）：那是最近五篇文章的专属封面，
+//    由**软件实际截图**合成（模糊底 + 完整截图居中），**不是本脚本产物**。
+//    本脚本只扫 `cover-N.svg`，不会碰它们 —— 但**别以为"跑一遍 covers 就会重新生成"**，
+//    要改那五张得重跑合成逻辑（见 HANDOFF 第三十四批）。
 // 改了 SVG 之后跑一次：npm run covers
 import fs from "node:fs";
 import path from "node:path";

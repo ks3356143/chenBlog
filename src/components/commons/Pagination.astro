@@ -3,6 +3,15 @@ import type { Page } from "astro"
 import { Icon } from "astro-icon/components"
 import { url } from "@/utils/url-utils"
 // 分页组件
+//
+// 2026-11-05 修两处（用户报「边框好像有点问题」）：
+// ① **结构**：原来数字页码被包在一个**没有 gap 的内层 div** 里 → 1/2/3/4 全部贴在一起、
+//    只有最外层有 gap-3，看起来像"中间那一坨没边框"。
+//    参考站是把所有格子当**同一个 flex 容器的直接子元素**（`flex items-center gap-3`）——
+//    现在照它的结构，每格之间都有 gap、每格都是独立方块。
+// ② 每个格子补 `rounded-(--radius-large)`：参考站有，本站 --radius-large **从未定义**
+//    → 按 `rounded-(--x)` 的写法在变量缺失时**整个声明无效**，等于直角（这符合本站直角口径）。
+//    这里**刻意也写直角**（不写 rounded），与全站口径一致 —— 但要在注释里说清，防下一个人以为是漏了。
 
 interface Props {
 	page: Page
@@ -55,9 +64,10 @@ const getPageUrl = (p: number) => {
 ---
 
 <div class:list={[className, "flex flex-col items-center gap-4"]} style={style}>
-	<!-- 分页控件 -->
-	<div class="flex flex-row justify-center gap-3" role="navigation" aria-label="文章列表">
-		<!-- 前进 -->
+	<!-- 分页控件：所有格子都是这一层的直接子元素（照参考站 `flex items-center gap-3`）。
+	     ⚠️ **不要再给数字页码套内层容器**：套了就丢掉 gap，1/2/3/4 会贴成一整块（本次修的正是这个）。 -->
+	<div class="flex flex-row flex-wrap items-center justify-center gap-3" role="navigation" aria-label="文章列表">
+		<!-- 上一页 -->
 		<a
 			href={withTrailingSlash(page.url.prev)}
 			aria-label="上一页"
@@ -65,39 +75,37 @@ const getPageUrl = (p: number) => {
 			tabindex={page.url.prev === undefined ? "-1" : "0"}
 			class:list={[
 				"btn-card",
-				"h-11 w-11 overflow-hidden text-(--primary)",
+				"h-11 w-11 overflow-hidden font-bold text-(--primary)",
 				{ disabled: page.url.prev === undefined },
 			]}
 		>
 			<Icon name="material-symbols:chevron-left-rounded" class="text-[1.75rem]" aria-hidden="true" />
 		</a>
-		<!-- 中间 -->
-		<div class="flex flex-row items-center bg-(--card-bg) font-bold text-neutral-700 dark:text-neutral-300">
-			{
-				pages.map(p => {
-					if (p == HIDDEN) return <Icon name="material-symbols:more-horiz" class="mx-1" aria-hidden="true" />
-					if (p == page.currentPage)
-						return (
-							<div
-								class="flex h-11 w-11 items-center justify-center bg-(--primary) font-bold text-white dark:text-black/70"
-								aria-current="page"
-							>
-								{p}
-							</div>
-						)
+		<!-- 数字页码：直接铺在这一层，与箭头同一套 gap -->
+		{
+			pages.map(p => {
+				if (p == HIDDEN) return <Icon name="material-symbols:more-horiz" class="mx-1" aria-hidden="true" />
+				if (p == page.currentPage)
 					return (
-						<a
-							href={url(getPageUrl(p))}
-							aria-label={`跳转到页面 ${p}`}
-							class="btn-card h-11 w-11 overflow-hidden active:scale-[0.85]"
+						<div
+							class="flex h-11 w-11 items-center justify-center bg-(--primary) font-bold text-white dark:text-black/70"
+							aria-current="page"
 						>
 							{p}
-						</a>
+						</div>
 					)
-				})
-			}
-		</div>
-		<!-- 后退 -->
+				return (
+					<a
+						href={url(getPageUrl(p))}
+						aria-label={`跳转到页面 ${p}`}
+						class="btn-card h-11 w-11 overflow-hidden font-bold text-neutral-700 active:scale-[0.85] dark:text-neutral-300"
+					>
+						{p}
+					</a>
+				)
+			})
+		}
+		<!-- 下一页 -->
 		<a
 			href={withTrailingSlash(page.url.next)}
 			aria-label="下一页"
@@ -105,7 +113,7 @@ const getPageUrl = (p: number) => {
 			tabindex={page.url.next === undefined ? "-1" : "0"}
 			class:list={[
 				"btn-card",
-				"h-11 w-11 overflow-hidden text-(--primary)",
+				"h-11 w-11 overflow-hidden font-bold text-(--primary)",
 				{ disabled: page.url.next === undefined },
 			]}
 		>

@@ -78,8 +78,9 @@
     --btn-content: oklch(0.515 0.104 calc(var(--hue) - 6.83));
     --btn-regular-bg-hover: oklch(0.9 0.05 calc(var(--hue) - 9.53));
     --btn-regular-bg-active: oklch(0.85 0.08 calc(var(--hue) - 10));
-    --btn-card-bg-hover: #fcf7f8;
-    --btn-card-bg-active: #cbe5dd;
+    /* 原来写死 #fcf7f8（粉调，与绿色主题完全不搭）。参考站是 oklch(.98 .005 var(--hue)) —— 跟着主题色相走，这里照它。 */
+    --btn-card-bg-hover: oklch(0.98 0.005 var(--hue));
+    --btn-card-bg-active: oklch(0.9 0.03 var(--hue));
     --line-color: rgba(0, 0, 0, 0.1);
     --license-block-bg: rgba(0, 0, 0, 0.03);
     --content-meta: rgba(0, 0, 0, 0.7);
@@ -121,8 +122,8 @@
     --btn-content: oklch(0.75 0.1 calc(var(--hue) - 10.1));
     --btn-regular-bg-hover: oklch(0.38 0.04 calc(var(--hue) - 9.43));
     --btn-regular-bg-active: oklch(0.43 0.045 calc(var(--hue) - 9.21));
-    --btn-card-bg-hover: #1d332d;
-    --btn-card-bg-active: #264139;
+    --btn-card-bg-hover: oklch(0.3 0.03 var(--hue));
+    --btn-card-bg-active: oklch(0.35 0.035 var(--hue));
     --content-meta: rgba(255, 255, 255, 0.6);
     --line-color: rgba(255, 255, 255, 0.1);
     --license-block-bg: var(--codeblock-bg);

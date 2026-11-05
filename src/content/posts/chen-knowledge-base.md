@@ -5,7 +5,7 @@ updated: 2026-10-29
 description: "老陈这一年大半时间在做 UI/UX 设计。他把散在十几个项目里的设计判断收进一个本地知识库：22 篇正文、五档粒度、两条取用路径，写和查都有规矩。"
 tags: [知识库, 设计, 前端]
 category: "方法"
-image: "assets/postImages/covers/cover-8.webp"
+image: "assets/postImages/covers/app-8.webp"
 draft: false
 ---
 

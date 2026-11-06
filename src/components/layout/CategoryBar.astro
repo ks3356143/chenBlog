@@ -447,6 +447,11 @@ const categoriesUrl = url("/categories/")
 
 			setActiveCategory(bar, targetUrl)
 			scrollActiveCategoryIntoView(bar, "auto")
+			// 🔴 高亮一变就必须立刻把指示器挪过去：`data-has-indicator` 下激活项是
+			//    「白字 + 透明底」，指示器没跟上时它整颗消失在卡片底色里
+			//    （2026-11-06 复测：点分类后到新页渲染完的近一秒里，被点的那颗是空白，
+			//      渐变还停在旧位置上 —— 用户说的「切换时候动画不正确」就是这个）。
+			requestAnimationFrame(() => updateIndicator(bar))
 		})
 	}
 	// 初始化滚动特性-横线滚动/左右背景透明渐变
@@ -545,6 +550,8 @@ const categoriesUrl = url("/categories/")
 			const bar = document.getElementById("category-bar")
 			if (!bar) return
 			setActiveCategory(bar, new URL(visit.to.url, window.location.href))
+			// 同上：高亮切了指示器就得跟，否则新激活的那颗在数据态上是「白字透明底」= 看不见
+			requestAnimationFrame(() => updateIndicator(bar))
 		})
 	}
 	if (window.swup?.hooks) {

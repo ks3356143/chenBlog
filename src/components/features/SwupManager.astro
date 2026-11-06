@@ -158,30 +158,55 @@
             scrollRaf = requestAnimationFrame(step)
         }
 
-        // ── 切页骨架屏（用户 2026-11-06 报「列表空白时间长、没有炫酷的加载态」）
-        // .transition-main 会整体淡出（120ms），而新 HTML 要等网络往返（线上 600~900ms）→ 列表区全空。
-        // 骨架挂在 #center-content（不是 #swup-container）才不会被一起淡出；
-        // CSS 里它是 fixed + 背景色 → 平滑滚动在它背后进行，视口里始终是完整加载态。
-        // 只在「出发页或目标页是列表页」时显示：骨架是列表形状，套在文章页上会误导。
-        const setLoading = (on: boolean) => {
-            if (on) {
-                const sk = document.getElementById("page-skeleton")
-                const col = document.getElementById("center-content")
+        // ── 切页加载态（2026-11-06 用户两次反馈后定型）
+        //    · **分页**（`/` ↔ `/N/`）→ 列表骨架 PageSkeleton：形状与即将到来的卡片一致，
+        //      且点分页时人已经在列表深处，列表顶部就在导航条下缘，位置落得准。
+        //    · **其它一切软导航**（导航条 / 分类药丸 / 进文章页）→ 转圈胶囊 PageSpinner：
+        //      骨架是「一整块 + 上沿钉在导航条下缘」，而目标页的内容面板在横幅之下
+        //      （实测 1366 宽下 /2/ 面板上沿 443px）→ 从首页切过去时那块骨架整个压在横幅上，
+        //      用户 2026-11-06 截图报的就是这个「突然出现一个大块、而且在上方」。
+        //    两个元素都挂在 #center-content（不是 #swup-container），否则会跟着 .transition-main 一起淡出。
+        //    ⚠️ 都延时 120ms 才挂类：命中缓存/预加载时 Swup 几十毫秒就换完，不延时就是闪一下。
+        //       与 .transition-main 的 120ms 淡出也刚好接上（内容消失的同一刻出现）。
+        let loadingTimer = 0
+        let loadingGen = 0
+        const setLoading = (mode: "list" | "page" | null) => {
+            const gen = ++loadingGen
+            window.clearTimeout(loadingTimer)
+            document.documentElement.classList.remove("is-loading", "is-spinning")
+            if (!mode) return
+
+            // 位置必须在**旧页 DOM 还在**的时候量：内容一换，中栏几何就变成新页的了。
+            // 写到 :root 上而不是写到某个组件上 —— 骨架与胶囊都要用这几个变量。
+            const col = document.getElementById("center-content")
+            if (col) {
+                const r = col.getBoundingClientRect()
                 const nav = document.getElementById("nav")
-                if (sk && col) {
-                    const r = col.getBoundingClientRect()
-                    // 用 nav 的 **offsetHeight**（不受 transform 影响）而不是 getBoundingClientRect：
-                    // 滚动到底点分页时，导航条此刻可能还带着 translateY(-100%) 的收起位移，
-                    // rect.bottom ≤ 0 → 量出来是 0，骨架会顶到视口最上沿、被 fixed 导航条盖住标题行
-                    // （实测第一版就是这样，.ps-head「载入中」整行看不见）。
-                    // link:click 里已经会把 nav 的 transform 清空，所以用它的布局高度是稳的。
-                    const navH = nav ? nav.offsetHeight : 72
-                    sk.style.setProperty("--sk-left", `${Math.round(r.left)}px`)
-                    sk.style.setProperty("--sk-width", `${Math.round(r.width)}px`)
-                    sk.style.setProperty("--sk-top", `${Math.round(navH) + 8}px`)
-                }
+                // 用 nav 的 **offsetHeight**（不受 transform 影响）而不是 getBoundingClientRect：
+                // 滚动到底点分页时，导航条此刻可能还带着 translateY(-100%) 的收起位移，
+                // rect.bottom ≤ 0 → 量出来是 0，骨架会顶到视口最上沿、被 fixed 导航条盖住标题行
+                // （实测第一版就是这样，.ps-head「载入中」整行看不见）。
+                const navH = nav ? nav.offsetHeight : 72
+                const bar = document.getElementById("category-bar")
+                const barH = bar ? bar.offsetHeight : 0
+                const root = document.documentElement.style
+                root.setProperty("--sk-left", `${Math.round(r.left)}px`)
+                root.setProperty("--sk-width", `${Math.round(r.width)}px`)
+                // 分页落地时内容面板上沿正好在 navH + 8，而分类栏是面板的第一个子元素
+                // → 列表从 navH + 8 + barH + 16（栏自身的 margin-bottom）开始。
+                // 骨架从那里往下画，切页期间**分类栏保持可见**；原来从 navH + 8 起画，
+                // 分类栏被整块盖掉近一秒，看着也像"突然一大块"（2026-11-06 复测发现）。
+                root.setProperty("--sk-top", `${Math.round(navH) + 8 + Math.round(barH) + 16}px`)
+                // 转圈胶囊贴在分类栏下方 40px。不能用 50% 居中：1366×768 下 50% 正好压在
+                // 分类栏的下边框上（实测 chip y=366 / 栏底 395），看着像被削了一块。
+                const barBottom = bar ? bar.getBoundingClientRect().bottom : r.top
+                root.setProperty("--sp-top", `${Math.round(Math.max(navH + 16, barBottom + 40))}px`)
             }
-            document.documentElement.classList.toggle("is-loading", on)
+
+            loadingTimer = window.setTimeout(() => {
+                if (gen !== loadingGen) return
+                document.documentElement.classList.add(mode === "list" ? "is-loading" : "is-spinning")
+            }, 120)
         }
 
         swup.hooks.on("content:scroll", () => {
@@ -199,9 +224,12 @@
 
             const fromPath = pathOf(window.location.href)
             const toPath = pathOf(visit.to.url)
-            if (isListPage(fromPath) || isListPage(toPath)) setLoading(true)
+            // 分页家族 = `/` 与 `/N/`（本站只有首页列表分页），两侧都在里面才算「换页」。
+            // 其余（含 /archive/?category=x 这类筛选）都是「切换」→ 转圈胶囊。
+            const isPagination = isListPage(fromPath) && isListPage(toPath)
 
-            if (isListPage(fromPath) && isListPage(toPath)) {
+            // 先决定滚动，再算加载态的位置：位置要在滚动之后量（回顶是同步的，量到的才是新位置）
+            if (isPagination) {
                 visit.scroll.reset = false
                 listNav.pending = true
                 const target = contentTopTarget()
@@ -209,6 +237,8 @@
             } else if (window.innerWidth >= 768) {
                 window.scrollTo({ top: 0, behavior: "instant" })
             }
+
+            setLoading(isPagination ? "list" : "page")
 
             // 首页↔非首页：横幅高度在两套变量间切换，过渡类只在切页期间挂上（照搬参考站）
             const targetPath = new URL(visit.to.url, window.location.href).pathname
@@ -219,10 +249,10 @@
             }
         })
 
-        // 新内容一进 DOM 就撤骨架；失败/中断也要撤，否则会一直盖着（漏了这条就是"永远加载中"）
-        swup.hooks.on("page:view", () => setLoading(false))
-        swup.hooks.on("visit:fail", () => setLoading(false))
-        swup.hooks.on("visit:abort", () => setLoading(false))
+        // 新内容一进 DOM 就撤加载态；失败/中断也要撤，否则会一直盖着（漏了这条就是"永远加载中"）
+        swup.hooks.on("page:view", () => setLoading(null))
+        swup.hooks.on("visit:fail", () => setLoading(null))
+        swup.hooks.on("visit:abort", () => setLoading(null))
 
         swup.hooks.on("visit:end", () => {
             finishProgressBar()

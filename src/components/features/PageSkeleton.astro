@@ -1,6 +1,10 @@
 ---
 // 页面切换时的「骨架屏」占位（2026-11-06 新增，用户报「跳转时候列表空白时间长、没有炫酷的加载态」）
 //
+// 🔴 现在**只用于分页**（`/` ↔ `/2/` ↔ `/3/`）。其它软导航改走 `PageSpinner.astro` 的转圈胶囊，
+//    原因见那个组件的头注释：骨架的形状是列表，套在 /archive/、/about/、文章页上既不像，
+//    上沿（导航条下缘）也和目标页内容面板（横幅之下）对不上，整块压在横幅上（2026-11-06 用户报）。
+//
 // 为什么需要它：`html.is-animating .transition-main { opacity: 0 }`（transitions.css）会把
 // #swup-container 整体淡出（120ms），而新页 HTML 要等网络往返（线上实测 600~900ms）→
 // 列表区整整空着大半秒，看着像卡死。
@@ -24,8 +28,8 @@
 	</div>
 	<div class="ps-list">
 		{
-			[0, 1, 2, 3].map(() => (
-				<div class="ps-card">
+			[0, 1, 2, 3].map(i => (
+				<div class="ps-card" style={`--ps-i: ${i}`}>
 					<div class="ps-body">
 						<div class="ps-bar ps-bar-title" />
 						<div class="ps-meta">

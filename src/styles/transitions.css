@@ -160,18 +160,30 @@ html[data-resizing] body {
 
 html.is-loading #page-skeleton {
     display: block;
+    /* 入场淡入：类是在 visit:start 之后 120ms 才挂的，硬切会「啪」地一下整块出现 */
+    animation: sk-in 0.18s ease-out;
 }
 
-/* HUD 扫描线：一条主色亮线从上往下扫，2.2s 一轮。比转圈更贴本站的终端/HUD 气质 */
+@keyframes sk-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* HUD 扫描线：一条主色亮线从上往下扫，1.9s 一轮。比转圈更贴本站的终端/HUD 气质 */
 .ps-scanline {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 2px;
-    background: linear-gradient(90deg, transparent, var(--primary), transparent);
-    opacity: 0.75;
-    animation: ps-scan 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    background: linear-gradient(90deg, transparent, color-mix(in oklch, var(--primary) 88%, transparent), transparent);
+    box-shadow: 0 0 14px 1px color-mix(in oklch, var(--primary) 42%, transparent);
+    opacity: 0.85;
+    animation: ps-scan 1.9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .ps-list {
@@ -228,18 +240,23 @@ html.is-loading #page-skeleton {
     position: relative;
 }
 
-/* 扫光：一条斜向高光带在每张卡上来回扫（振幅按本站既有流光那套：±50%） */
+/* 扫光：一条斜向高光带在每张卡上扫过（2026-11-06 加强：14% → 26% 主色，
+   并且每张卡错开 0.14s 起跑，看起来是一道波从第一张滚到第四张，而不是四张各闪各的） */
 .ps-card::after {
     content: "";
     position: absolute;
-    inset: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
     background: linear-gradient(
         100deg,
-        transparent 30%,
-        color-mix(in oklch, var(--primary) 14%, transparent) 50%,
-        transparent 70%
+        transparent 18%,
+        color-mix(in oklch, var(--primary) 26%, transparent) 50%,
+        transparent 82%
     );
-    animation: ps-shimmer 1.6s ease-in-out infinite;
+    animation: ps-shimmer 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    animation-delay: calc(var(--ps-i, 0) * 0.14s);
     pointer-events: none;
 }
 
@@ -335,17 +352,92 @@ html.is-loading #page-skeleton {
 
 @keyframes ps-shimmer {
     0% {
-        transform: translateX(-50%);
+        transform: translateX(-100%);
     }
+    62%,
     100% {
-        transform: translateX(50%);
+        transform: translateX(100%);
     }
 }
 
-/* 减少动效：只留静态骨架（不加扫光/扫描线），信息量一样、不闪 */
+/* ── 切页转圈（2026-11-06 第三十八批，见 components/features/PageSpinner.astro）
+     **只用于非分页的软导航**；分页仍旧用上面的列表骨架。
+     为什么不能共用骨架：骨架是一整块、且上沿钉在导航条下缘，而目标页的内容面板在横幅之下
+     → 从首页点去 /archive/ 时那块骨架会整个压在横幅上（用户 2026-11-06 报「突然出现一个大块」）。
+     这个胶囊只占中间一小块、不铺底色，横幅/侧栏照常可见。 */
+#page-spinner {
+    display: none;
+    position: fixed;
+    /* 横向对齐中栏（--sk-left / --sk-width / --sp-top 由 SwupManager 写在 :root 上）。
+       ⚠️ 纵向用「分类栏下沿 + 40px」而不是 50%：1366×768 下 50% 正好压在分类栏下边框上
+       （实测 chip y=366 / 栏底 395），看着像被削掉一角。 */
+    left: var(--sk-left, 0px);
+    width: var(--sk-width, 100%);
+    top: var(--sp-top, 8rem);
+    justify-content: center;
+    z-index: 26;
+    pointer-events: none;
+}
+
+html.is-spinning #page-spinner {
+    display: flex;
+}
+
+.pgs-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.55rem 0.95rem;
+    /* 直角 + 一行小字：与全站面板同一套语言（AGENTS 五-16③） */
+    border: 1px solid var(--line-divider);
+    background: color-mix(in oklch, var(--card-bg) 88%, transparent);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 12px 30px -16px rgb(0 0 0 / 0.45);
+    color: var(--primary);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    animation: pgs-in 0.2s ease-out;
+}
+
+.pgs-ring {
+    width: 0.85rem;
+    height: 0.85rem;
+    border: 2px solid color-mix(in oklch, var(--primary) 20%, transparent);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: pgs-spin 0.75s linear infinite;
+}
+
+@keyframes pgs-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes pgs-in {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* 减少动效：骨架/胶囊只留静态形态（不加扫光/扫描线/位移），转圈放慢但仍然转
+   （它本身就是「正在加载」的唯一信号，停住会被读成卡死） */
 @media (prefers-reduced-motion: reduce) {
     .ps-scanline,
     .ps-card::after {
         animation: none;
+    }
+    #page-skeleton,
+    .pgs-chip {
+        animation: none;
+    }
+    .pgs-ring {
+        animation-duration: 2.4s;
     }
 }

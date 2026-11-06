@@ -6,6 +6,7 @@ import Cover from "@/components/Cover.astro"
 import Waves from "@/components/headers/Waves.astro"
 import ScrollHint from "@/components/features/ScrollHint.astro"
 import PageSkeleton from "@/components/features/PageSkeleton.astro"
+import PageSpinner from "@/components/features/PageSpinner.astro"
 // 左边栏
 import MeCard from "@/components/card/meCard.astro"
 import Category from "@/components/card/Category.astro"
@@ -145,9 +146,11 @@ const isHomePage = pathname === "/" || /^\/\d+$/.test(pathname)
                             <slot />
                         </div>
                     </main>
-                    {/* 切页骨架屏：**必须在 main 外面**，否则会被 .transition-main 一起淡出。
-                        显隐由 html.is-loading 驱动（SwupManager）。见组件头注释。 */}
+                    {/* 切页加载态：**必须在 main 外面**（否则会被 .transition-main 一起淡出）。
+                        分页 = 列表骨架（is-loading），其它软导航 = 转圈胶囊（is-spinning），
+                        显隐由 SwupManager 驱动。见两个组件的头注释。 */}
                     <PageSkeleton />
+                    <PageSpinner />
                 </div>
                 <!-- 右边栏 -->
                 <div id="right-sidebar-wrapper" class="contents">

@@ -91,8 +91,12 @@ const categoriesUrl = url("/categories/")
 		   （12px padding + 1px border），再叠 translateX 就整体右移 13px
 		   （实测 width 对得上、left 恒偏 13）。 */
 		left: 0;
+		/* 🔴 top / height 只是「JS 还没跑」时的兜底初值，运行时由 updateIndicator()
+		   按激活项的实际 rect 逐次写死（见该函数内注释）。
+		   这里不能当唯一来源：≤767px 的触控目标规则把 pill 抬到 32px，
+		   写死 1.75rem 会比 pill 矮 4px ——「下面短一截」（2026-11-06 用户报）。 */
 		top: 0.75rem; /* = .category-bar 的 p-3 */
-		height: 1.75rem; /* = pill 的 h-7 */
+		height: 1.75rem; /* = 桌面端 pill 的 h-7 */
 		/* 🔴 直角。本站面板一律直角（AGENTS 五-16③：--radius-large 从未定义，
 		   全站靠直角口径），这里第一版写了 0.25rem「顺手圆一下」→ 与全站观感打架。 */
 		border-radius: 0;
@@ -325,9 +329,24 @@ const categoriesUrl = url("/categories/")
 		const activePill = bar.querySelector<HTMLAnchorElement>(".category-pill[data-active]")
 		const scroll = bar.querySelector<HTMLElement>(".category-scroll")
 		if (!activePill || !scroll) return
+		// 🔴 激活项不在横向滚动容器里（首页 / 归档 / 更多都是容器的兄弟节点）→ 无可滚之处，直接返回。
+		//    不加这行会把两个坐标系混起来算：外层 pill 的 offsetLeft 相对 .category-bar（含 12px padding
+		//    与首页按钮，实测 56 / 290），而 scroll.offsetLeft 相对它自己的 offsetParent（恒 0）→
+		//    /archive/ 被算出 27px 的横滚位移、/categories/ 直接顶到 max(115)，
+		//    表现为「设计灵感」第一个字被左侧淡出层吃掉一半（2026-11-06 截图里的「计灵感」）。
+		if (!scroll.contains(activePill)) return
 
 		const scrollLeft = activePill.offsetLeft - scroll.offsetLeft - (scroll.clientWidth - activePill.offsetWidth) / 2
 		scroll.scrollTo({ left: Math.max(0, scrollLeft), behavior })
+	}
+
+	/**
+	 * 激活项是否完整落在横向滚动容器的可视区里（左右各留 1px 容差，防亚像素误判）。
+	 * 两处共用：指示器的淡出判断、断点变化时是否需要把激活项滚回视口。
+	 */
+	function isFullyInScroll(scroll: HTMLElement, rect: DOMRect) {
+		const sr = scroll.getBoundingClientRect()
+		return rect.left >= sr.left - 1 && rect.right <= sr.right + 1
 	}
 
 	/**
@@ -359,20 +378,26 @@ const categoriesUrl = url("/categories/")
 		bar.setAttribute("data-has-indicator", "")
 
 		// 基础坐标：bar 的 padding（p-3 = 12px）+ pill 在滚动容器里的位置 - 滚动位移
+		// ⚠️ 指示器是 absolute，包含块是 bar 的 **padding box**；rect 量的是 border box
+		//    → 横纵都要减掉 bar 自己的 1px 边框（clientLeft / clientTop），否则整体偏 1px。
 		const barRect = bar.getBoundingClientRect()
 		const activeRect = active.getBoundingClientRect()
-		const x = activeRect.left - barRect.left
+		const x = activeRect.left - barRect.left - bar.clientLeft
 		const w = activeRect.width
 
 		// 可视性：pill 完全落在滚动容器可视区内才算
 		let visible = true
-		if (scroll && scroll.contains(active)) {
-			const sr = scroll.getBoundingClientRect()
-			visible = activeRect.left >= sr.left - 1 && activeRect.right <= sr.right + 1
-		}
+		if (scroll && scroll.contains(active)) visible = isFullyInScroll(scroll, activeRect)
 
 		indicator.style.width = w + "px"
 		indicator.style.transform = `translateX(${x}px)`
+		// 🔴 高度与纵向位置必须**跟着激活项实量**，不能靠 CSS 写死：
+		//    ≤767px 的「移动端触控目标补足」规则（mainSingles.css）给 .category-pill /
+		//    .category-link-home 加了 min-height:32px，桌面是 28px（h-7）→
+		//    指示器留在 1.75rem 就比 pill 矮 4px，激活色块「下面短一截」。
+		//    量 rect 而不是读 min-height，是因为将来 pill 的 padding/字号变了这里也自动跟上。
+		indicator.style.height = activeRect.height + "px"
+		indicator.style.top = activeRect.top - barRect.top - bar.clientTop + "px"
 		if (visible) indicator.setAttribute("data-visible", "")
 		else indicator.removeAttribute("data-visible")
 	}
@@ -490,13 +515,24 @@ const categoriesUrl = url("/categories/")
 	// 原来这里跟 updateCategoryBar 一起挂在 astro:page-load 上，每换一次页就多一组
 	// wheel/scroll/resize 监听 → 鼠标横滚的位移按访问页数叠加（2026-10-01 查出）
 	window.reinitOnce("category-bar-scroll", initScrollFeatures)
-	// 窗口尺寸变化 → pill 的 px 位置全变，指示器必须重摆（这里只绑一次）
+	// 窗口尺寸变化 → pill 的 px 位置与高度都变，指示器必须重摆（这里只绑一次）
 	window.reinitOnce("category-bar-indicator-resize", () => {
 		window.addEventListener(
 			"resize",
 			() => {
 				const bar = document.getElementById("category-bar")
-				if (bar) updateIndicator(bar)
+				if (!bar) return
+				// 🔴 断点两侧 pill 高度不同（≤767px 是 32px / 桌面 28px）→ 必须重量。
+				// 另外：屏幕从桌面宽缩回手机宽时滚动容器会回到最左，激活项可能因此留在视口外，
+				// 指示器那时按设计整块淡出 → 页面上看不出哪个分类是激活的。所以这里先把它滚回来。
+				// 用「是否完整可见」而不是无条件滚：手机地址栏收放只改高度也会触发 resize，
+				// 无条件滚会让横滚位置在滚动时被反复拽走。
+				const scroll = bar.querySelector<HTMLElement>(".category-scroll")
+				const active = bar.querySelector<HTMLAnchorElement>(".category-pill[data-active]")
+				if (scroll && active && scroll.contains(active) && !isFullyInScroll(scroll, active.getBoundingClientRect())) {
+					scrollActiveCategoryIntoView(bar, "auto")
+				}
+				updateIndicator(bar)
 			},
 			{ passive: true },
 		)

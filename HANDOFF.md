@@ -3,7 +3,34 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-06 凌晨（第三十六批：分页平滑滚动 + 切页骨架屏，已上线 V0.1.90）**。
+> 最后更新：**2026-11-06 傍晚（第三十七批：移动端分类激活色块高度，已上线 V0.1.91）**。
+>
+> **🔧 2026-11-06 傍晚（第三十七批：移动端分类激活色块「下面短一截」，V0.1.91）**
+> 用户发真机截图：「移动端归档、灵感这些 active 效果高度是否有问题，下面短一截」。
+> ① **真因**：激活色块 `.category-indicator` 高度写死 `1.75rem`（= 桌面 pill 的 `h-7` 28px），
+>    而 `mainSingles.css` 的「移动端触控目标补足」规则在 ≤767px 给 `.category-pill` /
+>    `.category-link-home` 加了 `min-height:32px` → 手机上 pill 32px、色块 28px，顶边对齐、**底部差 4px**。
+>    截图实测：pill 边框盒源像素 1245→1348（104px）、色块实心区 1245→1335（91px），
+>    比值 1.143 = 32/28，与浏览器实测（pill `offsetHeight` 32 / 指示器 computed 28）完全对上。
+> ② **修法**：`updateIndicator()` 改为按激活项**实量**写 `height` 与 `top`（rect 高 + `bar.clientTop` 校正），
+>    不再依赖 CSS 写死值（CSS 里 28px 只留作 JS 未跑时的兜底）。将来 pill 的 padding/字号再变也自动跟上。
+>    ⚠️ 顺带修了同函数里的 **1px 横向偏移**：指示器 absolute 的包含块是 bar 的 padding box，
+>    而 rect 量的是 border box → 横纵都要减 `clientLeft/clientTop`（修前 `ind.left 66` / `pill.left 65`）。
+> ③ **同组件另一处**（用户截图里「设计灵感」第一个字被啃掉一半）：`scrollActiveCategoryIntoView()`
+>    把「容器外 pill 的 offsetLeft（相对 .category-bar，含 12px padding 与首页按钮）」与
+>    「`scroll.offsetLeft`（相对它自己的 offsetParent，恒 0）」混着算 → `/archive/` 被算出 **27px** 横滚、
+>    `/categories/` 直接顶到 `max(115)`，左侧淡出层于是盖住第一个 pill。
+>    修法：激活项不在 `.category-scroll` 里就直接 return（首页 / 归档 / 更多都是容器的兄弟节点）。
+> ④ **断点回缩的补洞**：`resize` 原来只调 `updateIndicator`，但桌面宽缩回手机宽时滚动容器会回到最左，
+>    激活项可能留在视口外 → 指示器按设计整块淡出 → 页面上看不出哪个分类是激活的。
+>    现在 resize 时若激活项不完整可见，先 `scrollActiveCategoryIntoView(bar,"auto")` 再摆
+>    （判据抽成 `isFullyInScroll()`，与淡出判断共用）；只在「不完整可见」时滚，
+>    避免手机地址栏收放（只改高度也触发 resize）把横滚位置反复拽走。
+> 📋 验收：`build` 0 error；`check` **0 error / 3 hint**（基线不变）；`dist` **541 文件 / 51 index.html**；
+> 16 页 × 3 档 = **48 组**：指示器与激活项 top/left/width/height **差值全 0.00**，
+> 高度 **32/32**（390、360）、**28/28**（768、1280）；无激活项页 `data-visible` 缺席、溢出 0、h1=1、pageerror 0；
+> 软导航连点 归档 → 设计灵感 → 工具 → 更多 每步全等且 visible；
+> 390→1280→390 往返高度自动 32→28→32 并滚回激活项；仅改高度（地址栏收放模拟）横滚位置不动。
 >
 > **🔧 2026-11-06 凌晨（第三十六批：平滑滚动 + 切页骨架屏，V0.1.90）**
 > 用户：「加上平滑滚动而且跳转时候，列表空白时间长没有炫酷的加载态！」

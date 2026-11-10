@@ -76,8 +76,13 @@ export function GithubCardComponent(properties, children) {
     const nTitle = h("div", { class: "gc-titlebar" }, [
         h("div", { class: "gc-titlebar-left" }, [
             h("div", { class: "gc-owner" }, [nAvatar, h("div", { class: "gc-user" }, owner)]),
-            h("div", { class: "gc-divider" }, "/"),
-            h("div", { class: "gc-repo" }, name),
+            // ⚠️ 分隔线必须和仓库名包在**同一个** flex 项里：拆成两个平级项时，
+            // 窄屏换行会把 `/` 单独留在第一行尾部（「ks3356143 /」换行「codeStation-backend」），
+            // 看着像坏掉的斜杠（2026-11-10 实测）。包起来之后整组一起换行，读作「/ codeStation-backend」。
+            h("div", { class: "gc-repo-wrap" }, [
+                h("div", { class: "gc-divider" }, "/"),
+                h("div", { class: "gc-repo" }, name),
+            ]),
         ]),
         h("div", { class: "github-logo" }),
     ])

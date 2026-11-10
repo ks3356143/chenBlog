@@ -126,15 +126,31 @@ a.card-github
 
     .gc-titlebar-left
       display: flex
-      flex-flow: row nowrap
+      /* 🔴 必须允许换行：`nowrap` 时在 320px 会把 `.gc-repo` 一路压到 **宽度 0**，
+         仓库名于是逐字竖排（实测卡高 385px、仓库名占 280px）。换成 wrap 之后
+         仓库名整块落到第二行、拿满宽度，反而更短。 */
+      flex-flow: row wrap
+      align-items: center
       gap: 0.5rem
-      /* 窄屏允许左边整组收缩（否则 max-content 会顶到 GitHub 图标上） */
       min-width: 0
-      flex-shrink: 1
-      overflow: hidden
+      flex: 1 1 auto
+
+    .gc-repo-wrap
+      /* 「/ 仓库名」当成一个整体换行：`flex: 0 0 auto` = 不许被压缩。
+         被压缩时（上一版 flex:0 1 auto）它会缩到只剩 0 宽，仓库名于是按
+         `overflow-wrap:anywhere` 逐字断开 —— 表现为「/」独占一行、名字劈成两行
+         （2026-11-10 实测截图）。不压缩 + 父级 wrap 之后，整组干净地落到第二行。 */
+      display: flex
+      flex-flow: row nowrap
+      align-items: center
+      gap: 0.5rem
+      flex: 0 0 auto
 
     .gc-repo
       font-weight: bold
+      /* 只有极端窄（< 340）才真正需要断行，所以用 break-word 而不是 anywhere：
+         anywhere 会在还有余量时也提前断，正是上一版劈成两行的根因。 */
+      overflow-wrap: break-word
 
     .gc-owner
       font-weight: 300

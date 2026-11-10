@@ -336,8 +336,23 @@
    这些都在正文流里，整体加高会撑开行距，所以只做「点击区外扩」：
    padding + 等量负 margin，视觉位置与行高完全不变。 */
 @media (max-width: 767px) {
-    .custom-markdown a:not(.anchor):not(.header-anchor),
-    .prose a:not(.anchor) {
+    /* 🔴 GitHub 仓库卡必须排除在下面那条「点击区外扩」规则之外（2026-11-10 用户报「移动端显示有点问题」）：
+       卡片是 <a class="card-github"> 整块，一旦被 display:inline-block + padding:6px 2px 命中，
+       它就退化成**内容宽度**——仓库名越长卡片越宽（WorkStationForOne 实测 373px 顶满 374px 中栏，
+       长名还会把粗体仓库名折成两行）。它本来就有一百多像素高，不需要 32px 触控目标补偿。 */
+    .custom-markdown a.card-github,
+    .prose a.card-github,
+    a.card-github.no-styling {
+        display: block;
+        width: auto;
+        padding: 1.1rem 1.5rem;
+        margin: 0.5rem 0;
+        min-height: 0;
+        vertical-align: baseline;
+    }
+
+    .custom-markdown a:not(.anchor):not(.header-anchor):not(.card-github),
+    .prose a:not(.anchor):not(.card-github) {
         display: inline-block;
         padding: 6px 2px;
         margin: -6px -2px;

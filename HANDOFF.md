@@ -3,7 +3,32 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-10（第四十一批：自称改「叫哥」+ 关于页去掉 UI/UX 窄化表述，已上线 V0.1.95）**。
+> 最后更新：**2026-11-10（第四十二批：GitHub 卡移动端布局修好，已上线 V0.1.96）**。
+>
+> **🔧 2026-11-10（第四十二批：GitHub 仓库卡移动端，V0.1.96）**
+> 用户发真机截图：「这个github卡片在移动端显示有点问题」——图里长仓库名被折成两行、
+> 「ks3356143 / codeStation-backend」错位成三行。
+> ① **主因（一行 CSS 的误伤）**：`mainSingles.css` 那条「移动端行内链接点击区外扩」
+>    `.custom-markdown a:not(.anchor):not(.header-anchor) { display:inline-block; padding:6px 2px; min-height:32px }`
+>    **把整块 GitHub 卡片也命中了**。卡片本来是 `display:block` 撑满的，被改成 `inline-block` 后
+>    **宽度退化成内容宽度** → 仓库名越长卡片越宽（实测 `WorkStationForOne` 那张 **373px**，
+>    顶满 374px 中栏；`cdtestplant_v1` 更长），窄屏一挤压，粗体仓库名就被迫折行。
+>    修法：选择器加 `:not(.card-github)`，并给 `a.card-github` 显式还原 `display:block` / 铺满 /
+>    原 padding（`1.1rem 1.5rem`）。**不需要** 32px 触控补偿——卡片本来就一百多像素高。
+> ② **两处连带的结构修补（都是上一版埋的）**：
+>    · `.gc-titlebar-left` 之前加的 `overflow:hidden` 是按**内容宽**裁 → 仓库名被切成「chenBlo」。
+>      改成 `flex-flow: row wrap`（允许整组换到第二行）。
+>    · 但 `nowrap` → `wrap` 之后 320px 下 `.gc-repo` 被压到 **宽度 0**、逐字竖排（卡高 385px）。
+>      最终方案：把「`/` + 仓库名」包进一个新的 `.gc-repo-wrap`（`flex: 0 0 auto`，不许压缩），
+>      由它整体换行；`.gc-repo` 用 `overflow-wrap: break-word` 而非 `anywhere`。
+>      → 结构改动在 `rehype-component-github-card.mjs`（⚠️ **改插件必须清 `node_modules/.astro/data-store.json`**，五-21）。
+> ③ 有一个中间版本把「/」单独留在第一行尾部（`ks3356143 /` 换行 `codeStation-backend`），
+>    就是 ①的 wrap 与 ②的包裹没一起做导致的；现已消失（`slashAlone: []`）。
+> 📋 验收：320 / 360 / 390 / 414 / 768 / 1280 六档 —— **卡片宽度恒等于正文宽**
+> （230 / 270 / 300 / 324 / 366 / 582）、**repoW 全部 > 40（无 0 宽）**、**无裁切**、
+> 图标与仓库名间距恒 **12px**、卡高最大 **231px**（原 385）、文档横向溢出 **0**；
+> `build` 0 error / 52 page(s)；`check` **0 error / 3 hint**；`dist` **544 文件 / 51 index.html**；
+> 14 页 × 3 档 = **42 组全绿**。
 >
 > **🔧 2026-11-10（第四十一批：关于页自称与定位，V0.1.95）**
 > 用户：「about页面中描述 我不只是再做uiux吧 删除这个描述吧 大家都叫我"叫哥"不是老陈」。

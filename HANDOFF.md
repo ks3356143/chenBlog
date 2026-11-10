@@ -2306,22 +2306,23 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-05 夜间第三十三批实测；线上 = V0.1.86**，已部署）
+## 三、当前状态快照（**2026-11-10 夜间第四十三批实测；线上 = V0.1.97**，已部署）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 分笔现查 `git rev-parse --short HEAD`。第三十三批（V0.1.86 按反馈改四项）：**一笔提交 `360511c`，已推送、`HEAD == origin/main`、工作区计数 0** |
-| 工作区 | 本批动 **21 项**：改 `commons/CoverImage.astro`(+8/−24)、`features/CardSpotlight.astro`(+15/−11)、`features/DisplaySettings.astro`(+44/−1)、`styles/singles/mainSingles.css`(+54/−16)、5 篇 post frontmatter 各 +1 行（插 `image`）、`package.json`；**删** LQIP 工具模块（`utils/lqip-utils`，已不存在）；**新增** 5 张封面 SVG + 5 张 webp。**零依赖改动** |
-| 线上站点 | ✅ **2026-11-05 21:12 部署 V0.1.86**（替换前 **5 组断言**：`0.1.86` 必须在 / `0.1.85` 不在 / `cover-spin` 必须在 / `lqip-placeholder` 必须不在 / `dp-panel-in` 必须在 / 5 张新封面都在）。**线上实测**：转圈 10 个、LQIP 0、图标 `mingcute:palette-line`、五篇各用 cover-5~9、tab 动画 `dp-panel-in`、浅色 spotlight `soft-light`、`pageerror 0`。HTTP 200 |
-| 本地构建 | V0.1.86 = **541 个文件 / 51 个 `index.html` / pagefind 51**（+38 = 5 张新封面的 webp 变体 35 个 + 3）。`build` **0 warn 0 error**、`check` **0 error / 3 hint**、`tsc` **0** |
-| 依赖 | 本批**零改动**，`package.json` 只动 version。天花板不变：`mermaid 11.17.2` / `typescript 6.0.3`；`astro` 7.4.5 已是最新 |
-| dev / preview server | 本批起过 `npm run preview`（:4321）做逐帧截图与像素差测量，**收尾已精确杀掉并复查计数 = 0** |
-| 服务器回滚资产 | `dist.old`（= V0.1.85）+ **93 个 `dist_backup_*`**（本批新增 1 个）。**一律保留，删需用户明确同意** |
-| 临时文件 | 收尾清 `%TEMP%` 下 `v-spinner.mjs` / `v-tab.mjs` / `v-glow*.mjs` / `v-noise.mjs` / `v-four.mjs` / `v-cards.mjs` / `check-covers*.mjs` / `live-v86.mjs` / `ink.mjs` / `icon-*.mjs|html|json` / `look9.mjs` / `linkcheck2.mjs` / `scan-final.mjs` / `cm9.txt` / `dep7.sh` / `page-list.txt` / `prev-dist.txt` / `covers*.png` / `sp-*.png` / `glow-*.png` / `g3-*.png` / `g4-*.png` / `btn-*.png` / `panel-tab.png` / `cards-*.png` / `icon-*.png` / `chenblog_dist.tar.gz` |
-| 待用户拍板 | **本批新增 0 条**（四条都是他点名的）。**沿上批仍未答**：移动端 `.floating-controls-container` 压正文 32px · 相册逐张文案 · `/friends/` · `/sponsor/` · Twikoo 裸 `envId` 同域反代 · About 页身份口径 · About 页配图 |
-| 既存小坑 | 同上一批。本批**新增三条方法类**：① **测光晕要先屏蔽卡片 hover**，否则量到的是卡片辉光；② **图标"粗细"要量化**（同尺寸渲染后数深色像素占比），肉眼比不可靠；③ **改 SVG 封面必须跑 `npm run covers`**，只改源不重渲染等于没改 |
+| 本地 HEAD | `2d0a0e5`（V0.1.97 分类卡 hover 错位），**已推送、`HEAD == origin/main`、工作区计数 0** |
+| 工作区 | 本批动 **4 项**：`src/styles/singles/mainSingles.css`(+6/−1)、`src/components/card/Category.astro`(+2/−2)、`HANDOFF.md`、`package.json` 只动 version。**零依赖改动** |
+| 线上站点 | ✅ **2026-11-10 19:58 部署 V0.1.97**（替换前断言：`0.1.97` 必须在 / `0.1.96` 不在 / `pagefind.js` 必须在）。**线上实测**：`ver 0.1.97`、`display:flex`、三条分类行 `h=40 / rightGap=8 / centerOff=0`、`pageerror 0`。HTTP 200 |
+| 本地构建 | V0.1.97 = **544 个文件 / 51 个 `index.html` / pagefind 51**（比 V0.1.86 的 541 多 3：`github-avatar.webp` + astro 7.4.8 的两个新分块）。`build` **0 error**、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
+| 依赖 | 本批**零改动**。第四十批（V0.1.93）已全量更新：`astro 7.4.8` / `@astrojs/*` 各小版 / `tailwindcss 4.3.5` / `svelte 5.57.3` / `pagefind 1.6.0` / `vite 8.3.7`。天花板不变：`mermaid 11.17.2` / `typescript 6.0.3` / `katex 0.18.11`（嵌套 0.16.47 在 advisory 范围内，只能 `--force` 升 mermaid 12 → 撞天花板，判定不动）。`npm audit` 现跑 **13 条 / 退出码 1**（8 low + 5 moderate，**0 high**），四类残余全是"降级换平安"，全部保持现状 |
+| dev / preview server | 本批起过 `npm run preview` 做 hover 几何测量与截图，**收尾已精确杀掉并复查计数 = 0** |
+| agent-browser | 本会话首次实际使用（版本 **0.42.0**，与上游一致）：打开参考站、点开 `Display Settings` 三个 tab 核对控件清单，收尾已 `close` |
+| 服务器回滚资产 | `dist.old`（= V0.1.96，31M）+ **104 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
+| 临时文件 | 收尾已清 `%TEMP%` 下本会话全部 `.cjs` / `.mjs` / `.log` / `.txt` / `.tgz` / 截图（含 `cat-hover` `row-diag` `ref-*` `fix-btnright` `fix-inner-div` `sw2/sw3` `hb*.log` `cm.txt` `e.tgz` `ref-home.html` 等） |
+| 待用户拍板 | **本批新增 0 条**。**沿上批仍未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标 vs WCAG 44px。**另新增一条功能扩展清单**（第四十二批末尾给过完整对比）：音乐播放器 / 友链页 / 打赏页 / 书签导航 / Atom feed / 樱花特效 / 背景视频 / 壁纸四模式 / 瀑布流 / 卡片跟随主题色 / 文章版权声明 / 分享海报 / 回到评论 / 文章密码门 —— **他只说「先不要实现，仅告诉我」，一件都没动** |
+| 既存小坑 | 同上一批。本批**新增两条方法类**：① 分类卡在页面挂**两份**（左栏 + 移动底部堆，后者 `display:none`），扫描脚本必须只取**可见**那份，否则量出 `h=0` 全红（那一版误报过）；② `.btn-right` 这类"内联类 + 工具类"混用的元素，**只改 CSS 不够**，调用方的 `class="btn-right inline-block"` 必须一起去掉，否则 display 被盖回去 |
 
 ---
 ## 四、维护本文件的规矩

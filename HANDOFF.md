@@ -3,7 +3,53 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-06 傍晚（第三十八批：切换改用转圈、骨架只留分页，已上线 V0.1.92）**。
+> 最后更新：**2026-11-10（第三十九批：依赖全量更新 + astro 7.4.5→7.4.8，已上线 V0.1.93）**。
+>
+> **🔧 2026-11-10（第三十九批：依赖更新，V0.1.93）**
+> 用户：「看看各个依赖包更新情况开始更新包括astro」。
+> ① **升了的（全在 semver 范围内，无需改代码）**：
+> `astro 7.4.5 → 7.4.8`（package.json 里是**精确版本**，手动改的）· `@astrojs/markdown-remark 7.3.4→7.3.6`
+> · `@astrojs/mdx 8.1.0→8.1.3` · `@astrojs/svelte 9.1.0→9.1.2` · `tailwindcss`/`@tailwindcss/vite 4.3.3→4.3.5`
+> · `svelte 5.57.2→5.57.3` · `pagefind 1.5.2→1.6.0` · `@iconify-json/material-symbols 1.2.95→1.2.98`
+> · `@iconify-json/mingcute 1.2.8→1.2.10` · 连带 `vite → 8.3.7`。
+> ② **没升的三个（天花板仍在，别硬碰）**：`mermaid 11.17.2`（`astro-mermaid@2.1.0` 的 peer 只允许
+> `^10||^11`，**12.3.0 装了会 ERESOLVE**）· `typescript 6.0.3`（`@astrojs/svelte@9.1.2` peer 为
+> `^5.3.3 || ^6.0.0`，**7.0.2 不行**）· `katex 0.18.11`（见 ④）。
+> ③ ⚠️ **两个新发现的 npm 环境坑（都会静默/半截失败）**：
+> · **`npm update` 直接 EALLOWREMOTE**：本机 `npm config` 默认 `allow-remote="none"`（npm 12 新增的安全闸），
+>   而 `@tailwindcss/oxide-wasm32-wasi` 是 remote tarball → 必须 `npm_config_allow_remote=all` 前缀
+>   （**注意 `--allow-remote=all` 这个命令行标志不被 `npm ci` 接受，会走 EUSAGE 报用法**）。
+> · **`npm ci` 之前 lockfile 必须先 `npm install` 补齐**：`npm update --package-lock-only` 生成的 lock
+>   缺 `@pagefind/linux-arm64` / `windows-arm64` 两个 optional 平台包（pagefind 1.6.0 新加的）→
+>   `npm ci` 报 "Missing: @pagefind/... from lock file" 直接拒装。补跑 `npm install` 后才通过。
+> ④ **audit 现状（现跑，别引用旧数字）**：`npm audit --registry=https://registry.npmjs.org` =
+> **13 条 / 退出码 1**（8 low + 5 moderate，**0 high / 0 critical**；11-06 那次是 12 条含 1 high）。
+> high 那条（glob CLI 命令注入）随 `glob 10.4.5→10.5.0` 降成 moderate。
+> `npm audit fix` 已跑（不改 manifest、只动 lock），**剩下 4 类都只能 `--force` 才有解，全是降级陷阱**：
+> · `katex`：`rehype-katex@7.0.1` / `micromark-extension-math` / `mermaid` 三处都声明 `katex: ^0.16.0`，
+>   实际解析成 **0.16.47**（不是顶层 0.18.11），而 advisory 覆盖 `0.11.0 - 0.18.1` → **0.16.47 在范围内**。
+>   唯一"修法"是 `--force` 升 mermaid 12 → 撞 ② 的天花板。**本项目 30 篇文章零 KaTeX 使用**，
+>   且 KaTeX 是构建期渲染（不经浏览器处理用户输入）→ 风险面实际为零，**判定不动**。
+> · `minimatch 9.0.9`（stylus → glob 10.5.0 → minimatch）：`--force` 会把 **stylus 降到 0.63.0**（`markdown-extend.styl` 靠它编译）。
+> · `postcss-selector-parser 6.0.10`（`@tailwindcss/typography@0.5.20` 的 `dependencies` 是**写死的 `6.0.10`**）：
+>   `--force` 会降 typography 到 0.5.4。**没有 overrides 能优雅解**（会给 typography 塞不匹配的 7.x）。
+> · `deepmerge 4.3.1`（`@astrojs/svelte → @sveltejs/vite-plugin-svelte`）：`--force` 会降 `@astrojs/svelte` 到 0.1.2。
+> 📌 结论：**13 条全部保持现状**，理由是同一条——`--force` 的"修复"代价是降级本项目在用的包
+> （stylus / typography / @astrojs/svelte / mermaid 12 撞天花板），而这些都是**构建期依赖**、
+> 不进浏览器运行时，attack surface 与线上访客无关。
+> ⑤ **一处产物变化（已核对是好事）**：`dist` 文件 **541 → 543**。多的两个是新分块
+> `_astro/_..Dtj-J5a9.css`（27.9KB）与 `_astro/disclose-version.xihTtKlq.js`（65B）——
+> astro 7.4.8 的构建输出变化，`index.html` / `404.html` / `rss.xml` 里都正常引用，无 404。
+> 📋 验收：`npm ci` **696 packages / 30s / 退出码 0**（干净安装能过 = 依赖树真健康）；
+> `build` 退出码 0，**52 page(s) / 14.61s**，pagefind `Indexed 35 pages / 10993 words`；
+> `check` **0 error / 3 hint**（基线不变）；`dist` **543 文件 / 51 index.html**，pagefind 产物齐；
+> 42 组页面 × 3 断点：h1=1、溢出 0、pageerror 0、requestfailed 0；
+> **破图 0 / 空图标 0**（与线上旧构建逐项对照：new `{svg 136, sized 110, withPath 136, empty 0}` == old 同值）；
+> **Pagefind 1.6.0 API 形状对照**：新旧都 `count 25`，但**新版返回的 url 是 percent-encoded**
+> （`/posts/css100%E5%A4%A9...` vs 旧 `/posts/css100天...`）→ `Search.svelte` 走的是 `res.results`，
+> 两者形状一致，Ctrl+K 实测 **12 条结果 + 12 个 `<mark>`，新旧完全相同**；
+> 主题切换（`data-theme=dark`）、分类软导航、分页落点（scrollY）逐项复测通过。
+> 提交见本节末（`HEAD == origin/main`）。
 >
 > **🔧 2026-11-06 傍晚（第三十八批：切页加载态二分——分页骨架 / 切换转圈，V0.1.92）**
 > 用户发桌面截图：「切换这几个时候骨架屏和动画不正确，骨架屏为什么突然出现一个大块而且在上方，

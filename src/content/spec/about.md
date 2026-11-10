@@ -25,11 +25,34 @@
 
 ## ⭐ 项目
 
-在用的和已归档的一共八个，带状态与筛选，都在这一页：
-👉 **[/projects/](/projects/)**
+带状态筛选、技术栈和年份的完整清单在 **[/projects/](/projects/)**（九个项目）。
+下面按「在做的 / 早期与归档」分两组，每张卡对应一个源码仓库：
 
+### 在做的
+
+::github{repo="ks3356143/WorkStationForOne"}
 ::github{repo="ks3356143/meridian"}
 ::github{repo="ks3356143/CCNewTools"}
+
+### 早期与归档
+
+从 2022 年的串口绘图小工具一路到现在，中间这几代都留着源码 —— 它们是我看懂「工程该怎么分块」的台阶：
+
+::github{repo="ks3356143/testplantV1"}
+::github{repo="ks3356143/cdtestplant_v1"}
+::github{repo="ks3356143/cdTestPlant3"}
+::github{repo="ks3356143/codeStation-backend"}
+::github{repo="ks3356143/newToolforTest"}
+::github{repo="ks3356143/astro-guanwang"}
+
+> `codeStation` 是一套三个仓库（后端 / 前端 / 后台内容），上面只挂了后端那一个，前端两个不单独列。
+> `my_blog` 是最早那个练手博客，`serialport-new` 与 `serialport-user-pyqtgraph` 是 2022 年串口曲线的两个版本 ——
+> 想看的都在 [我的 GitHub](https://github.com/ks3356143?tab=repositories)。
+
+### 最早的两个（2022）
+
+::github{repo="ks3356143/serialport-new"}
+::github{repo="ks3356143/serialport-user-pyqtgraph"}
 
 ## 📫 联系方式
 

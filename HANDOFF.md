@@ -3,7 +3,46 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-10（第三十九批：依赖全量更新 + astro 7.4.5→7.4.8，已上线 V0.1.93）**。
+> 最后更新：**2026-11-10（第四十批：关于页项目卡扩到 12 张 + GitHub 卡片改构建期数据 + 文档注入预算回落，已上线 V0.1.94）**。
+>
+> **🔧 2026-11-10（第四十批：关于页项目 + GitHub 卡片离线化 + 文档预算，V0.1.94）**
+> 用户：「嗯。按你推荐做吧 反正解决掉」+「about可以增加点更多我的项目了」。
+> ① **GitHub 卡片改成构建期渲染（根治）**：旧实现是往页面里塞一段内联脚本，让**访客浏览器**
+>    `fetch('https://api.github.com/repos/…')`。三个问题叠着，线上必然退化成「未能连上 GitHub API」：
+>    **访客网络到 GitHub 常不通**（实测本机 `curl api.github.com` 返回 **0 / exit 35**）、
+>    **未认证 API 只有 60 次/小时/IP**、**数据靠 JS 才出现**（无 JS / SEO 全看不见）。
+>    现在改为构建期读 `src/data/githubCards.json`（2026-11-10 经**服务器中转**拉的真实快照，服务器能通：200）→
+>    描述 / stars / forks / license / 语言**直接写进 HTML**，头像用本地 `public/images/github-avatar.webp`（2.3KB）。
+>    🔴 **访客浏览器从此零 GitHub 请求**：实测 `github requests: 0`、`requestfailed: 0`（42 组全站扫描）。
+>    ⚠️ 代价：数字不再自动更新 → 改数据就改那个 JSON（"刷新方法"见下）。
+> ② **关于页项目卡 3 → 12 张**：从 `api.github.com/users/ks3356143/repos`（15 个公开仓库）里挑 12 个按
+>    「在做的（3）/ 早期与归档（6）/ 最早的两个 2022（2）」三组 + 本站 1 张。
+>    未收录的 3 个（`codeStation-fontend` / `codeStationBackPlant` 同属 codeStation 三仓库只挂后端、
+>    `my_blog` 练手博客）在正文里用一句话说明，不是漏。`/projects/` 页仍是 **9 张**（数据在 `projectsConfig.ts`）。
+> ③ **顺手修掉两处观感缺陷（都是这次放多张卡才暴露的）**：
+>    · `.gc-titlebar` 没有 `gap` → **390px 下 `gc-titlebar-left` 刚好占满（230/230）**，GitHub 图标紧贴仓库名（实测 overlap=0）。
+>      加 `gap: 0.75rem`；并给 `gc-titlebar-left` 补 `min-width:0 / flex-shrink:1 / overflow:hidden`，
+>      给 infobar 补 `white-space: nowrap`（旧写法 360px 会把 `no-license` 折到第二行）。
+>      实测 320/360/390 下 gap **12px**、`leftClipped=false`、`repoClipped=false`、溢出 0。
+> ④ **`npm run docs:check` 从失败转为通过**（此前超预算 2875 B，与本次业务改动无关，是 `~/.dsh/AGENTS.md` 被外部加了一段）：
+>    · **§4 目录结构整段搬进新分册 `docs/agents/layout.md`**（逐字未改，只加标题与说明），
+>      `AGENTS.md` 留一张按"改动的落点"归类的压缩表 + 8 个插件一行索引 → 省 **3583 B**。
+>    · **§10 的 14/15 两条子条目（11 行细节）折叠成一行指向 `swup.md` 十-14 / 十-15** ——
+>      折叠前逐条核对过 13 个关键事实**全部已在 swup.md 里**（`ranFor` / `is-changing` / `__typewriterInstance` /
+>      `banner-dim-container` / `hidden lg:flex` / `max-age=43200` / `process.cwd` … 一条不缺）→ 省 **3034 B**。
+>    · 结果：`AGENTS.md` **55683 → 51127 B**，注入链 **66363 → 61807 B**，余量 **从 −2875 变为 +1681 B**，
+>      `docs:check` **0 错误 0 提醒**。
+>    · ⚠️ 踩坑：用 `splice` 插进去的新块默认是 **裸 LF**（原文件 CRLF）→ 混行会让 `git diff` 整片翻。
+>      已用「只修指定行区间」的脚本把新增段归一成 CRLF（`裸LF 31 → 2`，剩下 2 条是 HEAD 里本来就有的）。
+> 📋 验收：`build` 0 error / **52 page(s)** / 8.87s；`check` **0 error / 3 hint**（基线不变）；
+> `docs:check` **0 错误 0 提醒**；`dist` **544 文件 / 51 index.html**（543 → 544：多了 `github-avatar.webp`）；
+> 14 页 × 3 档 = **42 组全绿**（h1=1 / 溢出 0 / 空图标 0 / pageerror 0 / requestfailed 0）；
+> `/about/` 12 张卡全部有真实描述与 star 数、`fetchWaiting=0`、头像本地化、**GitHub 请求 0 次**；
+> `/projects/` 仍 9 项未变。
+> **📌 刷新 GitHub 卡片数据的方法**（本机到 GitHub 不通，必须走服务器）：
+> `ssh <ECS_SSH> 'curl -s https://api.github.com/repos/OWNER/REPO'` 拿字段 →
+> 填进 `src/data/githubCards.json` → `rm -f node_modules/.astro/data-store.json` → `npm run build`
+> （⚠️ **改 `src/plugins/**` 或它读的数据都要清 data-store**，见五-21）。
 >
 > **🔧 2026-11-10（第三十九批：依赖更新，V0.1.93）**
 > 用户：「看看各个依赖包更新情况开始更新包括astro」。

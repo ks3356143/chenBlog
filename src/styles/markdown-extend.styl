@@ -116,6 +116,9 @@ a.card-github
     display: flex
     align-items: center
     justify-content: space-between
+    /* 🔴 手机上必须留最小间距：390px 下 .gc-titlebar-left 刚好占满（230/230），
+       没有 gap 时 GitHub 图标紧贴仓库名，看着像压字（2026-11-10 实测 overlap=0）。 */
+    gap: 0.75rem
     margin-bottom: 0.5rem
     color: var(--tw-prose-headings)
     font-size: 1.25rem
@@ -125,6 +128,10 @@ a.card-github
       display: flex
       flex-flow: row nowrap
       gap: 0.5rem
+      /* 窄屏允许左边整组收缩（否则 max-content 会顶到 GitHub 图标上） */
+      min-width: 0
+      flex-shrink: 1
+      overflow: hidden
 
     .gc-repo
       font-weight: bold
@@ -168,6 +175,8 @@ a.card-github
     font-weight: 500
     font-size: 0.875rem
     opacity: 0.9;
+    /* 窄屏不许换行：旧写法在 360px 会把 no-license 折到第二行 */
+    white-space: nowrap
 
     &:before
       content: ' '

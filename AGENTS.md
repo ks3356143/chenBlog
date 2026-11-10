@@ -20,6 +20,7 @@ harness 注入链 = `~/.dsh/AGENTS.md` → `AGENTS.md` → `AGENTS.local.md`，*
 - `writing.md` — 原第八节全文（发稿流程 8 条 + **八-9 同步自检标准与「站内故意加」清单** + frontmatter + 图片规矩）
 - `todo.md` — 原第九节全文（历批记录 / 版本天花板 / 依赖坑 / 运维）
 - `swup.md` — 原第十节全文（Swup 过渡的坑 **1 ~ 17**）
+- `layout.md` — 原第四节全文（目录结构逐行说明 + 8 个自研插件的职责）
 - `harness.md` — **新增**：工具链纪律与验证取证办法（2026-10-12 从上一任的 22 份跨会话记忆里提炼）
 
 🔴 **条目编号（五-16 / 八-9 / 十-14）两层通用**。本文件每条只留"钩子 + 禁令"，**够判断要不要去读全文，不够动手**。
@@ -120,53 +121,34 @@ npm run new:post -- --day 29 --title "标题"   # 文章脚手架（ASCII slug +
 ⚠️ **`dev` 下站内搜索一定不可用**：Pagefind 索引是 `astro build` 之后才生成的，dev 服务不认 `dist/pagefind/`，
 组件会显示"开发模式下没有搜索索引"——**这是设计，不是 bug**（参考站在 dev 下塞假结果，我们塞真提示）。
 
-## 四、目录结构（关键位置）
+## 四、目录结构（**索引** — 全文 `docs/agents/layout.md`）
 
 ```
-AGENTS.md             # 常驻规则层（本文件；是否超注入预算由 npm run docs:check 判定，别在这里写死数字）
-AGENTS.local.md       # 🔒 私密层：部署目标真实值 + 展开版部署命令。已 .gitignore，绝不入库
-docs/agents/*.md      # 分册层：原 AGENTS 五~十节全文 + harness.md（不自动注入，按需 Read）
-docs/superpowers/     # 历史设计文档（上一任留的，含影响域分析），保留不动
-astro.config.mjs      # 所有插件和 markdown 处理链的唯一配置入口
-src/content.config.ts # 文章 frontmatter schema（改文章字段前必看）
-src/config/siteConfig.ts    # 站点总开关：分页数、图片格式、页面开关、site_url
-src/config/navBarConfig.ts  # 顶部菜单项（含「文章」子菜单）——改菜单只改这里
-src/config/           # 另有 backgroundWallpaper / commentConfig / effectsConfig / galleryConfig（相册清单，见五-28）
-public/gallery/<id>/  # 相册图片本体，按 1.jpg 2.jpg 序号命名；与 galleryConfig 的 id 一一对应
-src/content/posts/    # 30 篇文章（28 .md + 2 .mdx）；images/ 是空的历史遗留目录
-src/content/spec/     # 单页内容（about 等）
-src/content/dynamic/  # 动态（说说）：一条一个 md，文件名 YYYY-MM-DD-HHMMSS.md 即条目 id
-src/pages/            # 路由：about / archive / categories / tags / series / dynamic / guestbook / gallery / posts/[...slug] / [...page]
-src/pages/api/dynamic.json.ts  # 动态数据端点：build 时预渲染成 dist/api/dynamic.json
-src/pages/rss.xml.js  # RSS 已实现
-src/components/pages/dynamic/  # DynamicFeed.svelte + DynamicItemTemplate.astro
-src/components/card/  # 侧栏卡片：SiteStatus / Calender / DynamicSidebar / SiteInfo（构建期静态）
-src/layouts/          # BaseLayout.astro + Layout.astro
-src/plugins/          # 8 个自研 remark/rehype 插件（见下）
-src/modules.d.ts      # 一条 declare module（给 astro check 用，见三节）
-public/assets/js/reinit.js  # ⚠️「导航后重 init」注册表：onReinit/reinitOnce 的唯一实现，BaseLayout head 同步加载（十-14）
-scripts/generate-icons.mjs  # 由 public/favicon.svg 生成全套图标（npm run icons）
-scripts/generate-covers.mjs # 由 src/assets/postImages/covers/*.svg 生成自动封面 webp（npm run covers）
-scripts/new-post.mjs        # 文章脚手架（npm run new:post）
-scripts/check-docs.mjs      # 文档自检：注入预算 + 分册存在性 + 编号引用完整性（npm run docs:check）
-scripts/probe.mjs           # 定宽浏览器探针（Playwright）：给 URL/宽度，返回计算样式、溢出、元素计数
-pagefind.yml                # 搜索索引排除规则
-src/styles/                 # CSS + 一处 Stylus（markdown-extend.styl）
-src/utils/                  # content/cover/date/gallery/image/layout/toc/url 工具函数
+本次改动的落点                     —— 对应位置
+──────────────────────────────────────────────────────────────────
+站点总开关 / 分页数 / site_url      src/config/siteConfig.ts
+顶部菜单                            src/config/navBarConfig.ts
+其他配置（壁纸/评论/动效/相册）      src/config/
+文章 frontmatter schema             src/content.config.ts
+文章本体 30 篇                      src/content/posts/
+单页（about 等）                    src/content/spec/
+动态（说说）一条一个 md              src/content/dynamic/
+路由                                src/pages/（含 api/dynamic.json.ts、rss.xml.js）
+侧栏卡片                            src/components/card/
+布局                                src/layouts/（BaseLayout + Layout）
+自研 markdown 插件（8 个）           src/plugins/
+样式                                src/styles/（含一处 Stylus markdown-extend.styl）
+工具函数                            src/utils/
+文章脚手架 / 图标 / 封面 / 文档自检  scripts/
+⚠️ 导航后重 init 注册表             public/assets/js/reinit.js（十-14）
+搜索索引排除规则                    pagefind.yml
 ```
 
-### 自研插件（`src/plugins/`）
+**8 个自研插件**（改前先读源码，别凭想象重写）：邮箱混淆 `rehype-email-protection` · 外链 `rehype-external-links` ·
+图片包 figure `rehype-figure` · 仓库卡片 `rehype-component-github-card` · 图片网格 `remark-image-grid` ·
+摘要 `remark-excerpt` · 阅读时长 `remark-reading-time` · 指令转换 `remark-directive-rehype`。
+每个插件的完整职责与坑在 `docs/agents/layout.md`。
 
-这些是项目特色，**改动前务必先读源码**，不要凭想象重写：
-
-- `rehype-email-protection.mjs` — 邮箱 base64 混淆防爬
-- `rehype-external-links.mjs` — 外链处理（依赖 `siteConfig.site_url`）
-- `rehype-figure.js` — 图片包 figure
-- `rehype-component-github-card.mjs` — Markdown 里用 `<github>` 标签渲染仓库卡片
-- `remark-image-grid.js` — 图片网格语法
-- `remark-excerpt.js` — 摘要提取
-- `remark-reading-time.mjs` — 阅读时长
-- `remark-directive-rehype.js` — 指令节点转换
 
 ## 五、配置约定（**索引** — 全文 `docs/agents/config.md`，编号五-N 两层通用）
 
@@ -325,7 +307,7 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 
 **图片唯一正确写法**：`![说明](/images/xxx.jpg)` + 文件放 `public/images/`。❌ 正文里 `<img src="./x.svg">` → 解析成 `/posts/<slug>/x.svg` → 404。✅ 写在 ``` 围栏里**无害**（不发请求 —— 曾害我误报"heart.svg 404"）。相对路径不行、**中文文件名也不行**（一组图放一个子目录，文件名 `NN-语义`）。`src/assets/covers/1,2,3.jpg` 是**站头轮播壁纸**不是文章封面。
 
-⚠️ **配置齐全但从未在生产用过**：**Mermaid / KaTeX / `:::` callout / 图片网格** —— 30 篇零使用、**零实战验证**，首篇用到必须 `dev` 逐项确认。**已在生产用的别混进去**：代码块折叠（`ec-collapse`）、`<github>` 卡片（`/about/` 实渲染 3 张）。
+⚠️ **配置齐全但从未在生产用过**：**Mermaid / KaTeX / `:::` callout / 图片网格** —— 30 篇零使用、**零实战验证**，首篇用到必须 `dev` 逐项确认。**已在生产用的别混进去**：代码块折叠（`ec-collapse`）、`<github>` 卡片（`/about/` 实渲染 9 张，数据构建期读 `src/data/githubCards.json`）。
 
 ## 九、长期结论与别再尝试的清单（**索引** — 全文 `docs/agents/todo.md`）
 
@@ -372,20 +354,9 @@ Nginx 根直接指向 `<NGINX_ROOT>` = `<REPO_DIR>/dist` → **build 完成即�
 - **12** ⚠️ 容器内脚本每次进该页仍重新求值 → 注册在 `document`/`window` 上的监听**按访问页数累加**。现由 `reinit.js` 从结构上消掉（见 14）。
 - **13** `twikoo.init()` 会吃掉挂载点：`#tcomment` 渲染后变成 `#twikoo`，**第二次 `getElementById("tcomment")` 必然 null**。查"评论没了"要看 `#twikoo` 在不在。
 - **14** 🔴 **「导航后重 init」只能走 `window.onReinit(key, fn, opts)` / `window.reinitOnce(key, fn)`**（实现 `public/assets/js/reinit.js`，`BaseLayout` **head** 同步加载）。**不要再手写 `window.__xxxInit`，不要再直接监听 `swup:contentReplaced`/`astro:page-load` 做重初始化。**
-  - 一趟导航被派发**两个事件名** → 同时听两个名字的组件**每换一页跑两遍**（TypeMechine 一趟 6 遍）；helper 用 token 压成一趟一次。
-  - **`fn` 每次调用都必须重新查 DOM**（容器整片被换，抓住引用会指到已移除节点）。同一 key 重复注册只换闭包。
-  - **选哪个**：被绑元素**会**随容器被换 → `onReinit`；**不会**（`document`/`window`/容器外元素）→ **`reinitOnce`**（两条真漏：`CategoryBar.initScrollFeatures` 让**横滚位移按访问页数叠加**；`FloatingToc.setupAutoClose` 每趟多挂 7 个监听 + 多包一层 `history.pushState`）。`reinitOnce` 的 `fn` **显式 `return false` = 下次再试**，否则被锁死。
-  - ⚠️ **真洞**（2026-10-08 用户报"文章页 F5 → 点主页，封面永远转圈"）：Astro 组件脚本是 `<script type="module">`，插入后要**下一个宏任务**才求值，赶不上当趟 `runAll`；而 `ranFor` 初始化成当前 token 又让 `catchUp` 以为跑过 → **该 key 一次都不跑**。触发条件 = 该 key 首次进这个页型 + 注册发生在软导航途中 → **只有"文章页起步 → 首页"会坏**（**手机 Edge 那条"第一次进首页永远转圈"极可能一直是它，不是 Edge、不是懒加载**）。修法：`ranFor` 初始化 **-1** + 导航途中注册的新 key **让出一个宏任务后自查**。⚠️ "注册即跑"是错的（同步脚本那一路会变成一趟 +2）。
-  - **验证**（必须 `build` + `preview` 或线上）：① `window.reinitRuns(key)` **每趟导航每个 key 恰好 +1**；② 包 `EventTarget.prototype.addEventListener` 只统计 `document`/`window`，跑几趟差值应为 0；③ **一定拿线上旧构建当控制组**（"10 张封面 2 张遮罩没褪"线上同探针给出**完全一样的数字** → 既存行为，别修）。
-  - ⚠️ 改 `reinit.js` 前想清楚缓存：它在 `public/`、稳定名 → 吃 `max-age=43200`。已改为 `?v=<内容哈希前 10 位>`（**没碰服务器**）。⚠️ **哈希必须按 `process.cwd()` 拼路径**（用 `import.meta.url` 在预渲染阶段会指到 `dist/public/` → **ENOENT 打挂构建**）。通则：**往 `public/` 加会被 HTML 直接引用的稳定名文件，都要核它拿到什么 `Cache-Control`。**
-  - 🔴 **仿真多趟导航时 `is-changing` 要留到重新插入脚本之后再摘**（提前摘会得出"每趟跑 2~3 遍"的假回归）。
+  → 细节全在 `docs/agents/swup.md` **十-14**（动手前必读）：TypeMechine 一趟 6 遍、`onReinit` 与 `reinitOnce` 的判据与两条真漏、`ranFor` 那个「文章页起步 → 首页永恒转圈」的真洞、验证三件套（`reinitRuns` / `addEventListener` 计数 / 线上旧构建当控制组）、`reinit.js` 的 `?v=` 内容哈希与 `process.cwd()` 拼路径。
 - **15** ⚠️ **「内容随页面变、但位置在容器外」的 chrome 必须登记成 Swup container**（横幅标题 bug）。迷惑点：那层本来就带 `transition-swup-fade`、CSS 也照它写了 → 看起来"已在参与过渡"，**实际只是淡出淡入同一份内容**（表现为"有动画但字没换"、只有 F5 才对）。修法两处：post-meta **移进** overlay 容器 + `containers: ["#banner-overlay-container", "#swup-container"]`。
-  - ⚠️ **登记成 container 前先查有没有代码把实例句柄挂在元素属性上**（打字机 `el.__typewriterInstance`）→ 节点被换掉后再也 destroy 不到，**留下孤儿定时器链**。判据：**每秒由打字机回调发起的 setTimeout 次数是否随导航递增**（实测 1→3→2→3→3 有界 = 正常）；**别用"动画还在跑"当判据**。
-  - **刻意没照搬参考站的** `#banner-dim-container` / `#left|right-sidebar-dynamic` / `#floating-toc-wrapper`（**侧栏与悬浮目录是本站刻意留在容器外的**）→ 有依据的偏离，**别当漏改补上**。
-  - 两向都要测；核 overlay 容器在**全部页**都存在；post-meta 是 `hidden lg:flex` → **375 下 `display:none` 属正常**。控制台 `[swup] No CSS animation duration…` 先确认**是不是自己探针注入了 `transition:none!important`**。
-  - ⚠️ **同族第二处已修（2026-10-13）**：右栏卡片不随软导航更换（`isPostPage ? TOC : 日历`，≥1280px 可见）
-    → `containers` 加 `#right-sidebar`。**光加 container 不够**：脚本重跑选择器要覆盖**所有** container、
-    `SiteInfo` 要改 `onReinit` + 每轮先解绑、`SiderBarToc` 的 window 监听加哨兵。全文与实测数字在 `swup.md` 十-15 末段。
+  → 细节全在 `docs/agents/swup.md` **十-15**：打字机实例句柄会变孤儿定时器链、刻意没照搬的三个 container、两向测试与 `hidden lg:flex`、以及右栏那第二处（`#right-sidebar` + `SiteInfo`/`SiderBarToc` 的配套改动）。另有 **十-16 / 十-17** 两条本站踩过的坑，摘要里没写，读分册时别漏。
 
 ## 附：本 harness（DSH）与上一任工具的差异
 

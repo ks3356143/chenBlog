@@ -1,0 +1,128 @@
+{
+	"_comment": "GitHub 仓库卡片的数据快照（构建期读取，访客浏览器不再请求 api.github.com）。来源：2026-11-10 经服务器中转拉 api.github.com（本机到 GitHub 不通）。更新方式见 HANDOFF 第三节「刷新 GitHub 卡片数据」。",
+	"owner": "ks3356143",
+	"avatar": "/images/github-avatar.webp",
+	"fetchedAt": "2026-11-10",
+	"repos": {
+		"ks3356143/chenBlog": {
+			"description": "陈俊亦个人博客",
+			"language": "Astro",
+			"stars": 1,
+			"forks": 0,
+			"license": null,
+			"pushed": "2026-11-10"
+		},
+		"ks3356143/WorkStationForOne": {
+			"description": "一个非常荧光HUD界面风格的个人AI以及生活工作站",
+			"language": "TypeScript",
+			"stars": 1,
+			"forks": 0,
+			"license": null,
+			"pushed": "2026-11-10"
+		},
+		"ks3356143/meridian": {
+			"description": "个人可能推广的测试过程工具",
+			"language": "TypeScript",
+			"stars": 1,
+			"forks": 0,
+			"license": null,
+			"pushed": "2026-11-09"
+		},
+		"ks3356143/cdtestplant_v1": {
+			"description": "后端django-ninja-extra改造，但主要还是ninja内容",
+			"language": "Python",
+			"stars": 2,
+			"forks": 1,
+			"license": null,
+			"pushed": "2026-10-30"
+		},
+		"ks3356143/testplantV1": {
+			"description": "测试管理平台V1，使用AI原型设计和开发起步",
+			"language": "CSS",
+			"stars": 1,
+			"forks": 0,
+			"license": null,
+			"pushed": "2026-10-26"
+		},
+		"ks3356143/CCNewTools": {
+			"description": "最新CPU测评的转换工具，任意平台使用",
+			"language": "TypeScript",
+			"stars": 1,
+			"forks": 0,
+			"license": null,
+			"pushed": "2026-10-26"
+		},
+		"ks3356143/cdTestPlant3": {
+			"description": "里面有3个项目",
+			"language": "Vue",
+			"stars": 2,
+			"forks": 0,
+			"license": null,
+			"pushed": "2026-05-29"
+		},
+		"ks3356143/astro-guanwang": {
+			"description": "官网astro教程",
+			"language": "Astro",
+			"stars": 0,
+			"forks": 0,
+			"license": null,
+			"pushed": "2026-03-02"
+		},
+		"ks3356143/codeStation-backend": {
+			"description": "Django-ninja-extra创建的codeStation后端",
+			"language": "Python",
+			"stars": 1,
+			"forks": 0,
+			"license": null,
+			"pushed": "2026-01-08"
+		},
+		"ks3356143/codeStation-fontend": {
+			"description": "codeStation前端项目",
+			"language": "TypeScript",
+			"stars": 0,
+			"forks": 0,
+			"license": null,
+			"pushed": "2026-01-08"
+		},
+		"ks3356143/codeStationBackPlant": {
+			"description": "前端codeStation后台内容",
+			"language": "TypeScript",
+			"stars": 0,
+			"forks": 0,
+			"license": null,
+			"pushed": "2026-01-08"
+		},
+		"ks3356143/newToolforTest": {
+			"description": "一个新pyqt工具for测评",
+			"language": "Python",
+			"stars": 1,
+			"forks": 0,
+			"license": null,
+			"pushed": "2024-04-16"
+		},
+		"ks3356143/my_blog": {
+			"description": "a blog for practice",
+			"language": "Python",
+			"stars": 1,
+			"forks": 0,
+			"license": null,
+			"pushed": "2023-02-12"
+		},
+		"ks3356143/serialport-user-pyqtgraph": {
+			"description": "pyqtgraph instead of echart",
+			"language": "Python",
+			"stars": 1,
+			"forks": 0,
+			"license": null,
+			"pushed": "2022-12-10"
+		},
+		"ks3356143/serialport-new": {
+			"description": "plot with echarts",
+			"language": "Python",
+			"stars": 1,
+			"forks": 0,
+			"license": null,
+			"pushed": "2022-09-06"
+		}
+	}
+}

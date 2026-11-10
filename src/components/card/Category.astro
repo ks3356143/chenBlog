@@ -14,8 +14,8 @@ let isCollapsed = true
 	<div data-category-list data-is-collapsed="true" class="collapsed overflow-hidden px-4">
 		{
 			categories.map(category => (
-				<a href={category.url} aria-label={`posts in ${category.name}`} class="btn-right inline-block">
-					<div class="relative mr-2 flex items-center justify-between">
+				<a href={category.url} aria-label={`posts in ${category.name}`} class="btn-right">
+					<div class="relative mr-2 flex w-full min-w-0 items-center justify-between">
 						<div class="overflow-hidden text-left text-ellipsis whitespace-nowrap">{category.name}</div>
 						<div class="counter-tag">{category.count}</div>
 					</div>

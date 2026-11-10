@@ -44,7 +44,12 @@
 /* 右移动按钮-hover时文字右移动一点，其实就是hover实现padding-left效果 */
 /* 注意h-10,则为40px */
 .btn-right {
-    @apply h-10 w-full bg-none pl-2 transition-all hover:bg-(--btn-plain-bg-hover) hover:pl-3 hover:text-(--primary) active:bg-(--btn-plain-bg-active) dark:text-neutral-300 dark:hover:text-(--primary);
+    /* 🔴 必须 flex + items-center（2026-11-10 用户报「hover 上去有问题」）：
+       原先是 inline-block，内部那个 flex 容器是块级子元素、**贴着行顶部**——
+       实测 40px 的行里文字距顶 2px / 距底 14px、计数块距顶 0 / 距底 12，
+       整条内容偏上 6px，hover 高亮带就显得「上面空一大截」、计数块还跟下一行挤在一起。
+       参考站此处就是 flex + items-center，居中后上下各留 6px（实测 centerOffset = 0）。 */
+    @apply flex h-10 w-full items-center bg-none pl-2 transition-all hover:bg-(--btn-plain-bg-hover) hover:pl-3 hover:text-(--primary) active:bg-(--btn-plain-bg-active) dark:text-neutral-300 dark:hover:text-(--primary);
 }
 
 /* 分类数字tag */

@@ -23,8 +23,8 @@
 >    · 实测：改前 33/33 页引用、20 个 woff2；改后 **0/52 页引用、KaTeX 字体请求 0 次**
 >      （42 组扫描 performance entries 计数）。**用临时带公式的文章验证过**：那 1 页正确输出 `<link>`
 >      且渲染出 7 个 `.katex` 节点 + 1 个 `katex-display`，其余 52 页无链接（验完已删临时文章）。
->    · 连带清理：删 `src/components/features/KatexManager.astro`、`src/styles/katex-woff2.css`、
->      `scripts/build-katex-css.mjs`（旧的生成脚本，被新脚本取代）。
+>    · 连带删除（旧实现，均已被取代）：老的 Katex 管理组件、它 import 的那份精简样式表，
+>      以及旧的按需生成脚本（现由 `scripts/build-katex-assets.mjs` 取代）。
 > ② **删掉泄露到产物的 TODO 注释**：`Layout.astro:144` 的 `<!-- TODO:网格布局的页面展示 -->`
 >    被原样输出到**全部 52 个页面**（Astro 不剥离 HTML 注释）。删掉后实测 0 处。
 > ③ **卸载 4 个零引用依赖**（`npm uninstall` 各 1~2s，退出码 0）：

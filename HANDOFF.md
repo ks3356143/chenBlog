@@ -3,7 +3,55 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-11（第四十四批：B 档四条收尾，V0.1.98）**。
+> 最后更新：**2026-11-11（第四十五批：体积与配置优化「全部解决」，V0.1.99）**。
+>
+> **🔧 2026-11-11（第四十五批：体积 / 请求 / 配置五项，V0.1.99）**
+> 用户看完我给的优化清单后说「全部解决吧」，把 A/B 档六条一次做完（⑧ 评估后不动）。
+> ① 🔴 **KaTeX CSS 改成真·按需加载**（原 33 个文章页无条件加载，而全站公式使用数 **0**）：
+>    · 走过的两个弯路都记下来，**别再重走**：
+>      (a) 把 `<KatexManager slot="head" />` 改成 `{postHasMath && …}` → **产物仍 33/33 页引用**，
+>          因为条件渲染只拦 HTML，组件 frontmatter 里那句 `import "…css"` 在模块求值时照样执行；
+>      (b) 再改成 `await import("@/…/KatexManager.astro")` 动态导入 → **还是 33/33**，
+>          Astro 在构建期就能静态分析出这个 import 并把它挂进该页的 CSS 清单。
+>    · **唯一有效的做法**：CSS 不进打包链 —— `scripts/build-katex-assets.mjs` 把精简 CSS（只留 woff2）
+>      + 20 个 woff2 生成到 `public/vendor/katex/`（22.3KB + 276KB），文章页按判据输出
+>      `<link rel="stylesheet" href="/vendor/katex/katex.css">`。
+>    · 判据 `src/utils/math-utils.ts` 的 `hasMath()`：先剥围栏代码 / 行内 code / HTML 注释，
+>      再看 `$$…$$` 与 `$…$`。**已拿真实 remark-math 解析结果逐条对齐 15 个样例（15/15 一致）**，
+>      其中一条是我自己的 bug：最初用 `[^\n$]*` 当行内判据 → 漏掉 remark-math **允许跨行的行内公式**
+>      （`$a\nb$`），真正的边界是空行（段落），不是换行。
+>    · 实测：改前 33/33 页引用、20 个 woff2；改后 **0/52 页引用、KaTeX 字体请求 0 次**
+>      （42 组扫描 performance entries 计数）。**用临时带公式的文章验证过**：那 1 页正确输出 `<link>`
+>      且渲染出 7 个 `.katex` 节点 + 1 个 `katex-display`，其余 52 页无链接（验完已删临时文章）。
+>    · 连带清理：删 `src/components/features/KatexManager.astro`、`src/styles/katex-woff2.css`、
+>      `scripts/build-katex-css.mjs`（旧的生成脚本，被新脚本取代）。
+> ② **删掉泄露到产物的 TODO 注释**：`Layout.astro:144` 的 `<!-- TODO:网格布局的页面展示 -->`
+>    被原样输出到**全部 52 个页面**（Astro 不剥离 HTML 注释）。删掉后实测 0 处。
+> ③ **卸载 4 个零引用依赖**（`npm uninstall` 各 1~2s，退出码 0）：
+>    · `@iconify-json/fa-solid` + `@iconify-json/fa6-solid`：源码 `fa-solid:` / `fa6-solid:` **各 0 处**、
+>      产物里 **0 命中**，两包 `icons.json` 合计 1.5MB（1023 + 1407 个图标）。
+>    · `mermaid` + `astro-mermaid`：挂载点 2026-11-04 就已注释，产物里**零 mermaid 代码**
+>      （只有 `markdown-extend.styl` 里 32 条 / 3066B 的 `.mermaid-*` 预留样式，留着不动）。包本体 **84.1MB**。
+>    · 连带更新 `README.md`（技术栈表 + 已知约束）、`docs/agents/config.md`（图标集合清单）、
+>      `AGENTS.md`（五-29 的可用集合）、`src/config/projectsConfig.ts`（注释）。
+> ④ 🔴 **nginx 改了两处（用户当次点头后做的，`cache.conf` 已 `cp -a` 备份到 `/root/cache.conf.bak_20261111`）**：
+>    · **`gzip_types` 补 `text/xml`**：宝塔全局列表里只有 `application/xml` 与 `application/xml+rss`，
+>      而本站 `rss.xml` / `sitemap-*.xml` 响应头是 `text/xml` → **一直原样全传**。
+>      实测 `rss.xml` **409,089 B → 76,818 B（−81%）**、`sitemap-0.xml` **6,199 → 770 B**。
+>      ⚠️ **`gzip_types` 在 server 层会整体覆盖 http 层的继承值**，所以必须把原列表抄全再追加。
+>    · **`location = /site.webmanifest` 指定 `application/manifest+json`**：nginx `mime.types` 里没有
+>      `webmanifest` 这条 → 实测一直是 `application/octet-stream`。**没改全局 `mime.types`**
+>      （那会波及同机其他项目），只给本站这一个精确路径加 `default_type`；
+>      并**显式重写 `add_header Cache-Control`**（子 location 一旦自己 add_header 就不再继承 server 层的）。
+>    · `nginx -t` 通过 → reload。**回归**：`/`、`/archive/`、`/api/allPostMeta.json`、`/_astro/*.css`、
+>      `/og-image.jpg` 的 Content-Type / Content-Encoding / Cache-Control 全部与改前一致。
+> ⑤ **⑧ 内联 SVG 去重：评估后不做**。首页 136 个 SVG / 99 个唯一，最高重复 9 次，
+>    但**整页去重后 gzip 只省 3.2KB**（51,596 → 48,387）→ 收益远小于改 Astro 组件结构的风险，**判定不动**。
+> 📋 验收：`build` 0 error / **52 page(s)** / 5.90s；`check` **0 error / 3 hint**（基线不变）；
+> `docs:check` **0 错 0 警**；`dist` **545 文件 / 51 index.html**（544→545：`vendor/katex/` 整目录进 public 后
+> 净增 1 个文件计数，KaTeX 的 CSS 不再进 `_astro/`）；
+> **本地 42 组 + 线上 42 组全绿**（h1=1 / 溢出 0 / pageerror 0 / requestfailed 0 / 空图标 0 / TODO 0）。
+> ⚠️ 本批没动触控目标、没动 SVG 去重、没动 Twikoo。
 >
 > **🔧 2026-11-11（第四十四批：B 档四项，V0.1.98）**
 > 用户看完待优化清单后说「b开做吧」，把 B 档能自己动手的四条一起做掉。
@@ -2342,16 +2390,17 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 本批提交见下，**已推送、`HEAD == origin/main`、工作区计数 0** |
-| 工作区 | 本批动 **5 项**：`src/components/layout/PostPage.astro`(+2/−2)、`src/components/card/Category.astro`(+8/−0)、`src/styles/global.css`(+4/−0)、`src/components/card/Calender.astro`(+2/−0)、`HANDOFF.md`、`package.json` 只动 version。**零依赖改动** |
-| 线上站点 | ✅ **2026-11-11 部署 V0.1.98**。**线上实测**：`ver 0.1.98`、首页分类卡 `cardH=190 / collapsed=false / btnH=0`、`--text-color-secondary` 已解析、列表卡 `href` 全带尾斜杠、`pageerror 0`。HTTP 200 |
-| 本地构建 | V0.1.98 = **544 个文件 / 51 个 `index.html` / pagefind 51**（与 V0.1.97 相同，本批无新增资产）。`build` **0 error** / 52 page(s) / 15.73s、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
-| 依赖 | 本批**零改动**。第四十批（V0.1.93）已全量更新：`astro 7.4.8` / `@astrojs/*` 各小版 / `tailwindcss 4.3.5` / `svelte 5.57.3` / `pagefind 1.6.0` / `vite 8.3.7`。天花板不变：`mermaid 11.17.2` / `typescript 6.0.3` / `katex 0.18.11`（嵌套 0.16.47 在 advisory 范围内，只能 `--force` 升 mermaid 12 → 撞天花板，判定不动）。`npm audit` 现跑 **13 条 / 退出码 1**（8 low + 5 moderate，**0 high**），四类残余全是"降级换平安"，全部保持现状 |
-| dev / preview server | 本批起过 `npm run preview` 做 42 组回归与分类卡 A/B 对比，**收尾已精确杀掉并复查计数 = 0** |
-| 服务器回滚资产 | `dist.old`（= V0.1.97）+ **105 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
-| 临时文件 | 收尾已清 `%TEMP%` 下本会话全部 `.mjs` / `.log` / `.html`（含 `b-batch*.mjs` `probe-b.mjs` `cat-cmp.mjs` `build.log` `check.log` `nf404.html` 等） |
-| 待用户拍板 | **本批新增 1 条（B9）**：`/site.webmanifest` 的 Content-Type 仍是 `application/octet-stream`（nginx `mime.types` 缺 `webmanifest`，实测 200 + 该类型）→ **属服务器改动，要他点头**。**沿上批仍未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标 vs WCAG 44px。**功能扩展清单**（第四十二批末尾给过完整对比）：音乐播放器 / 友链页 / 打赏页 / 书签导航 / Atom feed / 樱花特效 / 背景视频 / 壁纸四模式 / 瀑布流 / 卡片跟随主题色 / 文章版权声明 / 分享海报 / 回到评论 / 文章密码门 —— **他只说「先不要实现，仅告诉我」，一件都没动** |
-| 既存小坑 | 同上一批。本批**新增两条方法类**：① 分类卡在页面挂**两份**（左栏 + 移动底部堆，后者 `display:none`），扫描脚本必须只取**可见**那份，否则量出 `h=0` 全红；② `.btn-right` 这类"内联类 + 工具类"混用的元素，**只改 CSS 不够**，调用方的 `class="btn-right inline-block"` 必须一起去掉。③ **latin1 读写不能插中文**（码点 > 255 会被截成单字节 → U+FFFD），纯 CRLF 文件直接 utf8 读写即可 |
+| 本地 HEAD | `11f230a`（V0.1.99 体积与配置优化），**已推送、`HEAD == origin/main`、工作区计数 0** |
+| 工作区 | 本批动 **12 项**：新增 `src/utils/math-utils.ts`、`scripts/build-katex-assets.mjs`、`public/vendor/katex/`（21 文件）；删 `KatexManager.astro` / `katex-woff2.css` / `build-katex-css.mjs`；改 `astro.config.mjs`、`src/pages/posts/[...slug].astro`、`src/layouts/Layout.astro`、`README.md`、`docs/agents/config.md`、`AGENTS.md`、`projectsConfig.ts`、`package.json`(+version/−4 deps)、`package-lock.json` |
+| 线上站点 | ✅ **2026-11-11 10:30 部署 V0.1.99**（替换前 5 条断言：`0.1.99` 必须在 / `0.1.98` 不在 / pagefind / `vendor/katex/katex.css` / `site.webmanifest` 必须存在）。**线上实测**：`ver 0.1.99`、`katex link 0 页`、`KaTeX 字体请求 0`、`TODO 0`、`rss gzip 76,818B`、`manifest application/manifest+json` |
+| 服务器配置 | **本批动了 `cache.conf`**（用户当次点头）：`gzip_types` 补 `text/xml`、新增 `location = /site.webmanifest`。备份 `/root/cache.conf.bak_20261111` + `/root/nginx.conf.bak_20261111` + `/root/mime.types.bak_20261111`。`nginx -t` 通过后 reload |
+| 本地构建 | V0.1.99 = **545 个文件 / 51 个 `index.html` / pagefind 51**。`build` **0 error** / 52 page(s) / 5.90s、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
+| 依赖 | **本批卸了 4 个**：`mermaid`(84.1MB) / `astro-mermaid` / `@iconify-json/fa-solid` / `@iconify-json/fa6-solid` —— 全部零引用（源码 0 处、产物 0 命中）。剩余 `node_modules` **273MB**。天花板现在只剩 **`typescript 6.0.3`**（mermaid 11.x 天花板随卸载作废）。`katex 0.18.11` 仍在（嵌套 0.16.47 的 audit 那条不动） |
+| dev / preview server | 本批起过 `npm run preview` 做本地 42 组回归，**收尾已精确杀掉并复查计数 = 0** |
+| 服务器回滚资产 | `dist.old`（= V0.1.98）+ **106 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
+| 临时文件 | 收尾已清 `%TEMP%` 下本批全部 `.mjs` / `.cjs` / `.log` / `.tar.gz`（含 `p99.mjs` `plive99.mjs` `cssaudit.cjs` `b*.log` `chk.log` `cm45.txt` `cb99.tar.gz` 等） |
+| 待用户拍板 | **本批新增 0 条，且清掉了 3 条**（④⑤⑦ 那三个服务器项已按他「全部解决」放行并做完）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标 vs WCAG 44px。**功能扩展清单**（14 项，第四十二批末尾给过对比）一件未动 |
+| 既存小坑 | 同上一批。本批**新增两条**：① **被 `import` 的 CSS 无法靠条件渲染/动态 import 做到按需**（Astro 构建期就静态分析并挂进页面清单）→ 真按需只能走 `public/` + 条件 `<link>`；② **`gzip_types` 写进 server 层会整体覆盖 http 层继承值**，追加前必须把原列表抄全 |
 
 ---
 ## 四、维护本文件的规矩

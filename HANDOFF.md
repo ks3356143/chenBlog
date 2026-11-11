@@ -3,9 +3,40 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-11（第五十批收官：全量验证通过，线上 V0.1.104 已复验）**。
+> 最后更新：**2026-11-11（第五十一批：修搜索框宽度增长动画丢失，已上线 V0.1.105）**。
 >
-> **✅ 2026-11-11 全量验证（用户「全部验证下吧」，V0.1.104 未改动一行代码）**
+> **🔧 2026-11-11（第五十一批：搜索框宽度增长动画丢失，V0.1.105）**
+> 用户发截图：「改造后如图搜索框为什么没有宽度增长动画了，这个动画不能少」。
+> 🔴 **真因（我自己埋的回归）**：第四十八批做"搜索框观感重做"时，为了把过渡集中到组件 `<style>` 里，
+>    把模板上的 `transition-all duration-200` **删掉了**，但**只在新 `<style>` 里补了壳子的三条**
+>    （background-color / border-color / box-shadow），**漏了输入框自己的宽度过渡** ——
+>    `w-40` → `focus:w-60` 变成**瞬间跳变**。
+> **改前实测证据**（不是猜）：`inputTransition: "all"` 但 `transitionDuration: "0s"`；
+>    聚焦后 400ms 内每 40ms 采样 10 次，**宽度恒为 240**（只出现过 1 个值）、`getAnimations()` **为空**。
+> **修法**：`.search-shell input { transition: width 0.28s cubic-bezier(0.4,0,0.2,1) }` ——
+>    **只过渡 width 一个属性**（不用 `transition-all`，否则背景/描边会和壳子那两档时长叠成二次动画）；
+>    `prefers-reduced-motion` 下 `transition: none` 直切。
+>    ⚠️ 壳子本身**不能**加 width 过渡：它的宽度是 `auto`（被输入框撑出来的），加过渡无效，跟着输入框逐帧跟随才对。
+> ✅ **修复后实测**：`transitionProperty: "width" / 0.28s`；逐帧采样到 **8 个中间宽度**
+>    （160 → 161 → 168 → 201 → 225 → 236 → 239 → 240）；reduced-motion 下仍直切（`prop=none / w=240`）。
+>    截图三张（`%TEMP%\width-shots\`）肉眼确认：静止 160 宽、展开中 210 左右、终态 240。
+>
+> 📋 **验证**（本地 + 线上同口径，全绿）：
+> - 312 组回归：**本地 318/318、线上 318/318**（分段跑，每 60 组重建浏览器）
+> - 专项 7/7（宽度过渡 / 中间态 / 终态 240 / reduced-motion 直切 / 搜索功能 / 零报错 / 移动端仍隐藏）
+> - 功能 13/13（4 项特效 + 搜索展宽 + 灯箱按需 + 复制环 + 懒加载 + 分页跳转 + RSS/Atom + /rss/ 页）
+> - 边界 10/10（无 JS / reduced-motion / forced-colors / 320px / 1920px / 打印 / 触屏）
+> - 三方一致：**53/53 页归一化后逐字节相同**；`atom.xml`/`rss.xml`/`sitemap-0.xml`/`site.webmanifest`/`pagefind.js` **5/5 SAME**
+> - `build` 0 error / 53 page(s)；`check` **0 error / 3 hint**；`docs:check` 0 错 0 警；`dist` **546 文件 / 52 index.html**
+>
+> ⚠️ **两次探针自造假红的教训（都记下来）**：
+> ① 采样前 `waitForTimeout(500)` —— 而过渡只有 280ms，等完再采只剩终态，误判成"没有中间态"；
+> ② 灯箱是**全屏 `<dialog>`**，上一个用例开完没关，后面点复制按钮全被它吃掉 → Playwright 报
+>    `subtree intercepts pointer events` 超时。**用例之间必须显式关掉模态**。
+> ⚠️ 顺带记一条环境坑：`astro preview` 会在 `.astro/preview.json` 留 PID 记录，**进程已死但记录还在**时
+>    它会拒绝启动（"Another astro preview server is already running"）→ `npx astro preview stop` 或删那个 json。
+>
+> **✅ 2026-11-11 全量验证（第五十批收官，V0.1.104 未改动一行代码）**
 > 五轮全绿，**零修复**：
 > 1. **静态产物**（`v1-static`）：546 文件 / 53 html / 52 index；内部链接 **199** 条 **0 死链**；
 >    574 个真 img **缺 alt 0 / 缺 loading 0**；modulepreload **382 条全部指向存在的文件**；
@@ -2603,23 +2634,23 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-11 第五十批实测；线上 = V0.1.104**，已部署）
+## 三、当前状态快照（**2026-11-11 第五十一批实测；线上 = V0.1.105**，已部署）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `8b787f9`（V0.1.104 第一梯队视觉特效 4 项），**已推送、`HEAD == origin/main`、工作区计数 0** |
-| 工作区 | 本批动 **9 项**：新增 `src/components/features/CopyRing.astro`、`src/components/features/MagneticButtons.astro`；改 `src/styles/global.css`(+126 噪点/磁性/复制环)、`src/styles/layout-style.css`(+56 标题流光)、`src/layouts/BaseLayout.astro`(+噪点层)、`src/layouts/Layout.astro`(+2 组件)、`src/components/commons/FloatingButton.astro`(+`data-magnetic`)、`src/components/commons/Pagination.astro`(+2 处 `data-magnetic`)、`package.json`(version) |
-| 线上站点 | ✅ **2026-11-11 19:18 部署 V0.1.104**（替换前 7 条断言：版本、pagefind、`noise-overlay`、`data-magnetic`、`ec-copy-ring`、`banner-title-sheen` 全在）。**线上实测**：`ver 0.1.104`、**12/12 全绿**（含 312 组） |
+| 本地 HEAD | `28630ea`（V0.1.105 修复搜索框宽度增长动画），**已推送、`HEAD == origin/main`、工作区计数 0** |
+| 工作区 | 本批动 **2 项**：`src/components/controls/Search.svelte`(+26/−3，加 `.search-shell input { transition: width ... }`)、`package.json`(version) |
+| 线上站点 | ✅ **2026-11-11 23:44 部署 V0.1.105**（替换前 5 条断言：`0.1.105` 在 / `0.1.104` 不在 / pagefind / **`transition:width .28s` 必须在 Layout.*.css**）。**线上实测**：`ver 0.1.105`、宽度过渡 7/7、功能 13/13、312 组 318/318、边界 10/10 |
 | 服务器配置 | 本批**未动服务器** |
-| 本地构建 | V0.1.104 = **546 个文件 / 52 个 `index.html`**（与 V0.1.103 相同，本批纯 CSS/JS）。`build` **0 error** / 53 page(s) / 5.79s、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
+| 本地构建 | V0.1.105 = **546 个文件 / 52 个 `index.html`**（与 V0.1.104 相同）。`build` **0 error** / 53 page(s) / 6.98s、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
 | 依赖 | 本批**零改动**（仍 `astro 7.4.10` / `katex 0.18.11` / `vite 8.3.8`，天花板只剩 `typescript 6.0.3`） |
 | dev / preview server | 本批起过 `npm run preview`，**收尾已精确杀掉并复查计数 = 0** |
-| 服务器回滚资产 | `dist.old`（= V0.1.103）+ **111 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
-| 临时文件 | 收尾已清 `%TEMP%` 下本批全部 `.mjs` / `.cjs` / `.log` / `.tar.gz` |
+| 服务器回滚资产 | `dist.old`（= V0.1.104）+ **112 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
+| 临时文件 | 收尾已清 `%TEMP%` 下本批全部 `.mjs` / `.cjs` / `.log` / `.tar.gz` / 截图目录 |
 | 待用户拍板 | **本批新增 0 条**。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32）。**第二梯队特效（极光背景 / 逐字解码 / 渐变呼吸文字 / 命令面板 / WebGL 流体）一件未动** |
-| 既有小坑 | 同上一批。本批**新增三条**：① 想给元素加"扫光"**不要用 `background-clip:text` + 透明填充**（会吃掉 `text-shadow`，标题压在壁纸上就不可读了）→ 用独立伪元素光带 + `mix-blend-mode`；② EC 的复制按钮**没有任何钩子**，只能在 `pointerdown` 捕获阶段自己加类；③ `animation-timeline` 在本环境**能解析但 `currentTime` 恒 null、opacity 恒 1**，无法验证推进 → 别拿它替换有实测数据的老方案 |
+| 既有小坑 | 同上一批。本批**新增四条**：① **改组件观感时，别把模板上有用的 Tailwind 过渡类一起删掉**（本次就是把 `transition-all` 删了但没补 width → 动画丢失）；② 壳子宽度是 `auto` 时**不能给壳子加 width 过渡**，要过输入框；③ 探针**采样前别等超过过渡时长**（280ms 过渡等 500ms 再采只剩终态）；④ 灯箱是全屏 `<dialog>`，**用例之间必须显式关掉**，否则后续点击全被它吃掉 |
 
 ---
 ## 四、维护本文件的规矩

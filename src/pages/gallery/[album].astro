@@ -42,11 +42,17 @@ const coverSize = getPublicImageSizeSync(cover)
 		{
 			cover ? (
 				<div class="relative aspect-[3/1] max-h-[360px] min-h-[200px] w-full">
+					{/* 相册横幅是**首屏 LCP 元素** → 必须 eager + high，不能懒加载（2026-11-11 补）。
+					    之前它一个 loading 属性都没有：浏览器默认行为虽然也是 eager，
+					    但显式写出来才能让 preload / fetchpriority 与它协同。 */}
 					<img
 						src={cover}
 						alt={albumMeta.name}
 						width={coverSize?.width}
 						height={coverSize?.height}
+						loading="eager"
+						fetchpriority="high"
+						decoding="async"
 						class="h-full w-full object-cover"
 					/>
 					<div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />

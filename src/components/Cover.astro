@@ -35,6 +35,10 @@ const configQuality = getImageQuality()
 const backgroundInterval = Math.max(backgroundWallpaper.carousel?.interval ?? 5000, 3000)
 
 // kb样式
+// ⚠️ 必须带 prefers-reduced-motion 直切（2026-11-11 补）：
+//    这是全站最长的动画（6.5s，`forwards` 会永久留一个 transform 在元素上），
+//    而它此前**没有任何 reduce 保护** —— 用户开了「减少动态效果」照样会看到整幅横幅缓慢放大。
+//    reduce 下直接置 `animation: none`：终态就是 scale(1)，与未播完的观感一致，不会留残影。
 const kenBurnsStyle = `
   @keyframes bannerKenBurns {
     0% {
@@ -46,6 +50,11 @@ const kenBurnsStyle = `
   }
   .banner-kb {
     animation: bannerKenBurns ${backgroundInterval + 1500}ms ease-in-out forwards;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .banner-kb {
+      animation: none;
+    }
   }
 `
 

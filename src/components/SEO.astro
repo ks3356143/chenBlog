@@ -116,7 +116,11 @@ const jsonLD = jsonLDGenerator({
 <link rel="alternate" type="application/rss+xml" title={siteConfig.siteMeta.name} href={new URL("rss.xml", Astro.site)} />
 
 <!-- SEO -->
-<title>{title}</title>
+<!-- ⚠️ 这里**刻意没有** title 标签：BaseLayout 第 71 行已经输出过一个（带品牌后缀的 documentTitle）。
+     2026-11-11 实测：52 个页面**每页都有两个 title 元素**，浏览器取第一个（带后缀那个），
+     第二个等于死代码，而且是不合规范的 HTML（一个文档只能有一个标题元素）。
+     og:title 仍用下面的 {title}（内容原标题）—— 社交卡片要的是文章名，不是「文章名-站名」。
+     ⚠️ 注释里别写出 title 标签的尖括号原文：Astro 不剥离 HTML 注释，那会让产物多出可被解析的标签。 -->
 <meta name="description" content={description} />
 <link rel="canonical" href={url} />
 

@@ -55,6 +55,14 @@
     animation-duration: 20s;
 }
 
+/* 减少动态效果：波浪是纯装饰、且四条都是 infinite 的 7~20s 长动画（2026-11-11 补）。
+   reduce 下直接停掉 —— 四层 <use> 的静态形态就是一条完整的波浪带，不会变成空白。 */
+@media (prefers-reduced-motion: reduce) {
+    .waves>.parallax use {
+        animation: none;
+    }
+}
+
 @keyframes wave {
     0% {
         transform: translate3d(-90px, 0, 0);

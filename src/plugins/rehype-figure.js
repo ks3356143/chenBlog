@@ -2,6 +2,7 @@ import { h } from "hastscript"
 import { visit } from "unist-util-visit"
 import { shouldAddNoReferrer } from "../utils/image-utils.ts"
 import { getPublicImageSizeSync } from "../utils/image-size.ts"
+import { transformRawImages, readRawSrc, rawHasAttr, appendRawAttr } from "./raw-img-utils.mjs"
 
 /**
  * 将带有 alt 文本的图片转换为包含 figcaption 的 figure 元素的 rehype 插件
@@ -12,6 +13,42 @@ export default function rehypeFigure() {
     return (tree) => {
         // 正文里第几张图（用于首图不懒加载）
         let imgIndex = 0
+
+        /* 🔴 markdown 里手写的整段 HTML（`<div class="dis">…<img>…</div>`）在 hast 树里是
+           **raw 节点**，不是 element —— `visit(tree, "element")` 根本看不见它。
+           2026-11-11 实测：33 篇里 12 个 img 因此完全没有 loading / alt / decoding
+           （都藏在 100daysCSS 那几篇的 raw HTML 里）。这段单独扫 raw，只改 <img> 开标签，
+           其余字节原样保留。
+           ⚠️ 这里**不做首图 eager**：正文第一张那个计数只在 element 分支里维护，
+           raw 里的图一律 lazy（它们都在演示块内部，本来就不是 LCP 元素）。 */
+        visit(tree, "raw", node => {
+            const { value } = transformRawImages(node.value, tag => {
+                let out = tag
+                if (!rawHasAttr(tag, "loading")) {
+                    out = appendRawAttr(out, "loading", "lazy")
+                }
+                if (!rawHasAttr(out, "decoding")) {
+                    out = appendRawAttr(out, "decoding", "async")
+                }
+                if (!rawHasAttr(out, "alt")) {
+                    out = appendRawAttr(out, "alt", "")
+                }
+                // 站内图补 referrerpolicy / 尺寸（与 element 分支同一套规则）
+                const src = readRawSrc(out)
+                if (src && shouldAddNoReferrer(src) && !rawHasAttr(out, "referrerpolicy")) {
+                    out = appendRawAttr(out, "referrerpolicy", "no-referrer")
+                }
+                if (src && !rawHasAttr(out, "width") && !rawHasAttr(out, "height")) {
+                    const size = getPublicImageSizeSync(src)
+                    if (size) {
+                        out = appendRawAttr(out, "width", String(size.width))
+                        out = appendRawAttr(out, "height", String(size.height))
+                    }
+                }
+                return out
+            })
+            node.value = value
+        })
 
         visit(tree, "element", (node, index, parent) => {
             // 只处理 img 元素

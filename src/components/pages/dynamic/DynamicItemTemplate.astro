@@ -64,7 +64,10 @@ const isDev = import.meta.env.DEV
 						title="上一张图片">
 						<Icon name="material-symbols:chevron-left-rounded" aria-hidden="true" />
 					</button>
-					<img class="dynamic-gallery-main-image" data-gallery-main alt="" />
+					{/* alt 留空是有意的（装饰性缩略图，真正的说明在下方画廊里）；
+					   但 loading 不能省：这张是由 JS 换 src 的，默认行为会立刻发请求，
+					   而它在动态条目内部、通常远在首屏之外。2026-11-11 补。 */}
+					<img class="dynamic-gallery-main-image" data-gallery-main alt="" loading="lazy" decoding="async" />
 					<button
 						type="button"
 						class="btn-plain dynamic-gallery-nav dynamic-gallery-next"

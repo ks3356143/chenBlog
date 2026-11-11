@@ -3,9 +3,52 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-11（第四十九批：第一批现代方案 7 项，已上线 V0.1.103）**。
+> 最后更新：**2026-11-11（第五十批：第一梯队视觉特效 4 项，已上线 V0.1.104）**。
 >
-> **🔧 2026-11-11（第四十九批：第一批「能自己动手」的 7 项，V0.1.103）**
+> **🔧 2026-11-11（第五十批：第一梯队「炫酷化」4 项 + 2 项核实，V0.1.104）**
+> 用户「第一梯队全部做了吧」，那 6 项里 **4 项实现、1 项核实已存在、1 项评估后不做**。
+> ① 🟢 **A3 噪点质感层**：全屏一层极淡胶片颗粒，`SVG feTurbulence` 内联成 data URI
+>    （**零额外请求**，base64 PNG 要 ~2KB 且进不了 CSS 缓存）。
+>    数值是调出来的：`baseFrequency=0.8`（<0.5 变雪花、>1.2 看不出）、`numOctaves=3`、
+>    不透明度 **0.022 亮 / 0.03 暗**（0.05 就像低画质截图）。亮用 `multiply`、暗用 `screen`。
+>    `prefers-reduced-motion` / `prefers-contrast: more` / `forced-colors` 三种情况**整层 display:none**。
+> ② 🟢 **B3 磁性按钮**：指针靠近小控件时被"吸"最多 **3px**，半径 48px，rAF 节流。
+>    只标了 6 个（分页左右箭头 + 返回顶部）：**大卡片用会显得晃**。
+>    实测靠近 `--mag-x: 2.00px`、移开归位 `0px`；`(hover: none)` 触屏环境下 JS 直接不挂、
+>    CSS 也 `translate: none` 兜底，实测移动端 `translate=none`。
+>    ⚠️ 用 `translate` 属性而不是 `transform`：按钮上已有 `active:scale-*`，Tailwind v4 的
+>    `scale-*` 也走独立属性，两者分开写才不互相覆盖。
+> ③ 🟢 **C1 首页大标题流光**：**刻意不用** `background-clip:text` + 透明填充那个常见写法 ——
+>    透明填充会把 `text-shadow` 一起吃掉，而那道阴影正是标题压在壁纸上的可读性来源。
+>    改成**独立扫光带**（伪元素 + `mix-blend-mode: screen`），完全不碰文字渲染。
+>    实测：文字色仍 `rgb(255,255,255)`、阴影仍 `rgba(0,0,0,.8) 2px 2px 8px`、`::after` blend=`screen`。
+>    扫**一遍就停**（2.4s，不无限循环），reduced-motion 下 `animation:none`。
+> ④ 🟢 **G3 代码块复制成功扩散圈**：
+>    · 换色：覆盖 EC 的 `--ec-frm-tooltipSuccessBg/Fg`（原来亮 `#008900` / 暗 `#5c7f42`，跟品牌色脱节）；
+>    · 加动效：`.copy button::after` 做一个从中心扩出淡出的主色环。
+>    ⚠️ EC 的复制是**它自己的脚本**处理的、不给任何钩子 → 必须自己委托。
+>      用 `pointerdown` + **捕获阶段**（比等 `click` 跟手），给按钮加 `.is-copied`；
+>      播完靠 `animationend` + 700ms 兜底摘类（否则第二次点不重播）。走 `reinitOnce`（十-14）。
+>    实测：点击 → `is-copied=true` + `animationName=ec-copy-ring` → 900ms 后自动摘 → 二次可重播；
+>    EC 自己的「复制成功」气泡仍正常出现（没破坏原行为）。
+> ⑤ ✅ **F1 圆形擦除切主题：已经存在**，`ThemeIcon.astro` 早就有完整实现（View Transition +
+>    `clip-path: circle()` + 从按钮中心算半径）。**没有重复实现**，只做了核实：
+>    实测 `startViewTransition` 被调用、`--vt-x: 1144.8px`、`--vt-r: 1435px`、7 条 view-transition 规则在样式表里。
+> ⑥ ⛔ **E2 scroll-driven CSS：评估后不替换**。支持度全绿（`animation-timeline: view()` /
+>    `animation-range` 都 `CSS.supports` 为 true，`getAnimations()` 也能拿到 `ViewTimeline`），
+>    但**在这个环境里 `currentTime` 恒 `null`、`progress` 恒 `null`，滚动 0 → 1200 → 底 三次采样
+>    opacity 全部恒为 1** → 无法证明"元素进入视口时真的从 0 动到 1"。
+>    现有 IntersectionObserver 方案**有实测数字**（滚到底 10/10 完成、回滚不重播），
+>    换成一个我验证不了推进的机制不划算 → **保持现状**。
+>
+> 📋 验收：**本地 12/12、线上 12/12**（含 312 组回归）。线上那一轮 312 组里**有 1 组报了 requestfailed**，
+> 单独重跑 3 次全是 0 → **线上网络抖动，不是回归**。
+> 另查到 `/posts/testplantai/` 有 **2 张 `src=null` 的 lazy 图**（`data-src=/assets/wechat-qr.webp`，
+> 微信二维码第一次点开才赋值）→ **设计如此，不是坏图**。
+> `build` 0 error / **53 page(s)**；`check` **0 error / 3 hint**（基线不变）；`docs:check` 0 错 0 警；
+> `dist` **546 文件 / 52 index.html**（与上一批相同，本批纯 CSS/JS，无新页面）。
+>
+> **🔧 2026-11-11（第四十九批：第一批现代方案 7 项，V0.1.103）**
 > 用户「只做第一批」。全部落地并线上复验。
 > ① **modulepreload**（新增 `scripts/inject-modulepreload.mjs`，挂在 build 链的 inject-preload 之后）：
 >    产物里 `<script type="module" src>` 有 5 个，浏览器要解析到标签才开始下（串行瀑布）；
@@ -2534,23 +2577,23 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-11 第四十九批实测；线上 = V0.1.103**，已部署）
+## 三、当前状态快照（**2026-11-11 第五十批实测；线上 = V0.1.104**，已部署）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `6e36479`（V0.1.103 第一批现代方案 7 项），**已推送、`HEAD == origin/main`、工作区计数 0** |
-| 工作区 | 本批动 **10 项**：新增 `scripts/inject-modulepreload.mjs`、`src/pages/atom.xml.js`、`src/pages/rss/index.astro`；改 `src/styles/global.css`(+3 组规则)、`src/layouts/BaseLayout.astro`(+skip link)、`src/components/SEO.astro`(+atom 发现链接)、`src/components/commons/Pagination.astro`(+跳页)、`src/components/layout/Footer.astro`(+订阅)、`src/config/navBarConfig.ts`(+订阅项)、`package.json`(build 链 + version) |
-| 线上站点 | ✅ **2026-11-11 18:26 部署 V0.1.103**（替换前 8 条断言：版本、pagefind、`/atom.xml`、`/rss/`、modulepreload、skip link、page-jump 全在）。**线上实测**：`ver 0.1.103`、**21/21 + 11/11 全绿** |
+| 本地 HEAD | `8b787f9`（V0.1.104 第一梯队视觉特效 4 项），**已推送、`HEAD == origin/main`、工作区计数 0** |
+| 工作区 | 本批动 **9 项**：新增 `src/components/features/CopyRing.astro`、`src/components/features/MagneticButtons.astro`；改 `src/styles/global.css`(+126 噪点/磁性/复制环)、`src/styles/layout-style.css`(+56 标题流光)、`src/layouts/BaseLayout.astro`(+噪点层)、`src/layouts/Layout.astro`(+2 组件)、`src/components/commons/FloatingButton.astro`(+`data-magnetic`)、`src/components/commons/Pagination.astro`(+2 处 `data-magnetic`)、`package.json`(version) |
+| 线上站点 | ✅ **2026-11-11 19:18 部署 V0.1.104**（替换前 7 条断言：版本、pagefind、`noise-overlay`、`data-magnetic`、`ec-copy-ring`、`banner-title-sheen` 全在）。**线上实测**：`ver 0.1.104`、**12/12 全绿**（含 312 组） |
 | 服务器配置 | 本批**未动服务器** |
-| 本地构建 | V0.1.103 = **546 个文件 / 52 个 `index.html`**（544/51 + `/rss/index.html` 与 `atom.xml`）。`build` **0 error** / **53 page(s)** / 5.78s、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
+| 本地构建 | V0.1.104 = **546 个文件 / 52 个 `index.html`**（与 V0.1.103 相同，本批纯 CSS/JS）。`build` **0 error** / 53 page(s) / 5.79s、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
 | 依赖 | 本批**零改动**（仍 `astro 7.4.10` / `katex 0.18.11` / `vite 8.3.8`，天花板只剩 `typescript 6.0.3`） |
-| dev / preview server | 本批起过 `npm run preview` 做本地验证，**收尾已精确杀掉并复查计数 = 0** |
-| 服务器回滚资产 | `dist.old`（= V0.1.102）+ **110 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
+| dev / preview server | 本批起过 `npm run preview`，**收尾已精确杀掉并复查计数 = 0** |
+| 服务器回滚资产 | `dist.old`（= V0.1.103）+ **111 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
 | 临时文件 | 收尾已清 `%TEMP%` 下本批全部 `.mjs` / `.cjs` / `.log` / `.tar.gz` |
-| 待用户拍板 | **本批新增 0 条**。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32）。**第二批（友链/打赏/书签）与第三批（播放器/背景视频/壁纸四模式/瀑布流）都还没动** |
-| 既有小坑 | 同上一批。本批**新增三条**：① 纯 SSG 下 `Response` 里设的 Content-Type **不生效**（静态文件由 nginx 按扩展名给）；② `window.__xxx` 自定义属性会让 `astro check` 报 ts(7027)，**容器内脚本一律用 `reinitOnce`**（十-14 的又一条实证）；③ 分页现在是 **4 页**不是 3 页 |
+| 待用户拍板 | **本批新增 0 条**。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32）。**第二梯队特效（极光背景 / 逐字解码 / 渐变呼吸文字 / 命令面板 / WebGL 流体）一件未动** |
+| 既有小坑 | 同上一批。本批**新增三条**：① 想给元素加"扫光"**不要用 `background-clip:text` + 透明填充**（会吃掉 `text-shadow`，标题压在壁纸上就不可读了）→ 用独立伪元素光带 + `mix-blend-mode`；② EC 的复制按钮**没有任何钩子**，只能在 `pointerdown` 捕获阶段自己加类；③ `animation-timeline` 在本环境**能解析但 `currentTime` 恒 null、opacity 恒 1**，无法验证推进 → 别拿它替换有实测数据的老方案 |
 
 ---
 ## 四、维护本文件的规矩

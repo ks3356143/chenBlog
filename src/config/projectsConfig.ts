@@ -6,7 +6,7 @@
 //
 // 🔴 图标名只能用**项目真装了的**集合：
 //   · src/icons/ 下自带的（github / arrow-right / about ...，写裸名即可）
-//   · material-symbols / fa-solid / fa6-solid / fa7-solid / mingcute（写全集名）
+//   · material-symbols / fa7-solid / mingcute（写全集名）
 //   ⚠️ fa7-brands / simple-icons / fa7-regular / mdi **都没装** —— 照抄参考站的
 //   fa7-brands:github 会把构建打挂（AGENTS 五-29）。GitHub 图标用自带的 "github"。
 //

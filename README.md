@@ -26,11 +26,11 @@
 | 内容 | MDX + Content Collections | `@astrojs/mdx` **8.0.2** | schema 在 `src/content.config.ts`，字段与集合校验在构建期完成 |
 | Markdown 处理 | `@astrojs/markdown-remark` | **7.3.1** | ⚠️ 必须显式声明为直接依赖（`astro.config.mjs` 直接 import 它，而 astro 与 mdx 都只把它列为 peer） |
 | 代码高亮 | [astro-expressive-code](https://expressive-code.com) | 0.44.2 | one-light / one-dark-pro；超 15 行的代码块自动折叠、预览前 8 行；带语言徽章与行号插件 |
-| 图表 / 公式 | Mermaid **11.17.2** / KaTeX **0.18.7** | — | `astro-mermaid` + `remark-math` + `rehype-katex` |
+| 图表 / 公式 | KaTeX **0.18.7** | — | `remark-math` + `rehype-katex`；**CSS 按需加载**（`src/utils/math-utils.ts` 判正文有无公式 → 有才挂 `/vendor/katex/katex.css`）。Mermaid 已于 2026-11-11 整包卸载（33 篇零使用），要画图见 `astro.config.mjs` 的说明 |
 | 页面过渡 | [Swup](https://swup.js.org) | **4.10.0** | 只替换 `#swup-container`；容器内脚本由自写的 `content:replace` 钩子重执行 |
 | 站内搜索 | [Pagefind](https://pagefind.app) | **1.5.2** | 构建后生成静态索引到 `dist/pagefind/`，随产物一起部署，零后端 |
 | 图库 | `@fancyapps/ui`（Fancybox） | 6.1.15 | 相册灯箱，点击时才动态 `import` |
-| 图标 | `astro-icon` 1.2.0 + Iconify | — | 已装的集合：`material-symbols` / `fa-solid` / `fa6-solid` / `fa7-solid` / `mingcute` + `src/icons/` 本地图标 |
+| 图标 | `astro-icon` 1.2.0 + Iconify | — | 已装的集合：`material-symbols` / `fa7-solid` / `mingcute` + `src/icons/` 本地图标（`fa-solid` / `fa6-solid` 于 2026-11-11 卸载：全站零引用） |
 | RSS / sitemap | `@astrojs/rss` 4.0.19 / `@astrojs/sitemap` 3.7.4 | — | |
 | 图片处理 | `sharp` 0.35.5 | — | 全站统一输出 webp（质量 80）；图标与封面由脚本从 SVG 生成 |
 | Markdown 工具链 | `markdown-it` / `sanitize-html` / `remark-directive` / `rehype-callouts` / `remark-sectionize` / `reading-time` 等 | — | RSS 正文净化、`:::` 提示框、阅读时长等 |
@@ -106,12 +106,12 @@ frontmatter 常用字段：`title` `published` `updated` `description` `tags` `c
 
 ## 已知约束
 
-- **`mermaid` 停在 11.x、`typescript` 停在 6.x 是硬天花板**：分别被 `astro-mermaid` 与
-  `@astrojs/svelte` 的 peer 声明卡住，硬升会让 `npm ci` 直接 ERESOLVE 失败。
+- **`typescript` 停在 6.x 是硬天花板**：被 `@astrojs/svelte` 的 peer 声明卡住，硬升会让 `npm ci` 直接 ERESOLVE 失败。
+  （`mermaid` 的 11.x 天花板已不适用 —— 该包于 2026-11-11 整包卸载，见上表。）
 - **`@astrojs/markdown-remark` 必须保持显式依赖**（见上表说明），删掉它整个 Astro 配置加载会失败、连 dev 都起不来。
 - 改了 `src/plugins/**` 或 `astro.config.mjs` 里的 markdown 处理链后，需要删 `node_modules/.astro/data-store.json`
   再构建——Astro 的内容层缓存在那里，插件源码变了它不失效。
-- **`mermaid` / `typescript` 的天花板见上；另外改 `.astro`/`.svelte` 后用 `npm run check` 查类型**（`tsc` 只看 `src/**/*.ts`）。
+- **`typescript` 的天花板见上；另外改 `.astro`/`.svelte` 后用 `npm run check` 查类型**（`tsc` 只看 `src/**/*.ts`）。
 - 改了 markdown 处理链要清 `node_modules/.astro/data-store.json`（见上一条），**build 退出码 0 不等于产物是新的**。
 - 依赖走 npmmirror 时 `npm audit` 会报 `404 NOT_IMPLEMENTED`，要审计得显式换官方源：
   `npm audit --registry=https://registry.npmjs.org`。

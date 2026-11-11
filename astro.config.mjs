@@ -12,7 +12,13 @@ import { siteConfig } from "./src/config/siteConfig"
 import { unified } from "@astrojs/markdown-remark"
 
 // mermaid
-import mermaid from "astro-mermaid"
+// 2026-11-11 **整包卸载**（mermaid 84.1MB + astro-mermaid）：全站 33 篇里
+// ```mermaid 围栏 **0 个**、pre.mermaid **0 个**，产物里一个 mermaid chunk 都没有
+// （上一版已注释掉挂载，只是把包留在 node_modules 里占位）。
+// 剩下一批 `.mermaid-*` CSS 规则（产物 32 条 / 3066 B）是**给将来画图预留的样式**，
+// 留在 markdown-extend.styl 里不影响任何现有页面；将来要画 mermaid 图，
+// 重新 `npm i mermaid astro-mermaid` 并在此处挂回 `mermaid({...})` 即可。
+// import mermaid from "astro-mermaid"
 // mdx
 import mdx from "@astrojs/mdx"
 
@@ -68,14 +74,14 @@ export default defineConfig({
         },
     },
     integrations: [
-        // ── mermaid（按需启用，2026-11-04 改）──────────────────────────────
+        // ── mermaid（2026-11-11 整包卸载，别急着加回）────────────────────
         // astro-mermaid 用 injectScript('page', ...) 把客户端脚本注入**每一个页面**，
         // 并在 config 里 optimizeDeps.include = ['mermaid'] → 整个 mermaid 进了主产物。
-        // 实测：产物里一个 646.6KB 的 mermaid chunk、52 个 HTML 对它引用数为 0，
+        // 实测（卸载前）：产物里一个 646.6KB 的 mermaid chunk、52 个 HTML 对它引用数为 0，
         // 同时是 vite「chunks larger than 500 kB」告警的唯一来源；
         // 而全站 33 篇里 ```mermaid 围栏 0 个、pre.mermaid 0 个，这段脚本永远不会执行。
-        //
-        // 所以默认不挂载。以后要写 mermaid 图，把下面这行取消注释即可（功能完全保留）。
+        // 2026-11-04 已先摘掉挂载；2026-11-11 把 mermaid 84.1MB + astro-mermaid 一起卸了。
+        // 要画图时：`npm i mermaid astro-mermaid` → 取消下面这行的注释 → 记得同步 .mermaid-* 那批样式。
         // mermaid({ theme: "forest", autoTheme: true }),
         icon({
             include: {

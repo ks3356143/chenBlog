@@ -4,7 +4,6 @@ import { render } from "astro:content"
 import { getSortedPosts, getRelatedPosts, getSeriesPosts } from "@/utils/content-utils"
 import Layout from "@/layouts/Layout.astro"
 import Markdown from "@/components/commons/Markdown.astro"
-import KatexManager from "@/components/features/KatexManager.astro"
 import RecommendedPost from "@/components/layout/subcomps/RecommendedPost.astro"
 import ReadingProgress from "@/components/features/ReadingProgress.astro"
 import SeriesNav from "@/components/misc/SeriesNav.astro"
@@ -14,6 +13,7 @@ import CoverImage from "@/components/commons/CoverImage.astro"
 import CopyShare from "@/components/commons/CopyShare.astro"
 import { getPostUrlBySlug } from "@/utils/url-utils"
 import { url } from "@/utils/url-utils"
+import { hasMath } from "@/utils/math-utils"
 import Comment from "@/components/comment/index.astro"
 
 // 文章详情页面
@@ -54,11 +54,22 @@ const relatedPosts = await getRelatedPosts(post, 5)
 
 // 所属系列（未设 series 时为 null，不渲染系列导航盒）
 const seriesData = await getSeriesPosts(post)
+
+/* KaTeX 的 CSS 只在**这篇真有公式**时才加载（2026-11-11）。
+   原先无条件加：33 篇文章里公式使用数是 **0**，但每页都白下 27.9KB CSS（gzip 7.8KB）
+   + dist 里 19 个字体文件 250KB。判据在 src/utils/math-utils.ts，
+   已拿 remark-math 的真实解析结果逐条对齐（15 个样例全一致）。
+   ⚠️ 加了公式的文章会自动恢复加载，不需要任何额外操作。 */
+const postHasMath = hasMath(post.body)
 ---
 
 <Layout title={post.data.title} description={post.data.description || undefined} bannerPostMeta={bannerPostMeta} postSlug={post.id} headings={headings} frontmatter={remarkPluginFrontmatter}>
-    <!-- KaTeX加载css - 仅在文章页面 -->
-    <KatexManager slot="head" />
+    <!-- KaTeX 的 CSS 只在正文真有公式时才加载。
+         ⚠️ 走 public/ 静态 <link>，**不能**改成组件里 import CSS：
+         2026-11-11 实测，Astro/Vite 会把被 import 的 CSS 无条件挂进该页产物
+         （条件渲染、甚至 await import() 都拦不住，33/33 页照样引用）。
+         字体只在页面上真出现字形时才下载，没公式的页面零请求。 -->
+    {postHasMath && <link rel="stylesheet" href="/vendor/katex/katex.css" />}
     <!-- 阅读进度条：只在文章页存在 -->
     <ReadingProgress />
     <div class="relative mb-4 flex w-full flex-col overflow-hidden">

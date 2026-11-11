@@ -359,10 +359,10 @@
       第二份点不开**。折叠规则也因此放全局（`mainSingles.css` 的 `.site-info-*`），且折叠层
       `.site-info-detail` 自身**不带任何 padding**（padding 全在内层），否则 `border-box` 下 `max-height:0`
       连内边距一起算、收起后仍漏一条缝。收起时给折叠层 `inert`，不然 Tab 会走进看不见的值。
-    - ⚠️ **图标只能用本项目真装了的集合**：`material-symbols` / `fa-solid` / `fa6-solid` / `fa7-solid` /
+    - ⚠️ **图标只能用本项目真装了的集合**：`material-symbols` / `fa7-solid` /
       `mingcute` + `src/icons/` 本地图标。注意 **`astro.config.mjs` 的 `icon({include})` 里还写着
       `mdi` / `simple-icons` / `fa7-brands` / `fa7-regular`，但这四个包根本没装**
-      （`node_modules/@iconify-json/` 下只有那五个）——配置看着支持其实不支持。
+      （2026-11-11 又卸掉 `fa-solid` / `fa6-solid` 两个零引用包 → `node_modules/@iconify-json/` 下只剩三个）。
       **照抄参考站的图标名会把构建直接打挂**：本次抄它的 `mdi:clover` 就报
       `Unable to locate the "mdi" icon set!`，退出码 1，**而且 `dist/` 已被清空**（别以为产物还在）。
       → 那四行假配置 2026-09-30 用户拍板**先不删也不装包**，见到别当新发现。要 Node/pnpm 之类的品牌 logo

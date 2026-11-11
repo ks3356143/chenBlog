@@ -141,7 +141,6 @@ const isHomePage = pathname === "/" || /^\/\d+$/.test(pathname)
                                 <h1 class="sr-only">{title ?? siteConfig.siteMeta.name}</h1>
                             )
                         }
-                        <!-- TODO:网格布局的页面展示 -->
                         <div id="content-wrapper" class="onload-animation transition-leaving">
                             <slot />
                         </div>

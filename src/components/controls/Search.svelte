@@ -358,13 +358,36 @@
 	   颜色一律 color-mix(in oklch, var(--primary) …) 跟随主题色相。 */
 
 	.search-shell {
-		/* 只过渡这四条：背景色 + 描边 + 阴影 + 底部扫描线的 transform。
-		   不要写 transition-all —— 会把 width 也拉进来，聚焦展宽变成二次动画。 */
+		/* 只过渡这三条：背景色 + 描边 + 阴影。
+		   ⚠️ 这里**不能**写 transition-all —— 壳子的宽度是被输入框撑出来的，
+		      自己再过渡一遍 width 就会和输入框的过渡叠成"二次动画"。 */
 		transition:
 			background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
 			border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
 			box-shadow 0.24s cubic-bezier(0.4, 0, 0.2, 1);
 		border: 1px solid transparent;
+		/* 壳子宽度由内容撑开，但**要让它在输入框改宽度时跟着平滑伸缩**：
+		   给壳子也加一条 width 过渡是无效的（它的 width 不是显式值，是 auto），
+		   所以真正的做法见下面的 input —— 壳子会逐帧跟随。 */
+	}
+
+	/* 🔴 聚焦展宽动画（2026-11-11 修复回归）。
+	   改造前模板上有 `transition-all duration-200`；我为了"把过渡集中到 <style>"
+	   把它删了，结果连该有的 width 过渡也一起删掉 → 实测聚焦瞬间从 160 跳到 240，
+	   400ms 内**只出现过 1 个宽度值**、`getAnimations()` 为空。
+	   现在只过渡 width 一个属性：既恢复动画，又不会像 transition-all 那样把
+	   背景/描边也拉进来（那两条在外层壳子上已有各自的时长）。
+	   ⚠️ 时长/缓动对齐全站：0.28s + cubic-bezier(0.4, 0, 0.2, 1)。
+	   ⚠️ 只对桌面内联框生效（移动端面板里的输入框是 w-full，不需要这条）。 */
+	.search-shell input {
+		transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	/* 减少动态效果：宽度直切（不做展宽动画，但功能不受影响） */
+	@media (prefers-reduced-motion: reduce) {
+		.search-shell input {
+			transition: none;
+		}
 	}
 
 	/* 底部扫描线：伪元素放渐变条，聚焦时 scaleX 0→1。

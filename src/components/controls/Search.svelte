@@ -11,6 +11,10 @@
 	let loading = $state(false);
 	let devNotice = $state(false);
 	let mobileOpen = $state(false);
+	/** 防抖等待中（300ms 窗口）。放大镜的旋转要覆盖这一段，
+	 *  否则用户打完字到出结果之间那 300ms 是"什么都没转"的静止期，
+	 *  真正转起来的只有请求往返那几十毫秒，肉眼基本看不见。 */
+	let pending = $state(false);
 	/** @type {HTMLInputElement | null} */
 	let desktopInput = $state(null);
 	/** @type {HTMLInputElement | null} */
@@ -56,10 +60,11 @@
 		if (!q) {
 			results = [];
 			loading = false;
+			pending = false;
 			return;
 		}
 		const mod = await ensureIndex();
-		if (!mod) return;
+		if (!mod) { pending = false; return; }
 		const id = ++reqId;
 		loading = true;
 		try {
@@ -70,13 +75,18 @@
 		} catch {
 			if (id === reqId) results = [];
 		} finally {
-			if (id === reqId) loading = false;
+			if (id === reqId) {
+				loading = false;
+				pending = false;
+			}
 		}
 	}
 
 	$effect(() => {
 		const q = query.trim();
 		clearTimeout(timer);
+		// 打字当下就进"搜索中"：让放大镜从第一个字符开始转，覆盖防抖那 300ms
+		pending = q.length > 0;
 		timer = setTimeout(() => runSearch(q), 300);
 		return () => clearTimeout(timer);
 	});
@@ -97,6 +107,7 @@
 		query = "";
 		results = [];
 		loading = false;
+		pending = false;
 	}
 
 	/**
@@ -192,12 +203,21 @@
 
 <div class="relative flex items-center" data-search-root>
 	<!-- 桌面：内联扩展输入框。图标 16px 与导航项图标（astro-icon 的 1em / 16px）同尺寸，
-	     文字 16px 粗体与导航标签一致；放大镜靠 top-1/2 -translate-y-1/2 纵向居中 -->
+	     文字 16px 粗体与导航标签一致；放大镜靠 top-1/2 -translate-y-1/2 纵向居中。
+
+	     🔴 2026-11-11「够不够炫酷」这批改的（改前它只有淡灰底 + 聚焦时底色加深，没有任何描边/光晕/动效）：
+	     ① 聚焦：品牌色 1px 内描边 + 3px 外扩光晕 + 一层向下投影（三件套与 .post-card 的 hover 同一套 color-mix 配方）；
+	     ② 底部扫描线：2px 渐变条从左侧 scaleX(0)→1 扫开，直角语言、不用圆角；
+	     ③ 放大镜：静止 text-50，聚焦变品牌色并放大 8%；**搜索中整圈旋转**（替代干等）；
+	     ④ Ctrl K 胶囊：聚焦后淡出并右移让位，不跟输入内容打架。
+	     ⚠️ transition 全部写在本组件 <style> 里，**模板上不再挂 transition-colors** ——
+	        Svelte 的 scoped 样式与 Tailwind 工具类同特异性，靠注入顺序决定胜负，太脆。 -->
 	<div
-		class="relative hidden lg:flex items-center h-10 mr-2 bg-black/4 transition-colors hover:bg-black/6 focus-within:bg-black/6
+		class="search-shell relative hidden lg:flex items-center h-10 mr-2 bg-black/4 hover:bg-black/6 focus-within:bg-black/6
 		       dark:bg-white/5 dark:hover:bg-white/10 dark:focus-within:bg-white/10"
+		class:is-searching={loading || pending}
 	>
-		<svg width="16" height="16" viewBox="1.4 1.1 13.8 13.8" fill="none" aria-hidden="true" class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-50">
+		<svg width="16" height="16" viewBox="1.4 1.1 13.8 13.8" fill="none" aria-hidden="true" class="search-icon pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-50">
 			<path
 				d="M7.667 12.667A5.333 5.333 0 1 0 7.667 2a5.333 5.333 0 0 0 0 10.667ZM14.334 14l-2.9-2.9"
 				stroke="currentColor"
@@ -213,16 +233,15 @@
 			aria-label="站内搜索"
 			aria-keyshortcuts="Control+K Meta+K"
 			autocomplete="off"
-			class="h-full w-40 border-0 bg-transparent pl-8 pr-14 text-base font-bold outline-none transition-all duration-200
-			       placeholder:text-30 focus:w-60 active:w-60"
+			class="h-full w-40 border-0 bg-transparent pl-8 pr-14 text-base font-bold outline-none placeholder:text-30 focus:w-60 active:w-60"
 			bind:value={query}
 			onfocus={ensureIndex}
 			onkeydown={onKeydown}
 		/>
-		<!-- 快捷键提示：输入框失焦且为空时显示，聚焦后让位给文字（w-60 时右侧仍有空位） -->
+		<!-- 快捷键提示：输入框为空时显示，聚焦后淡出（不再和光标/输入内容抢同一块空间） -->
 		{#if !query.trim()}
 			<kbd
-				class="pointer-events-none absolute right-2.5 hidden items-center gap-0.5 text-[11px] font-medium leading-none text-30 lg:flex"
+				class="search-kbd pointer-events-none absolute right-2.5 hidden items-center gap-0.5 text-[11px] font-medium leading-none text-30 lg:flex"
 				aria-hidden="true"
 			>
 				<span class="rounded-sm border border-(--line-divider) bg-(--card-bg)/60 px-1 py-0.5">{modKey}</span>
@@ -332,6 +351,104 @@
 </div>
 
 <style>
+	/* ══ 桌面搜索框（2026-11-11 重做交互观感）══════════════════════════════════
+	   改前：只有淡灰底，聚焦时底色加深一档 —— 全站唯一「点了没反馈」的输入控件。
+	   改后四件套：品牌色描边 + 外扩光晕 + 底部扫描线 + 放大镜转圈。
+	   设计语言对齐全站：**直角**（本站面板一律无圆角）、缓动 cubic-bezier(0.4,0,0.2,1)、
+	   颜色一律 color-mix(in oklch, var(--primary) …) 跟随主题色相。 */
+
+	.search-shell {
+		/* 只过渡这四条：背景色 + 描边 + 阴影 + 底部扫描线的 transform。
+		   不要写 transition-all —— 会把 width 也拉进来，聚焦展宽变成二次动画。 */
+		transition:
+			background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+			border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+			box-shadow 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+		border: 1px solid transparent;
+	}
+
+	/* 底部扫描线：伪元素放渐变条，聚焦时 scaleX 0→1。
+	   用 transform 而不是 width —— 前者走合成器、不触发重排（同卡片流光那条口径）。 */
+	.search-shell::after {
+		content: "";
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 2px;
+		transform: scaleX(0);
+		transform-origin: left center;
+		background: linear-gradient(
+			90deg,
+			color-mix(in oklch, var(--primary) 0%, transparent) 0%,
+			var(--primary) 45%,
+			color-mix(in oklch, var(--primary) 60%, transparent) 100%
+		);
+		transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+		pointer-events: none;
+	}
+	.search-shell:focus-within::after {
+		transform: scaleX(1);
+	}
+
+	.search-shell:focus-within {
+		border-color: color-mix(in oklch, var(--primary) 55%, transparent);
+		box-shadow:
+			0 0 0 3px color-mix(in oklch, var(--primary) 14%, transparent),
+			0 6px 18px -8px color-mix(in oklch, var(--primary) 38%, transparent);
+	}
+
+	/* 放大镜：聚焦变品牌色并微放大；搜索中整圈旋转（loading 时 class:is-searching 挂到外层） */
+	.search-icon {
+		transition:
+			color 0.2s ease,
+			scale 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+	.search-shell:focus-within .search-icon {
+		color: var(--primary);
+		scale: 1.08;
+	}
+	@keyframes search-icon-spin {
+		to {
+			rotate: 360deg;
+		}
+	}
+	.search-shell.is-searching .search-icon {
+		color: var(--primary);
+		animation: search-icon-spin 0.9s linear infinite;
+	}
+
+	/* Ctrl K 胶囊：聚焦后淡出右移让位（仍在 DOM 里，只是不可见，不影响读屏） */
+	.search-kbd {
+		transition:
+			opacity 0.18s ease,
+			translate 0.18s ease;
+	}
+	.search-shell:focus-within .search-kbd {
+		opacity: 0;
+		translate: 6px 0;
+	}
+
+	/* 减少动态效果：停掉旋转与位移，只保留颜色/描边这些**静态**反馈
+	   （与全站口径一致：装饰性运动可关，颜色反馈保留） */
+	@media (prefers-reduced-motion: reduce) {
+		.search-shell,
+		.search-shell::after,
+		.search-icon,
+		.search-kbd {
+			transition: none;
+		}
+		.search-shell:focus-within::after {
+			transform: scaleX(1);
+		}
+		.search-shell.is-searching .search-icon {
+			animation: none;
+		}
+		.search-shell:focus-within .search-kbd {
+			translate: none;
+		}
+	}
+
 	/* 毛玻璃浮层：数值取自参考站编译产物（blur 20 + saturate 1.5、亮 #ffffff8c / 暗 #17171799、
 	   1px 边框、顶部 1px 内高光）。它的圆角走 --radius-large，我们没这个变量，本站一律直角。 */
 	.search-panel {

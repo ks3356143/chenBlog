@@ -28,6 +28,8 @@ import FloatingControls from "@/components/controls/FloatingControls.astro"
 // 靠 onReinit 在每趟软导航后重新标记新插入的列表项
 import ScrollReveal from "@/components/features/ScrollReveal.astro"
 import CardSpotlight from "@/components/features/CardSpotlight.astro"
+import CopyRing from "@/components/features/CopyRing.astro"
+import MagneticButtons from "@/components/features/MagneticButtons.astro"
 
 // 中间部分-分类导航栏是否显示根据配置
 const showCategoryBar = !!siteConfig.categoryBar
@@ -183,4 +185,8 @@ const isHomePage = pathname === "/" || /^\/\d+$/.test(pathname)
     <!-- 浮动片区 -->
     <FloatingControls headings={headings} />
     <ScrollReveal />
+    <!-- 代码块复制成功的扩散圈：委托在 document 上，只挂一次 -->
+    <CopyRing />
+    <!-- 磁性按钮：给小控件一点点"被吸过去"的手感（触屏/reduced-motion 自动关） -->
+    <MagneticButtons />
 </BaseLayout>

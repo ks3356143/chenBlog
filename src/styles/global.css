@@ -285,6 +285,132 @@ html {
     }
 }
 
+/* ── 代码块「复制成功」反馈（2026-11-11 G3）────────────────────────────────
+   expressive-code 的复制按钮点完会往 `.copy` 里塞一个 `.feedback` 气泡（内容是
+   `data-copied="复制成功"`），带 `.show` 类时淡入。它自带的样式是两团绿
+   （亮 `#008900` / 暗 `#5c7f42`），跟本站品牌色体系完全脱节。
+
+   修法两层：
+   ① **换颜色**：直接覆盖 `--ec-frm-tooltipSuccessBg/Fg`（EC 的 tooltip 用的就是这两个变量）；
+   ② **加一层"扩散圈"**：`.copy button` 的 `::after` 做一个从中心扩散淡出的环 ——
+      这是"点了有反馈"的关键，光换个颜色仍然只是"出现一个小方块"。
+   ⚠️ 本文件在 `ec.mogyb.css` **之后**加载（见产物里的 link 顺序：Layout.*.css → ec.*.css），
+      所以同特异性覆盖能赢；但为了不被将来 Astro 的 CSS 顺序变化影响，
+      这里的选择器都比 EC 原版多带一级 `.expressive-code`。 */
+.expressive-code {
+    --ec-frm-tooltipSuccessBg: color-mix(in oklch, var(--primary) 88%, #000);
+    --ec-frm-tooltipSuccessFg: #fff;
+}
+
+.expressive-code .copy .feedback {
+    border-radius: 0; /* 本站直角语言 */
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    box-shadow: 0 6px 18px -8px color-mix(in oklch, var(--primary) 60%, transparent);
+}
+
+/* 扩散圈：点在复制按钮上时，从按钮中心扩出一圈主色，0.5s 内放大 + 淡出 */
+.expressive-code .copy button {
+    position: relative;
+    overflow: visible;
+}
+
+.expressive-code .copy button::after {
+    content: "";
+    position: absolute;
+    inset: 50% 50%;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin: -1.25rem 0 0 -1.25rem;
+    border-radius: 50%;
+    border: 2px solid var(--primary);
+    opacity: 0;
+    pointer-events: none;
+    /* 默认不播：只有点了才加 .is-copied（见下面的 JS） */
+    transform: scale(0.4);
+}
+
+/* 复制成功瞬间由 JS 加这个类，播一次就摘 */
+.expressive-code .copy button.is-copied::after {
+    animation: ec-copy-ring 0.5s cubic-bezier(0.4, 0, 0.2, 1) 1;
+}
+
+@keyframes ec-copy-ring {
+    0% {
+        opacity: 0.9;
+        transform: scale(0.4);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(1.8);
+    }
+}
+
+/* reduced-motion：不播扩散圈，只保留颜色变化（气泡仍会淡入，那是 EC 自带的行为） */
+@media (prefers-reduced-motion: reduce) {
+    .expressive-code .copy button.is-copied::after {
+        animation: none;
+    }
+}
+
+/* ── 噪点质感层（2026-11-11 A3）─────────────────────────────────────────
+   全屏一层极淡的胶片颗粒，让纯色背景不"塑料"。
+   实现：SVG `feTurbulence` 内联成 data URI 当 background-image。
+   🔴 三个数值都是实测调出来的，别随手改：
+   ① `baseFrequency="0.8"` —— 小于 0.5 颗粒变大成"雪花"，大于 1.2 细到看不出；
+   ② `numOctaves="3"` —— 1 层太规整（能看出重复网格），4 层开始吃解析时间；
+   ③ 不透明度 **0.022（亮）/ 0.03（暗）** —— 0.05 就像低画质截图了。
+   ⚠️ 只在支持 `background-image` 的浏览器上出现，`pointer-events: none` 保证不吃点击。
+   ⚠️ 层在 body 最前面但 `z-index: 0` + `isolation`，不会盖住正文（正文容器都是 z-10 以上）。 */
+.noise-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.022;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    /* 屏幕混合：亮色背景上变亮、暗色背景上不变脏 */
+    mix-blend-mode: multiply;
+}
+
+:root[data-theme="dark"] .noise-overlay {
+    opacity: 0.03;
+    mix-blend-mode: screen;
+}
+
+/* 减少动态效果 / 高对比度 / 强制配色：这三类用户都不该看到干扰性纹理 */
+@media (prefers-reduced-motion: reduce), (prefers-contrast: more), (forced-colors: active) {
+    .noise-overlay {
+        display: none;
+    }
+}
+
+/* ── 磁性按钮（2026-11-11 B3）───────────────────────────────────────────
+   鼠标靠近时按钮被"吸"过去一小段（3px 级），移开后弹回。
+   只作用于**小控件**：分页箭头、返回顶部的圆形按钮 —— 大卡片用会显得晃。
+   实现靠 `--mag-x/--mag-y` 两个变量 + JS 在 pointermove 里写，
+   所以这里只需要声明位移与缓动；JS 见 `src/components/features/MagneticButtons.astro`。
+   ⚠️ `translate` 属性而不是 `transform`：这些按钮上已有 `active:scale-*` 之类走 transform，
+      两者分开写才不会互相覆盖（Tailwind v4 的 scale-* 也走独立属性，同理）。 */
+[data-magnetic] {
+    translate: var(--mag-x, 0px) var(--mag-y, 0px);
+    transition:
+        translate 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+        background-color 0.15s ease,
+        border-color 0.15s ease;
+    will-change: translate;
+}
+
+/* 触屏 / 减少动态 / 高对比度：完全关掉（触屏没有 hover 概念，位移只会让人以为点歪了） */
+@media (hover: none), (prefers-reduced-motion: reduce), (forced-colors: active) {
+    [data-magnetic] {
+        translate: none;
+        will-change: auto;
+    }
+}
+
 /* 文章卡片移动端列表模式布局。
    必须放全局样式表：Swup 不替换 head，而 Astro 组件 scoped 样式只存在于渲染了该组件的页面 head 里；
    若在 /archive/ 等不渲染卡片的页面整页加载后 Swup 回首页，scoped 样式缺失会让卡片退回 column 布局、

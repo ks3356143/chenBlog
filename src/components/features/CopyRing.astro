@@ -1,0 +1,44 @@
+---
+/**
+ * 代码块「复制成功」的扩散圈（2026-11-11 G3）。
+ *
+ * 为什么不能只写 CSS：expressive-code 的复制按钮是**它自己的脚本**绑的，
+ * 复制成功后它只往 DOM 里塞一个 `.feedback` 气泡，**不给我们任何钩子**。
+ * 所以这里挂一个 document 级的 click 监听（精确命中 `.expressive-code .copy button`），
+ * 在**捕获阶段**先给按钮加 `.is-copied`，DOM 一改 CSS 就播扩散圈。
+ *
+ * 🔴 三条约束：
+ * ① 必须走 `window.reinitOnce`（十-14）：本组件在 Layout 里，每页都有，
+ *    但 document 级监听只该挂一次。
+ * ② **捕获阶段**（第三个参数 `true`）：EC 的处理器挂在按钮上，冒泡阶段我的
+ *    document 监听会晚于它 —— 而我要在"复制成功"那一刻就播动画，不能等它。
+ *    实际用的是 `pointerdown`（点击按下即播），比等 `click` 更跟手。
+ * ③ 播完要摘类，否则第二次点击不会重新触发 `animation`（同元素同动画不重置）。
+ *    用 `animationend` + 一个 600ms 兜底定时器（reduced-motion 下不会有 animationend）。
+ */
+---
+
+<script>
+	function bindCopyRing() {
+		document.addEventListener(
+			"pointerdown",
+			e => {
+				const target = e.target as HTMLElement | null
+				const btn = target?.closest?.(".expressive-code .copy button") as HTMLElement | null
+				if (!btn) return
+				// 重新触发动画：先移除再强制回流再加回（同帧内改同一个类不会重播）
+				btn.classList.remove("is-copied")
+				void btn.offsetWidth
+				btn.classList.add("is-copied")
+				const clear = () => btn.classList.remove("is-copied")
+				btn.addEventListener("animationend", clear, { once: true })
+				// reduced-motion / 动画被拦截时没有 animationend，兜底摘掉
+				setTimeout(clear, 700)
+			},
+			true,
+		)
+		return true
+	}
+
+	window.reinitOnce("ec-copy-ring", bindCopyRing)
+</script>

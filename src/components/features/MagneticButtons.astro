@@ -1,0 +1,103 @@
+---
+/**
+ * 磁性按钮（2026-11-11 B3）。
+ *
+ * 鼠标靠近时按钮朝指针"被吸"一小段（最多 3px），离开后弹回。
+ * 只作用于**小控件**：分页箭头、返回顶部的圆形按钮 —— 大卡片上用会显得晃。
+ *
+ * 🔴 四条实现约束（每条都有理由）：
+ * ① **不能加在 sticky / fixed 元素上**：`translate` 会改变它们的定位基准。
+ *    返回顶部按钮是 `position: fixed` 的容器里的**子元素**（按钮本身不是 fixed），所以安全；
+ *    但祖先是 fixed 时仍要确认按钮自身没被拉伸定位 —— 它的 `inset` 是 0、靠 flex 居中。
+ * ② **半径要大、位移要小**：半径 48px、最大位移 3px。半径太小像"抖"，位移太大像"坏"。
+ * ③ **必须用 rAF 节流**：pointermove 每帧都可能触发，直接写 CSS 变量会强制同步样式计算。
+ * ④ **触摸设备与 reduced-motion 直接不挂**（CSS 那边也有兜底）：触屏没有 hover，
+ *    位移只会让人以为"点歪了"。
+ *
+ * 标记方式：给按钮加 `data-magnetic` 属性即可，不需要逐个传参。
+ * ⚠️ 分页按钮每次软导航都会被替换 → 必须委托在 document 上、按需查找最近的
+ *    `[data-magnetic]`，不能一次性 `querySelectorAll` 后绑死。
+ */
+---
+
+<script>
+	function bindMagnetic() {
+		// 触屏 / 减少动态效果：连监听都不挂
+		if (window.matchMedia("(hover: none)").matches) return true
+		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return true
+		if (window.matchMedia("(forced-colors: active)").matches) return true
+
+		const RADIUS = 48 // 感应半径（px）
+		const MAX = 3 // 最大位移（px）
+		let raf = 0
+		let lastX = 0
+		let lastY = 0
+		let current: HTMLElement | null = null
+
+		/** 把指针位置换算成位移写进变量 */
+		function apply() {
+			raf = 0
+			if (!current) return
+			const r = current.getBoundingClientRect()
+			// 注意：这里读的是**已经带位移**的矩形，会让位移有一点自反馈；
+			// 幅度只有 3px，视觉上察觉不到，换来的是不用额外记录原始位置。
+			const cx = r.left + r.width / 2
+			const cy = r.top + r.height / 2
+			const dx = lastX - cx
+			const dy = lastY - cy
+			const dist = Math.hypot(dx, dy)
+			if (dist > RADIUS) {
+				current.style.setProperty("--mag-x", "0px")
+				current.style.setProperty("--mag-y", "0px")
+				return
+			}
+			// 越近吸得越多（线性衰减）
+			const k = (1 - dist / RADIUS) * MAX
+			const nx = (dx / (dist || 1)) * k
+			const ny = (dy / (dist || 1)) * k
+			current.style.setProperty("--mag-x", `${nx.toFixed(2)}px`)
+			current.style.setProperty("--mag-y", `${ny.toFixed(2)}px`)
+		}
+
+		function schedule() {
+			if (raf) return
+			raf = requestAnimationFrame(apply)
+		}
+
+		document.addEventListener(
+			"pointermove",
+			e => {
+				const target = e.target as HTMLElement | null
+				const el = target?.closest?.("[data-magnetic]") as HTMLElement | null
+				if (current && current !== el) {
+					// 指针离开上一个按钮 → 立刻归位
+					current.style.setProperty("--mag-x", "0px")
+					current.style.setProperty("--mag-y", "0px")
+				}
+				current = el
+				if (!el) return
+				lastX = e.clientX
+				lastY = e.clientY
+				schedule()
+			},
+			{ passive: true },
+		)
+
+		// 指针离开窗口 / 滚动时归位，避免"卡住"
+		const reset = () => {
+			if (current) {
+				current.style.setProperty("--mag-x", "0px")
+				current.style.setProperty("--mag-y", "0px")
+				current = null
+			}
+		}
+		document.addEventListener("pointerleave", reset, { passive: true })
+		window.addEventListener("scroll", reset, { passive: true })
+		// 软导航换了 DOM，旧节点连同变量一起丢掉，这里只需清引用
+		document.addEventListener("swup:contentReplaced", reset)
+
+		return true
+	}
+
+	window.reinitOnce("magnetic-buttons", bindMagnetic)
+</script>

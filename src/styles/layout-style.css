@@ -175,6 +175,62 @@ html.is-wallpaper-transitioning .content-panel {
     text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8) !important; /* 增强阴影 */
 }
 
+/* 首页大标题的流光扫过（2026-11-11 C1「标题流光」）。
+   🔴 **刻意不用 `background-clip: text` + 透明填充**那个常见写法：
+      透明填充会把 `text-shadow` 一起吃掉（阴影是跟字形画的），而这道阴影正是标题
+      压在壁纸上时的可读性来源 —— 换来一条光带却丢了描边，不划算。
+   改成**一层独立的扫光带**（伪元素 + `mix-blend-mode: screen`），完全不碰文字渲染：
+   文字颜色、阴影、字重一律不动，光带只是从上面扫过去。
+   ⚠️ 只在这种「一次性大标题」上用：多起来就廉价，而且屏幕混合每帧都要重绘。
+   ⚠️ 扫一遍就停（2.4s，不无限循环），`both` 让终态停在不可见，不会闪回。 */
+@media (prefers-reduced-motion: no-preference) {
+    .banner-home-text-overlay .banner-title {
+        position: relative;
+        display: inline-block;
+    }
+
+    .banner-home-text-overlay .banner-title::after {
+        content: "";
+        position: absolute;
+        top: -0.15em;
+        bottom: -0.15em;
+        /* 左右各外扩 1em，让光带进出时不"凭空出现" */
+        left: -1em;
+        right: -1em;
+        pointer-events: none;
+        background: linear-gradient(
+            100deg,
+            transparent 0%,
+            transparent 42%,
+            color-mix(in oklch, var(--primary) 70%, #ffffff) 50%,
+            transparent 58%,
+            transparent 100%
+        );
+        background-size: 250% 100%;
+        background-position: 120% 0;
+        opacity: 0.55;
+        mix-blend-mode: screen;
+        animation: banner-title-sheen 2.4s cubic-bezier(0.4, 0, 0.2, 1) 0.35s 1 both;
+    }
+}
+
+@keyframes banner-title-sheen {
+    from {
+        background-position: 120% 0;
+        opacity: 0;
+    }
+    18% {
+        opacity: 0.55;
+    }
+    82% {
+        opacity: 0.55;
+    }
+    to {
+        background-position: -20% 0;
+        opacity: 0;
+    }
+}
+
 .banner-subtitle {
     /* 副标题字体 */
     font-size: 1rem !important;

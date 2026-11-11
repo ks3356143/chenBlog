@@ -87,6 +87,7 @@ const currentPage = page.currentPage
 		<!-- 上一页 -->
 		<a
 			href={withTrailingSlash(page.url.prev)}
+			data-magnetic
 			aria-label="上一页"
 			aria-disabled={page.url.prev === undefined ? "true" : false}
 			tabindex={page.url.prev === undefined ? "-1" : "0"}
@@ -125,6 +126,7 @@ const currentPage = page.currentPage
 		<!-- 下一页 -->
 		<a
 			href={withTrailingSlash(page.url.next)}
+			data-magnetic
 			aria-label="下一页"
 			aria-disabled={page.url.next === undefined ? "true" : false}
 			tabindex={page.url.next === undefined ? "-1" : "0"}

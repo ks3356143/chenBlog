@@ -16,6 +16,7 @@ const { id, icon, ariaLabel, onclick, class: className = "" } = Astro.props
 
 <div
 	id={id}
+	data-magnetic
 	class:list={["floating-btn", className, "card-base flex items-center overflow-hidden transition"]}
 	onclick={onclick}
 >

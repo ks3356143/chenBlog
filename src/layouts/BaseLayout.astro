@@ -104,6 +104,13 @@ const reinitVersion = createHash("sha256")
              ⚠️ 目标是 #swup-container（<main>），不是 #content-wrapper：后者会被 Swup 换掉，
                而 #swup-container 在容器名单里始终存在，软导航后跳转依然有效。 -->
         <a href="#swup-container" class="skip-to-content">跳到主要内容</a>
+        <!-- 噪点质感层（2026-11-11 A3）：全屏一层极淡的胶片颗粒。
+             ⚠️ 用 SVG feTurbulence 现画，**零额外请求**（base64 PNG 要 ~2KB 且进不了 CSS 缓存）；
+                也**不是**每帧动画 —— 静态噪声本身就够，动起来会明显耗 GPU。
+             ⚠️ `pointer-events: none` 必须有，否则整站点不到东西。
+             ⚠️ 透明度只有 0.022（亮）/ 0.03（暗）：目标是"感觉有质感"而不是"看得见噪点"。
+                 调大一点立刻变脏 —— 实测 0.05 就已经像低画质截图。 -->
+        <div class="noise-overlay" aria-hidden="true"></div>
         <slot />
         <!-- Fancybox图片查看器-管理器 -->
         <FancyboxManager />

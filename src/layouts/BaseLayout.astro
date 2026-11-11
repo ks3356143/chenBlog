@@ -98,6 +98,12 @@ const reinitVersion = createHash("sha256")
         <slot name="head" />
     </head>
     <body class:list={{ "is-home": isHome }}>
+        <!-- 跳转到主内容（无障碍 A 级，WCAG 2.4.1）。
+             键盘用户第一个 Tab 就能跳过整个顶部导航与分类栏，直接进正文；
+             鼠标用户永远看不到它 —— 它默认 `sr-only`，只有 :focus-visible 时才浮出来。
+             ⚠️ 目标是 #swup-container（<main>），不是 #content-wrapper：后者会被 Swup 换掉，
+               而 #swup-container 在容器名单里始终存在，软导航后跳转依然有效。 -->
+        <a href="#swup-container" class="skip-to-content">跳到主要内容</a>
         <slot />
         <!-- Fancybox图片查看器-管理器 -->
         <FancyboxManager />

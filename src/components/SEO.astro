@@ -114,6 +114,9 @@ const jsonLD = jsonLDGenerator({
 
 <!-- RSS -->
 <link rel="alternate" type="application/rss+xml" title={siteConfig.siteMeta.name} href={new URL("rss.xml", Astro.site)} />
+<!-- Atom（2026-11-11 新增，与 RSS 并存）：部分客户端只认 Atom，
+     两条都写进 head 后阅读器能自动发现两个源。 -->
+<link rel="alternate" type="application/atom+xml" title={siteConfig.siteMeta.name} href={new URL("atom.xml", Astro.site)} />
 
 <!-- SEO -->
 <!-- ⚠️ 这里**刻意没有** title 标签：BaseLayout 第 71 行已经输出过一个（带品牌后缀的 documentTitle）。

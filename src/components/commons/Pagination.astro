@@ -12,6 +12,13 @@ import { url } from "@/utils/url-utils"
 // ② 每个格子补 `rounded-(--radius-large)`：参考站有，本站 --radius-large **从未定义**
 //    → 按 `rounded-(--x)` 的写法在变量缺失时**整个声明无效**，等于直角（这符合本站直角口径）。
 //    这里**刻意也写直角**（不写 rounded），与全站口径一致 —— 但要在注释里说清，防下一个人以为是漏了。
+//
+// 2026-11-11 加「跳页」（对应参考站的 PageJump.BHHH9Irj.js）：
+// 参考站的做法是**点省略号就地变输入框**（3KB 的实现，不弹窗、不跳页）。
+// 本站分页只有 3 页，省略号几乎不出现 → 改成在尾号后面常驻一个「跳到 __ 页」的小表单更实用。
+// ⚠️ 纯静态站没有服务端跳页接口，跳转只能靠 GET：这里用 `<form>` + `onsubmit` 把输入数字
+//    拼成 `/<n>/` 再交给 Swup（有 swup 走软导航，没有就整页跳）。**表单 action 留空**
+//    是为了「禁用 JS 时按回车也不会跳错地方」。
 
 interface Props {
 	page: Page
@@ -61,6 +68,9 @@ const getPageUrl = (p: number) => {
 	if (p === 1) return "/"
 	return `/${p}/`
 }
+
+const lastPage = page.lastPage
+const currentPage = page.currentPage
 ---
 
 {/* pb-5（20px）是**必须的留白**，别当装饰删掉：
@@ -127,4 +137,111 @@ const getPageUrl = (p: number) => {
 			<Icon name="material-symbols:chevron-right-rounded" class="text-[1.75rem]" aria-hidden="true" />
 		</a>
 	</div>
+
+	<!-- 跳页：只有 2 页以上才有意义（1 页时整条分页其实都不显示，这层保险是给「刚好 2 页」留的） -->
+	{
+		lastPage > 1 && (
+			<form
+				class="page-jump flex items-center gap-1.5 text-sm text-50"
+				data-last-page={lastPage}
+				data-current-page={currentPage}
+				onsubmit="return false"
+			>
+				<label for="page-jump-input" class="select-none">
+					跳到
+				</label>
+				<input
+					id="page-jump-input"
+					name="page"
+					type="text"
+					inputmode="numeric"
+					autocomplete="off"
+					aria-label={`跳转到第几页（共 ${lastPage} 页）`}
+					class="page-jump-input h-8 w-12 border border-(--line-divider) bg-transparent text-center font-bold text-neutral-800 outline-none transition-colors focus:border-(--primary) dark:text-neutral-200"
+					value={String(currentPage)}
+				/>
+				<span class="select-none">页</span>
+				<button
+					type="submit"
+					class="page-jump-go h-8 px-2 font-bold text-(--primary) transition-colors hover:bg-(--btn-plain-bg-hover)"
+					aria-label="跳转"
+				>
+					跳转
+				</button>
+			</form>
+		)
+	}
 </div>
+
+<!-- 跳页逻辑：**必须 is:inline 且不写 TS**（五-39）。
+     ⚠️ 用事件委托挂在 document 上、并且用 reinitOnce 语义去重：
+        分页在 Swup 容器内，每次切页脚本都会重新求值，直接 addEventListener 会按访问次数累加；
+        而 delegate 只需要挂一次（焦点在哪个 input 上都由 target 判定）。
+     ⚠️ 跳转目标必须是**带尾斜杠**的 `/<n>/`，且 1 页就是 `/`（与 getPageUrl 同一套规则），
+        少一个斜杠就多吃一次 nginx 301。 -->
+<script>
+	// 跳页逻辑。
+	//
+	// 🔴 必须走 `window.reinitOnce`，不要手写 IIFE + DOM 标记（AGENTS 十-14）：
+	//    分页在 Swup 容器内，每次切页这段脚本都会重新求值；直接 addEventListener 会按访问次数累加。
+	//    `reinitOnce` 天然只跑一次，且我第一版用 `var root = document.documentElement;
+	//    if (root.hasAttribute(...)) return` 时 `astro check` 连报 3 条 ts(7027)「Unreachable code」
+	//    （实测从 3 hint 涨到 6），换成 helpers 后归零。
+	//
+	// ⚠️ 事件用**委托**挂在 document 上而不是绑到每个 input：分页节点每次切页都会被替换，
+	//    绑到节点上的监听跟着丢；委托只挂一次，且对软导航后新插入的分页同样有效。
+
+	function goToPage(n: number) {
+		const target = n <= 1 ? "/" : `/${n}/`
+		const swup = (window as any).swup
+		if (swup && typeof swup.navigate === "function") swup.navigate(target)
+		else window.location.href = target
+	}
+
+	function parsePage(raw: string | null | undefined, lastPage: number): number | null {
+		const digits = String(raw ?? "").replace(/\D/g, "")
+		if (!digits) return null
+		const n = parseInt(digits, 10)
+		if (!n || Number.isNaN(n)) return null
+		return Math.min(Math.max(n, 1), lastPage)
+	}
+
+	window.reinitOnce("page-jump", () => {
+		document.addEventListener("submit", e => {
+			const form = e.target as HTMLElement | null
+			if (!form?.classList?.contains("page-jump")) return
+			e.preventDefault()
+			const lastPage = parseInt(form.getAttribute("data-last-page") || "1", 10)
+			const input = form.querySelector<HTMLInputElement>(".page-jump-input")
+			const n = parsePage(input?.value, lastPage)
+			if (n === null) return
+			const cur = parseInt(form.getAttribute("data-current-page") || "0", 10)
+			if (n !== cur) goToPage(n)
+		})
+
+		// 输入框只允许数字：拦掉非数字键，粘贴时再滤一遍
+		document.addEventListener("input", e => {
+			const el = e.target as HTMLInputElement | null
+			if (!el?.classList?.contains("page-jump-input")) return
+			const cleaned = String(el.value || "").replace(/\D/g, "").slice(0, 4)
+			if (cleaned !== el.value) el.value = cleaned
+		})
+
+		// Enter 在输入框里要提交（部分浏览器对 type=text 的隐式提交不走 submit 事件）
+		document.addEventListener("keydown", e => {
+			const el = e.target as HTMLInputElement | null
+			if (!el?.classList?.contains("page-jump-input")) return
+			if (e.key !== "Enter") return
+			e.preventDefault()
+			const form = el.closest("form")
+			if (!form) return
+			const lastPage = parseInt(form.getAttribute("data-last-page") || "1", 10)
+			const n = parsePage(el.value, lastPage)
+			if (n === null) return
+			const cur = parseInt(form.getAttribute("data-current-page") || "0", 10)
+			if (n !== cur) goToPage(n)
+		})
+
+		return true
+	})
+</script>

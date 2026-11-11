@@ -19,6 +19,9 @@ export const navBarLinks: NavBarLink[] = [
             { name: "分类", url: "/categories/", icon: "material-symbols:folder-open-rounded" },
             { name: "标签", url: "/tags/", icon: "material-symbols:tag-rounded" },
             { name: "系列", url: "/series/", icon: "material-symbols:layers" },
+            // 订阅说明页放「文章」下面而不是一级菜单：它的用途是"订阅这个站"，
+            // 与归档/分类同属"怎么找到文章"这一类；一级菜单已经 7 项，塞满会挤。
+            { name: "订阅", url: "/rss/", icon: "material-symbols:rss-feed-rounded" },
         ],
     },
     { name: "动态", url: "/dynamic/", icon: "material-symbols:dynamic-feed-rounded" },

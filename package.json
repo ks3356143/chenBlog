@@ -1,10 +1,10 @@
 {
   "name": "chenblog",
   "type": "module",
-  "version": "0.1.102",
+  "version": "0.1.103",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && node scripts/inject-preload.mjs && pagefind --site dist",
+    "build": "astro build && node scripts/inject-preload.mjs && node scripts/inject-modulepreload.mjs && pagefind --site dist",
     "preview": "astro preview",
     "check": "astro check",
     "icons": "node scripts/generate-icons.mjs",

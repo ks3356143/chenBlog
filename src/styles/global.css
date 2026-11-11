@@ -164,6 +164,127 @@
     }
 }
 
+/* ── 现代排版与滚动稳定性（2026-11-11 第一批）─────────────────────────────
+   ① text-wrap: balance —— 标题折行均衡。默认折行会把"亦林 YILIn"这种短标题
+      断成上行长、下行只剩一两个字；balance 让各行长度尽量相等。
+      ⚠️ 只给**短文本**（标题、卡片标题、按钮）用：它只对 6 行以内的块生效，
+         正文长段落用是浪费解析。
+   ② text-wrap: pretty —— 正文折行时避免最后一行只剩一个孤字（Chrome 117+）。
+   ③ scrollbar-gutter: stable —— 页面从"有滚动条"（长列表）切到"没滚动条"（短文页）
+      时，内容不会横向跳 15px。Swup 软导航正是这种切换的高频场景。
+   三条都是**渐进增强**：不支持的浏览器忽略，零副作用。 */
+h1,
+h2,
+h3,
+.banner-page-title-overlay,
+.card-title,
+.post-card-wrapper h2,
+.post-card-wrapper h3 {
+    text-wrap: balance;
+}
+
+p,
+li,
+.blockquote,
+figcaption {
+    text-wrap: pretty;
+}
+
+html {
+    /* auto = 只有真的会溢出时才预留。写 stable 会让短文页也永远留一条空槽 */
+    scrollbar-gutter: auto;
+}
+
+/* 需要"横不跳"的容器（正文区与列表页）才预留槽位 */
+#main-grid,
+#content-wrapper {
+    scrollbar-gutter: stable;
+}
+
+/* 跳过导航：「跳到主要内容」链接（BaseLayout 里，body 的第一个子元素）。
+   默认完全不可见也**不占位**，只有键盘 Tab 到它时浮出来。
+   ⚠️ 必须写 `:focus` 而不只是 `:focus-visible`：Safari 对链接的 focus-visible 命中不稳，
+      而这是纯键盘路径，宁可多命中。 */
+.skip-to-content {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    translate: -50% -120%;
+    z-index: 100;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--page-bg);
+    background: var(--primary);
+    text-decoration: none;
+    transition: translate 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.skip-to-content:focus,
+.skip-to-content:focus-visible {
+    translate: -50% 0;
+    outline: 2px solid var(--page-bg);
+    outline-offset: -4px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .skip-to-content {
+        transition: none;
+    }
+}
+
+/* ── 高对比度与强制配色（2026-11-11 第一批）───────────────────────────────
+   本站大量依赖"低透明度"的视觉分层：`--line-divider: rgba(255,255,255,.08)`、
+   卡片描边、`text-30/50` 那几档灰。在 Windows「高对比度」与 macOS「增强对比度」下
+   这些几乎全糊成一片 —— 系统会把颜色强制重映射，但没有 border 的元素就直接消失了。
+   两段兜底：
+   ① prefers-contrast: more —— 用户主动要求更强对比：加粗分界线、提高文字色阶；
+   ② forced-colors: active —— 系统强制配色：**必须**给原本靠背景色区分的容器补真边框，
+      否则卡片、输入框、浮层会全部变成无边界的一片。 */
+@media (prefers-contrast: more) {
+    :root {
+        --line-divider: rgba(0, 0, 0, 0.28);
+        --text-color: var(--grey-8);
+    }
+    :root[data-theme="dark"] {
+        --line-divider: rgba(255, 255, 255, 0.3);
+        --text-color: var(--grey-2);
+    }
+    .text-30,
+    .text-50 {
+        /* 这两档在半透明下对比度不足 3:1，高对比度模式下抬到 0.72 */
+        color: rgb(0 0 0 / 0.72);
+    }
+    :root[data-theme="dark"] .text-30,
+    :root[data-theme="dark"] .text-50 {
+        color: rgb(255 255 255 / 0.78);
+    }
+}
+
+@media (forced-colors: active) {
+    /* 强制配色下浏览器会忽略自定义颜色，所以只能靠 border 与 outline 表达边界 */
+    .card-base,
+    .post-card-wrapper,
+    .project-card,
+    .search-panel,
+    .dynamic-filter-search,
+    .dynamic-filter-year,
+    .btn-card,
+    .btn-regular,
+    .btn-plain {
+        border: 1px solid CanvasText;
+    }
+    .skip-to-content {
+        border: 2px solid CanvasText;
+        background: Canvas;
+        color: CanvasText;
+    }
+    /* 当前页这类"只靠底色区分"的状态，改成一个实心描边 */
+    [aria-current="page"],
+    .is-active {
+        outline: 2px solid Highlight;
+        outline-offset: -2px;
+    }
+}
+
 /* 文章卡片移动端列表模式布局。
    必须放全局样式表：Swup 不替换 head，而 Astro 组件 scoped 样式只存在于渲染了该组件的页面 head 里；
    若在 /archive/ 等不渲染卡片的页面整页加载后 Swup 回首页，scoped 样式缺失会让卡片退回 column 布局、

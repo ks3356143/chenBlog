@@ -1,0 +1,147 @@
+---
+import { Icon } from "astro-icon/components"
+import Layout from "@/layouts/Layout.astro"
+import { siteConfig } from "@/config/siteConfig"
+import { getSortedPosts } from "@/utils/content-utils"
+import { url } from "@/utils/url-utils"
+
+/**
+ * RSS 订阅说明页（对应参考站的 /rss/）。
+ *
+ * 参考站有这一页而本站一直没有 —— 用户从页脚/侧栏点「RSS」直接吃到 XML，
+ * 不知道怎么用、也没有"什么是 RSS"的说明。这页解决的是**发现性**：
+ * 把订阅地址、可用的客户端、以及最新几篇文章摆在一起。
+ *
+ * 数据全部构建期渲染（纯静态），零 JS 也能读完 —— 与全站口径一致。
+ * ⚠️ 与 /rss.xml 的分工：那个是**给机器读的源**，这个是**给人读的说明页**，
+ *    两者都要有；别用这页去替代源本身。
+ */
+
+const posts = await getSortedPosts()
+const latest = posts.slice(0, 8)
+
+const title = "RSS 订阅"
+const feedUrl = new URL("rss.xml", Astro.site ?? siteConfig.site_url).href
+const atomUrl = new URL("atom.xml", Astro.site ?? siteConfig.site_url).href
+
+// 常用客户端：只列真正跨平台的几个，别堆成一堆名字
+const clients = [
+	{ name: "Feedly", desc: "网页版 + 手机 App，注册即用", url: "https://feedly.com/" },
+	{ name: "Inoreader", desc: "网页版，免费档够用，规则与过滤强", url: "https://www.inoreader.com/" },
+	{ name: "NetNewsWire", desc: "macOS / iOS 免费开源客户端", url: "https://netnewswire.com/" },
+	{ name: "Fluent Reader", desc: "Windows 开源客户端", url: "https://hyliu.me/fluent-reader/" },
+]
+---
+
+<Layout title={title}>
+	<div class="relative flex min-h-32 w-full overflow-hidden">
+		<div class="card-base relative z-10 w-full px-6 py-6 md:px-9">
+			<!-- 标题区 -->
+			<div class="mb-8">
+				<div class="mb-3 flex items-center gap-3">
+					<div class="flex h-8 w-8 items-center justify-center bg-(--primary) text-white dark:text-black/70">
+						<Icon name="material-symbols:rss-feed-rounded" class="text-[1.5rem]" />
+					</div>
+					<div class="text-3xl font-bold text-neutral-900 dark:text-neutral-100">{title}</div>
+				</div>
+				<p class="mb-4 text-base leading-relaxed text-neutral-600 dark:text-neutral-400">
+					用阅读器订阅本站，新文章发布后会自动出现在你的列表里，不用来回刷网页。
+				</p>
+			</div>
+
+			<!-- 订阅地址 -->
+			<div class="mb-8">
+				<h2 class="mb-3 text-xl font-bold text-neutral-900 dark:text-neutral-100">订阅地址</h2>
+				<div class="flex flex-col gap-2">
+					<a
+						href={feedUrl}
+						class="card-base flex items-center gap-3 px-4 py-3 transition-colors hover:bg-(--btn-plain-bg-hover)"
+					>
+						<Icon name="material-symbols:rss-feed-rounded" class="shrink-0 text-xl text-(--primary)" aria-hidden="true" />
+						<span class="min-w-0 flex-1">
+							<span class="block text-sm font-bold text-neutral-900 dark:text-neutral-100">RSS 2.0</span>
+							<span class="block truncate text-xs text-(--content-meta)">{feedUrl}</span>
+						</span>
+						<Icon name="material-symbols:open-in-new-rounded" class="shrink-0 text-base text-(--content-meta)" aria-hidden="true" />
+					</a>
+					<a
+						href={atomUrl}
+						class="card-base flex items-center gap-3 px-4 py-3 transition-colors hover:bg-(--btn-plain-bg-hover)"
+					>
+						<Icon name="material-symbols:rss-feed-rounded" class="shrink-0 text-xl text-(--primary)" aria-hidden="true" />
+						<span class="min-w-0 flex-1">
+							<span class="block text-sm font-bold text-neutral-900 dark:text-neutral-100">Atom 1.0</span>
+							<span class="block truncate text-xs text-(--content-meta)">{atomUrl}</span>
+						</span>
+						<Icon name="material-symbols:open-in-new-rounded" class="shrink-0 text-base text-(--content-meta)" aria-hidden="true" />
+					</a>
+				</div>
+				<p class="mt-3 text-xs leading-relaxed text-(--content-meta)">
+					本站只发<strong>摘要</strong>，不含全文 —— 想读完整内容请点进文章页（原因见
+					<a class="text-(--primary) hover:underline" href={url("/about/")}>关于页</a>）。
+				</p>
+			</div>
+
+			<!-- 什么是 RSS -->
+			<div class="mb-8">
+				<h2 class="mb-3 text-xl font-bold text-neutral-900 dark:text-neutral-100">什么是 RSS？</h2>
+				<p class="mb-2 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
+					RSS 是一种“订阅”协议：你把上面那个地址粘进阅读器，之后网站更新时阅读器会主动把新内容推给你。
+					它不需要注册、不追踪你、也没有算法推荐 —— 你订阅什么就只看什么。
+				</p>
+				<p class="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
+					大多数阅读器支持直接粘博客首页地址并自动发现订阅源（本站的
+					<code class="rounded-sm bg-(--btn-regular-bg) px-1 py-0.5 text-xs">&lt;head&gt;</code>
+					里已经写了 <code class="rounded-sm bg-(--btn-regular-bg) px-1 py-0.5 text-xs">rel="alternate"</code>）。
+				</p>
+			</div>
+
+			<!-- 推荐客户端 -->
+			<div class="mb-8">
+				<h2 class="mb-3 text-xl font-bold text-neutral-900 dark:text-neutral-100">推荐客户端</h2>
+				<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+					{
+						clients.map(c => (
+							<a
+								href={c.url}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="card-base flex flex-col gap-0.5 px-4 py-3 transition-colors hover:bg-(--btn-plain-bg-hover)"
+							>
+								<span class="text-sm font-bold text-neutral-900 dark:text-neutral-100">{c.name}</span>
+								<span class="text-xs text-(--content-meta)">{c.desc}</span>
+							</a>
+						))
+					}
+				</div>
+			</div>
+
+			<!-- 最新文章 -->
+			<div>
+				<h2 class="mb-3 text-xl font-bold text-neutral-900 dark:text-neutral-100">最新文章</h2>
+				<ul class="flex flex-col">
+					{
+						latest.map((p, i) => (
+							<li>
+								<a
+									href={url(`/posts/${p.id}/`)}
+									class:list={[
+										"flex items-center gap-3 px-2 py-2.5 transition-colors hover:text-(--primary)",
+										i < latest.length - 1 && "border-b border-dashed border-(--line-divider)",
+									]}
+								>
+									<span class="shrink-0 text-xs tabular-nums text-(--content-meta)">
+										{new Date(p.data.published).toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" })}
+									</span>
+									<span class="min-w-0 flex-1 truncate text-sm text-neutral-800 dark:text-neutral-200">
+										{p.data.title}
+									</span>
+								</a>
+							</li>
+						))
+					}
+				</ul>
+			</div>
+		</div>
+	</div>
+</Layout>

@@ -17,6 +17,9 @@ const currentYear = new Date().getFullYear()
 			<div class="m-0.5">
 				©️ <span id="copyright-year">{currentYear}</span>
 				ChenBlog. All Rights Reserved. /
+				<!-- 「订阅」指到说明页 /rss/（人读），「RSS」指到源 /rss.xml（机器读）。
+				     参考站也是这么分工的，别把两个都指到 xml —— 访客点开只会看到一串 XML。 -->
+				<a class="link font-medium text-(--primary) transition" href={url("/rss/")}>订阅</a> /
 				<a class="link font-medium text-(--primary) transition" target="_blank" rel="noopener" href={url("rss.xml")}>RSS</a> /
 				<a class="link font-medium text-(--primary) transition" target="_blank" rel="noopener" href={url("sitemap-index.xml")}
 					>Sitemap</a

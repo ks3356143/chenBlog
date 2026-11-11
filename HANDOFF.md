@@ -3,9 +3,59 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-11（第四十五批：体积与配置优化「全部解决」，V0.1.99）**。
+> 最后更新：**2026-11-11（第四十六批：A/B/C 全量优化，已上线 V0.1.100）**。
 >
-> **🔧 2026-11-11（第四十五批：体积 / 请求 / 配置五项，V0.1.99）**
+> **🔧 2026-11-11（第四十六批：性能与内容 A/B/C 全量，V0.1.100）**
+> 用户看完优化清单说「abc全部解决吧」，并特别交代「**解决后一定要部署后再部署的页面进行验证**，
+> 特别是你改动 js 块肯定会出问题」。所以本批**全部验证都在上线后重跑一遍**（结果见下）。
+> 🟢 **A3 正文图懒加载**（`rehype-figure.js` 里新增，全站 582 个 img 里原本 **116 个没有任何 loading 属性**）：
+>    · 规则：正文**第一张** `eager` + `fetchpriority=high`（它是最可能的 LCP 元素），其余 `lazy` + `decoding=async`；
+>      **作者显式写了 `loading` 就完全不动**。
+>    · 实测：`/posts/testplantai/` 30 张图里 **26 lazy / 4 eager / 0 无属性**，首屏只发 **8 个图片请求**（改前 30 个全发），
+>      滚到底后才陆续加载（8 → 10）。该页懒加载图合计 **1.27 MB**，现在不阻塞首屏。
+> 🟢 **A4 Fancybox 改成首次点图才下载**（这是本批唯一"动 JS 逻辑"的改动，风险最高）：
+>    · 真病：`setup()` 一进页面就 `import("@fancyapps/ui")` → **104 KB raw / 35.7 KB gzip** 的 chunk
+>      在**每个有图的文章页**都下，而它只有用户真去点图时才用得到。
+>    · 改法：document 级点击委托 → 第一次命中可点图才动态 import，加载完立刻 bind 并把这一次点击补给 Fancybox；
+>      `swup:content:replace` 只在 **Fancybox 已加载**时才重绑（否则换页又白下一遍）。
+>    · 🔴 **两条防重入的判据都验证过**：① 委托首行 `if (Fancybox) return`，否则同一次点击会被处理两遍；
+>      ② 链接支重新 `click()` 会再次冒泡回来，靠 ①提前返回，不死循环。
+>    · 实测 6 条：进页不下 chunk ✅ / 首次点图下载 1 次并开灯箱（`display:flex`）✅ / 关闭后第二次点仍能开 ✅ /
+>      **chunk 全程只下载 1 次** ✅ / 软导航进另一篇文章后仍能开 ✅ / pageerror 与 console.error 全 0 ✅。
+> 🟢 **B1 RSS 改摘要版**：`content:encoded` 原本占整份 **96%**（409,089 B 里 327,746 B）。
+>    现在只发 frontmatter description + 链接 → **16,757 B raw / 3,321 B gzip**（原 409 KB / 75.7 KB）。
+>    ⚠️ **改回全文只要两行**（`sanitize-html` + `markdown-it` 仍在 deps 里，没删），注释里写了位置。
+> 🟢 **B2 补空 alt**：只在**完全没有 alt 属性**时补空串（装饰图的正确语义；省略 alt 时读屏器会念文件名）。
+>    实测真实 DOM：改前 12 个缺 alt → 现在 **97 个 img 里 0 个缺**。
+> 🟢 **C1 依赖更新**：`astro 7.4.8 → 7.4.10`（精确版本，手动改）、`@astrojs/mdx 8.1.3 → 8.1.4`、
+>    `@astrojs/svelte 9.1.2 → 9.1.4`、`@astrojs/markdown-remark 7.3.6 → 7.3.7`、`katex 0.18.10 → 0.18.11`（钉精确版）、`vite → 8.3.8`。
+>    ⚠️ **C1 踩到页拒绝的坑**：`npm update` 生成的 lock **丢了 `@pagefind/linux-arm64` / `windows-arm64`** 两个 optional 条目
+>    → `npm ci` 报 "Missing: @pagefind/... from lock file" 直接拒装（与第四十批同族，但这次 `npm install` 补不回来）。
+>    真因是 **npmmirror 源上的 pagefind 元数据与官方源不一致**；改用 `--registry=https://registry.npmjs.org` 重跑 `npm install` 后
+>    lock 里 8 个 `@pagefind/*` 条目齐全，`npm ci` 通过（591 packages / 17s）。
+> 🟢 **C3 katex.css 加内容哈希**：它原来是稳定文件名 → 吃宝塔 js/css 的 `max-age=43200`（12h），
+>    升级 katex 后回访用户 12 小时内会用旧 CSS。现在按内容算 `?v=<sha256前10位>`（与 `reinit.js` 同一套做法）。
+>    **用临时带公式的文章验证过**：输出 `/vendor/katex/katex.css?v=UCk7MLZRup`，且那页有 3 个 `.katex` 节点；
+>    无公式页面**连读文件都不做**（`postHasMath` 为 false 时为 `""`）。验完已删临时文章。
+>
+> ⛔ **明确判定不做的三项（都有实测依据，别再当待办）**：
+> - **A1 内联脚本外链化**：全站内联脚本 1.43MB（52 页各下一遍）。理论上外链化能省很多，但 27 块/页里
+>   多数是 `is:inline`（**不转译、按文档序立即执行**）且互相依赖 DOM 顺序，改写等于重构整个交互层；
+>   同一页内**真重复**只有 1.4KB × 52 页 = 36KB gzip → **收益不抵风险，不做**。
+> - **A2 内联 SVG 去重**：首页 136 个 SVG 里 131 个是 `<svg><use href="#…"/></svg>` 的**实例包装**，
+>   定义（`<symbol>`）已经只有 51 个唯一份 → **没有可删的重复**，删实例就是删图标。
+> - **B4 相册大图重压**：6 张 >200KB 的图**已经是高压缩 webp**，实测 q88/q85/q82 **全部比原图更大**
+>    （如 `1.webp` 447KB → q88 517KB / q85 502KB），二次有损只会又糊又大 → **原图保持**。
+> - **B3 缺 width/height 的 26 个**：14 个是 `/dynamic/` 模板占位（`src` 由客户端填，构建期无从算尺寸）、
+>    12 个是外链（构建期不联网）→ 硬猜数字比不写更糟，**保持原样**。
+>
+> 📋 验收（**全部在部署之后重跑**）：`build` 0 error / 52 page(s)；`check` **0 error / 3 hint**；`docs:check` 0 错 0 警；
+> `dist` **544 文件 / 51 index.html**；
+> **本地 42 组 + 线上 42 组全绿**（h1=1 / 溢出 0 / pageerror 0 / requestfailed 0 / 空图标 0 / 版本 0.1.100）；
+> **线上交互 8/8**（主题切换 · 搜索 4 条 · 软导航四跳 · 分类卡 190 已展开 · 分页 `/2/` 10 张卡 · 动态页灯箱 API · 零报错）；
+> **线上图片体检：97 个 img，缺 alt 0，缺 loading 9**（这 9 个是 `/dynamic/` 的模板占位与外链 SVG）。
+>
+> **🔧 2026-11-11（第四十五批：体积与配置优化「全部解决」，V0.1.99）**
 > 用户看完我给的优化清单后说「全部解决吧」，把 A/B 档六条一次做完（⑧ 评估后不动）。
 > ① 🔴 **KaTeX CSS 改成真·按需加载**（原 33 个文章页无条件加载，而全站公式使用数 **0**）：
 >    · 走过的两个弯路都记下来，**别再重走**：
@@ -2384,23 +2434,23 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-10 夜间第四十三批实测；线上 = V0.1.97**，已部署）
+## 三、当前状态快照（**2026-11-11 第四十六批实测；线上 = V0.1.100**，已部署）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `11f230a`（V0.1.99 体积与配置优化），**已推送、`HEAD == origin/main`、工作区计数 0** |
-| 工作区 | 本批动 **12 项**：新增 `src/utils/math-utils.ts`、`scripts/build-katex-assets.mjs`、`public/vendor/katex/`（21 文件）；删 `KatexManager.astro` / `katex-woff2.css` / `build-katex-css.mjs`；改 `astro.config.mjs`、`src/pages/posts/[...slug].astro`、`src/layouts/Layout.astro`、`README.md`、`docs/agents/config.md`、`AGENTS.md`、`projectsConfig.ts`、`package.json`(+version/−4 deps)、`package-lock.json` |
-| 线上站点 | ✅ **2026-11-11 10:30 部署 V0.1.99**（替换前 5 条断言：`0.1.99` 必须在 / `0.1.98` 不在 / pagefind / `vendor/katex/katex.css` / `site.webmanifest` 必须存在）。**线上实测**：`ver 0.1.99`、`katex link 0 页`、`KaTeX 字体请求 0`、`TODO 0`、`rss gzip 76,818B`、`manifest application/manifest+json` |
-| 服务器配置 | **本批动了 `cache.conf`**（用户当次点头）：`gzip_types` 补 `text/xml`、新增 `location = /site.webmanifest`。备份 `/root/cache.conf.bak_20261111` + `/root/nginx.conf.bak_20261111` + `/root/mime.types.bak_20261111`。`nginx -t` 通过后 reload |
-| 本地构建 | V0.1.99 = **545 个文件 / 51 个 `index.html` / pagefind 51**。`build` **0 error** / 52 page(s) / 5.90s、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
-| 依赖 | **本批卸了 4 个**：`mermaid`(84.1MB) / `astro-mermaid` / `@iconify-json/fa-solid` / `@iconify-json/fa6-solid` —— 全部零引用（源码 0 处、产物 0 命中）。剩余 `node_modules` **273MB**。天花板现在只剩 **`typescript 6.0.3`**（mermaid 11.x 天花板随卸载作废）。`katex 0.18.11` 仍在（嵌套 0.16.47 的 audit 那条不动） |
-| dev / preview server | 本批起过 `npm run preview` 做本地 42 组回归，**收尾已精确杀掉并复查计数 = 0** |
-| 服务器回滚资产 | `dist.old`（= V0.1.98）+ **106 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
-| 临时文件 | 收尾已清 `%TEMP%` 下本批全部 `.mjs` / `.cjs` / `.log` / `.tar.gz`（含 `p99.mjs` `plive99.mjs` `cssaudit.cjs` `b*.log` `chk.log` `cm45.txt` `cb99.tar.gz` 等） |
-| 待用户拍板 | **本批新增 0 条，且清掉了 3 条**（④⑤⑦ 那三个服务器项已按他「全部解决」放行并做完）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标 vs WCAG 44px。**功能扩展清单**（14 项，第四十二批末尾给过对比）一件未动 |
-| 既存小坑 | 同上一批。本批**新增两条**：① **被 `import` 的 CSS 无法靠条件渲染/动态 import 做到按需**（Astro 构建期就静态分析并挂进页面清单）→ 真按需只能走 `public/` + 条件 `<link>`；② **`gzip_types` 写进 server 层会整体覆盖 http 层继承值**，追加前必须把原列表抄全 |
+| 本地 HEAD | `8e8da3e`（V0.1.100 A/B/C 全量优化），**已推送、`HEAD == origin/main`、工作区计数 0** |
+| 工作区 | 本批动 **6 项**：`src/plugins/rehype-figure.js`(+32 懒加载/alt)、`src/components/features/FancyboxManager.astro`(+59/−37 延迟加载)、`src/pages/rss.xml.js`(+18/−7 摘要版)、`src/pages/posts/[...slug].astro`(+14/−1 katex hash)、`package.json`/`package-lock.json`（升 5 个包） |
+| 线上站点 | ✅ **2026-11-11 12:20 部署 V0.1.100**（替换前 7 条断言：`0.1.100` 在 / `0.1.99` 不在 / pagefind / katex.css / `loading="lazy"` 在 testplantai / rss 无 `content:encoded`）。**线上实测**：`ver 0.1.100`、`rss 13,983B raw / 3,321B gzip`、42 组回归全绿 |
+| 服务器配置 | 本批**未动服务器**（第四十五批改的 `cache.conf` 保持不变） |
+| 本地构建 | V0.1.100 = **544 个文件 / 51 个 `index.html`**。`build` **0 error** / 52 page(s) / 5.82s、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
+| 依赖 | 本批升 **5 个**：`astro 7.4.8→7.4.10`（精确版）、`@astrojs/mdx 8.1.3→8.1.4`、`@astrojs/svelte 9.1.2→9.1.4`、`@astrojs/markdown-remark 7.3.6→7.3.7`、`katex 0.18.10→0.18.11`（钉精确版）、连带 `vite → 8.3.8`。天花板仍只剩 **`typescript 6.0.3`** |
+| dev / preview server | 本批起过 `npm run preview` 做本地验证，**收尾已精确杀掉并复查计数 = 0** |
+| 服务器回滚资产 | `dist.old`（= V0.1.99）+ **107 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
+| 临时文件 | 收尾已清 `%TEMP%` 下本批全部 `.mjs` / `.cjs` / `.log` / `.tar.gz` |
+| 待用户拍板 | **本批新增 0 条**。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标 vs WCAG 44px。**功能扩展清单**（14 项）一件未动 |
+| 既存小坑 | 本批**新增两条**：① **`npm update` 在 npmmirror 源下会写出缺 optional 平台包的 lock**（`@pagefind/linux-arm64`/`windows-arm64` 丢）→ `npm ci` 拒装，`npm install` 也补不回 → 必须 `--registry=https://registry.npmjs.org` 重跑 `npm install`；② **`is:inline` 脚本一律不转译、按文档序立即执行**，所以「内联脚本外链化」不是搬运、是重构（本批判定不做） |
 
 ---
 ## 四、维护本文件的规矩

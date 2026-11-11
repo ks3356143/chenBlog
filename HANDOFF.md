@@ -3,9 +3,52 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-11（第四十八批：搜索框观感重做，已上线 V0.1.102）**。
+> 最后更新：**2026-11-11（第四十九批：第一批现代方案 7 项，已上线 V0.1.103）**。
 >
-> **🔧 2026-11-11（第四十八批：搜索框「不够炫酷」，V0.1.102）**
+> **🔧 2026-11-11（第四十九批：第一批「能自己动手」的 7 项，V0.1.103）**
+> 用户「只做第一批」。全部落地并线上复验。
+> ① **modulepreload**（新增 `scripts/inject-modulepreload.mjs`，挂在 build 链的 inject-preload 之后）：
+>    产物里 `<script type="module" src>` 有 5 个，浏览器要解析到标签才开始下（串行瀑布）；
+>    补 6 条 `<link rel="modulepreload">`（5 个入口 + **1 个一层静态依赖** `toc-utils.*.js`，
+>    被 FloatingToc / SiderBarToc 共用）。
+>    ⚠️ **只跟一层**：实测这些 chunk 的 import 深度就是 1，跟到底更容易踩循环。
+>    ⚠️ **脚本必须幂等**：靠 `data-modulepreload` 标记跳过已注入的页（实测重跑两次都是"注入 0 页 / 跳过 53 页"）。
+> ② **`text-wrap: balance`**（h1/h2/h3 + 卡片标题 + 横幅标题）与 **`text-wrap: pretty`**（p/li/blockquote/figcaption）：
+>    纯渐进增强，不支持的浏览器忽略。实测产物 CSS 里 `pretty` 1 处、`balance` 2 处，页面计算值 `textWrap=pretty/balance`。
+> ③ **`scrollbar-gutter: stable`**：只给 `#main-grid` 与 `#content-wrapper`（正文区）——
+>    写全局 `html { stable }` 会让短文页也永远留一条空槽。实测计算值 `stable`。
+> ④ **skip link**（WCAG 2.4.1 A 级）：`BaseLayout` 里 body 第一个子元素，
+>    目标 `#swup-container`（`<main>`，**不是** `#content-wrapper` —— 后者会被 Swup 换掉）。
+>    实测：默认 `top: -49px` 不可见 → Tab 后 `top: 0 / h: 41` 浮出并聚焦 → 回车 `hash=#swup-container`。
+> ⑤ **`prefers-contrast: more` + `forced-colors: active`**：
+>    本站大量靠低透明度分层（`--line-divider: rgba(255,255,255,.08)`），高对比度下几乎全糊。
+>    more 下提高分界线与文字色阶；forced-colors 下给卡片/按钮/浮层补真边框（`1px solid CanvasText`）。
+>    实测两种媒体查询下 `--line-divider` / `border-top-width` 都变了。
+> ⑥ **`/rss/` 订阅说明页 + `/atom.xml` 源**（参考站有、本站一直没有）：
+>    · `/rss/`：订阅地址两条（RSS 2.0 / Atom 1.0）、「什么是 RSS」、4 个客户端、最新 8 篇。
+>      纯构建期静态渲染，零 JS 也能读完。
+>    · `/atom.xml`：**与 `/rss.xml` 并存**，同样只发摘要（口径必须一致，否则换个地址就绕过决定）。
+>      `updated` 取**最新一篇**的发布时间而非构建时间 —— 否则阅读器每次部署都以为全站更新。
+>      实测 33 条 entry / 16,086 B。
+>    · 导航「文章」下拉新增「订阅」项；页脚加「订阅」（指 `/rss/`）并把原来的「RSS」保留指 `/rss.xml` ——
+>      **人读的说明页与机器读的源分开**，与参考站同一套分工。
+> ⑦ **分页「跳到 __ 页」**（照参考站 `PageJump.BHHH9Irj.js` 的思路，本站改成常驻小表单）：
+>    输入框只收数字、超界夹紧到 `[1, lastPage]`、Enter 与「跳转」按钮都能提交、走 Swup 软导航。
+>    ⚠️ **两个坑都踩了并修掉**：
+>    (a) 第一版手写 IIFE + `window.__pageJumpBound` → `astro check` 从 3 hint 涨到 **6**
+>        （ts(7027) Unreachable ×3 + ts(6133) 未使用参数），因为 Window 上没这个属性、TS 把后续代码判成不可达；
+>    (b) 换成 `window.reinitOnce("page-jump", …)` + document 委托后**归零回到 3 hint** ——
+>        这也正合 AGENTS 十-14（容器内脚本必须走 helpers，别手写去重标记）。
+>    ⚠️ 分页实际是 **4 页**（33 篇 / 10 篇一页），我第一版探针写死"3 页"导致 2 条假红。
+>
+> 📋 验收：**本地 21/21 + 全量回归 11/11（含 312 组）**；**线上 21/21 + 11/11 全绿**；
+> `build` 0 error / **53 page(s)**（52 → 53，新增 `/rss/`）；`check` **0 error / 3 hint**（基线不变）；
+> `docs:check` 0 错 0 警；`dist` **546 文件 / 52 index.html**（544/51 + 2：`/rss/index.html` 与 `atom.xml`）。
+> ⚠️ **atom.xml 的 Content-Type 是 `text/xml` 而不是我在 Response 里写的 `atom+xml`**：
+>    纯 SSG 下它就是构建期落盘的静态文件，真正发出去的是 nginx 按扩展名给的 ——
+>    参考站也是 `application/xml`，两种都合法，**别为这条去改服务器 mime.types**（已在代码注释里写明）。
+>
+> **🔧 2026-11-11（第四十八批：搜索框观感重做，V0.1.102）**
 > 用户：「搜索动态输入框是否不够炫酷 改下」。
 > **改前的实测基线**（`getComputedStyle` 量的，不是感觉）：桌面搜索框只有 `bg-black/4` 一层淡灰，
 > 聚焦也只是**底色加深一档**（0.04 → 0.06），`box-shadow: none`、`border: 0px`、没有任何描边/光晕/动效
@@ -2491,23 +2534,23 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-11 第四十八批实测；线上 = V0.1.102**，已部署）
+## 三、当前状态快照（**2026-11-11 第四十九批实测；线上 = V0.1.103**，已部署）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `1b93df8`（V0.1.102 搜索框观感重做），**已推送、`HEAD == origin/main`、工作区计数 0** |
-| 工作区 | 本批动 **2 项**：`src/components/controls/Search.svelte`(+126/−9)、`package.json` 只动 version |
-| 线上站点 | ✅ **2026-11-11 15:12 部署 V0.1.102**（替换前 4 条断言：`0.1.102` 在 / `0.1.101` 不在 / pagefind / `search-shell` 必须在）。**线上实测**：`ver 0.1.102`、搜索 23/23、抽 12 页全绿 |
+| 本地 HEAD | `6e36479`（V0.1.103 第一批现代方案 7 项），**已推送、`HEAD == origin/main`、工作区计数 0** |
+| 工作区 | 本批动 **10 项**：新增 `scripts/inject-modulepreload.mjs`、`src/pages/atom.xml.js`、`src/pages/rss/index.astro`；改 `src/styles/global.css`(+3 组规则)、`src/layouts/BaseLayout.astro`(+skip link)、`src/components/SEO.astro`(+atom 发现链接)、`src/components/commons/Pagination.astro`(+跳页)、`src/components/layout/Footer.astro`(+订阅)、`src/config/navBarConfig.ts`(+订阅项)、`package.json`(build 链 + version) |
+| 线上站点 | ✅ **2026-11-11 18:26 部署 V0.1.103**（替换前 8 条断言：版本、pagefind、`/atom.xml`、`/rss/`、modulepreload、skip link、page-jump 全在）。**线上实测**：`ver 0.1.103`、**21/21 + 11/11 全绿** |
 | 服务器配置 | 本批**未动服务器** |
-| 本地构建 | V0.1.102 = **544 个文件 / 51 个 `index.html`**。`build` **0 error** / 52 page(s) / 6.14s、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
-| 依赖 | 本批**零改动**（仍是 `astro 7.4.10` / `katex 0.18.11` / `vite 8.3.8`，天花板只剩 `typescript 6.0.3`） |
-| dev / preview server | 本批起过 `npm run preview` 做搜索观感取证与全量回归，**收尾已精确杀掉并复查计数 = 0** |
-| 服务器回滚资产 | `dist.old`（= V0.1.101）+ **109 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
-| 临时文件 | 收尾已清 `%TEMP%` 下本批全部 `.mjs` / `.cjs` / `.log` / `.tar.gz` / 截图目录 |
-| 待用户拍板 | **本批新增 0 条**。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标 vs WCAG 44px（只剩 RSS 那个 24×32）。**功能扩展清单**（14 项）一件未动 |
-| 既有小坑 | 同上一批。本批**新增一条方法类**：**量带入场动画的元素要等动画播完再量**（`.onload-animation` 0.12s + 最多 150ms 延迟，opacity 从 0 起）—— 只等 200ms 会读到中间态、误判成"内容不可见" |
+| 本地构建 | V0.1.103 = **546 个文件 / 52 个 `index.html`**（544/51 + `/rss/index.html` 与 `atom.xml`）。`build` **0 error** / **53 page(s)** / 5.78s、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
+| 依赖 | 本批**零改动**（仍 `astro 7.4.10` / `katex 0.18.11` / `vite 8.3.8`，天花板只剩 `typescript 6.0.3`） |
+| dev / preview server | 本批起过 `npm run preview` 做本地验证，**收尾已精确杀掉并复查计数 = 0** |
+| 服务器回滚资产 | `dist.old`（= V0.1.102）+ **110 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
+| 临时文件 | 收尾已清 `%TEMP%` 下本批全部 `.mjs` / `.cjs` / `.log` / `.tar.gz` |
+| 待用户拍板 | **本批新增 0 条**。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32）。**第二批（友链/打赏/书签）与第三批（播放器/背景视频/壁纸四模式/瀑布流）都还没动** |
+| 既有小坑 | 同上一批。本批**新增三条**：① 纯 SSG 下 `Response` 里设的 Content-Type **不生效**（静态文件由 nginx 按扩展名给）；② `window.__xxx` 自定义属性会让 `astro check` 报 ts(7027)，**容器内脚本一律用 `reinitOnce`**（十-14 的又一条实证）；③ 分页现在是 **4 页**不是 3 页 |
 
 ---
 ## 四、维护本文件的规矩

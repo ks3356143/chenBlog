@@ -1,5 +1,7 @@
 ---
 import type { GetStaticPaths } from "astro"
+import { createHash } from "node:crypto"
+import { readFileSync } from "node:fs"
 import { render } from "astro:content"
 import { getSortedPosts, getRelatedPosts, getSeriesPosts } from "@/utils/content-utils"
 import Layout from "@/layouts/Layout.astro"
@@ -61,6 +63,17 @@ const seriesData = await getSeriesPosts(post)
    已拿 remark-math 的真实解析结果逐条对齐（15 个样例全一致）。
    ⚠️ 加了公式的文章会自动恢复加载，不需要任何额外操作。 */
 const postHasMath = hasMath(post.body)
+
+/* KaTeX CSS 在 public/vendor/katex/ 下是**稳定文件名**，吃宝塔 js/css 规则的 max-age=43200（12h）
+   → 将来升级 katex 换了 CSS，回访用户 12 小时内还会拿旧的。用内容哈希当查询串即可，
+   不动服务器配置（与 reinit.js 同一套做法，见十-14 末条）。
+   ⚠️ 只有真有公式的页面才走这里，无公式页连读文件都不做。 */
+const katexVersion = postHasMath
+    ? createHash("sha256")
+          .update(readFileSync(`${process.cwd()}/public/vendor/katex/katex.css`))
+          .digest("base64url")
+          .slice(0, 10)
+    : ""
 ---
 
 <Layout title={post.data.title} description={post.data.description || undefined} bannerPostMeta={bannerPostMeta} postSlug={post.id} headings={headings} frontmatter={remarkPluginFrontmatter}>
@@ -69,7 +82,7 @@ const postHasMath = hasMath(post.body)
          2026-11-11 实测，Astro/Vite 会把被 import 的 CSS 无条件挂进该页产物
          （条件渲染、甚至 await import() 都拦不住，33/33 页照样引用）。
          字体只在页面上真出现字形时才下载，没公式的页面零请求。 -->
-    {postHasMath && <link rel="stylesheet" href="/vendor/katex/katex.css" />}
+    {postHasMath && <link rel="stylesheet" href={`/vendor/katex/katex.css?v=${katexVersion}`} />}
     <!-- 阅读进度条：只在文章页存在 -->
     <ReadingProgress />
     <div class="relative mb-4 flex w-full flex-col overflow-hidden">

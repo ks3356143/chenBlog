@@ -43,45 +43,77 @@ import "@/styles/fancybox-custom.css"
         caption: false,
     }
 
-    async function setup() {
-        // 两个类名都要：.custom-md 是参考站原文（动态页模板仍在用），.custom-markdown 是本项目
-        // Markdown.astro 实际输出的类名——改名时这条绑定曾静默失效，文章图片全都不能点看大图
-        const selectors = [
-            ".custom-md img, .custom-markdown img, #post-cover img, .moment-images img",
-            ".moment-images a[data-fancybox]",
-            "[data-fancybox]:not(.moment-images a)",
-        ]
+    // 需要灯箱的选择器集中一处：点击委托、绑定、手动 show 都用它
+    const IMG_SELECTOR = ".custom-md img, .custom-markdown img, #post-cover img, .moment-images img"
+    const LINK_SELECTOR = ".moment-images a[data-fancybox]"
+    const OTHER_SELECTOR = "[data-fancybox]:not(.moment-images a)"
+    const PROBE = [IMG_SELECTOR, LINK_SELECTOR, OTHER_SELECTOR]
 
-        // 检查页面是否存在需要 Fancybox 的元素
-        const hasElements = selectors.some((selector) => document.querySelector(selector))
-
-        if (!hasElements) return
-
-        // 动态导入资源
+    async function ensureFancybox() {
         if (!Fancybox) {
             const mod = await import("@fancyapps/ui")
             Fancybox = mod.Fancybox
         }
+        return Fancybox
+    }
 
-        // 绑定图片
-        Fancybox.bind(".custom-md img, .custom-markdown img, #post-cover img, .moment-images img", {
+    /** 页面里真有可点元素时才绑定（无图页面一个字节都不下） */
+    async function bindIfNeeded() {
+        if (!PROBE.some(selector => document.querySelector(selector))) return
+        await ensureFancybox()
+        Fancybox.bind(IMG_SELECTOR, {
             ...commonOptions,
             groupAll: true,
-            Carousel: {
-                transition: "slide",
-                preload: 2,
-            },
+            Carousel: { transition: "slide", preload: 2 },
         })
-
-        // 绑定链接
-        Fancybox.bind(".moment-images a[data-fancybox]", {
+        Fancybox.bind(LINK_SELECTOR, {
             ...commonOptions,
             source: (el: any) => el.getAttribute("data-src") || el.getAttribute("href"),
         })
-
-        // 绑定其他
-        Fancybox.bind("[data-fancybox]:not(.moment-images a)", commonOptions)
+        Fancybox.bind(OTHER_SELECTOR, commonOptions)
     }
+
+    /* 🔴 A4（2026-11-11）：把 Fancybox 的下载从「进页面」推迟到「第一次点图」。
+       实测：`@fancyapps/ui` 那个 chunk **104KB raw / 35.7KB gzip**，33 个有图的文章页
+       一进页面就下（`setup()` 里无条件 `import()`），但它只有用户真去点图时才用得到。
+       做法：先挂一个 document 级点击委托；第一次命中可点元素时才动态 import，
+       加载完立刻绑定，并把这一次点击「补」给 Fancybox（图片走 show、链接走重新派发）。
+       ⚠️ 三条不能省：
+       ① 委托必须判 `if (Fancybox) return` —— 已加载后交给 bind 的处理器，
+          否则同一次点击会被处理两遍（灯箱开两次、或开了又立刻关）；
+       ② 链接那支重新 `click()` 时会再次冒泡到这里，靠 ①提前返回，不会死循环；
+       ③ `swup:content:replace` 里仍然要重绑（换页后新图还没绑过），但那时若 Fancybox
+          已加载就直接绑，不会再下载。 */
+    document.addEventListener("click", async e => {
+        if (Fancybox) return
+        const target = e.target as HTMLElement | null
+        const img = target?.closest?.(IMG_SELECTOR) as HTMLImageElement | null
+        const link = target?.closest?.(LINK_SELECTOR) || target?.closest?.(OTHER_SELECTOR)
+        if (!img && !link) return
+        e.preventDefault()
+        await bindIfNeeded()
+        if (!Fancybox) return
+        if (img) {
+            // 手动开这一组：等价于 groupAll 的行为（同页所有正文图作为一组）
+            const group = Array.from(document.querySelectorAll<HTMLImageElement>(IMG_SELECTOR))
+            const items = group.map(el => ({
+                src: el.currentSrc || el.getAttribute("src") || "",
+                ...(el.alt ? { caption: el.alt } : {}),
+            })).filter(it => it.src)
+            const idx = group.indexOf(img)
+            Fancybox.show(items, { ...commonOptions, caption: false, startIndex: idx < 0 ? 0 : idx })
+        } else if (link) {
+            // 链接支：绑定已完成，重新派发一次让 Fancybox 自己接管
+            ;(link as HTMLElement).click()
+        }
+    })
+
+    // 只加载过 Fancybox 之后才需要重绑（首次进页面不下载）
+    document.addEventListener("swup:content:replace", () => {
+        if (Fancybox) bindIfNeeded()
+    })
+    document.addEventListener("swup:visit:start", cleanupFancybox)
+
 
     function cleanupFancybox() {
         if (Fancybox) {
@@ -90,13 +122,6 @@ import "@/styles/fancybox-custom.css"
         }
     }
 
-    // 初始化
-    setup()
-
-    // Swup 生命周期整合
-    document.addEventListener("swup:content:replace", setup)
-    document.addEventListener("swup:visit:start", cleanupFancybox)
-
     // 动态页画廊「查看大图」用：条目正文里的图是客户端渲染的，灯箱要按需从别处唤起。
     // 暴露一个全局方法，内部确保 Fancybox 已加载再 show（items = [{src,caption}]，startIndex 定位）。
     // ⚠️ 这是本站唯一"从外部主动开灯箱"的入口，别在别处另起一套 import。
@@ -104,10 +129,7 @@ import "@/styles/fancybox-custom.css"
     // （画廊缩略图是 <button>、不靠这里的 [data-fancybox] bind，所以也不需要"渲染完补 setup"的事件了。）
     window.__fancyboxOpenImages = async (items, startIndex = 0) => {
         if (!Array.isArray(items) || items.length === 0) return
-        if (!Fancybox) {
-            const mod = await import("@fancyapps/ui")
-            Fancybox = mod.Fancybox
-        }
+        await ensureFancybox()
         Fancybox.show(items, { ...commonOptions, caption: true, startIndex })
     }
 

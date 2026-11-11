@@ -10,6 +10,9 @@ import { getPublicImageSizeSync } from "../utils/image-size.ts"
  */
 export default function rehypeFigure() {
     return (tree) => {
+        // 正文里第几张图（用于首图不懒加载）
+        let imgIndex = 0
+
         visit(tree, "element", (node, index, parent) => {
             // 只处理 img 元素
             if (node.tagName !== "img") {
@@ -17,6 +20,35 @@ export default function rehypeFigure() {
             }
 
             const imgProps = { ...node.properties }
+
+            /* 懒加载与解码提示（2026-11-11 加）。
+               真病：正文图一个 loading 属性都没有 → 全部跟着首屏一起下载。
+               实测 `/posts/testplantai/` 一页 23 张 / 1.17MB，而首屏只看得到 1~2 张。
+               体检数据：全站 582 个 img 里 **116 个**没有任何 loading 属性。
+
+               规则（与浏览器默认行为一致，只在"没写"时补）：
+               - 正文**第一张**留 `eager` + `fetchpriority=high`：它是最可能的 LCP 元素，
+                 懒加载反而会推迟首屏最大内容绘制；
+               - 其余一律 `lazy` + `decoding=async`。
+               ⚠️ 作者显式写了 `loading` 就完全不动（有文章自己标过 eager）。 */
+            if (!imgProps.loading) {
+                if (imgIndex === 0) {
+                    imgProps.loading = "eager"
+                    if (!imgProps.fetchpriority) imgProps.fetchpriority = "high"
+                } else {
+                    imgProps.loading = "lazy"
+                }
+            }
+            if (!imgProps.decoding) imgProps.decoding = "async"
+            imgIndex++
+
+            /* 补空 alt（2026-11-11）。
+               真病：正文里手写的 `<img src="…">` 没有 alt → 产物里 12 个 img 缺这个属性。
+               语义上「纯装饰图」的正确写法是 `alt=""`（空串），不是省略 ——
+               省略时部分读屏器会念文件名，空 alt 才会被明确跳过。
+               ⚠️ 只在**完全没有 alt 属性**时补空串；作者写了文字 alt 的一律不动。
+               ⚠️ 空 alt 在产物里序列化成**裸属性 `alt`**，核查别用 `alt="([^"]*)"` 匹配。 */
+            if (imgProps.alt === undefined || imgProps.alt === null) imgProps.alt = ""
 
             // 添加 referrerpolicy（如果需要）解决 403 问题
             // 无论是否有 alt，都要检查并添加 referrerpolicy

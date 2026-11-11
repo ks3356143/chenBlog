@@ -1,7 +1,7 @@
 {
   "name": "chenblog",
   "type": "module",
-  "version": "0.1.99",
+  "version": "0.1.100",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build && node scripts/inject-preload.mjs && pagefind --site dist",
@@ -26,7 +26,7 @@
     "@astrojs/svelte": "^9.0.0",
     "@fancyapps/ui": "^6.1.14",
     "@tailwindcss/vite": "^4.3.1",
-    "astro": "7.4.8",
+    "astro": "7.4.10",
     "astro-expressive-code": "^0.44.2",
     "astro-icon": "^1.1.5",
     "markdown-it": "^15.0.2",
@@ -45,7 +45,7 @@
     "@tailwindcss/typography": "^0.5.20",
     "expressive-code-collapsible": "^1.0.0",
     "expressive-code-language-badge": "^2.0.0",
-    "katex": "^0.18.7",
+    "katex": "0.18.11",
     "mdast-util-to-string": "^4.0.0",
     "pagefind": "^1.5.2",
     "prettier": "^3.8.4",
@@ -68,4 +68,3 @@
     "esbuild@0.28.2": true
   }
 }
-

@@ -3,7 +3,37 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-10（第四十三批：侧栏分类卡 hover 错位修好，已上线 V0.1.97）**。
+> 最后更新：**2026-11-11（第四十四批：B 档四条收尾，V0.1.98）**。
+>
+> **🔧 2026-11-11（第四十四批：B 档四项，V0.1.98）**
+> 用户看完待优化清单后说「b开做吧」，把 B 档能自己动手的四条一起做掉。
+> ① **列表卡链接补尾斜杠（B8 的真问题）**：`PostPage.astro` 写的是 `url(\`/posts/${entry.id}\`)`，
+>    **没有尾斜杠** → 产物实测首页 **20 条** `href="/posts/xxx"`（带斜杠的 0 条），
+>    而线上 `/posts/xxx` 返回 **301 → /posts/xxx/**（实测），也就是说**每次点列表卡都多吃一次跳转**。
+>    改成 `getPostUrlBySlug(entry.id)`（本来就产出带斜杠的 URL）→ 产物 `no_slash=0 / with_slash=20`，
+>    三个列表页（首页 / `/2/` / `/archive/`）全部 0 条缺斜杠。
+>    ⚠️ `Calender.astro` 那两处**只能继续拼字符串**（`is:inline` 不参与打包，import 不进去），
+>    已就地补注释写明口径；`RecommendedPost.astro:113` 是客户端拼 `base + "/posts/" + id + "/"`，本来就带斜杠，未动。
+> ② **补 `--text-color-secondary`（B12）**：`markdown-extend.styl:312` 的 `.mermaid-loading` 引用它，
+>    但 `global.css` 里**只有 `--text-color`，没有 `secondary`**（参考站 CSS 里也没有，不是从那边漏抄的）。
+>    未定义 → `color` 声明整条失效 → 回退继承正文色。现补亮 `var(--grey-6)` / 暗 `var(--grey-5)`（比正文浅一档）。
+>    产物实测 `oklch(52.2% 0 0)` / `oklch(59.7% 0 0)`，`.mermaid-loading{color:var(--text-color-secondary)}` 在 `Layout.*.css` 里。
+> ③ **分类卡「更多」假开关（B10）**：分类只有 3 个、内容总高 120px = 折叠高度 `7.5rem`，
+>    所以根本裁不到东西；但按钮仍在，**点一次卡片从 218 → 190**（按钮 36px 消失 + 边距），越点越矮。
+>    修法在脚本里加一条判据：`list.scrollHeight <= list.clientHeight + 1`（scrollHeight 在 `overflow:hidden`
+>    裁切下仍返回完整内容高）→ 装得下就直接展开并隐藏按钮。
+>    实测：线上 V0.1.97 `cardH=218 / collapsed=true / btnH=36`；本地 V0.1.98 `cardH=190 / collapsed=false / btnH=0`，
+>    **190 正是 V0.1.97 点完按钮后的高度** → 内容高度零变化，只是少了那个白点一次的死按钮。
+>    ⚠️ 这是**自适应**判据而非写死 3 个分类：将来分类变多、内容真超长时按钮会照常出现且真能展开。
+> ④ **`/site.webmanifest` 的 Content-Type 仍是 `application/octet-stream`（B9 未做）**：
+>    这个是 `nginx mime.types` 缺 `webmanifest` 类型，**属服务器改动（要他当次点头）**，本批没碰。
+> 📋 验收：`build` 0 error / **52 page(s)** / 15.73s；`check` **0 error / 3 hint**（基线不变）；
+> `dist` **544 文件 / 51 index.html**；14 页 × 3 档 = **42 组全绿**（h1=1 / 溢出 0 / pageerror 0 / 缺斜杠 0）；
+> 分类卡三档实测见 ③。
+> ⚠️ **本批踩到一个编码坑（新，记一笔）**：第一次用 latin1 读写去改纯 CRLF 文件，而我插入的补丁文本含中文
+> （码点 > 255）→ 写回时被截成单字节，**产生 14 / 31 / 21 个 U+FFFD**。`git diff --numstat` 当场显示成 `-`（二进制）
+> 才暴露。已 `git checkout --` 回退，改用 **utf8 读写**（纯 CRLF 文件不需要字节级操作）后 FFFD 归 0。
+> 🔴 **通则：latin1 逐字节只适合「纯 ASCII 补丁」或「混合行尾必须按字节对齐」；插中文要么 utf8 读写，要么先转义。**
 >
 > **🔧 2026-11-10（第四十三批：分类卡 hover 行内错位，V0.1.97）**
 > 用户发桌面截图并画箭头指计数块：「hover上去有问题」。
@@ -2312,17 +2342,16 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `2d0a0e5`（V0.1.97 分类卡 hover 错位），**已推送、`HEAD == origin/main`、工作区计数 0** |
-| 工作区 | 本批动 **4 项**：`src/styles/singles/mainSingles.css`(+6/−1)、`src/components/card/Category.astro`(+2/−2)、`HANDOFF.md`、`package.json` 只动 version。**零依赖改动** |
-| 线上站点 | ✅ **2026-11-10 19:58 部署 V0.1.97**（替换前断言：`0.1.97` 必须在 / `0.1.96` 不在 / `pagefind.js` 必须在）。**线上实测**：`ver 0.1.97`、`display:flex`、三条分类行 `h=40 / rightGap=8 / centerOff=0`、`pageerror 0`。HTTP 200 |
-| 本地构建 | V0.1.97 = **544 个文件 / 51 个 `index.html` / pagefind 51**（比 V0.1.86 的 541 多 3：`github-avatar.webp` + astro 7.4.8 的两个新分块）。`build` **0 error**、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
+| 本地 HEAD | 本批提交见下，**已推送、`HEAD == origin/main`、工作区计数 0** |
+| 工作区 | 本批动 **5 项**：`src/components/layout/PostPage.astro`(+2/−2)、`src/components/card/Category.astro`(+8/−0)、`src/styles/global.css`(+4/−0)、`src/components/card/Calender.astro`(+2/−0)、`HANDOFF.md`、`package.json` 只动 version。**零依赖改动** |
+| 线上站点 | ✅ **2026-11-11 部署 V0.1.98**。**线上实测**：`ver 0.1.98`、首页分类卡 `cardH=190 / collapsed=false / btnH=0`、`--text-color-secondary` 已解析、列表卡 `href` 全带尾斜杠、`pageerror 0`。HTTP 200 |
+| 本地构建 | V0.1.98 = **544 个文件 / 51 个 `index.html` / pagefind 51**（与 V0.1.97 相同，本批无新增资产）。`build` **0 error** / 52 page(s) / 15.73s、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
 | 依赖 | 本批**零改动**。第四十批（V0.1.93）已全量更新：`astro 7.4.8` / `@astrojs/*` 各小版 / `tailwindcss 4.3.5` / `svelte 5.57.3` / `pagefind 1.6.0` / `vite 8.3.7`。天花板不变：`mermaid 11.17.2` / `typescript 6.0.3` / `katex 0.18.11`（嵌套 0.16.47 在 advisory 范围内，只能 `--force` 升 mermaid 12 → 撞天花板，判定不动）。`npm audit` 现跑 **13 条 / 退出码 1**（8 low + 5 moderate，**0 high**），四类残余全是"降级换平安"，全部保持现状 |
-| dev / preview server | 本批起过 `npm run preview` 做 hover 几何测量与截图，**收尾已精确杀掉并复查计数 = 0** |
-| agent-browser | 本会话首次实际使用（版本 **0.42.0**，与上游一致）：打开参考站、点开 `Display Settings` 三个 tab 核对控件清单，收尾已 `close` |
-| 服务器回滚资产 | `dist.old`（= V0.1.96，31M）+ **104 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
-| 临时文件 | 收尾已清 `%TEMP%` 下本会话全部 `.cjs` / `.mjs` / `.log` / `.txt` / `.tgz` / 截图（含 `cat-hover` `row-diag` `ref-*` `fix-btnright` `fix-inner-div` `sw2/sw3` `hb*.log` `cm.txt` `e.tgz` `ref-home.html` 等） |
-| 待用户拍板 | **本批新增 0 条**。**沿上批仍未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标 vs WCAG 44px。**另新增一条功能扩展清单**（第四十二批末尾给过完整对比）：音乐播放器 / 友链页 / 打赏页 / 书签导航 / Atom feed / 樱花特效 / 背景视频 / 壁纸四模式 / 瀑布流 / 卡片跟随主题色 / 文章版权声明 / 分享海报 / 回到评论 / 文章密码门 —— **他只说「先不要实现，仅告诉我」，一件都没动** |
-| 既存小坑 | 同上一批。本批**新增两条方法类**：① 分类卡在页面挂**两份**（左栏 + 移动底部堆，后者 `display:none`），扫描脚本必须只取**可见**那份，否则量出 `h=0` 全红（那一版误报过）；② `.btn-right` 这类"内联类 + 工具类"混用的元素，**只改 CSS 不够**，调用方的 `class="btn-right inline-block"` 必须一起去掉，否则 display 被盖回去 |
+| dev / preview server | 本批起过 `npm run preview` 做 42 组回归与分类卡 A/B 对比，**收尾已精确杀掉并复查计数 = 0** |
+| 服务器回滚资产 | `dist.old`（= V0.1.97）+ **105 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
+| 临时文件 | 收尾已清 `%TEMP%` 下本会话全部 `.mjs` / `.log` / `.html`（含 `b-batch*.mjs` `probe-b.mjs` `cat-cmp.mjs` `build.log` `check.log` `nf404.html` 等） |
+| 待用户拍板 | **本批新增 1 条（B9）**：`/site.webmanifest` 的 Content-Type 仍是 `application/octet-stream`（nginx `mime.types` 缺 `webmanifest`，实测 200 + 该类型）→ **属服务器改动，要他点头**。**沿上批仍未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标 vs WCAG 44px。**功能扩展清单**（第四十二批末尾给过完整对比）：音乐播放器 / 友链页 / 打赏页 / 书签导航 / Atom feed / 樱花特效 / 背景视频 / 壁纸四模式 / 瀑布流 / 卡片跟随主题色 / 文章版权声明 / 分享海报 / 回到评论 / 文章密码门 —— **他只说「先不要实现，仅告诉我」，一件都没动** |
+| 既存小坑 | 同上一批。本批**新增两条方法类**：① 分类卡在页面挂**两份**（左栏 + 移动底部堆，后者 `display:none`），扫描脚本必须只取**可见**那份，否则量出 `h=0` 全红；② `.btn-right` 这类"内联类 + 工具类"混用的元素，**只改 CSS 不够**，调用方的 `class="btn-right inline-block"` 必须一起去掉。③ **latin1 读写不能插中文**（码点 > 255 会被截成单字节 → U+FFFD），纯 CRLF 文件直接 utf8 读写即可 |
 
 ---
 ## 四、维护本文件的规矩

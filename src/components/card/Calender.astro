@@ -17,6 +17,8 @@ const weekDays = ["一", "二", "三", "四", "五", "六", "日"]
 const yearText = "年"
 
 const calendarDataUrl = url("/api/allPostMeta.json")
+// ⚠️ 这里只能拼字符串、不能用 getPostUrlBySlug：下面那段是 is:inline 脚本，不参与打包，import 不进去。
+// 尾斜杠由模板里的 `${postUrlPrefix}${post.id}/` 补，口径与 getPostUrlBySlug 一致（少一个斜杠就是一次 301）。
 const postUrlPrefix = url("/posts/")
 ---
 

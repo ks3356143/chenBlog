@@ -56,5 +56,13 @@ let isCollapsed = true
 			list?.classList.remove("collapsed")
 			btn.classList.add("hidden")
 		})
+
+		// 分类太少时「更多」是个假开关：内容本来就没超出折叠高度，
+		// 点下去卡片只会被按钮消失的那截拉矮（实测 120 → 80），看着像 bug。
+		// 判据：scrollHeight 在 overflow:hidden 裁切下仍返回完整内容高，和 clientHeight 比即可。
+		if (list && list.scrollHeight <= list.clientHeight + 1) {
+			list.classList.remove("collapsed")
+			btn?.classList.add("hidden")
+		}
 	})
 </script>

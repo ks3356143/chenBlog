@@ -1,7 +1,7 @@
 ---
 import type { CollectionEntry } from "astro:content"
 import PostCard from "@/components/layout/PostCard.astro"
-import { url } from "@/utils/url-utils"
+import { getPostUrlBySlug } from "@/utils/url-utils"
 import { getPostCover } from "@/utils/cover-utils"
 import { displaySettings } from "@/config/displaySettings"
 // 该文件主要用于渲染分页文章
@@ -35,7 +35,7 @@ const layoutCfg = displaySettings.postListLayout
 			<PostCard
 				entry={entry}
 				loading={index < 2 ? "eager" : "lazy"}
-				url={url(`/posts/${entry.id}`)}
+				url={getPostUrlBySlug(entry.id)}
 				title={entry.data.title}
 				published={entry.data.published}
 				updated={entry.data.updated}

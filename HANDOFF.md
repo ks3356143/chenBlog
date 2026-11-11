@@ -3,9 +3,40 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-11（第四十六批：A/B/C 全量优化，已上线 V0.1.100）**。
+> 最后更新：**2026-11-11（第四十七批：全面测试并修复 4 个真问题，已上线 V0.1.101）**。
 >
-> **🔧 2026-11-11（第四十六批：性能与内容 A/B/C 全量，V0.1.100）**
+> **🔧 2026-11-11（第四十七批：全面测试，V0.1.101）**
+> 用户：「全面测试下 有错误直接修改」。跑了 6 大类测试，**修掉 4 个真问题**。
+> ① 🔴 **每页两个 `<title>`（52 页全中）**：`BaseLayout:71` 输出带品牌后缀的那个，
+>    `SEO.astro:119` 又输出一个内容原标题的 → 浏览器取第一个，第二个是死代码且**不合规范**（一个文档只能有一个标题元素）。
+>    修法：删 `SEO.astro` 里的那行，`og:title` 保留原样（社交卡片要内容原标题）。
+>    ⚠️ **踩了个自造的坑**：第一版把 `<title>` 原文写进 HTML 注释解释原因，
+>    而 **Astro 不剥离 HTML 注释** → 产物里变成 3 个 title 了（`<title` 计数从 2 涨到 3）。
+>    改成纯文字描述后归 1。**教训：注释里不写可被解析的标签原文。**
+> ② 🔴 **markdown 手写 HTML 里的 `<img>` 完全没被处理**：`<div class="dis">…<img>…</div>` 这种整段 HTML
+>    在 hast 树里是 **raw 节点**而不是 element → `visit(tree,"element")` 根本看不见。
+>    33 篇里 **12 个 img** 因此完全没有 loading / decoding / alt（都在 100daysCSS 那几篇）。
+>    修法：新增 `src/plugins/raw-img-utils.mjs`（只改 `<img>` 开标签、其余字节原样保留），
+>    `rehype-figure.js` 里加一段 `visit(tree,"raw")`。**单测 10/10**（自闭合风格、单双引号、
+>    `srcset` 不算 `src`、裸属性 `alt`、属性值里的 `>` 不截断、大写 `IMG`、多图、无图原样）。
+> ③ **相册横幅与动态画廊图没有 loading 属性**：横幅是首屏 LCP → 显式 `eager` + `fetchpriority=high`；
+>    动态画廊那张（JS 换 src、远在首屏外）→ `lazy`。
+>    现在产物里**真 img 元素 567 个，缺 loading 0、缺 alt 0**（另有 15 个是代码块里被转义的文本，不算元素）。
+> ④ **两条装饰动画没有 `prefers-reduced-motion` 保护**：`bannerKenBurns`（6.5s、`forwards` 会永久留 transform）
+>    与四条波浪 `<use>`（7~20s infinite）。reduce 下现在都 `animation: none`。
+>    ⚠️ **功能性动画保留**：打字机光标 `blink`、加载圈 `cover-spin` —— 去掉会让光标不可见、加载态看不出在转。
+>
+> 📊 **测试规模**：**312 组**（52 页 × 3 断点 × 深浅主题）+ **197 条站内链接** + **146 个资源引用** +
+> **25 项交互** + **6 类边界**（无 JS / reduced-motion / 320px / 1920px / 触控 / 打印）。
+> **最终结果：312/312、链接 0 死链、资源 0 缺失、交互全绿、边界 6/6。**
+>
+> ⚠️ **测试过程中出现过的 4 次"假红"，都是我的探针写错，不是站的问题（记下来别再犯）**：
+> - `ERR_NO_BUFFER_SPACE` 一次（跑完 312 组后 Chromium 资源耗尽）→ 单独重跑 3 次全 0 失败；
+> - 「归档分类筛选无效」→ 我点了错误的按钮（页面上那么多 button，得按 `a[href*='category=']` 找）；
+> - 「返回顶部无效」→ 按钮真名是 `#back-to-top-btn`（在 `.floating-controls-container` 里），我的选择器没命中；
+> - 「动态页 0 条目」→ 类名是 `.dynamic-entry`，不是 `[data-dynamic-item]`。
+>
+> **🔧 2026-11-11（第四十六批：任务 A/B/C 全量优化，V0.1.100）**
 > 用户看完优化清单说「abc全部解决吧」，并特别交代「**解决后一定要部署后再部署的页面进行验证**，
 > 特别是你改动 js 块肯定会出问题」。所以本批**全部验证都在上线后重跑一遍**（结果见下）。
 > 🟢 **A3 正文图懒加载**（`rehype-figure.js` 里新增，全站 582 个 img 里原本 **116 个没有任何 loading 属性**）：
@@ -2434,23 +2465,23 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-11 第四十六批实测；线上 = V0.1.100**，已部署）
+## 三、当前状态快照（**2026-11-11 第四十七批实测；线上 = V0.1.101**，已部署）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `8e8da3e`（V0.1.100 A/B/C 全量优化），**已推送、`HEAD == origin/main`、工作区计数 0** |
-| 工作区 | 本批动 **6 项**：`src/plugins/rehype-figure.js`(+32 懒加载/alt)、`src/components/features/FancyboxManager.astro`(+59/−37 延迟加载)、`src/pages/rss.xml.js`(+18/−7 摘要版)、`src/pages/posts/[...slug].astro`(+14/−1 katex hash)、`package.json`/`package-lock.json`（升 5 个包） |
-| 线上站点 | ✅ **2026-11-11 12:20 部署 V0.1.100**（替换前 7 条断言：`0.1.100` 在 / `0.1.99` 不在 / pagefind / katex.css / `loading="lazy"` 在 testplantai / rss 无 `content:encoded`）。**线上实测**：`ver 0.1.100`、`rss 13,983B raw / 3,321B gzip`、42 组回归全绿 |
-| 服务器配置 | 本批**未动服务器**（第四十五批改的 `cache.conf` 保持不变） |
-| 本地构建 | V0.1.100 = **544 个文件 / 51 个 `index.html`**。`build` **0 error** / 52 page(s) / 5.82s、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
-| 依赖 | 本批升 **5 个**：`astro 7.4.8→7.4.10`（精确版）、`@astrojs/mdx 8.1.3→8.1.4`、`@astrojs/svelte 9.1.2→9.1.4`、`@astrojs/markdown-remark 7.3.6→7.3.7`、`katex 0.18.10→0.18.11`（钉精确版）、连带 `vite → 8.3.8`。天花板仍只剩 **`typescript 6.0.3`** |
-| dev / preview server | 本批起过 `npm run preview` 做本地验证，**收尾已精确杀掉并复查计数 = 0** |
-| 服务器回滚资产 | `dist.old`（= V0.1.99）+ **107 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
+| 本地 HEAD | `62c199f`（V0.1.101 全面测试修复），**已推送、`HEAD == origin/main`、工作区计数 0** |
+| 工作区 | 本批动 **7 项**：新增 `src/plugins/raw-img-utils.mjs`；改 `src/components/SEO.astro`(−1 删重复 title)、`src/plugins/rehype-figure.js`(+37 raw 分支)、`src/components/Cover.astro`(+9 reduce)、`src/styles/waves.css`(+8 reduce)、`src/pages/gallery/[album].astro`(+6)、`src/components/pages/dynamic/DynamicItemTemplate.astro`(+4) |
+| 线上站点 | ✅ **2026-11-11 14:28 部署 V0.1.101**（替换前 4 条断言：`0.1.101` 在 / `0.1.100` 不在 / pagefind / **`<title` 计数 = 1**）。**线上实测**：`ver 0.1.101`、12 样本页各 1 个 title、相册横幅 `eager+high`、raw 图 9 张全有 loading/alt、波浪 10 处 reduce |
+| 服务器配置 | 本批**未动服务器** |
+| 本地构建 | V0.1.101 = **544 个文件 / 51 个 `index.html`**。`build` **0 error** / 52 page(s) / 5.69s、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
+| 依赖 | 本批**零改动**（第四十六批升到 `astro 7.4.10` / `katex 0.18.11` / `vite 8.3.8`）。天花板仍只剩 `typescript 6.0.3` |
+| dev / preview server | 本批起过 `npm run preview`，**收尾已精确杀掉并复查计数 = 0** |
+| 服务器回滚资产 | `dist.old`（= V0.1.100）+ **108 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
 | 临时文件 | 收尾已清 `%TEMP%` 下本批全部 `.mjs` / `.cjs` / `.log` / `.tar.gz` |
-| 待用户拍板 | **本批新增 0 条**。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标 vs WCAG 44px。**功能扩展清单**（14 项）一件未动 |
-| 既存小坑 | 本批**新增两条**：① **`npm update` 在 npmmirror 源下会写出缺 optional 平台包的 lock**（`@pagefind/linux-arm64`/`windows-arm64` 丢）→ `npm ci` 拒装，`npm install` 也补不回 → 必须 `--registry=https://registry.npmjs.org` 重跑 `npm install`；② **`is:inline` 脚本一律不转译、按文档序立即执行**，所以「内联脚本外链化」不是搬运、是重构（本批判定不做） |
+| 待用户拍板 | **本批新增 0 条**。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标 vs WCAG 44px（实测只有 RSS 那个 24×32 略小，其余全过）。**功能扩展清单**（14 项）一件未动 |
+| 既有小坑 | **重复 id `banner`×3 / `announcement`×2 / `cardTags`×2 已确认为"非缺陷"**：`banner` 的 2 处都在 `<template>` 里（inert，不进渲染树）；另外两个是**刻意的桌面/移动双挂载**（五-29）。三者**零 JS 按 id 查询、CSS 全用后代选择器** → 无功能影响，**别再当 bug 查** |
 
 ---
 ## 四、维护本文件的规矩

@@ -3,7 +3,7 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-13（第五十四批：候选清单第二批 B1+B2+B3 完成并上线，V0.1.108）**。
+> 最后更新：**2026-11-13（第五十四批：候选清单第二批 B1+B2+B3 完成并上线，V0.1.108；同日追加全量复验 156 项全过）**。
 >
 > **📌 炫酷化候选清单（2026-11-13 搜 3 轮后定案，用户「记住这个列表」→ 常驻这里，别弄丢）**
 > 来源：现代博客动效 / Astro 生态 / 性能与无障碍三方向，已对照本站「已实现 / 已否决」去重。
@@ -109,6 +109,39 @@
 > ⑦ 🚀 **已上线 V0.1.108**（提交 `d240b1e`，`b68c6b7..d240b1e`；**部署前 10 条断言全过**才切换）。
 >    线上 HTTP：首页 200 / 文章页 200、`0.1.108` 4 处、`0.1.107` 0 处、CSS 哈希换新（`Layout.DeqBDRQq.css`）。
 >    回滚资产保留（`dist.old` + `dist_backup_*` 未删）。
+> ⑧ 🔍 **2026-11-13 追加：用户「你先全面验证下新的功能」→ 零代码改动的全量复验（本地 122 项 / 线上 22 项 / 手机 12 项，共 156 项，全过）**：
+>    · **B1 矩阵**：9 种组合 × 2 断点，1200px 下正文宽 **798 / 704 / 544px** 与 fontSize **15 / 16 / 18px** 全部实测对得上；
+>      768px 下即使 `wide` 正文列也只有 366px（容不下 544，三档自然收拢，无横向溢出）。
+>    · **B1 链路**：三档点击 → 属性 / localStorage（真键名 `readerSize`/`readerWidth`/`readerFont`，非 kebab）/
+>      `is-active` 高亮 / 重置全清（attrs 与 storage 双 `null`，回到 16px + 798px）；**手写 storage 不点面板也生效**
+>      （证明 `is:inline` 早应用脚本在工作）；**3 次 Swup 软导航均保持 18px/544px**；暗色 / reduced-motion /
+>      forced-colors / contrast-more 四种环境都正常，且能与 B2 叠加。
+>    · **B1 边界**：衬线只作用于正文（代码块仍 `JetBrains Mono Variable`、导航不变）；375px 点三档均生效且不溢出。
+>    · **B2**：9 个受检面（nav / 预览卡 / 帮助 / 快捷入口 / 搜索面板 / 页码 chip / 目录面板 / 浮动按钮 / 横幅链接）
+>      亮暗两版全 `backdrop-filter: none` + 实色底，`--panel-bg` = `#fff`（亮）/ `#161f1b`（暗）；
+>      偏好关掉后**可逐项精确恢复**原值（`blur(14px) saturate(1.6)`、`blur(20px) saturate(1.5)`、`blur(16px)`、`blur(12px)`），可逆。
+>    · **B3 全站 34 篇逐篇核**（chip 与各篇 frontmatter 交叉校验）：**162 个 chip**（同系列 125 / 同标签 29 / 同分类 8），
+>      32 篇各 5 个、2 篇各 1 个、**零 chip 0 篇**；label 只在 {同系列, 同标签, 同分类} 三值内，`title` 全部 >4 字，
+>      且**不存在「该篇没 series 却出现同系列 chip」这类不自洽**（34 篇 `category`/`tags` 齐全、26 篇有 `series`）。
+>    · **回归 34 项**：既有 4 个布尔开关（`cardBorder`/`bannerTitle`/`waves`/`gradient`，真实属性是短名 `data-dp-toggle`
+>      不是 `…Enabled`）与色相 slider 均可用且落 localStorage；主题切换 + reduced-motion 下仍可切；搜索宽度动画
+>      177→240px + Pagefind 真命中 2 条 + Esc 关闭；`j/k/g` 滚动 0→720→0；`?` 帮助 8 个键帽、Esc 关；
+>      **输入框内打 `jkg?` 不被劫持**；预览卡真悬停可见；首页装饰层与 22 个动画对象正常；
+>      亮暗 × 320/375/768/1200/1920 十档全部单 h1、无溢出、面板直角 `0px`。
+>    · **线上 22 项**：`0.1.108` × 4 / `0.1.107` × 0、零失败请求；B1 三档 + 重置 + 刷新持久化；
+>      **滚动后** nav 从 `blur(14px) saturate(1.6)` 变 `none` 且偏好关掉后 `--panel-bg` 从 `#fff` 回 `#ffffffd2`；
+>      B3 工具篇 5 chip（同标签/同分类）、中文 URL 的 CSS 篇 5 chip（全同系列）；软导航后仍 18px/544px；
+>      `?` 帮助、Pagefind 命中、4 断点零溢出、全程零 pageerror。
+>    · **手机 375px（真触屏上下文）12 项**：三档字号 + 窄行宽 + 衬线全部生效且不溢出；面板宽 320px 不超屏；
+>      **新控件高度 34px 与面板既有「列表/网格」同档、重置按钮 24×24 与既有重置同档**（重置常态 `opacity:0` 不可点，
+>      改动后才出现）；B2 生效；chip 最右 160/375 不溢出；推荐卡占满 325px。
+>    · 🔴 **本轮新增小坑 ⑪**：`Invoke-WebRequest.RawContentLength` 报的是**字符数**、`curl -w %{size_download}` 报**字节数**，
+>      中文页两者差 1.9 万（255032 vs 235814）。**核「线上与本地是否一致」必须用 SHA256 逐字节比**，
+>      本轮据此确认首页 `E5E40AAC…C88A`、文章页 231303 B 两边完全相同。
+>    · 🔴 **新增小坑 ⑫**：探针又一次自造假红 2 条 —— ① 手机端「控件 ≥36×36」阈值是我自造的，项目真实口径是
+>      **与面板同类既有控件同档**（`dp-choice` 34px / `dp-reset` 24px），改了判据后通过；
+>      ② B3 探针首跑 34/34 全红，原因是 `path.join` 在 Windows 给反斜杠（`replace(ROOT)` 失效）+ frontmatter
+>      正则没兼容 CRLF，**全是我脚本的 bug，页面一直是对的**。**教训：报红前先跑控制组。**
 >
 > **🔧 2026-11-13（第五十三批：候选清单第 1、2 项，V0.1.107）**
 > 用户「嗯先做12吧 然后记住这个列表」→ 做 1（链接预览卡）+ 2（键盘快捷键），清单按上表落进本文件常驻。
@@ -2838,25 +2871,25 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-13 第五十四批实测；线上 = 本地 = V0.1.108**，已部署）
+## 三、当前状态快照（**2026-11-13 第五十四批 + 追加全量复验；线上 = 本地 = V0.1.108**，已部署）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
 > ⚠️ **炫酷化候选清单常驻在文件顶部（第一节之前那张表）**：第一批 1/2 已做、3~10 待选；第二批 B1/B2/B3 已做，B4/B6 待挑。
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `d240b1e`（V0.1.108：B1+B2+B3），**已推送、`HEAD == origin/main`、工作区计数 0** |
+| 本地 HEAD | `5d3a3d3`（文档批：第五十四批 HANDOFF），**已推送、`HEAD == origin/main`、工作区计数 0**。功能提交是 `d240b1e`（V0.1.108） |
 | 工作区 | 本批 6 文件（`DisplaySettings.astro` +211 / `RecommendedPost.astro` +45-5 / `displaySettings.ts` +17 / `[...slug].astro` +9-1 / `global.css` +84 / `package.json` 版本号），**全部已提交** |
-| 线上站点 | ✅ **2026-11-13 部署 V0.1.108**（替换前 10 条断言全过、原子替换）。线上 HTTP 2/2 200、`0.1.108` 4 处、`0.1.107` 0 处、CSS 哈希 `Layout.DeqBDRQq.css`；线上浏览器 **6/6** 全过 |
+| 线上站点 | ✅ **2026-11-13 部署 V0.1.108**（替换前 10 条断言全过、原子替换）。`0.1.108` 4 处、`0.1.107` 0 处；**SHA256 逐字节核对：首页与文章页本地 = 线上完全相同**（首页 255032 B / `E5E40AAC…C88A`，文章页 231303 B） |
 | 服务器配置 | 本批**未动服务器**（只换 `dist`） |
 | 本地构建 | V0.1.108 = **550 个文件 / 54 个 html / 53 个 `index.html`**（与上批同量）。`build` 0 error / 54 page(s) / pagefind 36 页 11195 词、`check` **0 error / 0 warning / 3 hint**、`tsc` 退出 0、`docs:check` **0 错 0 警** |
-| 验收 | 静态 **8/8** · 本地浏览器 **18/18**（6 组合 × 3 断点）+ 面板真点击 + 软导航 + B2 仿真 · 线上 **6/6**；截图 10 张肉眼核对（详见第二节第五十四批） |
+| 验收 | 静态 **8/8** · 本地浏览器 **18/18**（6 组合 × 3 断点）+ 面板真点击 + 软导航 + B2 仿真 · 线上 **6/6**。**追加全量复验 156 项全过**：本地 122（复合矩阵 58 + 修正 10 + B3 全站 34 + 回归 34）/ 手机 12 / 线上 22；截图 10 张肉眼核对（详见第二节第五十四批 ⑧） |
 | 依赖 | 本批**零改动**（`astro 7.4.10` / `katex 0.18.11` / `vite 8.3.8`，天花板只剩 `typescript 6.0.3`） |
-| dev / preview server | 本批起过 `npm run preview :4321`，**已按 `CommandLine -like '*astro*preview*'` 精确杀掉、复查计数 = 0** |
-| 服务器回滚资产 | `dist.old`（= V0.1.107）+ **117 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
-| 临时文件 | 本地 `tmp-*.mjs` / `tmp-*.png` 及 `%TEMP%` 下 tar/sh 已清（计数 0）；服务器 `/tmp/chenblog_dist.tar.gz`、`/tmp/deploy.sh` 已删 |
+| dev / preview server | 复验时起过 `npm run preview :4321`（PID 13088），**已按 `CommandLine -like '*astro*preview*'` 精确杀掉、复查计数 = 0** |
+| 服务器回滚资产 | `dist.old`（= V0.1.107）+ **118 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
+| 临时文件 | 本地 `tmp-*.mjs` / `tmp-*.png` 计数 0、`%TEMP%` 下 `online-*.html` 与 tar/sh 已清；服务器 `/tmp/chenblog_dist.tar.gz`、`/tmp/deploy.sh` 计数 0 |
 | 待用户拍板 | **第二批清单剩 B4 修订史（要改 schema 得他拍）/ B6 `interpolate-size`**，其余 B1~B3 已做、B5/B7 卡前提、余下带证据否决。**候选清单第一批 3~8 仍待挑**（3 写作热力图 / 4 `content-visibility` / 5 极光 / 6 逐字解码 / 7 渐变呼吸 / 8 命令面板 / 10 标题锚点复制）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32） |
-| 既有小坑 | ① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），读 computed style 要等 `load` + 800ms；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径**（磁盘是 Unicode 原名，编了就 404，曾 26/34 条中招）；④ **本机代理会拦裸 IP**：Playwright 要 `args: ['--no-proxy-server']`，HTTP 层 `Invoke-WebRequest` 不受影响；⑤ **1200px 下右栏 `display:none`** → 侧栏「博客版本」不在 `body.innerText` 里，验版本号要数 `outerHTML`；⑥ **`URL.pathname` 已完成百分号编码，再套 `encodeURI` = 双重编码**（`%` → `%25`）；⑦ **产物里文章 href 是原始中文**，测中文文章链接要用 `#swup-container a[href^="/posts/css100"]`；⑧ **终态 `translate` 计算值是 `0px` 不是 `none`**；⑨ **`grep -qF` 固定串大小写必须与产物逐字一致**（曾把 `css100` 写成 `CSS100` → `set -e` exit 1 无输出）。<br>🔴 **本批新增第 ⑩ 条（最贵的一条）**：**未分层的 `!important` 输给 `@layer` 内的 `!important`** —— Tailwind v4 的工具类（`.max-w-none\!`、`.w-full` 等）都编在 `@layer utilities` 里，组件里写「未分层 + `!important`」想压它们**会静默失效**（实测 `max-width` 读回 `none`、三档行宽全不生效、零报错）。正确做法：**换一个对手是 non-important 的属性**（本例 `max-width` → `width`），未分层赢分层、不必加 `!important`；真要改同一属性只能把规则塞进同一 layer 或用 `@layer` 顺序控制。⚠️ 配套判据：验证宽高必须读 `getBoundingClientRect()`，`getComputedStyle().maxWidth` 在 `max-width:none` 钉住时永远报 `none`，会给出假红 |
+| 既有小坑 | ① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），读 computed style 要等 `load` + 800ms；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径**（磁盘是 Unicode 原名，编了就 404，曾 26/34 条中招）；④ **本机代理会拦裸 IP**：Playwright 要 `args: ['--no-proxy-server']`，HTTP 层 `Invoke-WebRequest` 不受影响；⑤ **1200px 下右栏 `display:none`** → 侧栏「博客版本」不在 `body.innerText` 里，验版本号要数 `outerHTML`；⑥ **`URL.pathname` 已完成百分号编码，再套 `encodeURI` = 双重编码**（`%` → `%25`）；⑦ **产物里文章 href 是原始中文**，测中文文章链接要用 `#swup-container a[href^="/posts/css100"]`；⑧ **终态 `translate` 计算值是 `0px` 不是 `none`**；⑨ **`grep -qF` 固定串大小写必须与产物逐字一致**（曾把 `css100` 写成 `CSS100` → `set -e` exit 1 无输出）。<br>🔴 **第 ⑩ 条（最贵的一条）**：**未分层的 `!important` 输给 `@layer` 内的 `!important`** —— Tailwind v4 的工具类（`.max-w-none\!`、`.w-full` 等）都编在 `@layer utilities` 里，组件里写「未分层 + `!important`」想压它们**会静默失效**（实测 `max-width` 读回 `none`、三档行宽全不生效、零报错）。正确做法：**换一个对手是 non-important 的属性**（本例 `max-width` → `width`），未分层赢分层、不必加 `!important`；真要改同一属性只能把规则塞进同一 layer 或用 `@layer` 顺序控制。⚠️ 配套判据：验证宽高必须读 `getBoundingClientRect()`，`getComputedStyle().maxWidth` 在 `max-width:none` 钉住时永远报 `none`，会给出假红。<br>🔴 **第 ⑪ 条**：`Invoke-WebRequest.RawContentLength` 是**字符数**、`curl -w %{size_download}` 是**字节数**，中文页差 1.9 万 → **核线上与本地一致要用 SHA256**。<br>🔴 **第 ⑫ 条**：`path.join` 在 Windows 给**反斜杠**（`replace(ROOT)` 静默失效 → 34 条假 404）+ **frontmatter 正则必须兼容 CRLF**；手机端触控口径是**与面板同类既有控件同档**（`dp-choice` 34px / `dp-reset` 24px），不是我自造的 36px。**报红前先跑控制组。** |
 
 ---
 ## 四、维护本文件的规矩

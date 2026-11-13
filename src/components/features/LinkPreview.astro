@@ -64,13 +64,19 @@
         let hideTimer = 0
         let raf = 0
 
-        /** 两边都归一化成 encodeURI 形式：正文里的中文 href 是已编码的百分号串 */
+        /**
+         * 两边统一规范化成 `URL.pathname`。
+         * 🔴 **绝不能在这里再套 encodeURI**：`URL.pathname` 已经把中文百分号编码好了，
+         *    再编一次会把 `%` 变成 `%25`（双重编码）→ 全站 26 个中文 slug 的预览卡
+         *    100% 查不到表（本批复验实测 0/26 命中，ASCII slug 却正常，极易漏测）。
+         *    JSON 的 key 也改用同源的 `new URL(href).pathname` 生成，见 linkPreview.json.ts。
+         */
         function keyOf(href: string): string {
             try {
                 const u = new URL(href, location.href)
                 if (u.origin !== location.origin) return ""
                 const path = u.pathname.replace(/\/{2,}/g, "/")
-                return encodeURI(path.endsWith("/") ? path : path + "/")
+                return path.endsWith("/") ? path : path + "/"
             } catch {
                 return ""
             }

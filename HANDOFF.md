@@ -3,7 +3,7 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-13（第五十三批：站内链接悬停预览卡 + 全站键盘快捷键，V0.1.107）**。
+> 最后更新：**2026-11-13（第五十三批：悬停预览卡 + 键盘快捷键 V0.1.107；全量复验修掉中文 slug 双重编码，已重新上线）**。
 >
 > **📌 炫酷化候选清单（2026-11-13 搜 3 轮后定案，用户「记住这个列表」→ 常驻这里，别弄丢）**
 > 来源：现代博客动效 / Astro 生态 / 性能与无障碍三方向，已对照本站「已实现 / 已否决」去重。
@@ -71,6 +71,39 @@
 >    Edge 渠道同样被拦，最终 `chromium.launch({ args: ['--no-proxy-server'] })` 才通（HTTP 层 `Invoke-WebRequest` 一直 200）。
 >    ⚠️ 线上探针又有 2 条自造假红：`body.innerText` 读不到 `0.1.107`（1200px 下右栏 `display:none`，版本号只在 HTML 里）
 >    要用 `outerHTML` 数；键帽实际 **8 个**不是 11 个。
+>
+> **🔎 2026-11-13 追加：用户「全面把修改从头到尾验证下 保障样式不错乱 动效不错误」→ 全量复验，抓出并修掉 1 个真缺陷**
+> ① 🔴 **真缺陷：中文 slug 预览卡 0/26 命中（双重编码）**。首版 `keyOf()` 在 `URL.pathname` 之后又套
+>    `encodeURI` → `%` 被编成 `%25`；ASCII slug（`/about/` 内链、4 篇手册）全正常，**26 篇中文文章全查不到表**，
+>    首轮只测 ASCII 链接所以漏过。修法：JSON 端新增 `pathKey()`、组件 `keyOf()` 两侧**统一用 `URL.pathname`**
+>    （它本身已完成百分号编码），不再二次编码。修后 **26/26 命中**；真机悬停 `CSS100Day(28)-振铃动画` 弹出、
+>    `/og/css100天-第28天.jpg` 解码成功、线上该文章页与 OG 图均 200，JSON 内 `%25` 计数 0。
+>    ⚠️ **`image` 仍是中文原文**（磁盘文件名），只有 **key** 是编码形式，两者别再混。
+>    ⚠️ 归档页 `a[href*="%E5%A4%A9"]` 命中的是**标签筛选链接** `/archive/?tag=...`（且在 `#swup-container` 外），
+>    不是文章链接；测中文文章要选 `#swup-container a[href^="/posts/css100"]`（产物 href 是**原始中文**，不是百分号串）。
+> ② 📋 **本轮全量验证（真跑，非推断）**：重跑 `build` 0 error / 54 page(s) / pagefind 36 页 11195 词、
+>    `check` 0 error / 3 hint、`docs:check` 0 错 0 警；静态产物 **8/8**；
+>    **动效专项 19/19**（`getAnimations()` 取到 opacity/translate/visibility 三条 180ms running 过渡、
+>    打开瞬间 opacity=0 → 260ms 收敛 1 且无残留动画、隐藏也走过渡、帮助浮层同族；
+>    reduced-motion 下 duration=0s / translate=none / 零动画对象但功能仍在；
+>    与主题圆形擦除、Swup 软导航、7 个 onload-animation、4 个磁性按钮、复制圈、噪点层共存互不打断；
+>    滚动时跟随重定位 top 482→472 不消失、视口边缘 clamp 在界内）；
+>    **样式专项 109/109**（9 个断点 320~1920 × 5 页 = 45 组，全部 200 / 无横向溢出 / 单 h1 /
+>    浮层 fixed+隐藏不占位 / 宽度不超视口；5 种内容分支（有图/无图/超长标题/超长摘要/空分类）
+>    盒子 84~137px 不塌陷、2 行标题 3 行摘要截断、直角 1px 边；亮暗打开态底色边框阴影毛玻璃、
+>    文字与键帽可区分、两卡不重叠；forced-colors 有实体边框且无毛玻璃、打印介质 display:none）；
+>    本地综合 **24/24**（含中文 slug 悬停、旧功能 6 项）；线上 **21/21** + HTTP 7/7 200；
+>    **agent-browser 优先**：本地 `open` / `press ?` / `Escape` / `/` 全通（帮助浮层进了无障碍树），
+>    线上仍因本机代理拦裸 IP 降级 Playwright `--no-proxy-server`（规则已允许的第二次失败后兜底）。
+>    亮暗 1200（中文卡+帮助卡同开）、320、768 四张线上截图肉眼核对**无样式错乱**。
+> ③ 🚀 **修复已重新部署**（提交 `a13e303`，`79cfa94..a13e303`；部署前 **10 条断言**含「中文 key 小写 `css100`」
+>    与「JSON 无 `%25`」）。⚠️ 第一次部署脚本 `exit 1` 无输出 → **查服务器后定位是我把断言固定串写成大写 `CSS100`**，
+>    产物本身全对；改小写后重跑 10/10 全过才切换，中途 `dist` 未被替换。
+>    🔴 教训：**部署脚本 `set -e` 挂掉时不要当作成功，也不要盲目重跑** —— 先逐条 `grep -qF` 定位哪条挂，
+>    确认是断言写错还是产物错，再重跑。固定串大小写必须与产物逐字一致。
+> ④ ⚠️ 探针自造假红再 3 条（都已按证据修正口径）：终态 `translate` 计算值是 **`0px` 不是 `none`**（`none` 只出现在
+>    reduced-motion 的 `!important` 覆盖）；归档页中文筛选链接不是文章链接；`?` 打开瞬间 opacity 可能已插值到 0.3，
+>    判「过渡在跑」要用 `getAnimations().length` 而非 `opacity<1` 硬比。
 >
 > **🔧 2026-11-12（第五十二批：手册 v1.8.1 → v1.8.2，V0.1.106）**
 > 用户「那个ccNewTool有新版手册更新下呗」→ 按八-9「一版一篇」**新发** `/posts/ccnewtools-manual-v182/`，
@@ -2736,18 +2769,18 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `879ec62`（V0.1.107），**已推送、`HEAD == origin/main`、工作区计数 0** |
-| 工作区 | 本批 8 个文件（3 新增 + 5 修改，703 增 / 13 删），见第二节第五十三批；**已提交** |
-| 线上站点 | ✅ **2026-11-13 部署 V0.1.107**（替换前 8 条断言全过）。线上 6/6 URL 200 / 浏览器 **58/58** / 亮暗+移动端三张截图肉眼核对无样式冲突 |
+| 本地 HEAD | `a13e303`（V0.1.107 + 中文 slug 修复），**已推送、`HEAD == origin/main`、工作区计数 0** |
+| 工作区 | 本批 8 文件 + 全量复验修复 2 文件 + HANDOFF 记录，见第二节第五十三批；**全部已提交** |
+| 线上站点 | ✅ **2026-11-13 重新部署 V0.1.107（含中文 slug 修复）**（替换前 10 条断言全过）。线上 HTTP **7/7** 200 / 浏览器 **21/21** / 亮暗 1200 + 320 + 768 四张截图肉眼核对无样式错乱 |
 | 服务器配置 | 本批**未动服务器** |
-| 本地构建 | V0.1.107 = **550 个文件 / 54 个 html / 53 个 `index.html`**（比上批 +1 JSON）。`build` **0 error** / 54 page(s) / pagefind 36 页 11195 词、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
-| 验收 | 静态 **23/23** · 浏览器 **28/28** · 旧功能回归 **6/6**（详见第二节第五十三批） |
+| 本地构建 | V0.1.107 = **550 个文件 / 54 个 html / 53 个 `index.html`**（比上批 +1 JSON）。重跑 `build` **0 error** / 54 page(s) / pagefind 36 页 11195 词、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
+| 验收 | 静态 **23/23** + 修复后 **8/8** · 本地浏览器 **28/28** · 旧功能 **6/6** · **动效 19/19** · **样式 109/109** · 本地综合 **24/24** · 线上 **58/58** + 修复后 **21/21**（详见第二节第五十三批） |
 | 依赖 | 本批**零改动**（仍 `astro 7.4.10` / `katex 0.18.11` / `vite 8.3.8`，天花板只剩 `typescript 6.0.3`）；`agent-browser` 本地 0.43.0 = 上游 latest，无需升级 |
 | dev / preview server | 本批起过 `npm run preview :4321`，**收尾需精确杀掉并复查计数 = 0** |
-| 服务器回滚资产 | `dist.old`（= V0.1.105）+ **114 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
-| 临时文件 | `%TEMP%\ccblog-batch53\` 下本批 `.mjs` / `.log`，收尾需清 |
+| 服务器回滚资产 | `dist.old`（= 修复前 V0.1.107）+ **116 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
+| 临时文件 | `%TEMP%\ccblog-verify53\` 下本轮 `.mjs` / `.log` / 截图，收尾需清；服务器 `/tmp/chenblog_dist.tar.gz` 需删 |
 | 待用户拍板 | **本批新增 0 条**。**候选清单 3~8 待他挑**（3 写作热力图 / 4 `content-visibility` / 5 极光 / 6 逐字解码 / 7 渐变呼吸 / 8 命令面板 / 10 标题锚点复制）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32） |
-| 既有小坑 | 本批**新增五条**：① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为，别用这个判据；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），且读 computed style 要等 `load` + 800ms，否则 CSS 没加载完会误报 `visibility:visible`；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径** —— 磁盘上是 Unicode 原名，编了就 404（本批 26/34 条中招），中文 URL 交给浏览器自动编码；④ **本机代理会拦裸 IP**：`agent-browser` / Edge 渠道访问 `http://47.108.230.220` 都是 `ERR_BLOCKED_BY_CLIENT`，Playwright 要 `args: ['--no-proxy-server']`；HTTP 层 `Invoke-WebRequest` 不受影响；⑤ **1200px 下右栏 `display:none`** → 侧栏「博客版本」不在 `body.innerText` 里，验版本号要数 `outerHTML` |
+| 既有小坑 | 本批**新增五条**：① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为，别用这个判据；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），且读 computed style 要等 `load` + 800ms，否则 CSS 没加载完会误报 `visibility:visible`；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径** —— 磁盘上是 Unicode 原名，编了就 404（本批 26/34 条中招），中文 URL 交给浏览器自动编码；④ **本机代理会拦裸 IP**：`agent-browser` / Edge 渠道访问 `http://47.108.230.220` 都是 `ERR_BLOCKED_BY_CLIENT`，Playwright 要 `args: ['--no-proxy-server']`；HTTP 层 `Invoke-WebRequest` 不受影响；⑤ **1200px 下右栏 `display:none`** → 侧栏「博客版本」不在 `body.innerText` 里，验版本号要数 `outerHTML`；⑥ **`URL.pathname` 已完成百分号编码，再套 `encodeURI` = 双重编码**（`%` → `%25`）→ 中文 slug 全查不到表，key 口径两端必须一致（本轮全量复验才抓到）；⑦ **产物里文章 href 是原始中文**，而归档页 `a[href*="%E5%A4%A9"]` 命中的是标签筛选链接且在 Swup 容器外，测中文文章链接要用 `#swup-container a[href^="/posts/css100"]`；⑧ **终态 `translate` 计算值是 `0px` 不是 `none`**（`none` 只属 reduced-motion 覆盖）；⑨ **`grep -qF` 固定串大小写必须与产物逐字一致**（本轮部署断言把 `css100` 写成 `CSS100` → `set -e` exit 1 无输出，逐条重跑才定位，中途 `dist` 未被替换） |
 
 ---
 ## 四、维护本文件的规矩

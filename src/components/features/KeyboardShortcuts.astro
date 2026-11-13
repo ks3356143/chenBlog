@@ -1,0 +1,124 @@
+---
+/**
+ * 全站键盘快捷键（2026-11-13，第五十三批第 2 项）。
+ *
+ *   /        唤起站内搜索（复用 Ctrl+K 那条入口，不另造一套）
+ *   j / k    向下 / 向上滚动一屏（约 0.8 视口高）
+ *   g        回到顶部（与 #back-to-top-btn 同一动作）
+ *   ?        打开快捷键帮助浮层
+ *   Esc      关帮助浮层
+ *
+ * 🔴 五条实现约束：
+ * ① **输入框/可编辑区一律不接管**：input / textarea / select / contentEditable /
+ *    任何 contenteditable 祖先 → 直接 return，否则打字被劫持（这是本功能最大风险）。
+ * ② **不抢已有快捷键**：Ctrl/⌘/Alt/Shift 组合键全部放行（Ctrl+K 归 Search.svelte）；
+ *    页面上有模态/帮助浮层打开时只处理 Esc，其余放行。
+ * ③ **`/` 不自己实现搜索**：派发一个带_CTRL+K 等价语义的自定义事件 `blog:focus-search`，
+ *    由 Search.svelte 里那一个监听收口 → 全站只有一处「打开搜索」的实现。
+ *    （不派发 KeyboardEvent 伪造 Ctrl+K：isTrusted=false 且容易与别的监听打架。）
+ * ④ **document 级监听只挂一次**（`window.reinitOnce`，十-14）；Swup 换容器不影响它。
+ * ⑤ **浮层走 `aria-expanded` + opacity/visibility/transform**（五-41），不用 `hidden`/`display`；
+ *    它是 `role="dialog" aria-modal="false"`，不做焦点陷阱（非模态，不打断阅读）。
+ *
+ * ⚠️ `j/k` 用 `scrollBy` 的平滑滚动；`prefers-reduced-motion` 下改 instant。
+ * ⚠️ 帮助浮层挂在 body 末尾、Layout 之外没有被换掉的任何容器里都行 —— 本组件放
+ *    Layout 尾部（Swup 容器外），所以节点不会随切页消失。
+ */
+---
+
+<div id="shortcut-help" class="shortcut-help" role="dialog" aria-modal="false" aria-label="键盘快捷键" aria-hidden="true">
+    <div class="sh-head">
+        <span>键盘快捷键</span>
+        <button type="button" class="sh-close" aria-label="关闭快捷键帮助">×</button>
+    </div>
+    <ul class="sh-list">
+        <li><kbd>/</kbd><span>搜索</span></li>
+        <li><kbd>Ctrl</kbd><kbd>K</kbd><span>搜索</span></li>
+        <li><kbd>J</kbd><span>向下滚动</span></li>
+        <li><kbd>K</kbd><span>向上滚动</span></li>
+        <li><kbd>G</kbd><span>回到顶部</span></li>
+        <li><kbd>?</kbd><span>显示本帮助</span></li>
+        <li><kbd>Esc</kbd><span>关闭浮层</span></li>
+    </ul>
+    <div class="sh-foot">在输入框里打字时，快捷键不会生效</div>
+</div>
+
+<script>
+    function bindShortcuts() {
+        const help = document.getElementById("shortcut-help")
+        if (!help) return false
+        const closeBtn = help.querySelector<HTMLButtonElement>(".sh-close")
+        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)")
+
+        function setHelp(open: boolean) {
+            help!.setAttribute("aria-hidden", open ? "false" : "true")
+            if (open) help!.setAttribute("data-visible", "")
+            else help!.removeAttribute("data-visible")
+            // 让背后的按钮显隐跟 aria 态保持一致（五-16：Header 浮层同族）
+            closeBtn!.setAttribute("aria-expanded", String(open))
+        }
+        function isHelpOpen() {
+            return help!.hasAttribute("data-visible")
+        }
+
+        closeBtn?.addEventListener("click", () => setHelp(false))
+        document.addEventListener("click", e => {
+            const t = e.target as HTMLElement | null
+            if (isHelpOpen() && t && !help!.contains(t)) setHelp(false)
+        })
+
+        /** 打字/编辑态：一律不抢 */
+        function typing(e: KeyboardEvent): boolean {
+            const t = e.target as HTMLElement | null
+            if (!t) return false
+            const tag = t.tagName
+            if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true
+            if (t.isContentEditable) return true
+            return !!t.closest?.('[contenteditable=""], [contenteditable="true"]')
+        }
+
+        document.addEventListener("keydown", e => {
+            if (e.defaultPrevented) return
+            if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return
+            if (typing(e)) return
+
+            const key = e.key
+            if (key === "Escape") {
+                if (isHelpOpen()) { e.preventDefault(); setHelp(false) }
+                return
+            }
+            if (isHelpOpen()) return // 帮助浮层打开时其余键不触发别的动作
+
+            if (key === "?") {
+                e.preventDefault()
+                setHelp(!isHelpOpen())
+                return
+            }
+            if (key === "/") {
+                // 与 Ctrl+K 同一个收口：Search.svelte 监听这个自定义事件
+                e.preventDefault()
+                document.dispatchEvent(new CustomEvent("blog:focus-search"))
+                return
+            }
+            const k = key.toLowerCase()
+            if (k === "j" || k === "k") {
+                e.preventDefault()
+                window.scrollBy({
+                    top: (k === "j" ? 1 : -1) * Math.round(window.innerHeight * 0.8),
+                    behavior: reduce.matches ? "instant" : "smooth",
+                })
+                return
+            }
+            if (k === "g") {
+                e.preventDefault()
+                window.scrollTo({ top: 0, behavior: reduce.matches ? "instant" : "smooth" })
+            }
+        })
+
+        // 软导航后收起帮助（节点在容器外不会被换，但状态要复位）
+        document.addEventListener("swup:contentReplaced", () => setHelp(false))
+        return true
+    }
+
+    window.reinitOnce("keyboard-shortcuts", bindShortcuts)
+</script>

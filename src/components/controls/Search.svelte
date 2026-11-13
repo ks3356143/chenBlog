@@ -189,12 +189,18 @@
 			e.preventDefault();
 			focusSearch();
 		};
+		// 「/」快捷键的收口：KeyboardShortcuts.astro 不自己实现搜索，只派发这个事件。
+		// 全站「打开并聚焦搜索」只有 focusSearch 一处实现，Ctrl+K 与 / 完全同行为
+		// （含移动端开面板、已有内容全选）。Header 在 Swup 容器外，本监听天然只挂一次。
+		const onFocusSearchEvent = () => focusSearch();
 		document.addEventListener("keydown", onShortcut);
+		document.addEventListener("blog:focus-search", onFocusSearchEvent);
 		document.addEventListener("click", onDocClick);
 		// Header 在 Swup 容器外不会被替换，切页后手动收一次
 		document.addEventListener("swup:contentReplaced", closeAll);
 		return () => {
 			document.removeEventListener("keydown", onShortcut);
+			document.removeEventListener("blog:focus-search", onFocusSearchEvent);
 			document.removeEventListener("click", onDocClick);
 			document.removeEventListener("swup:contentReplaced", closeAll);
 		};

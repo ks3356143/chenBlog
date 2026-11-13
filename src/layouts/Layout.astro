@@ -30,6 +30,10 @@ import ScrollReveal from "@/components/features/ScrollReveal.astro"
 import CardSpotlight from "@/components/features/CardSpotlight.astro"
 import CopyRing from "@/components/features/CopyRing.astro"
 import MagneticButtons from "@/components/features/MagneticButtons.astro"
+// 站内链接悬停预览卡 / 全站键盘快捷键（2026-11-13 第五十三批）
+// 两者都挂在 Swup 容器外的 Layout 尾部：节点不随切页被替换，脚本走 reinitOnce 只挂一次
+import LinkPreview from "@/components/features/LinkPreview.astro"
+import KeyboardShortcuts from "@/components/features/KeyboardShortcuts.astro"
 
 // 中间部分-分类导航栏是否显示根据配置
 const showCategoryBar = !!siteConfig.categoryBar
@@ -189,4 +193,8 @@ const isHomePage = pathname === "/" || /^\/\d+$/.test(pathname)
     <CopyRing />
     <!-- 磁性按钮：给小控件一点点"被吸过去"的手感（触屏/reduced-motion 自动关） -->
     <MagneticButtons />
+    <!-- 站内链接悬停预览卡：浮层 fixed，挂在容器外避免被 overflow:hidden 祖先裁剪 -->
+    <LinkPreview />
+    <!-- 键盘快捷键 + ? 帮助浮层：同样只挂一次，切页后状态自动复位 -->
+    <KeyboardShortcuts />
 </BaseLayout>

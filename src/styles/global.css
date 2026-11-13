@@ -782,3 +782,237 @@ html[data-theme="dark"] .dynamic-year-item {
     }
 }
 
+
+/* ==========================================================================
+   站内链接悬停预览卡 / 键盘快捷键帮助（2026-11-13，第五十三批）
+   全局样式：两个组件都挂在 Swup 容器外，但只在「渲染了它们的页面」才可能带 scoped
+   <style>，而 head 不随软导航更换 → 布局/状态机规则必须进全局（十-2 / 五-16）。
+   观感对齐全站语言：直角、1px --line-divider、--card-bg 底、--primary 点缀，
+   与 .search-panel / .float-panel 同一套毛玻璃与阴影。
+   ========================================================================== */
+
+.link-preview-card {
+    position: fixed;
+    z-index: 1200;
+    top: 0;
+    left: 0;
+    display: flex;
+    gap: 0.75rem;
+    width: min(22rem, calc(100vw - 1rem));
+    padding: 0.875rem;
+    border: 1px solid var(--line-divider);
+    background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 6px 18px -8px color-mix(in oklch, var(--primary) 60%, transparent),
+        0 14px 40px -12px rgb(0 0 0 / 0.28);
+    color: var(--text-color);
+    pointer-events: none;
+    /* 五-41：不靠 display/hidden 切换，opacity + visibility + translate 才能插值 */
+    opacity: 0;
+    visibility: hidden;
+    translate: 0 6px;
+    transition: opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+        translate 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 0.18s;
+}
+
+.link-preview-card[data-visible] {
+    opacity: 1;
+    visibility: visible;
+    translate: 0 0;
+}
+
+.link-preview-card .lp-text {
+    min-width: 0;
+    flex: 1;
+}
+
+.link-preview-card .lp-title {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--text-color);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
+.link-preview-card .lp-desc {
+    margin-top: 0.375rem;
+    font-size: 0.75rem;
+    line-height: 1.55;
+    color: var(--content-meta);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+}
+
+.link-preview-card .lp-meta {
+    margin-top: 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.link-preview-card .lp-thumb {
+    width: 5.5rem;
+    flex: none;
+    align-self: flex-start;
+    aspect-ratio: 1200 / 630;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.link-preview-card .lp-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.link-preview-card .lp-thumb[data-empty] {
+    display: none;
+}
+
+/* 键盘快捷键帮助：右下角浮层，避开 .floating-controls-container（z-1000 / bottom:4rem） */
+.shortcut-help {
+    position: fixed;
+    z-index: 1300;
+    right: 1rem;
+    bottom: 1rem;
+    width: min(19rem, calc(100vw - 2rem));
+    padding: 1rem 1.125rem;
+    border: 1px solid var(--line-divider);
+    background: color-mix(in srgb, var(--card-bg) 94%, transparent);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 6px 18px -8px color-mix(in oklch, var(--primary) 60%, transparent),
+        0 14px 40px -12px rgb(0 0 0 / 0.3);
+    color: var(--text-color);
+    opacity: 0;
+    visibility: hidden;
+    translate: 0 8px;
+    transition: opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+        translate 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 0.18s;
+}
+
+.shortcut-help[data-visible] {
+    opacity: 1;
+    visibility: visible;
+    translate: 0 0;
+}
+
+.shortcut-help .sh-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    padding-bottom: 0.625rem;
+    border-bottom: 1px solid var(--line-divider);
+}
+
+.shortcut-help .sh-close {
+    border: 0;
+    background: none;
+    color: var(--content-meta);
+    font-size: 1.375rem;
+    line-height: 1;
+    padding: 0 0.25rem;
+    cursor: pointer;
+}
+
+.shortcut-help .sh-close:hover {
+    color: var(--primary);
+}
+
+.shortcut-help .sh-list {
+    list-style: none;
+    margin: 0.625rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.shortcut-help .sh-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+}
+
+.shortcut-help .sh-list li span:last-child {
+    margin-left: auto;
+    color: var(--content-meta);
+}
+
+.shortcut-help kbd {
+    display: inline-block;
+    min-width: 1.5rem;
+    padding: 0.125rem 0.375rem;
+    border: 1px solid var(--line-divider);
+    background: color-mix(in srgb, var(--card-bg) 60%, transparent);
+    text-align: center;
+    font-family: inherit;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.shortcut-help .sh-foot {
+    margin-top: 0.75rem;
+    padding-top: 0.625rem;
+    border-top: 1px solid var(--line-divider);
+    font-size: 0.6875rem;
+    color: var(--content-meta);
+}
+
+/* 关掉动效时功能仍在，只去掉过渡（不学噪点层整层隐藏） */
+@media (prefers-reduced-motion: reduce) {
+    .link-preview-card,
+    .shortcut-help {
+        transition: none;
+    }
+    .link-preview-card,
+    .shortcut-help {
+        translate: none !important;
+    }
+}
+
+/* 强制配色 / 高对比：只靠底色区分的浮层要有真边框 */
+@media (forced-colors: active) {
+    .link-preview-card,
+    .shortcut-help {
+        border: 1px solid CanvasText;
+        background: Canvas;
+        color: CanvasText;
+        backdrop-filter: none;
+    }
+    .link-preview-card .lp-thumb img {
+        border: 1px solid CanvasText;
+    }
+}
+
+@media (prefers-contrast: more) {
+    .link-preview-card,
+    .shortcut-help {
+        border-color: #00000047;
+    }
+}
+
+/* 触屏：没有 hover，鼠标分支没挂，浮层不该出现（键盘 focusin 仍可用，这里只压观感） */
+@media (hover: none) {
+    .link-preview-card {
+        width: min(20rem, calc(100vw - 1rem));
+    }
+}
+
+@media print {
+    .link-preview-card,
+    .shortcut-help {
+        display: none !important;
+    }
+}

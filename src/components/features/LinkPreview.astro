@@ -1,0 +1,215 @@
+---
+/**
+ * 站内链接悬停预览卡（2026-11-13，第五十三批第 1 项）。
+ *
+ * 效果：鼠标悬停 / 键盘聚焦「指向另一篇文章」的站内链接时，浮出一张小卡
+ *       （标题 + 摘要 + 分类/日期，有 OG 图时右侧带缩略图）。
+ *
+ * 🔴 六条实现约束（每条都有理由，改动前先读）：
+ * ① **数据走构建期静态 JSON** `/api/linkPreview.json`，懒加载：进页面不发请求，
+ *    第一次真正悬停才 fetch 一次并缓存到模块闭包里（33 篇 × 全站 54 页，别让每页白付）。
+ * ② **只挂 document 级委托 + `window.reinitOnce`**（十-14）：Swup 换掉的是容器，
+ *    document 上的监听不会被替换，挂两次就会「一次悬停弹两层」。
+ * ③ **只认 `#swup-container` 内的链接**，且必须是 `a[href^="/posts/"]`、
+ *    不带 `target`、不带 `download`、不是当前页 → 不碰导航/侧栏/分页/标签/卡片封面链接。
+ *    ⚠️ 列表卡标题也是 `/posts/...`，所以列表页天然也能预览（有意为之）。
+ * ④ **图用裸 `<img>` + `textContent`**：JSON 里的标题/摘要是数据，绝不 `innerHTML` 拼；
+ *    有独立 OG 图才写 `src`（构建期已判存在），不拼 404 路径。
+ * ⑤ **浮层不靠 `hidden`/`display` 切换**（五-41），由 `data-visible` 驱动
+ *    `opacity/visibility/translate`；`prefers-reduced-motion` 下只去掉过渡、功能仍在。
+ * ⑥ **触屏不挂**（`hover: none`）：手机上没有 hover，浮层只会挡住点按；
+ *    键盘 `focusin` 仍可触发，所以卡片里所有装饰都 `aria-hidden`，不污染读屏。
+ *
+ * 位置：用 `getBoundingClientRect()` + `fixed`，避开 `overflow:hidden` 的祖先裁剪；
+ *      视口边缘做 clamp，右侧空间不足就翻到左边、下方空间不足就翻到上方。
+ */
+---
+
+<div id="link-preview-card" class="link-preview-card" aria-hidden="true">
+    <div class="lp-text">
+        <div class="lp-title"></div>
+        <div class="lp-desc"></div>
+        <div class="lp-meta"></div>
+    </div>
+    <div class="lp-thumb"><img alt="" loading="lazy" decoding="async" /></div>
+</div>
+
+<script>
+    type PreviewData = {
+        title: string
+        description: string
+        date: string
+        category: string
+        image?: string
+    }
+
+    function bindLinkPreview() {
+        const card = document.getElementById("link-preview-card")
+        if (!card) return false
+
+        // 触屏没有 hover；键盘 focusin 分支在下面单独处理，这里只判断「是否要挂鼠标分支」
+        const noHover = window.matchMedia("(hover: none)").matches
+        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
+        const elTitle = card.querySelector<HTMLElement>(".lp-title")!
+        const elDesc = card.querySelector<HTMLElement>(".lp-desc")!
+        const elMeta = card.querySelector<HTMLElement>(".lp-meta")!
+        const elThumb = card.querySelector<HTMLElement>(".lp-thumb")!
+        const elImg = card.querySelector<HTMLImageElement>("img")!
+
+        let data: Record<string, PreviewData> | null = null
+        let loading: Promise<Record<string, PreviewData>> | null = null
+        let current: HTMLAnchorElement | null = null
+        let showTimer = 0
+        let hideTimer = 0
+        let raf = 0
+
+        /** 两边都归一化成 encodeURI 形式：正文里的中文 href 是已编码的百分号串 */
+        function keyOf(href: string): string {
+            try {
+                const u = new URL(href, location.href)
+                if (u.origin !== location.origin) return ""
+                const path = u.pathname.replace(/\/{2,}/g, "/")
+                return encodeURI(path.endsWith("/") ? path : path + "/")
+            } catch {
+                return ""
+            }
+        }
+
+        function load(): Promise<Record<string, PreviewData>> {
+            if (data) return Promise.resolve(data)
+            if (loading) return loading
+            loading = fetch("/api/linkPreview.json")
+                .then(r => (r.ok ? r.json() : {}))
+                .then((j: Record<string, PreviewData>) => (data = j || {}))
+                .catch(() => (data = {}))
+            return loading
+        }
+
+        /** 合格的内部文章链接；返回归一化 key 或空串 */
+        function match(target: EventTarget | null): { key: string; link: HTMLAnchorElement } | null {
+            const t = target as HTMLElement | null
+            const a = t?.closest?.("a[href]") as HTMLAnchorElement | null
+            if (!a || !a.closest("#swup-container")) return null
+            if (a.target && a.target !== "_self") return null
+            if (a.hasAttribute("download")) return null
+            const raw = a.getAttribute("href") || ""
+            if (!raw.startsWith("/posts/")) return null
+            const key = keyOf(raw)
+            if (!key) return null
+            // 指向自己（或自己的锚点）不弹
+            if (key === keyOf(location.pathname)) return null
+            return { key, link: a }
+        }
+
+        function position(link: HTMLAnchorElement) {
+            cancelAnimationFrame(raf)
+            raf = requestAnimationFrame(() => {
+                const r = link.getBoundingClientRect()
+                const w = card!.offsetWidth
+                const h = card!.offsetHeight
+                const gap = 12
+                const pad = 8
+                let left = r.left
+                let top = r.bottom + gap
+                if (left + w > window.innerWidth - pad) left = window.innerWidth - w - pad
+                if (left < pad) left = pad
+                if (top + h > window.innerHeight - pad) top = r.top - h - gap
+                if (top < pad) top = pad
+                card!.style.left = `${Math.round(left)}px`
+                card!.style.top = `${Math.round(top)}px`
+            })
+        }
+
+        function fill(d: PreviewData) {
+            // 全用 textContent：标题/摘要是 JSON 数据，不进 innerHTML
+            elTitle.textContent = d.title || ""
+            elDesc.textContent = d.description || ""
+            elMeta.textContent = [d.category, d.date].filter(Boolean).join(" · ")
+            if (d.image) {
+                elImg.src = d.image
+                elThumb.removeAttribute("data-empty")
+            } else {
+                elImg.removeAttribute("src")
+                elThumb.setAttribute("data-empty", "")
+            }
+        }
+
+        function show(link: HTMLAnchorElement, key: string) {
+            clearTimeout(hideTimer)
+            clearTimeout(showTimer)
+            current = link
+            // 120ms 延迟：鼠标扫过一片链接时不逐个弹，也不给每页白付请求
+            showTimer = window.setTimeout(async () => {
+                const map = await load()
+                if (current !== link) return
+                const d = map[key]
+                if (!d) return
+                fill(d)
+                position(link)
+                card!.setAttribute("data-visible", "")
+                card!.setAttribute("data-loaded", "")
+            }, reduce ? 0 : 120)
+        }
+
+        function hide() {
+            clearTimeout(showTimer)
+            current = null
+            hideTimer = window.setTimeout(() => card!.removeAttribute("data-visible"), reduce ? 0 : 80)
+        }
+
+        /** 浮层当前是否真的显示着（用于滚动时决定是否跟随） */
+        function shown() {
+            return card!.hasAttribute("data-visible") && !!current
+        }
+
+        if (!noHover) {
+            document.addEventListener(
+                "mouseover",
+                e => {
+                    const m = match(e.target)
+                    if (!m) {
+                        // 移开到非链接区域时收起（relatedTarget 也要查，避免链接间移动时闪）
+                        if (!match(e.relatedTarget as EventTarget | null)) hide()
+                        return
+                    }
+                    show(m.link, m.key)
+                },
+                { passive: true },
+            )
+            document.addEventListener("mouseout", e => {
+                if (match(e.target) && !match(e.relatedTarget as EventTarget | null)) hide()
+            }, { passive: true })
+            // 🔴 滚动时**不能无脑 hide**：scrollIntoViewIfNeeded / 平滑滚动到链接后鼠标
+            //    已经停在那儿了，不会再有第二次 mouseover，浮层会被这次 hide 永久收掉
+            //    （本批实测：loaded=true 但 data-visible 被摘）。改成「跟随重定位」，
+            //    只有链接真滚出视口才收。
+            window.addEventListener("scroll", () => {
+                if (!shown()) return
+                const r = current!.getBoundingClientRect()
+                if (r.bottom < 0 || r.top > window.innerHeight) { hide(); return }
+                position(current!)
+            }, { passive: true })
+        }
+
+        // 键盘：Tab 聚焦到站内文章链接时同样给预览（触屏设备也保留这一条）
+        document.addEventListener("focusin", e => {
+            const m = match(e.target)
+            if (m) show(m.link, m.key)
+            else hide()
+        })
+        document.addEventListener("focusout", e => {
+            if (match(e.target)) hide()
+        })
+
+        // 切页时收起，避免浮层挂在旧坐标上（滚动的跟随逻辑见上面 hover 分支）
+        document.addEventListener("swup:contentReplaced", () => { current = null; hide() })
+        document.addEventListener("keydown", e => {
+            if (e.key === "Escape") { current = null; hide() }
+        })
+
+        return true
+    }
+
+    window.reinitOnce("link-preview", bindLinkPreview)
+</script>

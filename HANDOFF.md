@@ -3,7 +3,65 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-12（第五十二批：CCNewTools 手册同步到 v1.8.2，新发一篇，已上线 V0.1.106）**。
+> 最后更新：**2026-11-13（第五十三批：站内链接悬停预览卡 + 全站键盘快捷键，V0.1.107）**。
+>
+> **📌 炫酷化候选清单（2026-11-13 搜 3 轮后定案，用户「记住这个列表」→ 常驻这里，别弄丢）**
+> 来源：现代博客动效 / Astro 生态 / 性能与无障碍三方向，已对照本站「已实现 / 已否决」去重。
+> 参考链接：hovercard 构建期 JSON 思路 [jamesg.blog](https://jamesg.blog/2022/10/12/hovercards) ·
+> 快捷键惯例 [justzix.com](https://www.justzix.com/en/blog/add-custom-keyboard-shortcuts-to-any-website) ·
+> 热力图纯 CSS 范式 [pandatoolbox.com](https://pandatoolbox.com/css-activity-heatmap-generator) ·
+> `content-visibility` [innoweb.com.au](https://www.innoweb.com.au/blog/optimise-page-redering-performance-lower-tbt-with-css-content-visibility) ·
+> CSS 动效 2026 现状 [empire-ui.com](https://empire-ui.com/blog/css-scroll-animations) ·
+> 3D tilt 卡（不推荐）[codefronts.com](https://codefronts.com/components/css-3d-tilt-hover-cards/) ·
+> 阅读增强三件套 [riebeckite.dev](https://riebeckite.dev/docs/plugins/ux) ·
+> Astro 7.4 官方 [astro.build](https://astro.build/) · 跨文档 View Transitions [MDN](https://developer.mozilla.org/en-US/docs/Web/API/View_Transition_API/Using) / [web.dev](https://web.dev/articles/view-transitions)。
+>
+> | # | 项 | 状态 | 结论 / 前提 |
+> |---|---|---|---|
+> | **1** | **站内链接悬停预览卡** | ✅ **本批已做** | 构建期 `linkPreview.json` + `LinkPreview.astro`；零依赖 |
+> | **2** | **键盘快捷键层**（`/` `j/k` `g` `?` + 帮助浮层） | ✅ **本批已做** | `KeyboardShortcuts.astro`；`/` 派发 `blog:focus-search` 由 `Search.svelte` 收口 |
+> | 3 | 写作热力图（GitHub 式贡献日历，放 `/archive/`） | ⬜ 未做 | 纯构建期 HTML+CSS 零 JS；⚠️ 本站仅 **34 篇**且高度集中 → 全年 52 周图几乎全空，建议改「近 12 周」当小组件 |
+> | 4 | `content-visibility: auto` 长文渲染优化 | ⬜ 未做 | 唯一有真实性能数字的方向；⚠️ 要单独一批，专测 `contain-intrinsic-size` 布局跳动 / `#anchor` 跳转 / `Ctrl+F` / 与 ScrollReveal 的 IO 共存 |
+> | 5 | 极光 / mesh 渐变背景 | ⬜ 未做（原第二梯队） | 纯 CSS；与现有噪点+壁纸 Ken Burns+聚光层叠加容易糊，三类偏好设置下要整层关 |
+> | 6 | 逐字解码文字（scramble） | ⬜ 未做（原第二梯队） | ⚠️ 会改 DOM 文本 → Pagefind/SEO 取到乱码，必须 SSR 出真文字、JS 只做视觉覆盖 |
+> | 7 | 渐变呼吸文字 | ⬜ 未做（原第二梯队） | ⚠️ 与已做的「标题流光」直接打架（五-48 刻意不用 `background-clip:text`），要做只能改现有那条，别叠加 |
+> | 8 | 命令面板（`Ctrl+K` 扩展） | ⬜ 未做（原第二梯队） | 复用 Pagefind 零依赖；必须与现有搜索框**二选一**，别两套并存 |
+> | 9 | WebGL 流体背景 | ⛔ 不推荐 | 唯一需要新依赖的方向；移动端 GPU 成本 + 纯 HTTP 无 CDN |
+> | 10 | 标题 hover 锚点 + 复制本节链接 | ⬜ 未做 | `rehypeSlug` / `rehypeAutolinkHeadings` 已在链里（append `#`），先核是否已有再定；中文锚点 id 要单独测 |
+> | — | CSS 3D tilt 卡片 | ⛔ 不推荐 | 与「hover 上浮 2px + 边框发光 + 整片聚光层」三层分工冲突（五-28），10 张卡每帧 setProperty 掉帧 |
+> | — | `@view-transition { navigation: auto }` 跨文档过渡 | ⛔ 不推荐 | 本站 Swup 已接管导航，同开必然双重过渡冲突；仅 `prefers-reduced-motion` 缝隙可用，收益太窄 |
+> | — | 阅读进度条 / 回顶 / TOC scrollspy / 阅读时长 / 字数 / 系列导航 / 相关文章 | ✅ 站内已有 | 别重复实现；scrollspy 见 `FloatingToc.astro` 的 `toc-active-indicator`，动手前先核 |
+> | — | 第一梯队 4 项（噪点/磁性/标题流光/复制扩散圈）+ 主题圆形擦除 | ✅ 已上线 | 第五十批，V0.1.104 |
+> | — | E2 scroll-driven CSS · 内联脚本外链化 · SVG 去重 · 相册重压 · LQIP · Swup 预加载 · 顶部渐变高光 · 通用 widget 折叠 · 番组/VNDB/B站 · 标签药丸改全圆 · 二维码压缩 · 跨页进度条 | ⛔ 已否决 | 都有实测依据，见历批记录，**别再当新发现重提** |
+>
+> **🔧 2026-11-13（第五十三批：候选清单第 1、2 项，V0.1.107）**
+> 用户「嗯先做12吧 然后记住这个列表」→ 做 1（链接预览卡）+ 2（键盘快捷键），清单按上表落进本文件常驻。
+> ① 🟢 **链接悬停预览卡**：新增 `src/pages/api/linkPreview.json.ts`（构建期静态 JSON，**34 篇**，
+>    字段 title/description/date/category/image，`image` 只在 `public/og/<slug>.jpg` 真实存在时写）+ 
+>    `src/components/features/LinkPreview.astro`（document 级委托 + `reinitOnce`，只认 `#swup-container`
+>    内 `a[href^="/posts/"]`；首次真悬停才 fetch 并缓存；`textContent` 填充不进 innerHTML；
+>    `fixed` 定位 + 视口 clamp；浮层走 `data-visible` 驱动 opacity/visibility/translate，五-41）。
+>    ⚠️ **键盘 `focusin` 也触发**（触屏不挂鼠标分支但键盘分支保留）；`prefers-reduced-motion` 只去过渡不关功能。
+> ② 🟢 **键盘快捷键**：`src/components/features/KeyboardShortcuts.astro`，`/` 搜索 · `j/k` 滚一屏(0.8vh) ·
+>    `g` 回顶 · `?` 帮助浮层 · `Esc` 关。🔴 **输入框/textarea/select/contentEditable 一律不接管**；
+>    Ctrl/⌘/Alt/Shift 组合键全放行（Ctrl+K 归 Search.svelte）；`/` **不自己实现搜索**，派发
+>    `blog:focus-search` 自定义事件，由 `Search.svelte` 的 `focusSearch()` 一处收口（+6 行）。
+> ③ 全局样式追加到 `src/styles/global.css`（+234 行，纯 CRLF 字节级追加、0 裸 LF、U+FFFD=0），
+>    两个组件挂在 `Layout.astro` 尾部（Swup 容器外，节点不随切页替换）。
+> ④ 🔴 **本批修掉的两个真缺陷（都是探针抓出来的，别重犯）**：
+>    · **中文 OG 图 404**：JSON 初版把 `image` 写成 `encodeURIComponent(post.id).jpg`，而磁盘上是
+>      `css100天-第28天.jpg` 原始 Unicode 名 → 实测 **26/34 条指向不存在文件**。改成中文原文，
+>      中文 URL 交给浏览器自动编码；**key 仍用 encodeURI**（正文 href 已是百分号形式）。
+>    · **滚动把浮层永久收掉**：初版 `scroll` 监听无脑 `hide()` → `scrollIntoViewIfNeeded` 后鼠标
+>      已停在链接上、不会再有第二次 `mouseover`，实测 `loaded=true` 但 `data-visible` 被摘。
+>      改成**跟随重定位**（链接滚出视口才收）。
+> ⑤ 📋 **验收（全部真跑）**：`build` 0 error / **54 page(s)** / pagefind 36 页 11195 词；
+>    `check` **0 error / 3 hint**（基线不变）；`docs:check` **0 错 0 警**；`dist` **550 文件 / 54 html**（+1 JSON）。
+>    静态产物 **23/23**；浏览器 **28/28**（悬停/键盘/软导航/双档/reduced-motion/无 JS/零报错）；
+>    旧功能回归 **6/6**（搜索 width 0.28s 过渡 · 磁性 · 复制圈 · Pagefind · 噪点 · 主题切换）。
+>    ⚠️ 探针自造假红 3 条已按证据修正口径：`reinitRuns` 对 `reinitOnce` 的 key **恒 -1**（它不在 entries 里，
+>    要用节点数/行为当判据）；无 JS context 下 module chunk 必然 `requestfailed`（有 JS 控制组 0 条，
+>    分段 5 次独立实例复核前 4 段全 0）；无 JS 读 computed style 要等 `load` + 800ms（CSS 未加载完会读到 visible）。
 >
 > **🔧 2026-11-12（第五十二批：手册 v1.8.1 → v1.8.2，V0.1.106）**
 > 用户「那个ccNewTool有新版手册更新下呗」→ 按八-9「一版一篇」**新发** `/posts/ccnewtools-manual-v182/`，
@@ -2662,23 +2720,25 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-11 第五十一批实测；线上 = V0.1.105**，已部署）
+## 三、当前状态快照（**2026-11-13 第五十三批实测；本地 V0.1.107 已构建待部署**）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
+> ⚠️ **炫酷化候选清单常驻在文件顶部（第一节之前那张表）**，1/2 已做、3~10 待选，别弄丢。
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `28630ea`（V0.1.105 修复搜索框宽度增长动画），**已推送、`HEAD == origin/main`、工作区计数 0** |
-| 工作区 | 本批动 **2 项**：`src/components/controls/Search.svelte`(+26/−3，加 `.search-shell input { transition: width ... }`)、`package.json`(version) |
-| 线上站点 | ✅ **2026-11-11 23:44 部署 V0.1.105**（替换前 5 条断言：`0.1.105` 在 / `0.1.104` 不在 / pagefind / **`transition:width .28s` 必须在 Layout.*.css**）。**线上实测**：`ver 0.1.105`、宽度过渡 7/7、功能 13/13、312 组 318/318、边界 10/10 |
+| 本地 HEAD | 上批 `3578d53`（V0.1.106）已推送；**本批尚未提交**，工作区有 7 个改动文件 |
+| 工作区 | 新增 `src/pages/api/linkPreview.json.ts` · `src/components/features/LinkPreview.astro` · `src/components/features/KeyboardShortcuts.astro`；改 `Layout.astro`(+8) · `Search.svelte`(+6) · `global.css`(+234) · `package.json`(`0.1.107`) · `HANDOFF.md`(本批记录 + 候选清单) |
+| 线上站点 | 仍 **V0.1.106**（2026-11-12 23:44 部署）；本批**待部署** |
 | 服务器配置 | 本批**未动服务器** |
-| 本地构建 | V0.1.105 = **546 个文件 / 52 个 `index.html`**（与 V0.1.104 相同）。`build` **0 error** / 53 page(s) / 6.98s、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
-| 依赖 | 本批**零改动**（仍 `astro 7.4.10` / `katex 0.18.11` / `vite 8.3.8`，天花板只剩 `typescript 6.0.3`） |
-| dev / preview server | 本批起过 `npm run preview`，**收尾已精确杀掉并复查计数 = 0** |
-| 服务器回滚资产 | `dist.old`（= V0.1.104）+ **112 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
-| 临时文件 | 收尾已清 `%TEMP%` 下本批全部 `.mjs` / `.cjs` / `.log` / `.tar.gz` / 截图目录 |
-| 待用户拍板 | **本批新增 0 条**。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32）。**第二梯队特效（极光背景 / 逐字解码 / 渐变呼吸文字 / 命令面板 / WebGL 流体）一件未动** |
-| 既有小坑 | 同上一批。本批**新增四条**：① **改组件观感时，别把模板上有用的 Tailwind 过渡类一起删掉**（本次就是把 `transition-all` 删了但没补 width → 动画丢失）；② 壳子宽度是 `auto` 时**不能给壳子加 width 过渡**，要过输入框；③ 探针**采样前别等超过过渡时长**（280ms 过渡等 500ms 再采只剩终态）；④ 灯箱是全屏 `<dialog>`，**用例之间必须显式关掉**，否则后续点击全被它吃掉 |
+| 本地构建 | V0.1.107 = **550 个文件 / 54 个 html / 53 个 `index.html`**（比上批 +1 JSON）。`build` **0 error** / 54 page(s) / pagefind 36 页 11195 词、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
+| 验收 | 静态 **23/23** · 浏览器 **28/28** · 旧功能回归 **6/6**（详见第二节第五十三批） |
+| 依赖 | 本批**零改动**（仍 `astro 7.4.10` / `katex 0.18.11` / `vite 8.3.8`，天花板只剩 `typescript 6.0.3`）；`agent-browser` 本地 0.43.0 = 上游 latest，无需升级 |
+| dev / preview server | 本批起过 `npm run preview :4321`，**收尾需精确杀掉并复查计数 = 0** |
+| 服务器回滚资产 | `dist.old`（= V0.1.105）+ **114 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
+| 临时文件 | `%TEMP%\ccblog-batch53\` 下本批 `.mjs` / `.log`，收尾需清 |
+| 待用户拍板 | **本批新增 0 条**。**候选清单 3~8 待他挑**（3 写作热力图 / 4 `content-visibility` / 5 极光 / 6 逐字解码 / 7 渐变呼吸 / 8 命令面板 / 10 标题锚点复制）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32） |
+| 既有小坑 | 本批**新增三条**：① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为，别用这个判据；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），且读 computed style 要等 `load` + 800ms，否则 CSS 没加载完会误报 `visibility:visible`；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径** —— 磁盘上是 Unicode 原名，编了就 404（本批 26/34 条中招），中文 URL 交给浏览器自动编码 |
 
 ---
 ## 四、维护本文件的规矩

@@ -3,7 +3,7 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-13（第五十三批完成并全量复验上线；新增「炫酷化候选清单·第二批」调研，未动手实现）**。
+> 最后更新：**2026-11-13（第五十四批：候选清单第二批 B1+B2+B3 完成并上线，V0.1.108）**。
 >
 > **📌 炫酷化候选清单（2026-11-13 搜 3 轮后定案，用户「记住这个列表」→ 常驻这里，别弄丢）**
 > 来源：现代博客动效 / Astro 生态 / 性能与无障碍三方向，已对照本站「已实现 / 已否决」去重。
@@ -45,9 +45,9 @@
 >
 > | # | 项 | 状态 | 结论 / 前提 |
 > |---|---|---|---|
-> | **B1** | **阅读排版偏好层**（正文 3 档字号 / 行宽 / 衬线切换） | ⭐ **最推荐** | 复用 `DisplaySettings.astro` 现有 6 个「真开关」骨架 + localStorage，纯 CSS 变量、零依赖、不新增 UI 入口。⚠️ 该组件注释明确「装上去没反应的死开关一律不做」（参考站的壁纸模式/樱花/音乐/翻译都刻意没做）→ 新增三项必须都真能生效；`global.css` 已有 `--code-font-size` 断点变量可复用 |
-> | **B2** | **`prefers-reduced-transparency` 兜底** | ⭐ **推荐** | 本站大量半透明分层（`--line-divider: rgba(255,255,255,.08)`、卡片 `0.92` 底色、`backdrop-filter` 毛玻璃、噪点层）→ 该偏好下补不透明底色 / 关 blur。纯 CSS 零依赖，与现有 `prefers-contrast`(L242) / `forced-colors`(L262) / `prefers-reduced-motion` 并列第四套，不冲突 |
-> | **B3** | 相关文章补「**为什么推荐**」小字 | ⭐ **推荐（最小改动）** | `getRelatedPosts()` 已在 `content-utils.ts:218`，`RecommendedPost.astro` 只列标题不写理由。构建期按「同系列 / 同标签 / 同分类」算一个小字标签，零 JS。前提：34 篇全有 `category`+`tags`，26 篇有 `series` → 理由一定算得出来 |
+> | **B1** | **阅读排版偏好层**（正文 3 档字号 / 行宽 / 衬线切换） | ✅ **第五十四批已做** | `DisplaySettings.astro` 外观 tab 加三项（各带重置）；`displaySettings.ts` 加 3 个键。🔴 **三档默认值刻意等于「没有这个功能」**：未设置访客 `<html>` 不多挂任何属性、重置即回到改前排版。🔴 **行宽必须用 `width` 不能用 `max-width`**（见状态快照「既有小坑」新增第 ⑩ 条） |
+> | **B2** | **`prefers-reduced-transparency` 兜底** | ✅ **第五十四批已做** | `global.css` 新增第四套媒体查询块（与 `prefers-contrast` / `forced-colors` / `prefers-reduced-motion` 并列）：变量实色化 + 17 处 `backdrop-filter: none !important` + 导航栏去渐变图 + 毛玻璃浮层改纯色底。⚠️ **刻意不写 `-webkit-backdrop-filter`** |
+> | **B3** | 相关文章补「**为什么推荐**」小字 | ✅ **第五十四批已做** | `RecommendedPost.astro` 构建期按 `series` > `tags` > `category` > 近期更新 出 chip；`[...slug].astro` 传 `currentPostMeta`。标签行改 `flex-wrap`（加第三个 chip 后 768px 摘要从 0px 变 27px） |
 > | B4 | 修订历史 / 更新日志（`revisions: [{date,note}]`） | ⬜ 待拍板 | 34 篇 frontmatter **全部有 `updated`**，`[...slug].astro:127` 已把日期传给 `PostMeta`，但没「改了什么」。⚠️ 要改 `content.config.ts` schema（数据建模，得你拍）+ 补 34 篇数据才有内容 → 建议只先给 6 篇技术手册类做 |
 > | B5 | Tufte 式边注 sidenotes | ⬜ 前提不成立 | remark-gfm `[^1]` → rehype 插件搬到页边 + checkbox trick 零 JS。⚠️ **本地 ripgrep 34 篇正文 `\[\^` / `footnote` = 0 命中** → 现在做是空功能；且要给正文留 300px 右边距，会挤右栏 TOC / 站点卡。等真有脚注内容再说 |
 > | B6 | `interpolate-size: allow-keywords` 让 `height:auto` 折叠能过渡 | ⬜ 待做 | 可用在 `/series/` 手风琴、ec 代码块折叠、标签筛选面板；零依赖渐进增强，不支持就退化成现有瞬切。⚠️ **只作用于内容高度变化**，别动浮层（五-41 已用 opacity/visibility 状态机，刚做完 19/19 动效取证） |
@@ -57,7 +57,58 @@
 > | — | Anchor Positioning / Popover API 重写现有浮层 | ⛔ 暂缓 | Chrome 125+ 稳定，但 **Firefox 132 仍 flag、Safari TP 实验**（2026-11 现状）；本站刚做完 hovercard 的 JS 定位 + 视口 clamp + reinitOnce 去重，重写只省几十行 JS，却要重跑全部动效/样式取证。等三引擎稳定且有真实痛点 |
 > | — | CSS `if()` / `grid-lanes` masonry / `field-sizing` / scroll-driven 装饰动画 | ⛔ 别重提 | 前两个 2026 才进稳定/草案、相册改版已在第一批否决；本站无表单（评论是 Twikoo），`field-sizing` 无用武之地；**scroll-driven CSS 装饰动画已在第一批否决**（`scroll-state()` 状态查询属另一类，真要做单独论证，别混进来） |
 >
-> **一句话**：第二批里真值得动手的只有 **B1 + B2 + B3**（零依赖、复用现有骨架、前提都实测过）；B4 要先拍数据建模，B5/B7 卡在前提，其余带证据否决。
+> **一句话**：第二批 B1 + B2 + B3 已于第五十四批做完上线；剩下 B4 要先拍数据建模，B5/B7 卡在前提，B6 待做，其余带证据否决。
+>
+> **🔧 2026-11-13（第五十四批：候选清单第二批 B1+B2+B3，V0.1.108）**
+> 用户「先把b1-3做了吧」→ 三项全做，零新依赖、零新 UI 入口。
+> ① 🟢 **B1 阅读排版偏好层**（`displaySettings.ts` +3 键 / `DisplaySettings.astro` +203 行）：
+>    外观 tab 里「卡片样式」之后新增三段 —— **阅读字号**（小 15px / 标准 16px / 大 18px）、
+>    **阅读行宽**（窄 544px / 中 704px / 宽 798px 铺满）、**正文字体**（无衬线 / 衬线），各带 `data-dp-reset` 重置，
+>    共用现有 `.dp-choice` / `.dp-row` / `.dp-hint` 骨架，视觉语言零新增。
+>    存储走既有的 `displaySettingsKeys` + `is:inline` 早应用脚本 + 模块脚本 `READER_ATTR` 三件套。
+>    🔴 **三档默认值刻意等于「没有这个功能」的状态**：`m` / `wide` / `sans` 时 `<html>` 上**不挂任何 `data-reader-*` 属性**
+>    （不是挂了再写成默认值）→ 未设置的访客 DOM 零变化，点重置 = 完全回到改前排版。
+>    实测：默认态三属性全 `null`、fontSize 16px、正文宽 798px；重置后 attrs 全 null 且 localStorage 全 null。
+> ② 🟢 **B2 `prefers-reduced-transparency` 兜底**（`global.css` +84 行）：
+>    `:root` + `:root[data-theme="dark"]` 把 `--panel-bg` / `--card-bg-transparent` 实色化；
+>    一条规则覆盖 **17 个**毛玻璃面（`#nav` / `.link-preview-card` / `.shortcut-help` / `.search-panel` /
+>    `.pgs-chip` / `.floating-toc-panel` 及其 sticky 头 / `.floating-btn` / fancybox 三处 / mermaid 两处）全部
+>    `backdrop-filter: none !important`；`#nav` 与 `.nav-bg` 额外 `background-image: none`（它原本是渐变+半透明）；
+>    横幅上的 `.banner-link` / `.scroll-hint` 改 `rgb(0 0 0 / 0.42)` 深底（**不能给纯色白底，会在壁纸上糊出一个洞**）。
+>    ⚠️ 为什么必须 `!important`：Svelte 作用域选择器（`.search-panel.svelte-hash`）、Astro CID 属性、
+>    以及 `FloatingToc.astro:38,42` / `Header.astro` 的**内联 `style=`** 都压过普通媒体查询规则；
+>    暗色下 `:root[data-theme="dark"]` 会把 `--panel-bg` 设成 `#171717f2`，所以暗色选择器必须显式并列。
+> ③ 🟢 **B3 相关文章「为什么推荐」**（`RecommendedPost.astro` +40 行 / `[...slug].astro` +1 行）：
+>    新增可选 prop `currentPostMeta`，构建期 `reasonOf()` 按 **同系列 > 同标签 > 同分类 > 近期更新** 出小字 chip
+>    （`bg-(--primary)/10` + `text-(--primary)`，与站内 9 处既有用法同款），`title` 带可读理由。
+>    标签行 `flex items-center` → `flex flex-wrap items-center`、摘要加 `min-w-0 flex-1 truncate`
+>    → **加第三个 chip 后摘要不再被挤成 0 宽**（1200px 201px / 768px **0px → 27px** / 320px 85px）。
+>    实测 `ccnewtools-manual` 页出 5 个 chip：同标签×4 + 同分类×1。
+> ④ 🔴 **本批唯一真缺陷（自己写出来的，探针抓的）**：行宽首版写 `max-width: 34rem !important`，
+>    **实测 `getComputedStyle` 读回 `none`，三档完全不生效**。根因：`Markdown.astro` 根节点带 Tailwind 的
+>    `max-w-none!`，它编译成 `.max-w-none\!{max-width:none!important}` 且**位于 `@layer utilities` 里**，
+>    而本组件那块 CSS 是**未分层**的 —— 按 CSS 层叠规范，**未分层的 `!important` 输给分层内的 `!important`**
+>    （分层顺序只在同一层内比较）。改用 `width: min(34rem, 100%)` 后对手变成**非 important** 的普通工具类，
+>    未分层赢分层，正常生效且不必加 `!important`；`min(…, 100%)` 是窄屏兜底（`max-width` 已被钉成 none 压不回来，
+>    靠它自己限宽，否则 375px 会横向溢出）。
+> ⑤ 📋 **验收（全部真跑）**：`build` 0 error / **54 page(s)** / pagefind 36 页 11195 词；
+>    `check` **0 error / 0 warning / 3 hint**（与基线一致）；`tsc --noEmit` 退出 0；`docs:check` **0 错 0 警**；
+>    `dist` **550 文件 / 54 html / 53 index.html**，`linkPreview.json` 10082 B。
+>    静态产物 **8/8**（CSS 内 `prefers-reduced-transparency` / `data-reader-size` / `data-reader-width` /
+>    `data-reader-font` / `width:min(34rem,100%)` / `width:min(44rem,100%)` 各命中，HTML 内 `同标签` `同分类`）。
+>    本地浏览器 **18/18**（6 种设置组合 × 320/768/1200 = 全部无横向溢出、正文宽与 fontSize 实测对得上：
+>    544/704/798、15/16/18px）+ 三档真点击链路（属性+localStorage+is-active 高亮+重置）+ 软导航保持
+>    + B2 六个面 `backdrop-filter` 实测 `none` 且关掉仿真后恢复 `blur(14px) saturate(1.6)` + 零 pageerror。
+>    线上浏览器 **6/6**（三档联动 / 重置回默认 / 零报错 / nav+toc+btn 三处 blur=none 且 `--panel-bg=#fff` /
+>    5 个 chip / 软导航后仍 18px）。截图肉眼核对：面板亮暗两版（直角、1px 边、`.dp-choice` 同款）、
+>    正文窄/中/宽三档、衬线版、导航栏 off/on 对照、搜索面板 off/on 对照（off 透出壁纸、on 纯白）、B3 卡片。
+> ⑥ ⚠️ **探针自造假红 2 条**：① 行宽断言拿 `getComputedStyle().maxWidth` 去比期望值 ——
+>    `width` 生效时 `maxWidth` 本来就是 `none`，判据应读 `getBoundingClientRect().width`；
+>    ② 快捷键帮助按 `Shift+Slash` 没打开，改用 `page.keyboard.press('?')` 后 `data-visible=true` / `opacity=1` ——
+>    实现（`KeyboardShortcuts.astro`）一直正常，是我按键写法不对。
+> ⑦ 🚀 **已上线 V0.1.108**（提交 `d240b1e`，`b68c6b7..d240b1e`；**部署前 10 条断言全过**才切换）。
+>    线上 HTTP：首页 200 / 文章页 200、`0.1.108` 4 处、`0.1.107` 0 处、CSS 哈希换新（`Layout.DeqBDRQq.css`）。
+>    回滚资产保留（`dist.old` + `dist_backup_*` 未删）。
 >
 > **🔧 2026-11-13（第五十三批：候选清单第 1、2 项，V0.1.107）**
 > 用户「嗯先做12吧 然后记住这个列表」→ 做 1（链接预览卡）+ 2（键盘快捷键），清单按上表落进本文件常驻。
@@ -2787,25 +2838,25 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-13 第五十三批实测；线上 = 本地 = V0.1.107**，已部署）
+## 三、当前状态快照（**2026-11-13 第五十四批实测；线上 = 本地 = V0.1.108**，已部署）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
-> ⚠️ **炫酷化候选清单常驻在文件顶部（第一节之前那张表）**，1/2 已做、3~10 待选，别弄丢。
+> ⚠️ **炫酷化候选清单常驻在文件顶部（第一节之前那张表）**：第一批 1/2 已做、3~10 待选；第二批 B1/B2/B3 已做，B4/B6 待挑。
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `a13e303`（V0.1.107 + 中文 slug 修复），**已推送、`HEAD == origin/main`、工作区计数 0** |
-| 工作区 | 本批 8 文件 + 全量复验修复 2 文件 + HANDOFF 记录，见第二节第五十三批；**全部已提交** |
-| 线上站点 | ✅ **2026-11-13 重新部署 V0.1.107（含中文 slug 修复）**（替换前 10 条断言全过）。线上 HTTP **7/7** 200 / 浏览器 **21/21** / 亮暗 1200 + 320 + 768 四张截图肉眼核对无样式错乱 |
-| 服务器配置 | 本批**未动服务器** |
-| 本地构建 | V0.1.107 = **550 个文件 / 54 个 html / 53 个 `index.html`**（比上批 +1 JSON）。重跑 `build` **0 error** / 54 page(s) / pagefind 36 页 11195 词、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
-| 验收 | 静态 **23/23** + 修复后 **8/8** · 本地浏览器 **28/28** · 旧功能 **6/6** · **动效 19/19** · **样式 109/109** · 本地综合 **24/24** · 线上 **58/58** + 修复后 **21/21**（详见第二节第五十三批） |
-| 依赖 | 本批**零改动**（仍 `astro 7.4.10` / `katex 0.18.11` / `vite 8.3.8`，天花板只剩 `typescript 6.0.3`）；`agent-browser` 本地 0.43.0 = 上游 latest，无需升级 |
-| dev / preview server | 本批起过 `npm run preview :4321`，**收尾需精确杀掉并复查计数 = 0** |
-| 服务器回滚资产 | `dist.old`（= 修复前 V0.1.107）+ **116 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
-| 临时文件 | `%TEMP%\ccblog-verify53\` 下本轮 `.mjs` / `.log` / 截图，收尾需清；服务器 `/tmp/chenblog_dist.tar.gz` 需删 |
-| 待用户拍板 | **第二批清单（顶部常驻表）B1 阅读排版偏好 / B2 reduced-transparency / B3 推荐理由 / B4 修订史 / B6 `interpolate-size` 待他挑**，推荐 B1+B2+B3；B5/B7 卡在前提，其余已带证据否决。**候选清单第一批 3~8 仍待挑**（3 写作热力图 / 4 `content-visibility` / 5 极光 / 6 逐字解码 / 7 渐变呼吸 / 8 命令面板 / 10 标题锚点复制）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32） |
-| 既有小坑 | 本批**新增五条**：① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为，别用这个判据；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），且读 computed style 要等 `load` + 800ms，否则 CSS 没加载完会误报 `visibility:visible`；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径** —— 磁盘上是 Unicode 原名，编了就 404（本批 26/34 条中招），中文 URL 交给浏览器自动编码；④ **本机代理会拦裸 IP**：`agent-browser` / Edge 渠道访问 `http://47.108.230.220` 都是 `ERR_BLOCKED_BY_CLIENT`，Playwright 要 `args: ['--no-proxy-server']`；HTTP 层 `Invoke-WebRequest` 不受影响；⑤ **1200px 下右栏 `display:none`** → 侧栏「博客版本」不在 `body.innerText` 里，验版本号要数 `outerHTML`；⑥ **`URL.pathname` 已完成百分号编码，再套 `encodeURI` = 双重编码**（`%` → `%25`）→ 中文 slug 全查不到表，key 口径两端必须一致（本轮全量复验才抓到）；⑦ **产物里文章 href 是原始中文**，而归档页 `a[href*="%E5%A4%A9"]` 命中的是标签筛选链接且在 Swup 容器外，测中文文章链接要用 `#swup-container a[href^="/posts/css100"]`；⑧ **终态 `translate` 计算值是 `0px` 不是 `none`**（`none` 只属 reduced-motion 覆盖）；⑨ **`grep -qF` 固定串大小写必须与产物逐字一致**（本轮部署断言把 `css100` 写成 `CSS100` → `set -e` exit 1 无输出，逐条重跑才定位，中途 `dist` 未被替换） |
+| 本地 HEAD | `d240b1e`（V0.1.108：B1+B2+B3），**已推送、`HEAD == origin/main`、工作区计数 0** |
+| 工作区 | 本批 6 文件（`DisplaySettings.astro` +211 / `RecommendedPost.astro` +45-5 / `displaySettings.ts` +17 / `[...slug].astro` +9-1 / `global.css` +84 / `package.json` 版本号），**全部已提交** |
+| 线上站点 | ✅ **2026-11-13 部署 V0.1.108**（替换前 10 条断言全过、原子替换）。线上 HTTP 2/2 200、`0.1.108` 4 处、`0.1.107` 0 处、CSS 哈希 `Layout.DeqBDRQq.css`；线上浏览器 **6/6** 全过 |
+| 服务器配置 | 本批**未动服务器**（只换 `dist`） |
+| 本地构建 | V0.1.108 = **550 个文件 / 54 个 html / 53 个 `index.html`**（与上批同量）。`build` 0 error / 54 page(s) / pagefind 36 页 11195 词、`check` **0 error / 0 warning / 3 hint**、`tsc` 退出 0、`docs:check` **0 错 0 警** |
+| 验收 | 静态 **8/8** · 本地浏览器 **18/18**（6 组合 × 3 断点）+ 面板真点击 + 软导航 + B2 仿真 · 线上 **6/6**；截图 10 张肉眼核对（详见第二节第五十四批） |
+| 依赖 | 本批**零改动**（`astro 7.4.10` / `katex 0.18.11` / `vite 8.3.8`，天花板只剩 `typescript 6.0.3`） |
+| dev / preview server | 本批起过 `npm run preview :4321`，**已按 `CommandLine -like '*astro*preview*'` 精确杀掉、复查计数 = 0** |
+| 服务器回滚资产 | `dist.old`（= V0.1.107）+ **117 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
+| 临时文件 | 本地 `tmp-*.mjs` / `tmp-*.png` 及 `%TEMP%` 下 tar/sh 已清（计数 0）；服务器 `/tmp/chenblog_dist.tar.gz`、`/tmp/deploy.sh` 已删 |
+| 待用户拍板 | **第二批清单剩 B4 修订史（要改 schema 得他拍）/ B6 `interpolate-size`**，其余 B1~B3 已做、B5/B7 卡前提、余下带证据否决。**候选清单第一批 3~8 仍待挑**（3 写作热力图 / 4 `content-visibility` / 5 极光 / 6 逐字解码 / 7 渐变呼吸 / 8 命令面板 / 10 标题锚点复制）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32） |
+| 既有小坑 | ① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），读 computed style 要等 `load` + 800ms；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径**（磁盘是 Unicode 原名，编了就 404，曾 26/34 条中招）；④ **本机代理会拦裸 IP**：Playwright 要 `args: ['--no-proxy-server']`，HTTP 层 `Invoke-WebRequest` 不受影响；⑤ **1200px 下右栏 `display:none`** → 侧栏「博客版本」不在 `body.innerText` 里，验版本号要数 `outerHTML`；⑥ **`URL.pathname` 已完成百分号编码，再套 `encodeURI` = 双重编码**（`%` → `%25`）；⑦ **产物里文章 href 是原始中文**，测中文文章链接要用 `#swup-container a[href^="/posts/css100"]`；⑧ **终态 `translate` 计算值是 `0px` 不是 `none`**；⑨ **`grep -qF` 固定串大小写必须与产物逐字一致**（曾把 `css100` 写成 `CSS100` → `set -e` exit 1 无输出）。<br>🔴 **本批新增第 ⑩ 条（最贵的一条）**：**未分层的 `!important` 输给 `@layer` 内的 `!important`** —— Tailwind v4 的工具类（`.max-w-none\!`、`.w-full` 等）都编在 `@layer utilities` 里，组件里写「未分层 + `!important`」想压它们**会静默失效**（实测 `max-width` 读回 `none`、三档行宽全不生效、零报错）。正确做法：**换一个对手是 non-important 的属性**（本例 `max-width` → `width`），未分层赢分层、不必加 `!important`；真要改同一属性只能把规则塞进同一 layer 或用 `@layer` 顺序控制。⚠️ 配套判据：验证宽高必须读 `getBoundingClientRect()`，`getComputedStyle().maxWidth` 在 `max-width:none` 钉住时永远报 `none`，会给出假红 |
 
 ---
 ## 四、维护本文件的规矩

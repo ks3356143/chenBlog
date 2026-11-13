@@ -8,6 +8,15 @@
 
 export type PostListLayout = "list" | "grid"
 
+// 阅读排版偏好（2026-11-13 第五十四批）。只作用于正文 .custom-markdown，不影响界面文字。
+// 🔴 三个默认值都必须是「没动过」的那一档：字号 1rem（= prose-base）、
+// 行宽 wide（= 现状：max-w-none 铺满正文栏）、无衬线（= 现状 font-family: inherit）。
+// 默认档不往 <html> 上挂属性，所以升级后老访客看到的排版一个像素都不变；
+// 也只有这样「重置」才等价于「恢复成没这个功能之前」。
+export type ReaderSize = "s" | "m" | "l"
+export type ReaderWidth = "narrow" | "mid" | "wide"
+export type ReaderFont = "sans" | "serif"
+
 export const displaySettings = {
     // 主题色相 0-360。175 = 本站原始品牌色 #00705c 的 oklch 色相，
     // 也就是「没动过」的状态；改它时 global.css 里那一族 oklch 变量整片跟着转。
@@ -29,6 +38,11 @@ export const displaySettings = {
     gradientEnabled: true,
     bannerTitleEnabled: true,
     cardBorderEnabled: true,
+
+    // 阅读排版偏好（参考站没有这三项，属本站自加）
+    readerSize: "m" as ReaderSize,
+    readerWidth: "wide" as ReaderWidth,
+    readerFont: "sans" as ReaderFont,
 } as const
 
 export const displaySettingsKeys = {
@@ -38,4 +52,7 @@ export const displaySettingsKeys = {
     gradientEnabled: "gradientEnabled",
     bannerTitleEnabled: "bannerTitleEnabled",
     cardBorderEnabled: "cardBorderEnabled",
+    readerSize: "readerSize",
+    readerWidth: "readerWidth",
+    readerFont: "readerFont",
 } as const

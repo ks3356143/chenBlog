@@ -7,11 +7,36 @@ import { getPostUrlBySlug, url } from "@/utils/url-utils"
 interface Props {
 	relatedPosts: PostForList[]
 	currentPostId: string
+	/** 当前文章的分类/标签/系列，只用来给每一条推荐算「为什么推荐」的小字，不参与排序 */
+	currentPostMeta?: { series: string; tags: string[]; category: string }
 }
 
-const { relatedPosts, currentPostId } = Astro.props
+const { relatedPosts, currentPostId, currentPostMeta } = Astro.props
 const apiUrl = url("/api/allPostMeta.json")
 const relatedIds = JSON.stringify(relatedPosts.map(p => p.id))
+
+/* 「为什么推荐」的判据（2026-11-13 第五十四批）。
+   ⚠️ 排序在 content-utils.ts 的 getRelatedPosts 里已经算完，那边只返回 { id, data }，
+   把评分明细丢掉了 —— 这里不去改它的返回结构（PostForList 全站都在用），
+   而是按同一套语义在场重算一个「主因」，优先级由强到弱：
+   同系列 > 同标签 > 同分类 > 近期更新（后者对应 getRelatedPosts 的兜底补充分支）。 */
+const reasonOf = (post: PostForList): { label: string; title: string } => {
+	if (!currentPostMeta) return { label: "", title: "" }
+	const cur = currentPostMeta
+	const series = post.data.series || ""
+	if (cur.series && series && series === cur.series) {
+		return { label: "同系列", title: `与本文同属系列「${series}」` }
+	}
+	const shared = (post.data.tags || []).filter(t => cur.tags.includes(t))
+	if (shared.length > 0) {
+		return { label: "同标签", title: `与本文共有标签：${shared.join("、")}` }
+	}
+	const category = post.data.category || ""
+	if (cur.category && category && category === cur.category) {
+		return { label: "同分类", title: `与本文同属分类「${category}」` }
+	}
+	return { label: "近期更新", title: "按发布时间新鲜度补充推荐" }
+}
 ---
 
 <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -26,7 +51,9 @@ const relatedIds = JSON.stringify(relatedPosts.map(p => p.id))
 						推荐筛选
 					</span>
 				</div>
-				{relatedPosts.map((post, idx) => (
+				{relatedPosts.map((post, idx) => {
+					const reason = reasonOf(post)
+					return (
 					<a
 						href={getPostUrlBySlug(post.id)}
 						class:list={[
@@ -42,13 +69,25 @@ const relatedIds = JSON.stringify(relatedPosts.map(p => p.id))
 							<div class="truncate text-sm font-bold text-black/75 transition group-hover:text-(--primary) dark:text-white/75">
 								{post.data.title}
 							</div>
-							<div class="mt-0.5 flex items-center gap-1.5 text-xs text-black/30 transition dark:text-white/30">
+							{/* flex-wrap + 摘要 flex-1：多一个「为什么推荐」小字后，窄屏只会换行，
+							    不会把摘要挤成 0 宽（原先那行是 nowrap，多塞一项就吃掉摘要）。 */}
+							<div class="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-black/30 transition dark:text-white/30">
 								{post.data.category && (
 									<span class="shrink-0 rounded bg-black/5 px-1.5 py-0.5 text-black/40 dark:bg-white/10 dark:text-white/40">
 										{post.data.category}
 									</span>
 								)}
-								<span class="truncate">
+								{/* 「为什么推荐」：构建期算好、零 JS。title 里写全理由（含具体标签名），
+								    正文只放 3 个字，不抢标题与摘要的层级。 */}
+								{reason.label && (
+									<span
+										class="shrink-0 rounded bg-(--primary)/10 px-1.5 py-0.5 text-[0.6875rem] text-(--primary) opacity-80"
+										title={reason.title}
+									>
+										{reason.label}
+									</span>
+								)}
+								<span class="min-w-0 flex-1 truncate">
 									{post.data.description || formatDateTimeToYYYYMMDDHHmm(post.data.published, "date")}
 								</span>
 							</div>
@@ -58,7 +97,8 @@ const relatedIds = JSON.stringify(relatedPosts.map(p => p.id))
 							class="shrink-0 text-xl text-black/15 transition group-hover:translate-x-0.5 group-hover:text-(--primary) dark:text-white/15"
 						/>
 					</a>
-				))}
+					)
+				})}
 			</div>
 		)
 	}

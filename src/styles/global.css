@@ -1003,6 +1003,90 @@ html[data-theme="dark"] .dynamic-year-item {
     }
 }
 
+/* ===== 降低透明度（2026-11-13 第五十四批）=====
+   Safari / iOS 的「降低透明度」、Windows 11 的「透明效果」关闭、部分安卓省电模式都会
+   把 prefers-reduced-transparency 置成 reduce。这类用户要的是**看得清**，不是好看：
+   本站所有毛玻璃（导航栏、搜索面板、返回顶部/浮动按钮、相关搜索提示、页内目录、
+   灯箱工具条、横幅上那排圆钮）在系统的「减少透明度」语义下都应该变成**不透明纯色**。
+
+   🔴 为什么必须在这里兜：之前只有 forced-colors 分支做了底色替换（那是**强制配色**模式，
+   只有极少数用户开），普通「降低透明度」是完全没人管的 → 玻璃底 72%/88%/92% 这些
+   半透明色在任何背景上都会透出后面的字，糊在一起。
+
+   做法统一两条：① 底色换成 100% 实色 ② backdrop-filter: none（关掉模糊，省 GPU）。
+   圆角/边框/布局一律不动，只换"透明"这一层。
+
+   ⚠️ 别在这块里加 -webkit-backdrop-filter: none —— 全站一致的坑（layout-style.css:267）：
+   两条都写时 Lightning CSS 只留 -webkit- 那条，而 Chromium 读标准属性 → 读到旧值。
+
+   ⚠️ 用 @supports 包一层不是必需：不认识该媒体特性的浏览器会**整块忽略**，
+   行为与现在完全一致（@media 里的未知特性在 CSS 里按"永不匹配"处理，不报错）。 */
+@media (prefers-reduced-transparency: reduce) {
+    /* ① 全局色板：面板与卡片的半透明底改实色。
+       这两个变量被几乎所有浮层与卡片消费，改这里等于一次性覆盖大半。
+       暗色那条要显式再写一遍：`--panel-bg` 在 :root[data-theme="dark"] 里有更高特异度
+       （#171717f2 = 95% 不透明），只写 :root 压不住它。 */
+    :root,
+    :root[data-theme="dark"] {
+        --panel-bg: var(--card-bg);
+        --card-bg-transparent: var(--card-bg);
+    }
+
+    /* ② 逐个摘掉 backdrop-filter（这些元素各自写死了模糊，不跟着变量走）。
+       🔴 `!important` 在这里是必需的，不是偷懒：
+       · `.search-panel` / `.floating-btn` 等被 Svelte / Astro 编译成 `.x.svelte-hash`、
+         `#nav[data-scrolled][data-astro-cid]`，特异性本来就比单个类高；
+       · `#floating-toc-panel` 与它的吸顶头用的是**内联 style**（五-22），样式表压根压不住。
+       逐个加 `html` 前缀去抬特异性会写得又长又脆，一个 !important 一次性说清。 */
+    #nav,
+    #nav[data-scrolled],
+    .link-preview-card,
+    .shortcut-help,
+    .banner-link,
+    .scroll-hint,
+    .search-panel,
+    .pgs-chip,
+    .floating-toc-panel,
+    .floating-toc-panel > div:first-child,
+    .floating-btn,
+    .fancybox__toolbar,
+    .fancybox__caption,
+    .fancybox__thumbs,
+    .mermaid-ctrl-btn,
+    .mermaid-fs-controls {
+        backdrop-filter: none !important;
+    }
+
+    /* ③ 上面那批里，底色仍是半透明的要换成实色 —— 只换背景，边框与尺寸一律不动。
+       ⚠️ 横幅上那两个（`.banner-link` / `.scroll-hint`）不能换成 --card-bg：
+       它们底下是**壁纸图片**，换成白底就是一块白斑压住图。改半透明黑 → 图标对比度够，
+       仍是"浮在图上"的观感，只是不再糊。 */
+    #nav,
+    #nav[data-scrolled],
+    .nav-bg {
+        /* 导航栏原来是 --nav-bg 那条 66% alpha 的渐变（background-image 不吃纯色，
+           所以必须先把 image 摘掉再给底色） */
+        background-image: none !important;
+        background-color: var(--card-bg) !important;
+    }
+    .link-preview-card,
+    .shortcut-help,
+    .search-panel,
+    .pgs-chip,
+    .floating-toc-panel,
+    .floating-toc-panel > div:first-child,
+    .floating-btn {
+        background-color: var(--card-bg) !important;
+        background-image: none !important;
+    }
+    .banner-link,
+    .scroll-hint {
+        background-color: rgb(0 0 0 / 0.42) !important;
+        background-image: none !important;
+        border-color: rgb(255 255 255 / 0.34) !important;
+    }
+}
+
 /* 触屏：没有 hover，鼠标分支没挂，浮层不该出现（键盘 focusin 仍可用，这里只压观感） */
 @media (hover: none) {
     .link-preview-card {

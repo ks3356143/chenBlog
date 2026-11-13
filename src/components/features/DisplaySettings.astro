@@ -113,6 +113,67 @@ import { Icon } from "astro-icon/components"
 			<span class="text-sm flex-1">卡片边框和阴影</span>
 			<span class="toggle-switch" aria-hidden="true"><span></span></span>
 		</button>
+
+		<div class="section-title">
+			阅读字号
+			<button type="button" class="dp-reset" data-dp-reset="readerSize" aria-label="重置阅读字号" title="重置">
+				<Icon name="material-symbols:restart-alt" aria-hidden="true" />
+			</button>
+		</div>
+		<div class="dp-row">
+			<button type="button" class="dp-choice" data-dp-reader-size="s">
+				<Icon name="material-symbols:text-decrease" aria-hidden="true" />
+				<span>小</span>
+			</button>
+			<button type="button" class="dp-choice" data-dp-reader-size="m">
+				<Icon name="material-symbols:format-size" aria-hidden="true" />
+				<span>标准</span>
+			</button>
+			<button type="button" class="dp-choice" data-dp-reader-size="l">
+				<Icon name="material-symbols:text-increase" aria-hidden="true" />
+				<span>大</span>
+			</button>
+		</div>
+
+		<div class="section-title">
+			阅读行宽
+			<button type="button" class="dp-reset" data-dp-reset="readerWidth" aria-label="重置阅读行宽" title="重置">
+				<Icon name="material-symbols:restart-alt" aria-hidden="true" />
+			</button>
+		</div>
+		<div class="dp-row">
+			<button type="button" class="dp-choice" data-dp-reader-width="narrow">
+				<Icon name="material-symbols:format-letter-spacing" aria-hidden="true" />
+				<span>窄</span>
+			</button>
+			<button type="button" class="dp-choice" data-dp-reader-width="mid">
+				<Icon name="material-symbols:format-line-spacing" aria-hidden="true" />
+				<span>中</span>
+			</button>
+			<button type="button" class="dp-choice" data-dp-reader-width="wide">
+				<Icon name="material-symbols:wrap-text" aria-hidden="true" />
+				<span>宽</span>
+			</button>
+		</div>
+		<p class="dp-hint">窄约 34 字/行，中约 44 字，宽（默认）铺满正文栏。</p>
+
+		<div class="section-title">
+			正文字体
+			<button type="button" class="dp-reset" data-dp-reset="readerFont" aria-label="重置正文字体" title="重置">
+				<Icon name="material-symbols:restart-alt" aria-hidden="true" />
+			</button>
+		</div>
+		<div class="dp-row">
+			<button type="button" class="dp-choice" data-dp-reader-font="sans">
+				<Icon name="material-symbols:text-fields" aria-hidden="true" />
+				<span>无衬线</span>
+			</button>
+			<button type="button" class="dp-choice" data-dp-reader-font="serif">
+				<Icon name="material-symbols:serif" aria-hidden="true" />
+				<span>衬线</span>
+			</button>
+		</div>
+		<p class="dp-hint">衬线只换正文，代码块、公式、界面文字都不受影响。</p>
 	</div>
 
 	<!-- ===== 壁纸 ===== -->
@@ -174,6 +235,13 @@ import { Icon } from "astro-icon/components"
 		// ⚠️ 极性与参考站相反：参考站默认**没有**卡片边框，靠 .enable-card-border 加上；
 		// 本站 .card-base 本来就带边框和阴影 → 默认即「有」，所以只在**关闭**时挂类。
 		if (read("cardBorderEnabled") === "false") d.classList.add("disable-card-border")
+		// 阅读排版三项：三组的「默认档」都等于现状，所以只在偏离默认值时才挂属性，
+		// 未设置过的访客 DOM 上一条多余属性都不会出现。
+		var rs = read("readerSize")
+		if (rs === "s" || rs === "l") d.setAttribute("data-reader-size", rs)
+		var rw = read("readerWidth")
+		if (rw === "narrow" || rw === "mid") d.setAttribute("data-reader-width", rw)
+		if (read("readerFont") === "serif") d.setAttribute("data-reader-font", "serif")
 	})()
 </script>
 
@@ -273,6 +341,67 @@ import { Icon } from "astro-icon/components"
 	document.querySelectorAll<HTMLButtonElement>("[data-dp-layout]").forEach(btn => {
 		btn.addEventListener("click", () => setPostListLayout(btn.dataset.dpLayout as Layout))
 	})
+
+	// ---------- 阅读排版（字号 / 行宽 / 字体） ----------
+	// 与文章布局不同：这三项纯靠 <html> 上的属性驱动 CSS（写在 global.css），
+	// 所以换页不会被 Swup 冲掉 —— 属性挂在 html 上，容器替换动不到它。
+	type ReaderSize = "s" | "m" | "l"
+	type ReaderWidth = "narrow" | "mid" | "wide"
+	type ReaderFont = "sans" | "serif"
+
+	// 每项只有「默认档」不挂属性，其余挂；重置 = 摘属性 + 删存储
+	const READER_ATTR: Array<{ key: string; attr: string; def: string; values: string[] }> = [
+		{ key: KEYS.readerSize, attr: "data-reader-size", def: displaySettings.readerSize, values: ["s", "l"] },
+		{
+			key: KEYS.readerWidth,
+			attr: "data-reader-width",
+			def: displaySettings.readerWidth,
+			values: ["narrow", "mid"],
+		},
+		{ key: KEYS.readerFont, attr: "data-reader-font", def: displaySettings.readerFont, values: ["serif"] },
+	]
+
+	const applyReader = (key: string, value: string) => {
+		const item = READER_ATTR.find(i => i.key === key)
+		if (!item) return
+		if (value === item.def || !item.values.includes(value)) root.removeAttribute(item.attr)
+		else root.setAttribute(item.attr, value)
+	}
+
+	const readerState = (key: string): string => {
+		const item = READER_ATTR.find(i => i.key === key)
+		if (!item) return ""
+		const saved = read(key, "")
+		return saved === item.def || !item.values.includes(saved) ? item.def : saved
+	}
+
+	document.querySelectorAll<HTMLButtonElement>("[data-dp-reader-size]").forEach(btn => {
+		btn.addEventListener("click", () => {
+			const v = btn.dataset.dpReaderSize as ReaderSize
+			applyReader(KEYS.readerSize, v)
+			write(KEYS.readerSize, v)
+			syncDirty()
+		})
+	})
+	document.querySelectorAll<HTMLButtonElement>("[data-dp-reader-width]").forEach(btn => {
+		btn.addEventListener("click", () => {
+			const v = btn.dataset.dpReaderWidth as ReaderWidth
+			applyReader(KEYS.readerWidth, v)
+			write(KEYS.readerWidth, v)
+			syncDirty()
+		})
+	})
+	document.querySelectorAll<HTMLButtonElement>("[data-dp-reader-font]").forEach(btn => {
+		btn.addEventListener("click", () => {
+			const v = btn.dataset.dpReaderFont as ReaderFont
+			applyReader(KEYS.readerFont, v)
+			write(KEYS.readerFont, v)
+			syncDirty()
+		})
+	})
+
+	// 首帧：面板可能早于内联脚本执行（理论上不会），这里补齐一次
+	READER_ATTR.forEach(i => applyReader(i.key, readerState(i.key)))
 
 	// ---------- 布尔开关 ----------
 	type BoolKey = "waves" | "gradient" | "bannerTitle" | "cardBorder"
@@ -377,6 +506,30 @@ import { Icon } from "astro-icon/components"
 			}
 			syncSwitchStates()
 		},
+		readerSize: () => {
+			applyReader(KEYS.readerSize, displaySettings.readerSize)
+			try {
+				localStorage.removeItem(KEYS.readerSize)
+			} catch {
+				/* ignore */
+			}
+		},
+		readerWidth: () => {
+			applyReader(KEYS.readerWidth, displaySettings.readerWidth)
+			try {
+				localStorage.removeItem(KEYS.readerWidth)
+			} catch {
+				/* ignore */
+			}
+		},
+		readerFont: () => {
+			applyReader(KEYS.readerFont, displaySettings.readerFont)
+			try {
+				localStorage.removeItem(KEYS.readerFont)
+			} catch {
+				/* ignore */
+			}
+		},
 	}
 	document.querySelectorAll<HTMLButtonElement>("[data-dp-reset]").forEach(btn => {
 		btn.addEventListener("click", () => {
@@ -446,6 +599,9 @@ import { Icon } from "astro-icon/components"
 			cardBorder: read(KEYS.cardBorderEnabled, "") !== "",
 			bannerTitle: read(KEYS.bannerTitleEnabled, "") !== "",
 			fx: read(KEYS.wavesEnabled, "") !== "" || read(KEYS.gradientEnabled, "") !== "",
+			readerSize: read(KEYS.readerSize, "") !== "",
+			readerWidth: read(KEYS.readerWidth, "") !== "",
+			readerFont: read(KEYS.readerFont, "") !== "",
 		}
 		document.querySelectorAll<HTMLButtonElement>("[data-dp-reset]").forEach(btn => {
 			const on = !!dirty[btn.dataset.dpReset || ""]
@@ -455,6 +611,19 @@ import { Icon } from "astro-icon/components"
 		const layout = currentLayout()
 		document.querySelectorAll<HTMLButtonElement>("[data-dp-layout]").forEach(b => {
 			b.classList.toggle("is-active", b.dataset.dpLayout === layout)
+		})
+		// 三个阅读偏好的选中态（与上面布局同款：状态从存储/属性回读，不缓存）
+		const size = readerState(KEYS.readerSize)
+		document.querySelectorAll<HTMLButtonElement>("[data-dp-reader-size]").forEach(b => {
+			b.classList.toggle("is-active", b.dataset.dpReaderSize === size)
+		})
+		const width = readerState(KEYS.readerWidth)
+		document.querySelectorAll<HTMLButtonElement>("[data-dp-reader-width]").forEach(b => {
+			b.classList.toggle("is-active", b.dataset.dpReaderWidth === width)
+		})
+		const font = readerState(KEYS.readerFont)
+		document.querySelectorAll<HTMLButtonElement>("[data-dp-reader-font]").forEach(b => {
+			b.classList.toggle("is-active", b.dataset.dpReaderFont === font)
 		})
 	}
 
@@ -843,6 +1012,48 @@ import { Icon } from "astro-icon/components"
 	html.disable-card-border .card-base {
 		border-color: transparent !important;
 		box-shadow: none !important;
+	}
+
+	/* ===== 阅读排版偏好（字号 / 行宽 / 字体） =====
+	   属性挂在 <html> 上，所以 Swup 换容器不会丢；只作用正文 .custom-markdown，
+	   界面文字、侧栏、卡片一律不碰。
+	   🔴 三个「默认档」在这里**完全没有对应规则** —— 默认 = 不挂属性 = 走原样式，
+	   这才是「老访客升级后看不到任何变化」的保证。
+	   字号：只改 .custom-markdown 根的字号，prose 的标题/间距全是 em，会等比跟着缩。 */
+	html[data-reader-size="s"] .custom-markdown {
+		font-size: 0.9375rem;
+	}
+	html[data-reader-size="l"] .custom-markdown {
+		font-size: 1.125rem;
+	}
+
+	/* 行宽：🔴 必须用 width、不能用 max-width。
+	   实测（2026-11-13）：Markdown.astro 根节点带 Tailwind 的 `max-w-none!`，
+	   它编译成 `.max-w-none\!{max-width:none!important}` 且**位于 `@layer utilities` 里**；
+	   而本组件这块 CSS 是**未分层**的。按 CSS 层叠规范，未分层的 !important 声明
+	   输给**分层内**的 !important 声明（分层顺序只在同一层内比较）→ 我写
+	   `max-width:34rem!important` 会被它整条压掉，实测 getComputedStyle 读回 "none"。
+	   换 width 之后对手变成 `.w-full` 那种**非** important 的普通工具类 →
+	   未分层赢分层，正常生效，且不必再加 !important。
+	   `min(…, 100%)` 是窄屏兜底：max-width 已被 Tailwind 钉成 none，压不回来，
+	   所以必须让 width 自己带上限，否则 375px 屏幕上会横向溢出。 */
+	html[data-reader-width="narrow"] .custom-markdown,
+	html[data-reader-width="mid"] .custom-markdown {
+		margin-inline: auto;
+	}
+	html[data-reader-width="narrow"] .custom-markdown {
+		width: min(34rem, 100%);
+	}
+	html[data-reader-width="mid"] .custom-markdown {
+		width: min(44rem, 100%);
+	}
+
+	/* 衬线：本站没有 @font-face、也没有自定 body 字体 → 必须写出完整字族栈，
+	   否则「衬线」在中文下会退回无衬线（宋体族名各家写法不同，四五个兜底都要给）。
+	   代码块 / 行内代码 / KaTeX / Mermaid 各自声明了 font-family，天然不受影响。 */
+	html[data-reader-font="serif"] .custom-markdown {
+		font-family:
+			Georgia, "Times New Roman", "Noto Serif SC", "Source Han Serif SC", "Songti SC", SimSun, "宋体", serif;
 	}
 
 	/* ===== 文章列表：网格模式 =====

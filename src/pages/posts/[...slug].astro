@@ -193,7 +193,15 @@ const katexVersion = postHasMath
         </div>
 
         <!-- 推荐和相关文章 -->
-        <RecommendedPost relatedPosts={relatedPosts} currentPostId={post.id} />
+        <RecommendedPost
+            relatedPosts={relatedPosts}
+            currentPostId={post.id}
+            currentPostMeta={{
+                series: post.data.series || "",
+                tags: post.data.tags || [],
+                category: post.data.category || "",
+            }}
+        />
 
         <!-- 评论 -->
         {post.data.comment && !post.data.password && <Comment />}

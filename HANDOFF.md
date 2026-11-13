@@ -3,7 +3,7 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-13（第五十三批：悬停预览卡 + 键盘快捷键 V0.1.107；全量复验修掉中文 slug 双重编码，已重新上线）**。
+> 最后更新：**2026-11-13（第五十三批完成并全量复验上线；新增「炫酷化候选清单·第二批」调研，未动手实现）**。
 >
 > **📌 炫酷化候选清单（2026-11-13 搜 3 轮后定案，用户「记住这个列表」→ 常驻这里，别弄丢）**
 > 来源：现代博客动效 / Astro 生态 / 性能与无障碍三方向，已对照本站「已实现 / 已否决」去重。
@@ -33,6 +33,31 @@
 > | — | 阅读进度条 / 回顶 / TOC scrollspy / 阅读时长 / 字数 / 系列导航 / 相关文章 | ✅ 站内已有 | 别重复实现；scrollspy 见 `FloatingToc.astro` 的 `toc-active-indicator`，动手前先核 |
 > | — | 第一梯队 4 项（噪点/磁性/标题流光/复制扩散圈）+ 主题圆形擦除 | ✅ 已上线 | 第五十批，V0.1.104 |
 > | — | E2 scroll-driven CSS · 内联脚本外链化 · SVG 去重 · 相册重压 · LQIP · Swup 预加载 · 顶部渐变高光 · 通用 widget 折叠 · 番组/VNDB/B站 · 标签药丸改全圆 · 二维码压缩 · 跨页进度条 | ⛔ 已否决 | 都有实测依据，见历批记录，**别再当新发现重提** |
+>
+> **📌 炫酷化候选清单·第二批（2026-11-13 再搜 3 轮：2026 原生 CSS/HTML 能力 + 阅读体验微交互 + 性能/无障碍）**
+> 与第一批 1~10 及「已否决」逐项去重；每条都带**本站前提核查数字**，没核的不写。用户这次只要求「说说有什么」，**未动手实现**。
+> 参考：2026 CSS 现状 [webically.com](https://webically.com/?p=14270) ·
+> `interpolate-size` [MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/interpolate-size) ·
+> `@starting-style` [MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@starting-style) ·
+> Anchor Positioning 三引擎现状 [html5foundry.com](https://html5foundry.com/?p=7613) ·
+> Tufte 边注 [keith.is](https://keith.is/post/tufte-sidenotes-in-astro) ·
+> 修订历史 [danschultzer.com](https://danschultzer.com/posts/static-blog-post-revision-history)。
+>
+> | # | 项 | 状态 | 结论 / 前提 |
+> |---|---|---|---|
+> | **B1** | **阅读排版偏好层**（正文 3 档字号 / 行宽 / 衬线切换） | ⭐ **最推荐** | 复用 `DisplaySettings.astro` 现有 6 个「真开关」骨架 + localStorage，纯 CSS 变量、零依赖、不新增 UI 入口。⚠️ 该组件注释明确「装上去没反应的死开关一律不做」（参考站的壁纸模式/樱花/音乐/翻译都刻意没做）→ 新增三项必须都真能生效；`global.css` 已有 `--code-font-size` 断点变量可复用 |
+> | **B2** | **`prefers-reduced-transparency` 兜底** | ⭐ **推荐** | 本站大量半透明分层（`--line-divider: rgba(255,255,255,.08)`、卡片 `0.92` 底色、`backdrop-filter` 毛玻璃、噪点层）→ 该偏好下补不透明底色 / 关 blur。纯 CSS 零依赖，与现有 `prefers-contrast`(L242) / `forced-colors`(L262) / `prefers-reduced-motion` 并列第四套，不冲突 |
+> | **B3** | 相关文章补「**为什么推荐**」小字 | ⭐ **推荐（最小改动）** | `getRelatedPosts()` 已在 `content-utils.ts:218`，`RecommendedPost.astro` 只列标题不写理由。构建期按「同系列 / 同标签 / 同分类」算一个小字标签，零 JS。前提：34 篇全有 `category`+`tags`，26 篇有 `series` → 理由一定算得出来 |
+> | B4 | 修订历史 / 更新日志（`revisions: [{date,note}]`） | ⬜ 待拍板 | 34 篇 frontmatter **全部有 `updated`**，`[...slug].astro:127` 已把日期传给 `PostMeta`，但没「改了什么」。⚠️ 要改 `content.config.ts` schema（数据建模，得你拍）+ 补 34 篇数据才有内容 → 建议只先给 6 篇技术手册类做 |
+> | B5 | Tufte 式边注 sidenotes | ⬜ 前提不成立 | remark-gfm `[^1]` → rehype 插件搬到页边 + checkbox trick 零 JS。⚠️ **本地 ripgrep 34 篇正文 `\[\^` / `footnote` = 0 命中** → 现在做是空功能；且要给正文留 300px 右边距，会挤右栏 TOC / 站点卡。等真有脚注内容再说 |
+> | B6 | `interpolate-size: allow-keywords` 让 `height:auto` 折叠能过渡 | ⬜ 待做 | 可用在 `/series/` 手风琴、ec 代码块折叠、标签筛选面板；零依赖渐进增强，不支持就退化成现有瞬切。⚠️ **只作用于内容高度变化**，别动浮层（五-41 已用 opacity/visibility 状态机，刚做完 19/19 动效取证） |
+> | B7 | `::target-text` 文本片段高亮 | ⬜ 与第一批 #10 绑定 | 纯 CSS 零 JS，配合「复制本节链接」把 `#:~:text=` 一起复制才有用。⚠️ 中文片段跨浏览器支持要实测、规范仍属 Working Draft；**第一批 #10 不做的话这条也没意义** |
+> | — | 站内反向链接 / backlinks 图谱 | ⛔ 前提不成立 | **本地 ripgrep 34 篇正文 `](/posts/` `](./` `](../` = 0 命中** → 图是空的；`/series/` 手风琴 + `getRelatedPosts()` 已承担「文章之间怎么连」。别当新发现 |
+> | — | Service Worker / 离线阅读 / 安装 PWA | ⛔ 前提不成立 | 本站**纯 HTTP + 裸 IP**（site_url 就是 IP），SW 只在安全上下文注册 → 线上访客根本拿不到；`site.webmanifest` Content-Type 也已在 AGENTS 九节列为看过不做。除非先上 HTTPS + 域名 |
+> | — | Anchor Positioning / Popover API 重写现有浮层 | ⛔ 暂缓 | Chrome 125+ 稳定，但 **Firefox 132 仍 flag、Safari TP 实验**（2026-11 现状）；本站刚做完 hovercard 的 JS 定位 + 视口 clamp + reinitOnce 去重，重写只省几十行 JS，却要重跑全部动效/样式取证。等三引擎稳定且有真实痛点 |
+> | — | CSS `if()` / `grid-lanes` masonry / `field-sizing` / scroll-driven 装饰动画 | ⛔ 别重提 | 前两个 2026 才进稳定/草案、相册改版已在第一批否决；本站无表单（评论是 Twikoo），`field-sizing` 无用武之地；**scroll-driven CSS 装饰动画已在第一批否决**（`scroll-state()` 状态查询属另一类，真要做单独论证，别混进来） |
+>
+> **一句话**：第二批里真值得动手的只有 **B1 + B2 + B3**（零依赖、复用现有骨架、前提都实测过）；B4 要先拍数据建模，B5/B7 卡在前提，其余带证据否决。
 >
 > **🔧 2026-11-13（第五十三批：候选清单第 1、2 项，V0.1.107）**
 > 用户「嗯先做12吧 然后记住这个列表」→ 做 1（链接预览卡）+ 2（键盘快捷键），清单按上表落进本文件常驻。
@@ -2779,7 +2804,7 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 | dev / preview server | 本批起过 `npm run preview :4321`，**收尾需精确杀掉并复查计数 = 0** |
 | 服务器回滚资产 | `dist.old`（= 修复前 V0.1.107）+ **116 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
 | 临时文件 | `%TEMP%\ccblog-verify53\` 下本轮 `.mjs` / `.log` / 截图，收尾需清；服务器 `/tmp/chenblog_dist.tar.gz` 需删 |
-| 待用户拍板 | **本批新增 0 条**。**候选清单 3~8 待他挑**（3 写作热力图 / 4 `content-visibility` / 5 极光 / 6 逐字解码 / 7 渐变呼吸 / 8 命令面板 / 10 标题锚点复制）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32） |
+| 待用户拍板 | **第二批清单（顶部常驻表）B1 阅读排版偏好 / B2 reduced-transparency / B3 推荐理由 / B4 修订史 / B6 `interpolate-size` 待他挑**，推荐 B1+B2+B3；B5/B7 卡在前提，其余已带证据否决。**候选清单第一批 3~8 仍待挑**（3 写作热力图 / 4 `content-visibility` / 5 极光 / 6 逐字解码 / 7 渐变呼吸 / 8 命令面板 / 10 标题锚点复制）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32） |
 | 既有小坑 | 本批**新增五条**：① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为，别用这个判据；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），且读 computed style 要等 `load` + 800ms，否则 CSS 没加载完会误报 `visibility:visible`；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径** —— 磁盘上是 Unicode 原名，编了就 404（本批 26/34 条中招），中文 URL 交给浏览器自动编码；④ **本机代理会拦裸 IP**：`agent-browser` / Edge 渠道访问 `http://47.108.230.220` 都是 `ERR_BLOCKED_BY_CLIENT`，Playwright 要 `args: ['--no-proxy-server']`；HTTP 层 `Invoke-WebRequest` 不受影响；⑤ **1200px 下右栏 `display:none`** → 侧栏「博客版本」不在 `body.innerText` 里，验版本号要数 `outerHTML`；⑥ **`URL.pathname` 已完成百分号编码，再套 `encodeURI` = 双重编码**（`%` → `%25`）→ 中文 slug 全查不到表，key 口径两端必须一致（本轮全量复验才抓到）；⑦ **产物里文章 href 是原始中文**，而归档页 `a[href*="%E5%A4%A9"]` 命中的是标签筛选链接且在 Swup 容器外，测中文文章链接要用 `#swup-container a[href^="/posts/css100"]`；⑧ **终态 `translate` 计算值是 `0px` 不是 `none`**（`none` 只属 reduced-motion 覆盖）；⑨ **`grep -qF` 固定串大小写必须与产物逐字一致**（本轮部署断言把 `css100` 写成 `CSS100` → `set -e` exit 1 无输出，逐条重跑才定位，中途 `dist` 未被替换） |
 
 ---

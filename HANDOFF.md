@@ -57,11 +57,20 @@
 >      改成**跟随重定位**（链接滚出视口才收）。
 > ⑤ 📋 **验收（全部真跑）**：`build` 0 error / **54 page(s)** / pagefind 36 页 11195 词；
 >    `check` **0 error / 3 hint**（基线不变）；`docs:check` **0 错 0 警**；`dist` **550 文件 / 54 html**（+1 JSON）。
->    静态产物 **23/23**；浏览器 **28/28**（悬停/键盘/软导航/双档/reduced-motion/无 JS/零报错）；
+>    静态产物 **23/23**；本地浏览器 **28/28**（悬停/键盘/软导航/双档/reduced-motion/无 JS/零报错）；
 >    旧功能回归 **6/6**（搜索 width 0.28s 过渡 · 磁性 · 复制圈 · Pagefind · 噪点 · 主题切换）。
 >    ⚠️ 探针自造假红 3 条已按证据修正口径：`reinitRuns` 对 `reinitOnce` 的 key **恒 -1**（它不在 entries 里，
 >    要用节点数/行为当判据）；无 JS context 下 module chunk 必然 `requestfailed`（有 JS 控制组 0 条，
 >    分段 5 次独立实例复核前 4 段全 0）；无 JS 读 computed style 要等 `load` + 800ms（CSS 未加载完会读到 visible）。
+> ⑥ 🚀 **已上线 V0.1.107**（提交 `879ec62`，`3578d53..879ec62`，部署前 8 条断言全过、替换前校验、回滚资产保留）。
+>    **线上复验**：6/6 URL 200（含 `/api/linkPreview.json` 10082 B / 34 条 / 缓存 no-cache must-revalidate）、
+>    HTML 内 `0.1.107` 4 处；线上浏览器 **58/58**（6 页 × 亮暗 = 无横向溢出/单 h1/浮层默认隐藏 fixed 直角/版本号，
+>    浮层打开态底色·边框·阴影·毛玻璃·文字对比·7 行 8 键帽·两卡不遮挡，真实悬停/搜索/j k g/Esc/打字不劫持/
+>    软导航节点各 1，375px 三页无溢出，零 pageerror/requestfailed）；亮暗 + 移动端三张截图肉眼核对**无样式冲突**。
+>    ⚠️ **本机代理拦裸 IP**：`agent-browser` 线上连续 2 次 `ERR_BLOCKED_BY_CLIENT` → 按硬规则降级 Playwright；
+>    Edge 渠道同样被拦，最终 `chromium.launch({ args: ['--no-proxy-server'] })` 才通（HTTP 层 `Invoke-WebRequest` 一直 200）。
+>    ⚠️ 线上探针又有 2 条自造假红：`body.innerText` 读不到 `0.1.107`（1200px 下右栏 `display:none`，版本号只在 HTML 里）
+>    要用 `outerHTML` 数；键帽实际 **8 个**不是 11 个。
 >
 > **🔧 2026-11-12（第五十二批：手册 v1.8.1 → v1.8.2，V0.1.106）**
 > 用户「那个ccNewTool有新版手册更新下呗」→ 按八-9「一版一篇」**新发** `/posts/ccnewtools-manual-v182/`，
@@ -2720,16 +2729,16 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-13 第五十三批实测；本地 V0.1.107 已构建待部署**）
+## 三、当前状态快照（**2026-11-13 第五十三批实测；线上 = 本地 = V0.1.107**，已部署）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
 > ⚠️ **炫酷化候选清单常驻在文件顶部（第一节之前那张表）**，1/2 已做、3~10 待选，别弄丢。
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | 上批 `3578d53`（V0.1.106）已推送；**本批尚未提交**，工作区有 7 个改动文件 |
-| 工作区 | 新增 `src/pages/api/linkPreview.json.ts` · `src/components/features/LinkPreview.astro` · `src/components/features/KeyboardShortcuts.astro`；改 `Layout.astro`(+8) · `Search.svelte`(+6) · `global.css`(+234) · `package.json`(`0.1.107`) · `HANDOFF.md`(本批记录 + 候选清单) |
-| 线上站点 | 仍 **V0.1.106**（2026-11-12 23:44 部署）；本批**待部署** |
+| 本地 HEAD | `879ec62`（V0.1.107），**已推送、`HEAD == origin/main`、工作区计数 0** |
+| 工作区 | 本批 8 个文件（3 新增 + 5 修改，703 增 / 13 删），见第二节第五十三批；**已提交** |
+| 线上站点 | ✅ **2026-11-13 部署 V0.1.107**（替换前 8 条断言全过）。线上 6/6 URL 200 / 浏览器 **58/58** / 亮暗+移动端三张截图肉眼核对无样式冲突 |
 | 服务器配置 | 本批**未动服务器** |
 | 本地构建 | V0.1.107 = **550 个文件 / 54 个 html / 53 个 `index.html`**（比上批 +1 JSON）。`build` **0 error** / 54 page(s) / pagefind 36 页 11195 词、`check` **0 error / 3 hint**、`docs:check` **0 错 0 警** |
 | 验收 | 静态 **23/23** · 浏览器 **28/28** · 旧功能回归 **6/6**（详见第二节第五十三批） |
@@ -2738,7 +2747,7 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 | 服务器回滚资产 | `dist.old`（= V0.1.105）+ **114 个 `dist_backup_*`**。**一律保留，删需用户明确同意** |
 | 临时文件 | `%TEMP%\ccblog-batch53\` 下本批 `.mjs` / `.log`，收尾需清 |
 | 待用户拍板 | **本批新增 0 条**。**候选清单 3~8 待他挑**（3 写作热力图 / 4 `content-visibility` / 5 极光 / 6 逐字解码 / 7 渐变呼吸 / 8 命令面板 / 10 标题锚点复制）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32） |
-| 既有小坑 | 本批**新增三条**：① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为，别用这个判据；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），且读 computed style 要等 `load` + 800ms，否则 CSS 没加载完会误报 `visibility:visible`；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径** —— 磁盘上是 Unicode 原名，编了就 404（本批 26/34 条中招），中文 URL 交给浏览器自动编码 |
+| 既有小坑 | 本批**新增五条**：① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为，别用这个判据；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），且读 computed style 要等 `load` + 800ms，否则 CSS 没加载完会误报 `visibility:visible`；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径** —— 磁盘上是 Unicode 原名，编了就 404（本批 26/34 条中招），中文 URL 交给浏览器自动编码；④ **本机代理会拦裸 IP**：`agent-browser` / Edge 渠道访问 `http://47.108.230.220` 都是 `ERR_BLOCKED_BY_CLIENT`，Playwright 要 `args: ['--no-proxy-server']`；HTTP 层 `Invoke-WebRequest` 不受影响；⑤ **1200px 下右栏 `display:none`** → 侧栏「博客版本」不在 `body.innerText` 里，验版本号要数 `outerHTML` |
 
 ---
 ## 四、维护本文件的规矩

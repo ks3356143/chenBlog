@@ -190,10 +190,39 @@ figcaption {
     text-wrap: pretty;
 }
 
+/* ── C1 CJK 排版精修（2026-11-15 第五十五批）──────────────────────────────────
+   两条都是 2024/2025 才进稳定通道的中文排版原生能力，渐进增强（不认识就整条忽略）：
+   ① text-spacing-trim: space-all —— 压缩全角标点占据的多余空白（行首/行尾/连续标点），
+      中文正文里「，」「。」后面那一大块空会被收紧，断行更均匀。Chrome 123+ / Safari 17.4+。
+   ② text-autospace: normal —— 中文与西文/数字之间自动插入约 1/4 em 间距，
+      「CSS100Day教程」不再黏成一坨。Chrome 140+ 起随 ideograph-alpha 等子值落地。
+   ⚠️ 只给**正文容器**，绝不写到全局 `*` 或 `body`：代码块 / 行内 code / KaTeX / Mermaid
+      都各自声明了 font-family 且对字距敏感，套上去会把等宽对齐毁掉。
+   ⚠️ 值与 text-wrap 那条同源：不支持的浏览器零副作用，无需 @supports 兜。 */
+.custom-markdown,
+.custom-markdown p,
+.custom-markdown li,
+.custom-markdown blockquote,
+.custom-markdown figcaption,
+.post-title-primary {
+    text-spacing-trim: space-all;
+    text-autospace: normal;
+}
+
 html {
     /* auto = 只有真的会溢出时才预留。写 stable 会让短文页也永远留一条空槽 */
     scrollbar-gutter: auto;
+    /* ── C0（2026-11-15 第五十五批）：从站外带 #hash 进来时给 fixed 导航留位 ──────
+       nav 是 fixed top-0：静止态 h-18=72px、滚动态 data-scrolled=56px。浏览器把锚点
+       滚到视口顶（top:0），标题就被导航整条盖住（实测外部 #hash 进站 headingTop=0 /
+       navBottom=56 → 遮挡 56px），而站内点目录时导航已 translate 收起所以平时看不出。
+       scroll-padding-top 作用于**滚动容器**（这里是根滚动区），对 :target / scrollIntoView /
+       hash 跳转 / scroll-snap 一并生效；取静止态 72px + 12px 余量，两种状态都不遮。
+       要回退：删这一行即可，零副作用。 */
+    scroll-padding-top: 84px;
 }
+
+/* C0 补充：打印时不需要给导航留白（@media print 里统一归零，见文件末尾） */
 
 /* 需要"横不跳"的容器（正文区与列表页）才预留槽位 */
 #main-grid,
@@ -1094,9 +1123,156 @@ html[data-theme="dark"] .dynamic-year-item {
     }
 }
 
+/* ===== C2 打印 / 存 PDF 专用样式（2026-11-15 第五十五批）=====
+   原块只有 3 行（藏两个浮层）。屏幕渲染完全不受影响；只在打印/导出 PDF 时生效。
+   目标：把「带毛玻璃 + 三栏 + 波浪壁纸」的网页，收敛成一张干净的单栏白纸黑字。
+
+   ⚠️ 三个必须处理的本站特有陷阱：
+   ① `.content-panel` 是 absolute + top:calc(...)，`.onload-animation` 用 backwards
+      动画（等待期 opacity:0）→ 打印预览若不复位会整页空白 / 只印出一屏。
+   ② 正文挂在 `#center-content`（overflow:hidden）里，打印时高度被裁 → 必须放开。
+   ③ 暗色主题下 --card-bg 是深色，直接打印会是一整页黑底 → 统一强制白底黑字。 */
 @media print {
+    /* 配色收敛：别让访客的暗色主题变成一整页黑底。
+       print-color-adjust: exact 保留必要的底色（代码块 / 引用块），其余交给浏览器省墨。 */
+    :root,
+    :root[data-theme="dark"],
+    html,
+    body {
+        background: #fff !important;
+        color: #111 !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+    html {
+        scroll-padding-top: 0 !important;
+    }
+
+    /* ① 布局复位：absolute 面板 → 正常文档流；被 overflow 裁掉的容器全部放开 */
+    .content-panel,
+    #page-shell,
+    #main-grid,
+    #center-content,
+    #swup-container,
+    #content-wrapper,
+    #post-container {
+        position: static !important;
+        top: auto !important;
+        left: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        box-shadow: none !important;
+        border: 0 !important;
+        opacity: 1 !important;
+        transform: none !important;
+        animation: none !important;
+        transition: none !important;
+    }
+    .onload-animation,
+    .card-base {
+        opacity: 1 !important;
+        transform: none !important;
+        animation: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        border: 0 !important;
+    }
+
+    /* ② 整片隐藏：屏幕专属的装饰、导航、侧栏、浮层、页脚、互动区 */
+    #nav,
+    #banner-zone,
+    #wallpaper-wrapper,
+    #wallpaper-gradient,
+    #header-waves,
+    #progress-bar,
+    #reading-progress,
+    #left-sidebar-wrapper,
+    #right-sidebar-wrapper,
+    #mobile-bottom-sidebar,
+    #category-bar-wrapper,
+    .footer,
+    .floating-controls-container,
+    .floating-toc-panel,
+    .floating-btn,
+    .scroll-hint,
+    .banner-link,
+    .noise-overlay,
+    #card-spotlight,
     .link-preview-card,
-    .shortcut-help {
+    .shortcut-help,
+    .skip-to-content,
+    .page-skeleton,
+    .page-spinner,
+    #post-comments,
+    .series-nav,
+    .series-nav-toggle,
+    #copy-url-btn,
+    .btn-card,
+    .mermaid-ctrl-btn,
+    .mermaid-fs-controls,
+    .fancybox__container {
         display: none !important;
+    }
+
+    /* ③ 正文可读性：单栏、字距行距、避免标题与图片被分页切开 */
+    .custom-markdown {
+        max-width: 100% !important;
+        font-size: 11pt !important;
+        line-height: 1.65 !important;
+        color: #111 !important;
+    }
+    .custom-markdown h1,
+    .custom-markdown h2,
+    .custom-markdown h3,
+    .custom-markdown h4 {
+        break-after: avoid-page;
+        page-break-after: avoid;
+        color: #111 !important;
+    }
+    .custom-markdown p,
+    .custom-markdown li,
+    .custom-markdown blockquote {
+        orphans: 3;
+        widows: 3;
+    }
+    .custom-markdown pre,
+    .custom-markdown figure,
+    .custom-markdown table,
+    .custom-markdown img {
+        break-inside: avoid-page;
+        page-break-inside: avoid;
+        max-width: 100% !important;
+    }
+    /* 代码块打印时常被 ec 的 max-height 折叠 → 放开，且别让浅灰底消失 */
+    .custom-markdown pre,
+    .expressive-code .frame {
+        max-height: none !important;
+        overflow: visible !important;
+        white-space: pre-wrap !important;
+        word-break: break-word;
+    }
+    /* 链接在纸上没有颜色/下划线语义差，附出真实 URL。
+       ⚠️ 只给正文里的外链/普通链接，锚点 # 与 javascript: 不附。 */
+    .custom-markdown a[href^="http"]::after {
+        content: " (" attr(href) ")";
+        font-size: 9pt;
+        color: #555;
+        word-break: break-all;
+    }
+    /* 文章尾部「分享 / 上一下篇 / 相关文章」不进 PDF。
+       用统一的 data-print-hide 标记收口（[...slug].astro / CopyShare / RecommendedPost 各挂一处），
+       不用 `.custom-markdown + *` 或 `> .mb-6` 这类会误伤正文容器的兄弟选择器 ——
+       正文容器自己也带 `onload-animation mb-6`，一刀切会把它整块藏掉。 */
+    [data-print-hide] {
+        display: none !important;
+    }
+    @page {
+        margin: 16mm 14mm;
     }
 }

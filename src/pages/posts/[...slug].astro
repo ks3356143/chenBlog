@@ -158,11 +158,13 @@ const katexVersion = postHasMath
             </Markdown>
 
             <!-- 复制链接分享 -->
-            <CopyShare postUrl={getPostUrlBySlug(post.id)} />
+            <div data-print-hide>
+                <CopyShare postUrl={getPostUrlBySlug(post.id)} />
+            </div>
         </div>
 
         <!-- 上一篇文章和下一篇文章，使用data.prevSlug和data.nextSlug -->
-        <div class="mt-4 mb-4 flex w-full flex-col justify-between gap-4 overflow-hidden md:flex-row">
+        <div data-print-hide class="mt-4 mb-4 flex w-full flex-col justify-between gap-4 overflow-hidden md:flex-row">
             <a
                 href={post.data.nextSlug ? getPostUrlBySlug(post.data.nextSlug) : url("/")}
                 class="w-full overflow-hidden font-bold active:scale-95"
@@ -193,15 +195,17 @@ const katexVersion = postHasMath
         </div>
 
         <!-- 推荐和相关文章 -->
-        <RecommendedPost
-            relatedPosts={relatedPosts}
-            currentPostId={post.id}
-            currentPostMeta={{
-                series: post.data.series || "",
-                tags: post.data.tags || [],
-                category: post.data.category || "",
-            }}
-        />
+        <div data-print-hide>
+            <RecommendedPost
+                relatedPosts={relatedPosts}
+                currentPostId={post.id}
+                currentPostMeta={{
+                    series: post.data.series || "",
+                    tags: post.data.tags || [],
+                    category: post.data.category || "",
+                }}
+            />
+        </div>
 
         <!-- 评论 -->
         {post.data.comment && !post.data.password && <Comment />}

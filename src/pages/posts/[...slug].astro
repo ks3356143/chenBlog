@@ -8,6 +8,7 @@ import Layout from "@/layouts/Layout.astro"
 import Markdown from "@/components/commons/Markdown.astro"
 import RecommendedPost from "@/components/layout/subcomps/RecommendedPost.astro"
 import ReadingProgress from "@/components/features/ReadingProgress.astro"
+import SectionCopyLink from "@/components/features/SectionCopyLink.astro"
 import SeriesNav from "@/components/misc/SeriesNav.astro"
 import { Icon } from "astro-icon/components"
 import PostMeta from "@/components/layout/PostMeta.astro"
@@ -85,6 +86,8 @@ const katexVersion = postHasMath
     {postHasMath && <link rel="stylesheet" href={`/vendor/katex/katex.css?v=${katexVersion}`} />}
     <!-- 阅读进度条：只在文章页存在 -->
     <ReadingProgress />
+    <!-- C3 复制本节链接 + 文本片段高亮：只在文章页存在 -->
+    <SectionCopyLink />
     <div class="relative mb-4 flex w-full flex-col overflow-hidden">
         <!-- 文章详情页面 -->
         <div id="post-container" class="card-base relative z-10 w-full px-6 pt-6 md:px-9">

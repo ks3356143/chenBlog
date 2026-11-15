@@ -1,0 +1,120 @@
+---
+/**
+ * C3 复制本节链接 + 文本片段（2026-11-15 第五十六批）。
+ *
+ * 背景：rehypeAutolinkHeadings 早已在链里，产物每个 h2/h3/h4 尾部都有
+ * `<a class="anchor" href="#中文id"><span class="anchor-icon">#</span></a>`，
+ * 但那个链接只带 #hash、跳转后没有「命中了哪一节」的视觉反馈。
+ *
+ * 这一层做两件事（纯增强，不改产物 HTML 结构、不进 Pagefind 索引）：
+ * ① 给每个标题在 .anchor 旁注入一个「复制本节链接」小按钮，点一下复制
+ *    `https://host/posts/xxx/#id#:~:text=标题文字`，别人打开时命中的那段文字会高亮。
+ * ② global.css 里的 ::target-text 给这段命中文字上底色（不支持就只跳到锚点，无害）。
+ *    🔴 ::target-text 是否生效取决于浏览器是否实现了 Text Fragments；
+ *       中文片段在 Chromium 系实测可用，Safari/Firefox 支持度参差 → 一律当渐进增强。
+ *
+ * 🔴 五条实现约束（照既有组件抄的）：
+ * ① 按钮**运行时注入**，构建期 HTML 里没有 → Pagefind 不会索引到「复制本节链接」几个字（第一批 #6 的教训）。
+ * ② 复制走 execCommand 回退：本站裸 IP + 纯 HTTP，非安全上下文里 navigator.clipboard 根本不存在（五-38）。
+ *    本脚本是 is:inline，不能写 TS 断言（五-39）。
+ * ③ document 级点击委托只挂一次（window.reinitOnce，十-14）；Swup 换容器不影响。
+ *    按钮本身每次进文章页要重新注入（onReinit，fn 里重新查 DOM，不抓旧节点闭包）。
+ * ④ 只在 .custom-markdown 里注入，不动侧栏 TOC / 横幅标题 / 卡片标题。
+ * ⑤ 按钮显隐沿用标题 hover 的 opacity 状态机（markdown.css 里 .anchor 那套），
+ *    不用 display:none（五-41）；键盘 focus 也要能出现（无障碍）。
+ */
+---
+
+<script is:inline>
+	function injectSectionCopyButtons() {
+		var md = document.querySelector(".custom-markdown");
+		if (!md) return; // 非文章页：什么都不做
+		var heads = md.querySelectorAll("h2[id], h3[id], h4[id]");
+		for (var i = 0; i < heads.length; i++) {
+			var h = heads[i];
+			if (h.querySelector(".section-copy-btn")) continue; // 幂等：软导航回调重复跑不叠加
+			var anchor = h.querySelector("a.anchor");
+			if (!anchor) continue;
+
+			var btn = document.createElement("button");
+			btn.type = "button";
+			btn.className = "section-copy-btn";
+			btn.setAttribute("aria-label", "复制本节链接");
+			btn.title = "复制本节链接（含高亮片段）";
+			btn.textContent = "🔗";
+			// 标题文字（去掉尾部 # 与锚点符），作为 :~:text= 的片段
+			var label = (h.textContent || "").trim().replace(/#+\s*$/, "").trim();
+			btn.setAttribute("data-section-label", label);
+			btn.setAttribute("data-section-id", h.id);
+			// 插到 .anchor 后面，跟它同一行
+			anchor.parentNode.insertBefore(btn, anchor.nextSibling);
+		}
+	}
+
+	function copySectionLink(btn) {
+		var h = document.getElementById(btn.getAttribute("data-section-id"));
+		if (!h) return;
+		var label = btn.getAttribute("data-section-label") || "";
+		// pathname 已完成百分号编码，别再套 encodeURI（六节坑⑥）
+		var base = window.location.origin + window.location.pathname + "#" + encodeURIComponent(h.id);
+		if (label) base += "#:~:text=" + encodeURIComponent(label);
+
+		function ok() {
+			btn.classList.add("is-copied");
+			btn.setAttribute("aria-label", "已复制本节链接");
+			setTimeout(function () {
+				btn.classList.remove("is-copied");
+				btn.setAttribute("aria-label", "复制本节链接");
+			}, 1600);
+		}
+		function bad() {
+			btn.classList.add("is-error");
+			setTimeout(function () { btn.classList.remove("is-error"); }, 1600);
+		}
+
+		/* 🔴 纯 HTTP 裸 IP 下 navigator.clipboard 不存在（五-38）→ 走 execCommand。
+		   但 localhost / HTTPS 下走的是 Promise 版 writeText：同步 try/catch 抓不到它的 reject，
+		   未处理的 NotAllowedError 会污染控制台（实测 preview 下必现）。
+		   所以两条路径都要「失败可观测」：Promise 用 .catch，execCommand 用同步 try。 */
+		if (navigator.clipboard && window.isSecureContext) {
+			navigator.clipboard.writeText(base).then(ok).catch(bad);
+		} else {
+			try {
+				var ta = document.createElement("textarea");
+				ta.value = base;
+				ta.setAttribute("readonly", "");
+				ta.style.cssText = "position:fixed;top:-9999px;opacity:0";
+				document.body.appendChild(ta);
+				ta.select();
+				var done = document.execCommand("copy");
+				document.body.removeChild(ta);
+				if (!done) throw new Error("execCommand copy failed");
+				ok();
+			} catch (err) {
+				bad();
+			}
+		}
+	}
+
+	window.reinitOnce("section-copy-delegate", function () {
+		document.addEventListener("click", function (e) {
+			var t = e.target;
+			var btn = t && t.closest ? t.closest(".section-copy-btn") : null;
+			if (btn) { e.preventDefault(); copySectionLink(btn); }
+		});
+		return true;
+	});
+
+	/* 🔴 首屏补一次：本组件挂在文章页正文【之前】（Astro 把 is:inline 原样输出在组件位置），
+	   onReinit 的 immediate 那一拍 DOM 还没解析到 .custom-markdown → querySelector 拿到 null，
+	   而首屏之后不会再有导航来触发补跑。用 DOMContentLoaded 兜住「DOM 全就绪」这一刻；
+	   软导航仍由下面的 onReinit 负责（那时新容器已插入，fn 里重新查 DOM）。
+	   ⚠️ 不用 setTimeout 猜时长，DOMContentLoaded 是确定的就绪边界。 */
+	function injectWhenReady() { injectSectionCopyButtons(); }
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", injectWhenReady, { once: true });
+	} else {
+		injectWhenReady();
+	}
+	window.onReinit("section-copy-inject", injectSectionCopyButtons, { immediate: false });
+</script>

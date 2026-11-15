@@ -34,6 +34,8 @@ import MagneticButtons from "@/components/features/MagneticButtons.astro"
 // 两者都挂在 Swup 容器外的 Layout 尾部：节点不随切页被替换，脚本走 reinitOnce 只挂一次
 import LinkPreview from "@/components/features/LinkPreview.astro"
 import KeyboardShortcuts from "@/components/features/KeyboardShortcuts.astro"
+// C4 阅读位置记忆（2026-11-15 第五十六批）：节点挂 Swup 容器外，跨软导航不换
+import ResumeReading from "@/components/features/ResumeReading.astro"
 
 // 中间部分-分类导航栏是否显示根据配置
 const showCategoryBar = !!siteConfig.categoryBar
@@ -197,4 +199,6 @@ const isHomePage = pathname === "/" || /^\/\d+$/.test(pathname)
     <LinkPreview />
     <!-- 键盘快捷键 + ? 帮助浮层：同样只挂一次，切页后状态自动复位 -->
     <KeyboardShortcuts />
+    <!-- C4 上次读到 N% · 继续阅读：只在文章页显示，跨软导航节点不替换 -->
+    <ResumeReading />
 </BaseLayout>

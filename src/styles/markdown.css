@@ -19,11 +19,44 @@
             }
         }
 
+        /* C3 复制本节链接（第五十六批）：按钮由 SectionCopyLink.astro 运行时注入，
+           构建期 HTML 里没有 → 不进 Pagefind 索引。显隐跟 .anchor 同一套 opacity 状态机，
+           不用 display:none（五-41）；:focus-visible 单独兜键盘用户。 */
+        .section-copy-btn {
+            @apply ml-[0.3ch] cursor-pointer rounded bg-transparent px-1 py-0.5 text-[0.72em] leading-none no-underline transition! opacity-0! select-none!;
+            color: var(--primary);
+            border: 1px solid transparent;
+            &:hover {
+                background: var(--btn-plain-bg-hover);
+            }
+            &:focus-visible {
+                @apply opacity-100!;
+                outline: 2px solid var(--primary);
+                outline-offset: 1px;
+            }
+            &.is-copied {
+                @apply opacity-100!;
+                background: color-mix(in oklch, var(--primary) 16%, transparent);
+            }
+            &.is-error {
+                @apply opacity-100!;
+                color: #b91c1c;
+            }
+        }
+
         &:hover {
-            .anchor {
+            .anchor,
+            .section-copy-btn {
                 @apply opacity-100!;
             }
         }
+    }
+
+    /* ::target-text：别人用带 #:~:text= 的链接进来时高亮命中的那段文字。
+       纯 CSS、零 JS，浏览器不认就整条忽略（只跳到 #hash，功能无损）。 */
+    ::target-text {
+        background-color: color-mix(in oklch, var(--primary) 22%, transparent);
+        color: inherit;
     }
 
     a:not(.no-styling) {

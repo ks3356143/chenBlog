@@ -1,0 +1,194 @@
+---
+/**
+ * C4 阅读位置记忆（2026-11-15 第五十六批）。
+ *
+ * 文章读到一半离开，回访时顶部给一条「上次读到 42% · 继续阅读 / 从头看」的小条。
+ * 贴 2026「自适应、有意义的微交互」趋势，零依赖，复用 DisplaySettings 的 localStorage 模式。
+ *
+ * 🔴 五条边界（都核过本站前提）：
+ * ① **只在文章页生效**：判据是 `#post-container` 存在（与 ReadingProgress 同一判据），
+ *    非文章页既不读写也不显示。软导航到别的页 → 小条立即隐藏。
+ * ② **key 用 pathname**：本站 pathname 已完成百分号编码（六节坑⑥），直接用；
+ *    存百分比而不是 scrollY —— 换设备/换字号/换行宽变化后仍能落在相近位置。
+ * ③ **只在「读到 5%~95%」之间存**：太靠顶/太靠底都没意义（靠顶=没读，靠底=读完了）。
+ *    读完（≥95%）就删掉存档，下次不再弹。
+ * ④ **Swup 软导航**：URL 变但文档不重载 → onReinit 每次重新按新 pathname 判断显隐，
+ *    滚动监听用 reinitOnce 只挂一次，fn 里每次重新查 DOM（十-14）。
+ * ⑤ **显隐走 opacity/visibility/translate 状态机**（五-41），不用 display:none；
+ *    prefers-reduced-motion 下取消位移动画。
+ *
+ * ⚠️ 小条挂在 Swup 容器外（Layout 尾部），节点跨软导航不被替换，状态由脚本复位。
+ * ⚠️ localStorage 在隐私模式可能抛错，全部读写包 try/catch，失败就当「没有记忆」。
+ */
+---
+
+<div
+	id="resume-reading"
+	class="resume-reading"
+	role="status"
+	aria-live="polite"
+	aria-hidden="true"
+>
+	<span class="rr-text">上次读到 <strong id="rr-percent">0%</strong></span>
+	<button type="button" class="rr-btn rr-go" id="rr-go">继续阅读</button>
+	<button type="button" class="rr-btn rr-cancel" id="rr-cancel" aria-label="从头阅读并清除记录">从头看</button>
+</div>
+
+<script is:inline>
+	(function () {
+		var KEY = "blog:reading-position";
+		var bar = null, percentEl = null;
+
+		function store() {
+			try { return JSON.parse(localStorage.getItem(KEY) || "{}") || {}; }
+			catch (e) { return {}; }
+		}
+		function save(map) {
+			try { localStorage.setItem(KEY, JSON.stringify(map)); } catch (e) {}
+		}
+		function path() { return window.location.pathname; }
+
+		function articleMetrics() {
+			var article = document.getElementById("post-container");
+			if (!article) return null;
+			var rect = article.getBoundingClientRect();
+			var top = rect.top + window.scrollY;
+			var h = article.offsetHeight;
+			var start = top;
+			var end = top + h - window.innerHeight;
+			if (end <= start) return null; // 文章比一屏短，不记
+			var p = (window.scrollY - start) / (end - start);
+			if (p < 0) p = 0; if (p > 1) p = 1;
+			return { p: p, start: start, end: end };
+		}
+
+		function remember() {
+			var m = articleMetrics();
+			if (!m) return;
+			var map = store(), k = path();
+			if (m.p >= 0.95) {
+				// 读完了：清掉，下次别再弹
+				if (map[k] !== undefined) { delete map[k]; save(map); }
+				return;
+			}
+			if (m.p < 0.05) return; // 太靠顶不记
+			var v = Math.round(m.p * 100);
+			if (map[k] === v) return; // 节流：没变化不写盘
+			map[k] = v;
+			save(map);
+		}
+
+		function hide() {
+			if (!bar) return;
+			bar.removeAttribute("data-visible");
+			bar.setAttribute("aria-hidden", "true");
+		}
+
+		function show(v) {
+			if (!bar || !percentEl) return;
+			percentEl.textContent = v + "%";
+			bar.setAttribute("data-visible", "");
+			bar.setAttribute("aria-hidden", "false");
+		}
+
+		function check() {
+			bar = document.getElementById("resume-reading");
+			percentEl = document.getElementById("rr-percent");
+			if (!bar) return;
+			var article = document.getElementById("post-container");
+			var v = store()[path()];
+			// 只在文章页 + 有存档 + 当前还在顶部附近时弹（避免手动滚到一半才弹）
+			if (!article || v === undefined || window.scrollY > 200) { hide(); return; }
+			show(v);
+		}
+
+		window.reinitOnce("resume-reading-listen", function () {
+			var ticking = false;
+			window.addEventListener("scroll", function () {
+				if (ticking) return;
+				ticking = true;
+				requestAnimationFrame(function () { ticking = false; remember(); });
+			}, { passive: true });
+
+			document.addEventListener("click", function (e) {
+				var t = e.target;
+				var go = t && t.closest ? t.closest("#rr-go") : null;
+				var cancel = t && t.closest ? t.closest("#rr-cancel") : null;
+				if (go) {
+					e.preventDefault();
+					var m = articleMetrics();
+					var v = store()[path()] || 0;
+					var target = m ? m.start + (m.end - m.start) * (v / 100) : 0;
+					var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+					window.scrollTo({ top: target, behavior: reduce ? "instant" : "smooth" });
+					hide();
+				} else if (cancel) {
+					e.preventDefault();
+					var map = store(); delete map[path()]; save(map);
+					window.scrollTo({ top: 0, behavior: "instant" });
+					hide();
+				}
+			});
+			return true;
+		});
+
+		// 每次（含首屏与软导航）按当前 URL 重新判断显隐
+		window.onReinit("resume-reading-check", check, { immediate: true });
+	})();
+</script>
+
+<style>
+	.resume-reading {
+		position: fixed;
+		top: 84px; /* 让开 fixed 导航（C0 的 scroll-padding 同值） */
+		left: 50%;
+		z-index: 85;
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		padding: 0.5rem 0.9rem;
+		font-size: 0.8125rem;
+		color: var(--text-color);
+		background: var(--card-bg);
+		border: 1px solid var(--line-divider);
+		border-radius: 0; /* 全站直角 */
+		box-shadow: var(--panel-shadow);
+		translate: -50% -12px;
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+		transition: opacity 0.22s ease, translate 0.22s ease, visibility 0.22s;
+	}
+	.resume-reading[data-visible] {
+		opacity: 1;
+		visibility: visible;
+		pointer-events: auto;
+		translate: -50% 0;
+	}
+	.resume-reading .rr-text strong {
+		color: var(--primary);
+		font-variant-numeric: tabular-nums;
+	}
+	.rr-btn {
+		padding: 0.15rem 0.55rem;
+		font-size: 0.8125rem;
+		cursor: pointer;
+		color: var(--primary);
+		background: transparent;
+		border: 1px solid color-mix(in oklch, var(--primary) 40%, transparent);
+		border-radius: 0;
+		transition: background-color 0.15s ease;
+	}
+	.rr-btn:hover { background: var(--btn-plain-bg-hover); }
+	.rr-cancel { color: var(--text-color); border-color: var(--line-divider); }
+	@media (prefers-reduced-motion: reduce) {
+		.resume-reading { transition: opacity 0.01s, visibility 0.01s; translate: -50% 0; }
+	}
+	@media (max-width: 480px) {
+		.resume-reading { top: 72px; left: 0.5rem; right: 0.5rem; translate: 0 -12px; justify-content: center; }
+		.resume-reading[data-visible] { translate: 0 0; }
+	}
+	@media print {
+		.resume-reading { display: none !important; }
+	}
+</style>

@@ -162,7 +162,7 @@ const katexVersion = postHasMath
 
             <!-- 复制链接分享 -->
             <div data-print-hide>
-                <CopyShare postUrl={getPostUrlBySlug(post.id)} />
+                <CopyShare postUrl={getPostUrlBySlug(post.id)} postSlug={post.id} />
             </div>
         </div>
 

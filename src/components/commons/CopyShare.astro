@@ -1,15 +1,19 @@
 ---
 import { Icon } from "astro-icon/components"
 import { siteConfig } from "@/config/siteConfig"
+import { removeFileExtension } from "@/utils/url-utils"
 
 // 文章详情页面底部复制链接横幅
 
 interface Props {
 	postUrl: string
+	postSlug: string
 }
 
-const { postUrl } = Astro.props
+const { postUrl, postSlug } = Astro.props
 const siteUrl = siteConfig.site_url
+// C5：/raw/<slug>.md 原文直链，slug 保持中文原文（浏览器自动 percent-encode）
+const rawUrl = `/raw/${removeFileExtension(postSlug)}.md`
 ---
 
 <div class="onload-animation mb-6">
@@ -28,12 +32,22 @@ const siteUrl = siteConfig.site_url
 					</div>
 				</div>
 			</div>
-			<div
-				id="copy-url-btn"
-				class="btn-regular relative flex cursor-pointer items-center justify-center gap-3 px-4 py-2 hover:scale-105"
-			>
-				<Icon name="material-symbols:share" />
-				<div id="copy-url-btn-text" class="select-none">复制链接</div>
+			<div class="flex items-center gap-2">
+				<a
+					href={rawUrl}
+					class="btn-regular relative flex cursor-pointer items-center justify-center gap-2 px-3 py-2 text-sm no-underline hover:scale-105"
+					aria-label="查看 Markdown 原文"
+				>
+					<Icon name="material-symbols:description" />
+					<span class="select-none">Markdown 原文</span>
+				</a>
+				<div
+					id="copy-url-btn"
+					class="btn-regular relative flex cursor-pointer items-center justify-center gap-3 px-4 py-2 hover:scale-105"
+				>
+					<Icon name="material-symbols:share" />
+					<div id="copy-url-btn-text" class="select-none">复制链接</div>
+				</div>
 			</div>
 		</div>
 	</div>

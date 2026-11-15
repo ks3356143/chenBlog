@@ -65,6 +65,8 @@ const reinitVersion = createHash("sha256")
         <link rel="shortcut icon" href="/favicon.ico" />
         <!-- sitemap -->
         <link rel="sitemap" href="/sitemap-index.xml" />
+        <!-- C5：给 LLM / 阅读器自动发现的纯文本站点索引（2026-11-15 第五十七批） -->
+        <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/site.webmanifest" />
         <meta name="generator" content={Astro.generator} />

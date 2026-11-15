@@ -82,6 +82,26 @@ const totalPosts = seriesList.reduce((sum, s) => sum + s.count, 0)
 	}
 
 	<script is:inline>
+		/* C6（2026-11-15 第五十七批）：支持 interpolate-size 时走 height:auto 过渡，
+		   不再量 scrollHeight 塞魔法数字。⚠️ 两条分支由同一个 C6 常量判定，绝不混用。
+		   不支持的浏览器整段退回原来的 max-height + JS 量高，功能完全一致（渐进增强）。 */
+		var C6 = typeof CSS !== "undefined" && CSS.supports && CSS.supports("interpolate-size", "allow-keywords");
+
+		function markAccordion() {
+			if (!C6) return;
+			var nodes = document.querySelectorAll(".series-acc-content");
+			for (var i = 0; i < nodes.length; i++) {
+				nodes[i].setAttribute("data-c6", "height");
+				nodes[i].setAttribute("data-open", "false");
+			}
+		}
+
+		function setOpen(content, open) {
+			content.setAttribute("data-open", String(open));
+			if (C6) return; // height:auto 由 CSS 插值，JS 不碰内联高度
+			content.style.maxHeight = open ? content.scrollHeight + "px" : "0px";
+		}
+
 		function onSeriesAccordion(e) {
 			var btn = e.target && e.target.closest ? e.target.closest(".series-acc-header") : null;
 			if (!btn) return;
@@ -99,22 +119,28 @@ const totalPosts = seriesList.reduce((sum, s) => sum + s.count, 0)
 				o.setAttribute("aria-expanded", "false");
 				var oc = o.closest(".series-acc");
 				var ocC = oc ? oc.querySelector(".series-acc-content") : null;
-				if (ocC) {
-					ocC.setAttribute("data-open", "false");
-					ocC.style.maxHeight = "0px";
-				}
+				if (ocC) setOpen(ocC, false);
 			}
 
 			var next = !isOpen;
 			btn.setAttribute("aria-expanded", String(next));
-			content.setAttribute("data-open", String(next));
-			content.style.maxHeight = next ? content.scrollHeight + "px" : "0px";
+			setOpen(content, next);
 		}
 
-		// 事件委托，整个文档只注册一次：本脚本在 Swup 容器内，切页时会被重新插入执行（见 SwupManager 的
-		// content:replace）。reinitOnce 取代原来手写的 window.__seriesAccordionInit 幂等标志
+		/* 🔴 本脚本在 Swup 容器内、正文之后：DOMContentLoaded 兜首屏 markAccordion，
+		   软导航进 /series/ 时由 onReinit 重新标记新插入的容器（fn 里重新查 DOM，不抓旧节点）。
+		   reinitOnce 保证 document 点击委托整份文档只挂一次（十-14 / 十-11）。 */
+		function markWhenReady() { markAccordion(); }
+		if (document.readyState === "loading") {
+			document.addEventListener("DOMContentLoaded", markWhenReady, { once: true });
+		} else {
+			markWhenReady();
+		}
+		window.onReinit("series-accordion-mark", markAccordion, { immediate: false });
+
 		window.reinitOnce("series-accordion", function () {
 			document.addEventListener("click", onSeriesAccordion);
+			return true;
 		});
 	</script>
 </Layout>

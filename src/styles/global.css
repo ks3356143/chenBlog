@@ -209,6 +209,31 @@ figcaption {
     text-autospace: normal;
 }
 
+/* ── C6 interpolate-size 手风琴（2026-11-15 第五十七批）──────────────────────────
+   旧实现：JS 把 content.scrollHeight 量出来塞进 max-height，再过渡 0 ↔ Npx。
+   毛病：窗口缩放 / 字体加载完成后 scrollHeight 会变，写死的 px 不再等于真实高度
+   （内容被裁或留白），且要额外监听 resize 重算。
+   新实现：支持 interpolate-size 的浏览器让 height 在 0 ↔ auto 之间可插值，
+   容器自己就是真实高度，不再需要魔法数字。
+   ⚠️ 渐进增强：不支持时 .series-acc-content 完全退回原 max-height 路径
+   （JS 里用 CSS.supports 判断，两条分支互斥，见 series/index.astro）。
+   ⚠️ 必须全局：/series/ 可能是 Swup 软导航进来的，head 不换，组件 scoped 样式加载不到（十-2）。
+   ⚠️ 不写 display:none / height:0 硬切 —— 面板开合靠可插值属性过渡（五-41）。 */
+@supports (interpolate-size: allow-keywords) {
+    .series-acc-content {
+        interpolate-size: allow-keywords;
+    }
+    .series-acc-content[data-c6="height"] {
+        /* 走 height:auto 的分支：max-height 让开，避免两套机制互相夹 */
+        max-height: none !important;
+        height: 0;
+        transition-property: height, opacity;
+    }
+    .series-acc-content[data-c6="height"][data-open="true"] {
+        height: auto;
+    }
+}
+
 html {
     /* auto = 只有真的会溢出时才预留。写 stable 会让短文页也永远留一条空槽 */
     scrollbar-gutter: auto;

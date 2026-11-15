@@ -3,7 +3,7 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-13（第五十四批：候选清单第二批 B1+B2+B3 完成并上线，V0.1.108；同日追加全量复验 156 项全过）**。
+> 最后更新：**2026-11-15（新增「炫酷化候选清单·第三批」C0~C6：调研 + 全量 rg 前提核查 + 浏览器探针；未改产品代码。线上仍是 V0.1.108）**。
 >
 > **📌 炫酷化候选清单（2026-11-13 搜 3 轮后定案，用户「记住这个列表」→ 常驻这里，别弄丢）**
 > 来源：现代博客动效 / Astro 生态 / 性能与无障碍三方向，已对照本站「已实现 / 已否决」去重。
@@ -58,6 +58,27 @@
 > | — | CSS `if()` / `grid-lanes` masonry / `field-sizing` / scroll-driven 装饰动画 | ⛔ 别重提 | 前两个 2026 才进稳定/草案、相册改版已在第一批否决；本站无表单（评论是 Twikoo），`field-sizing` 无用武之地；**scroll-driven CSS 装饰动画已在第一批否决**（`scroll-state()` 状态查询属另一类，真要做单独论证，别混进来） |
 >
 > **一句话**：第二批 B1 + B2 + B3 已于第五十四批做完上线；剩下 B4 要先拍数据建模，B5/B7 卡在前提，B6 待做，其余带证据否决。
+>
+> **📌 炫酷化候选清单·第三批（2026-11-15 再搜 1 轮 2026 设计趋势 + 本地前提全量核查 + 1 个真实浏览器探针）**
+> 与第一/二批逐项去重；每条都带**本地 rg / 产物 / 浏览器实测数字**，没核的不写。用户这次只问「还有啥推荐」，**未动手实现产品代码**。
+> 趋势佐证：[accio 2026 博客设计趋势](https://www.accio.com/business/blog-design-trends)（微交互 / 真实感 / 无障碍 / 轻量化）· Canva 2025-26 风格印象增长（DIY/Zine/表现性排版领先）· scroll-driven animations 于 2026-10 进 Baseline（caniuse / web.dev）。联网结论里**第一/二批已否决过的方向不重提**（scroll-driven 装饰动画、`@view-transition`、SW/PWA、3D tilt、WebGL 流体）。
+>
+> **本轮实测前提（命令输出为准）**：nav = `fixed top-0 h-18`，浏览器实测 **72px**；全站 `scroll-padding` / `scroll-margin-top` **源码 + 产物 CSS 均 0 命中**；`text-wrap: balance/pretty`、`color-mix`(12 文件)、`@property`(1)、`:has()`(4)、`light-dark()`(1) 已用；未用 `@starting-style` / `@container` / `content-visibility` / `text-spacing-trim` / `text-autospace` / `prefers-reduced-data` / `allow-discrete`；`rehypeAutolinkHeadings` **已在链里**（产物 `class="anchor"` 17 处 / h2 11 个，hover 显 `#`）→ **第一批 #10「先核是否已有」的答案 = 已有 hover 锚点，缺的只是「复制本节链接」**；SeriesNav 已有「第 N/M 篇」+ 上下篇；无「编辑此页」/ `llms.txt` / 打印入口 / `navigator.share`；`@media print` 仅 3 行（只藏两个浮层）；34 篇正文零脚注、零站内互链（第二批已核）。
+> 🔴 **浏览器探针实测出一个真缺陷（非特效）**：外部带 `#hash` 直接进站时，标题 `getBoundingClientRect().top = 0`，而 fixed 导航 `bottom = 56` → **标题被盖住 56px**；站内点击锚点不受影响（滚动时 nav 已 translate 收起，navBottom=0）。根因就是缺 `scroll-margin-top`，`ScrollHint.astro:44` 的注释早已承认同类坑并绕开，但标题锚点没绕。零依赖、约 1 行 CSS 可修，删掉即回退。**这条建议无条件优先做。**
+>
+> | # | 项 | 分级 | 结论 / 前提 |
+> |---|---|---|---|
+> | **C0** | **标题锚点 `scroll-margin-top` 兜底**（缺陷修复，非特效） | 🟢 先做 | 上面探针的 56px 遮挡；给 `h2[id],h3[id],h4[id]` 加 `scroll-margin-top: calc(var(--nav-h) + 12px)`，或给 `html` 加 `scroll-padding-top`。⚠️ 要和 Swup 软导航、TOC scrollspy、`:target` 一起验；`prefers-reduced-motion` 下 `scroll-behavior:smooth` 已在 toc.css |
+> | **C1** | **CJK 排版精修**：`text-spacing-trim` / `text-autospace` | 🟢 推荐 | 中文博客里「标点挤压 + 中英自动间距」是观感性价比最高的一条；零依赖纯 CSS、渐进增强、不支持就退化。⚠️ 先实测 3 引擎支持度 + 与现有 `text-wrap: pretty`、`::selection` 共存；别动代码块 |
+> | **C2** | **打印 / 存 PDF 专用样式表** | 🟢 推荐 | 现在 `@media print` 只 3 行；可加：去导航/侧栏/波浪/壁纸/毛玻璃 → 正文单栏、`a[href]::after` 附 URL、代码块不折叠不截断、`orphans/widows`、`print-color-adjust` 决定高亮底色、页边距。零依赖、纯 CSS、**完全不影响屏幕渲染**；技术手册类文章最受益 |
+> | **C3** | **`::target-text` + 「复制本节链接」**（接第一批 #10 / 第二批 B7） | 🟡 可做 | 既然 hover 锚点已有，把一个「复制带 `#:~:text=` 的本节链接」按钮挂上去，配 `::target-text` 让访客从搜索/分享跳进来时高亮命中片段。⚠️ 中文 `#:~:text=` 跨浏览器 + Working Draft 要实测；裸 HTTP 下 `navigator.clipboard` 没有 → 走 `execCommand`（五-38） |
+> | **C4** | **「上次读到 42%」阅读位置记忆** | 🟡 可做 | localStorage 存「URL → 滚动百分比」，回访时顶部一条非侵入小条「继续阅读」；贴 2026「自适应、有意义微交互」趋势，零依赖，复用 DisplaySettings 的存储模式。⚠️ 要核与 `ImmersiveReading` / `ReadingProgress` / Swup 软导航（URL 变但文档不重载）的边界；建议只对长文启用 |
+> | **C5** | **每篇 Markdown 原文直链 + `llms.txt` 站点索引** | 🟡 可做 | 构建期把源 `.md` 拷进产物 + 生成 `llms.txt`（文章清单/摘要/链接），面向 AI 检索与「以文会友」；仓库本就公开，无隐私顾虑。⚠️ 要定 URL 口径（`/posts/xxx.md` vs `/raw/xxx.md`）与 frontmatter 是否带；是功能不是特效 |
+> | **C6** | `interpolate-size: allow-keywords`（第二批 B6 原样保留） | 🟡 待做 | `/series/` 手风琴现在是 `max-h-0 → max-h-Npx` 靠 JS 量高；可退化为纯 CSS 高度过渡。⚠️ 只作用内容高度，别动浮层（五-41） |
+> | — | `@starting-style` / `@container` / `field-sizing` / `scroll-state()` / CSS `if()` / masonry | ⛔ 别重提 | 前几批已逐条带证据否决；本站浮层用 opacity/visibility 状态机（不用 `display` 切换）→ `@starting-style` 收益窄且要重跑刚做完的 19/19 动效取证；`@container` 目前无真实容器查询需求 |
+> | — | Web Share API `navigator.share` / 聊天机器人 / 行为个性化推荐 | ⛔ 前提不成立 | `navigator.share` 与 SW/PWA 撞同一堵墙（纯 HTTP 裸 IP = 不安全上下文，线上访客拿不到）；后两者与个人静态博客定位不符 |
+>
+> **一句话**：本轮**没有改任何产品代码**；真正值得先做的是 **C0（实测出来的 56px 遮挡缺陷，1 行 CSS）**，观感提升最划算的是 **C1 + C2**，其余 C3~C6 等你点编号。
 >
 > **🔧 2026-11-13（第五十四批：候选清单第二批 B1+B2+B3，V0.1.108）**
 > 用户「先把b1-3做了吧」→ 三项全做，零新依赖、零新 UI 入口。
@@ -2888,7 +2909,7 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 | dev / preview server | 复验时起过 `npm run preview :4321`（PID 13088），**已按 `CommandLine -like '*astro*preview*'` 精确杀掉、复查计数 = 0** |
 | 服务器回滚资产 | `dist.old`（= V0.1.107）+ **117 个 `dist_backup_*`**（口径 `ls -d dist_backup_* \| wc -l`；`ls -d dist*` 共 119 = dist + dist.old + 117）。⚠️ **其中 `dist_backup_`（时间戳为空，357 文件 / 23M，10-14 生成）是个异常目录**，内容是真实备份、不是空壳，**保留不动**。**一律保留，删需用户明确同意**（旧文档写的 118 是错的，已按实测改正） |
 | 临时文件 | 本地 `tmp-*.mjs` / `tmp-*.png` 计数 0、`%TEMP%` 下 `online-*.html` 与 tar/sh 已清；服务器 `/tmp/chenblog_dist.tar.gz`、`/tmp/deploy.sh` 计数 0 |
-| 待用户拍板 | **第二批清单剩 B4 修订史（要改 schema 得他拍）/ B6 `interpolate-size`**，其余 B1~B3 已做、B5/B7 卡前提、余下带证据否决。**候选清单第一批 3~8 仍待挑**（3 写作热力图 / 4 `content-visibility` / 5 极光 / 6 逐字解码 / 7 渐变呼吸 / 8 命令面板 / 10 标题锚点复制）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32） |
+| 待用户拍板 | **第三批清单 C0~C6 新增待挑**（2026-11-15）：🟢 **C0 标题锚点 `scroll-margin-top`（浏览器探针实测外部 #hash 进站标题被 fixed 导航盖 56px，1 行 CSS 缺陷修复，建议无条件先做）** · C1 CJK `text-spacing-trim`/`text-autospace` · C2 打印/PDF 样式表 · C3 复制本节链接+`::target-text` · C4 阅读位置记忆 · C5 Markdown 原文直链+`llms.txt` · C6 `interpolate-size`。**第二批清单剩 B4 修订史（要改 schema 得他拍）/ B6（= C6）**，其余 B1~B3 已做、B5/B7 卡前提、余下带证据否决。**候选清单第一批 3~8 仍待挑**（3 写作热力图 / 4 `content-visibility` / 5 极光 / 6 逐字解码 / 7 渐变呼吸 / 8 命令面板 / 10 标题锚点复制 = C3）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32） |
 | 既有小坑 | ① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），读 computed style 要等 `load` + 800ms；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径**（磁盘是 Unicode 原名，编了就 404，曾 26/34 条中招）；④ **本机代理会拦裸 IP**：Playwright 要 `args: ['--no-proxy-server']`，HTTP 层 `Invoke-WebRequest` 不受影响；⑤ **1200px 下右栏 `display:none`** → 侧栏「博客版本」不在 `body.innerText` 里，验版本号要数 `outerHTML`；⑥ **`URL.pathname` 已完成百分号编码，再套 `encodeURI` = 双重编码**（`%` → `%25`）；⑦ **产物里文章 href 是原始中文**，测中文文章链接要用 `#swup-container a[href^="/posts/css100"]`；⑧ **终态 `translate` 计算值是 `0px` 不是 `none`**；⑨ **`grep -qF` 固定串大小写必须与产物逐字一致**（曾把 `css100` 写成 `CSS100` → `set -e` exit 1 无输出）。<br>🔴 **第 ⑩ 条（最贵的一条）**：**未分层的 `!important` 输给 `@layer` 内的 `!important`** —— Tailwind v4 的工具类（`.max-w-none\!`、`.w-full` 等）都编在 `@layer utilities` 里，组件里写「未分层 + `!important`」想压它们**会静默失效**（实测 `max-width` 读回 `none`、三档行宽全不生效、零报错）。正确做法：**换一个对手是 non-important 的属性**（本例 `max-width` → `width`），未分层赢分层、不必加 `!important`；真要改同一属性只能把规则塞进同一 layer 或用 `@layer` 顺序控制。⚠️ 配套判据：验证宽高必须读 `getBoundingClientRect()`，`getComputedStyle().maxWidth` 在 `max-width:none` 钉住时永远报 `none`，会给出假红。<br>🔴 **第 ⑪ 条**：`Invoke-WebRequest.RawContentLength` 是**字符数**、`curl -w %{size_download}` 是**字节数**，中文页差 1.9 万 → **核线上与本地一致要用 SHA256**。<br>🔴 **第 ⑫ 条**：`path.join` 在 Windows 给**反斜杠**（`replace(ROOT)` 静默失效 → 34 条假 404）+ **frontmatter 正则必须兼容 CRLF**；手机端触控口径是**与面板同类既有控件同档**（`dp-choice` 34px / `dp-reset` 24px），不是我自造的 36px。**报红前先跑控制组。** |
 
 ---

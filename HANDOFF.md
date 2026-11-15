@@ -3,7 +3,7 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-15（新增「炫酷化候选清单·第三批」C0~C6：调研 + 全量 rg 前提核查 + 浏览器探针；未改产品代码。线上仍是 V0.1.108）**。
+> 最后更新：**2026-11-15（用户「先修复吧，然后把推荐的都修复了，长时间干」→ C0~C6 三批全部实现、验证、提交、部署；线上 V0.1.111 = 本地 = 远端）**。
 >
 > **📌 炫酷化候选清单（2026-11-13 搜 3 轮后定案，用户「记住这个列表」→ 常驻这里，别弄丢）**
 > 来源：现代博客动效 / Astro 生态 / 性能与无障碍三方向，已对照本站「已实现 / 已否决」去重。
@@ -27,7 +27,7 @@
 > | 7 | 渐变呼吸文字 | ⬜ 未做（原第二梯队） | ⚠️ 与已做的「标题流光」直接打架（五-48 刻意不用 `background-clip:text`），要做只能改现有那条，别叠加 |
 > | 8 | 命令面板（`Ctrl+K` 扩展） | ⬜ 未做（原第二梯队） | 复用 Pagefind 零依赖；必须与现有搜索框**二选一**，别两套并存 |
 > | 9 | WebGL 流体背景 | ⛔ 不推荐 | 唯一需要新依赖的方向；移动端 GPU 成本 + 纯 HTTP 无 CDN |
-> | 10 | 标题 hover 锚点 + 复制本节链接 | ⬜ 未做 | `rehypeSlug` / `rehypeAutolinkHeadings` 已在链里（append `#`），先核是否已有再定；中文锚点 id 要单独测 |
+> | 10 | 标题 hover 锚点 + 复制本节链接 | ✅ **第五十六批已做（C3）** | hover 锚点本来就已有（`rehypeAutolinkHeadings`）；补齐「复制本节链接」+ `::target-text`，见第三批 C3 |
 > | — | CSS 3D tilt 卡片 | ⛔ 不推荐 | 与「hover 上浮 2px + 边框发光 + 整片聚光层」三层分工冲突（五-28），10 张卡每帧 setProperty 掉帧 |
 > | — | `@view-transition { navigation: auto }` 跨文档过渡 | ⛔ 不推荐 | 本站 Swup 已接管导航，同开必然双重过渡冲突；仅 `prefers-reduced-motion` 缝隙可用，收益太窄 |
 > | — | 阅读进度条 / 回顶 / TOC scrollspy / 阅读时长 / 字数 / 系列导航 / 相关文章 | ✅ 站内已有 | 别重复实现；scrollspy 见 `FloatingToc.astro` 的 `toc-active-indicator`，动手前先核 |
@@ -57,7 +57,7 @@
 > | — | Anchor Positioning / Popover API 重写现有浮层 | ⛔ 暂缓 | Chrome 125+ 稳定，但 **Firefox 132 仍 flag、Safari TP 实验**（2026-11 现状）；本站刚做完 hovercard 的 JS 定位 + 视口 clamp + reinitOnce 去重，重写只省几十行 JS，却要重跑全部动效/样式取证。等三引擎稳定且有真实痛点 |
 > | — | CSS `if()` / `grid-lanes` masonry / `field-sizing` / scroll-driven 装饰动画 | ⛔ 别重提 | 前两个 2026 才进稳定/草案、相册改版已在第一批否决；本站无表单（评论是 Twikoo），`field-sizing` 无用武之地；**scroll-driven CSS 装饰动画已在第一批否决**（`scroll-state()` 状态查询属另一类，真要做单独论证，别混进来） |
 >
-> **一句话**：第二批 B1 + B2 + B3 已于第五十四批做完上线；剩下 B4 要先拍数据建模，B5/B7 卡在前提，B6 待做，其余带证据否决。
+> **一句话**：第二批 B1 + B2 + B3 已于第五十四批做完上线；**B6（= C6）/ B7（= C3 的 `::target-text`）已于第五十七 / 五十六批做完**；剩下 B4 要先拍数据建模，B5 卡在前提，其余带证据否决。
 >
 > **📌 炫酷化候选清单·第三批（2026-11-15 再搜 1 轮 2026 设计趋势 + 本地前提全量核查 + 1 个真实浏览器探针）**
 > 与第一/二批逐项去重；每条都带**本地 rg / 产物 / 浏览器实测数字**，没核的不写。用户这次只问「还有啥推荐」，**未动手实现产品代码**。
@@ -68,17 +68,37 @@
 >
 > | # | 项 | 分级 | 结论 / 前提 |
 > |---|---|---|---|
-> | **C0** | **标题锚点 `scroll-margin-top` 兜底**（缺陷修复，非特效） | 🟢 先做 | 上面探针的 56px 遮挡；给 `h2[id],h3[id],h4[id]` 加 `scroll-margin-top: calc(var(--nav-h) + 12px)`，或给 `html` 加 `scroll-padding-top`。⚠️ 要和 Swup 软导航、TOC scrollspy、`:target` 一起验；`prefers-reduced-motion` 下 `scroll-behavior:smooth` 已在 toc.css |
-> | **C1** | **CJK 排版精修**：`text-spacing-trim` / `text-autospace` | 🟢 推荐 | 中文博客里「标点挤压 + 中英自动间距」是观感性价比最高的一条；零依赖纯 CSS、渐进增强、不支持就退化。⚠️ 先实测 3 引擎支持度 + 与现有 `text-wrap: pretty`、`::selection` 共存；别动代码块 |
-> | **C2** | **打印 / 存 PDF 专用样式表** | 🟢 推荐 | 现在 `@media print` 只 3 行；可加：去导航/侧栏/波浪/壁纸/毛玻璃 → 正文单栏、`a[href]::after` 附 URL、代码块不折叠不截断、`orphans/widows`、`print-color-adjust` 决定高亮底色、页边距。零依赖、纯 CSS、**完全不影响屏幕渲染**；技术手册类文章最受益 |
-> | **C3** | **`::target-text` + 「复制本节链接」**（接第一批 #10 / 第二批 B7） | 🟡 可做 | 既然 hover 锚点已有，把一个「复制带 `#:~:text=` 的本节链接」按钮挂上去，配 `::target-text` 让访客从搜索/分享跳进来时高亮命中片段。⚠️ 中文 `#:~:text=` 跨浏览器 + Working Draft 要实测；裸 HTTP 下 `navigator.clipboard` 没有 → 走 `execCommand`（五-38） |
-> | **C4** | **「上次读到 42%」阅读位置记忆** | 🟡 可做 | localStorage 存「URL → 滚动百分比」，回访时顶部一条非侵入小条「继续阅读」；贴 2026「自适应、有意义微交互」趋势，零依赖，复用 DisplaySettings 的存储模式。⚠️ 要核与 `ImmersiveReading` / `ReadingProgress` / Swup 软导航（URL 变但文档不重载）的边界；建议只对长文启用 |
-> | **C5** | **每篇 Markdown 原文直链 + `llms.txt` 站点索引** | 🟡 可做 | 构建期把源 `.md` 拷进产物 + 生成 `llms.txt`（文章清单/摘要/链接），面向 AI 检索与「以文会友」；仓库本就公开，无隐私顾虑。⚠️ 要定 URL 口径（`/posts/xxx.md` vs `/raw/xxx.md`）与 frontmatter 是否带；是功能不是特效 |
-> | **C6** | `interpolate-size: allow-keywords`（第二批 B6 原样保留） | 🟡 待做 | `/series/` 手风琴现在是 `max-h-0 → max-h-Npx` 靠 JS 量高；可退化为纯 CSS 高度过渡。⚠️ 只作用内容高度，别动浮层（五-41） |
+> | **C0** | **标题锚点 `scroll-padding-top` 兜底**（缺陷修复，非特效） | ✅ **第五十五批已做** | `global.css` 给 `html` 加 `scroll-padding-top: 84px`（静止态 nav 72px + 12px 余量，滚动态 56px 也不遮）；外部 #hash 进站标题 `top=0→84`、站内点锚点 `top=84/navBottom=56` 均不遮。🔴 用**滚动容器**的 `scroll-padding-top` 而非逐标题 `scroll-margin-top`：对 `:target`/`scrollIntoView`/hash 一并生效、删一行即回退 |
+> | **C1** | **CJK 排版精修**：`text-spacing-trim` / `text-autospace` | ✅ **第五十五批已做** | `space-all` + `normal`，只给 `.custom-markdown` 及正文元素 / 标题，不碰代码块 / KaTeX / Mermaid；Chromium computed 实测 `space-all` / `normal`，渐进增强零副作用 |
+> | **C2** | **打印 / 存 PDF 专用样式表** | ✅ **第五十五批已做** | `global.css` 的 `@media print` 从 3 行扩到 ~175 行：白底黑字、`.content-panel` 回 `static`、`onload-animation` 动画全灭、导航/横幅/侧栏/浮层整片隐藏、链接附 URL、代码块不折叠、`@page` 16mm。用 **`data-print-hide` 标记**收口尾部 3 块（🔴 不用 `.custom-markdown + *` / `> .mb-6` 兄弟选择器——正文容器自己也带 `onload-animation mb-6`，一刀切会藏掉正文）。真实 `page.pdf()` 出 16 页 / 1.4MB，首屏+中段截图肉眼核对无裁切 |
+> | **C3** | **`::target-text` + 「复制本节链接」**（接第一批 #10 / 第二批 B7） | ✅ **第五十六批已做** | `SectionCopyLink.astro` 运行时给 17 个标题注入按钮（构建期 HTML 无按钮 → 不进 Pagefind 索引），复制 `#:~:text=中文标题`；`markdown.css` 加 `::target-text` 高亮。🔴 两条实测修出来的坑：① `is:inline` 脚本在正文**之前**，`onReinit(immediate)` 那一拍 DOM 未就绪 → 加 `DOMContentLoaded` 兜首屏；② `navigator.clipboard.writeText` 是 **Promise**，同步 `try/catch` 抓不到 reject → 改 `.then/.catch`，否则 localhost 安全上下文下必抛未处理 `NotAllowedError`。线上裸 IP 非安全上下文实测走 `execCommand` 分支含中文片段 |
+> | **C4** | **「上次读到 42%」阅读位置记忆** | ✅ **第五十六批已做** | `ResumeReading.astro` 挂 Swup 容器外，localStorage 存 `pathname → 百分比`（5%~95%，≥95% 读完自动清档），回访顶部直角小条「继续阅读 / 从头看」。显隐走 `opacity/visibility/translate`（五-41）；`reinitOnce` 只挂一次滚动+点击委托，`onReinit` 每次按新 URL 判断显隐。软导航到别的文章实测小条不残留 |
+> | **C5** | **每篇 Markdown 原文直链 + `llms.txt` 站点索引** | ✅ **第五十七批已做** | URL 口径定为 **`/raw/<slug>.md`**（独立前缀，不与 `/posts/<slug>/` 撞路由）：`src/pages/raw/[...slug].md.ts` 用 `getStaticPaths` 出 **34 个**带 frontmatter 的原始 Markdown（`post.body` 在 Astro 7 `glob()` loader 下**恒空、实测 34 个 0 字节** → 改从 `src/content/posts/` 直接读盘、SHA256 34/34 与源逐字节一致、读不到就抛错）；`llms.txt.ts` 出站点索引（34 条 +每条 raw 链接 + 线上绝对地址）；`CopyShare.astro` 加可见「Markdown 原文」链接、`BaseLayout` head 挂 `rel=alternate` discovery。中文 slug percent-encode 线上 200 |
+> | **C6** | `interpolate-size: allow-keywords`（第二批 B6 原样保留） | ✅ **第五十七批已做** | `global.css` 加 `@supports` 块（🔴 必须全局：/series/ 可能是软导航进的、head 不换，见十-2）；`series/index.astro` 用 `CSS.supports` 分两支：支持 → `height:0↔auto` CSS 插值、JS 不写内联魔法数字；不支持 → 原 `max-height + scrollHeight` 完全回退。实测展开 `1240/1240`、缩放后仍贴合、强制 `supports=false` 回退分支也 `1240/1240` |
 > | — | `@starting-style` / `@container` / `field-sizing` / `scroll-state()` / CSS `if()` / masonry | ⛔ 别重提 | 前几批已逐条带证据否决；本站浮层用 opacity/visibility 状态机（不用 `display` 切换）→ `@starting-style` 收益窄且要重跑刚做完的 19/19 动效取证；`@container` 目前无真实容器查询需求 |
 > | — | Web Share API `navigator.share` / 聊天机器人 / 行为个性化推荐 | ⛔ 前提不成立 | `navigator.share` 与 SW/PWA 撞同一堵墙（纯 HTTP 裸 IP = 不安全上下文，线上访客拿不到）；后两者与个人静态博客定位不符 |
 >
-> **一句话**：本轮**没有改任何产品代码**；真正值得先做的是 **C0（实测出来的 56px 遮挡缺陷，1 行 CSS）**，观感提升最划算的是 **C1 + C2**，其余 C3~C6 等你点编号。
+> **一句话**：第三批 **C0~C6 已于 2026-11-15 三批全部做完上线**（第五十五 / 五十六 / 五十七批，V0.1.109 / 110 / 111），详见第三节状态快照与第二节对应批次记录。所有带前提的否决项（`@starting-style` / Web Share / SW-PWA 等）结论不变。
+>
+> **🔧 2026-11-15（第五十五~五十七批：用户「先修复吧，然后把推荐的都修复了，长时间干」→ 第三批 C0~C6 分三批全做完）**
+> 会话开始时 `HEAD == origin/main == 34a78e8`（第三批候选清单文档批）、线上 V0.1.108。三轮各「实现 → 真实命令/浏览器验 → 中文提交 → push → 部署 → 线上复验 → 版本号 +1」，**每批独立部署**，共 3 个功能提交 `f1cd3d1` → `00f9e22` → `ffcf628`。
+> ① 🟢 **第五十五批 / V0.1.109 / C0+C1+C2**（`global.css` +177 / `[...slug].astro` 加 3 处 `data-print-hide`）：
+>    C0 给 `html` 加 `scroll-padding-top:84px`，外部 #hash 进站标题从 `top=0/navBottom=56`（遮挡）变 `top=84`；
+>    C1 正文 `text-spacing-trim:space-all` + `text-autospace:normal`，computed 实测生效、代码块未套；
+>    C2 `@media print` 3 行 → ~175 行，真实 `page.pdf()` 出 16 页 / 1.4MB，首屏 + 中段截图肉眼核对白底黑字单栏、图片表格完整无裁切。
+>    🔴 C2 首版曾写 `.custom-markdown + *` / `#post-container > .onload-animation.mb-6` 想藏尾部区块，**会连正文容器一起藏掉**（它也带 `onload-animation mb-6`）→ 改成统一 `data-print-hide` 标记收口（CopyShare / 上下篇 / 相关文章各挂一处）。
+>    验收：本地 13/13（含打印态计算样式 + PDF + 截图）、线上 6/6、SHA256 首页/文章页一致。
+> ② 🟢 **第五十六批 / V0.1.110 / C3+C4**（新增 `SectionCopyLink.astro` / `ResumeReading.astro`，`markdown.css` +34，`Layout.astro` / `[...slug].astro` 各挂一处）：
+>    C3 运行时给 17 个标题注入「复制本节链接」，复制 `#:~:text=中文标题` + `::target-text` 高亮；构建期 HTML 无按钮（不进 Pagefind）。
+>    C4 localStorage 存 `pathname → 百分比`（5%~95%，≥95% 自动清档），回访顶部直角小条；软导航实测不残留。
+>    🔴 两个真缺陷在验收中抓出并修：`is:inline` 脚本在正文之前导致 `onReinit(immediate)` 空跑（加 `DOMContentLoaded` 兜首屏）；`clipboard.writeText` 的 Promise reject 同步 `catch` 抓不到（改 `.then/.catch`）。
+>    验收：本地 19/19（15 主 + 4 补：软导航按钮重注入 / `::target-text` 命中 / 回退）、线上 8/8（**裸 IP 非安全上下文实测 `execCommand` 分支**，本地 preview 测不到这条）。
+> ③ 🟢 **第五十七批 / V0.1.111 / C5+C6**（新增 `llms.txt.ts` / `raw/[...slug].md.ts`，`CopyShare` 加可见链接、`BaseLayout` 加 discovery，`global.css` +25 / `series/index.astro` 重写手风琴脚本）：
+>    C5 URL 口径定 `/raw/<slug>.md`，34 个带 frontmatter 原始 Markdown + `llms.txt` 34 条索引。**Astro 7 `glob()` loader 的 `body` 恒空**（首版 34 个 0 字节，靠构建后 `Length=0` 抓出）→ 改从源文件读盘，SHA256 34/34 逐字节一致；中文 slug percent-encode 线上 200。
+>    C6 `@supports` 全局 + `CSS.supports` 双分支：支持走 `height:0↔auto` 无魔法数字，不支持全退回 `max-height + scrollHeight`；展开 1240/1240、缩放后仍贴合、强制 `supports=false` 回退也 1240/1240。
+>    验收：本地 19/19（15 主 + 4 补：软导航标记重挂 / 打印态 raw 链接隐藏）、线上 6/6 + 修正后 3/3、SHA256 5/5（首页/文章/系列/llms/中文 raw）。
+> ④ 🔴 **最终全量线上复验 15/15**：C0~C6 在同一轮桌面 + 移动 375px + `emulateMedia('print')` + `reducedMotion:'reduce'` 一次打完，0 pageerror / 0 4xx；`HEAD == origin/main == ffcf628`、工作区 0、`tmp-*` 0、preview 进程 0、服务器 `/tmp` 残留 0、`dist.old` + 120 个 `dist_backup_*` 全保留。
+> 门禁三轮均：`build` 0 / `check` 0 error（hint 从第 3 条变 4 条，是 `SectionCopyLink` 的 `execCommand` deprecated，与既有同族）/ `tsc` 0 / `docs:check` 0 错 0 警；**零新依赖**；版本号 0.1.108 → 109 → 110 → 111 各 +1。
 >
 > **🔧 2026-11-13（第五十四批：候选清单第二批 B1+B2+B3，V0.1.108）**
 > 用户「先把b1-3做了吧」→ 三项全做，零新依赖、零新 UI 入口。
@@ -2892,25 +2912,25 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-13 第五十四批 + 追加全量复验；线上 = 本地 = V0.1.108**，已部署）
+## 三、当前状态快照（**2026-11-15 第五十五~五十七批：C0~C6 三批全做完；线上 = 本地 = 远端 = V0.1.111**，已部署）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
-> ⚠️ **炫酷化候选清单常驻在文件顶部（第一节之前那张表）**：第一批 1/2 已做、3~10 待选；第二批 B1/B2/B3 已做，B4/B6 待挑。
+> ⚠️ **炫酷化候选清单常驻在文件顶部（第一节之前那张表）**：第一批 1/2/10 已做、3~8 待选；第二批 B1/B2/B3/B6/B7 已做，B4 待拍；**第三批 C0~C6 全部已做**。
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `5d3a3d3`（文档批：第五十四批 HANDOFF），**已推送、`HEAD == origin/main`、工作区计数 0**。功能提交是 `d240b1e`（V0.1.108） |
-| 工作区 | 本批 6 文件（`DisplaySettings.astro` +211 / `RecommendedPost.astro` +45-5 / `displaySettings.ts` +17 / `[...slug].astro` +9-1 / `global.css` +84 / `package.json` 版本号），**全部已提交** |
-| 线上站点 | ✅ **2026-11-13 部署 V0.1.108**（替换前 10 条断言全过、原子替换）。`0.1.108` 4 处、`0.1.107` 0 处；**SHA256 逐字节核对：首页与文章页本地 = 线上完全相同**（首页 255032 B / `E5E40AAC…C88A`，文章页 231303 B） |
-| 服务器配置 | 本批**未动服务器**（只换 `dist`） |
-| 本地构建 | V0.1.108 = **550 个文件 / 54 个 html / 53 个 `index.html`**（与上批同量）。`build` 0 error / 54 page(s) / pagefind 36 页 11195 词、`check` **0 error / 0 warning / 3 hint**、`tsc` 退出 0、`docs:check` **0 错 0 警** |
-| 验收 | 静态 **8/8** · 本地浏览器 **18/18**（6 组合 × 3 断点）+ 面板真点击 + 软导航 + B2 仿真 · 线上 **6/6**。**追加全量复验 156 项全过**：本地 122（复合矩阵 58 + 修正 10 + B3 全站 34 + 回归 34）/ 手机 12 / 线上 22；截图 10 张肉眼核对（详见第二节第五十四批 ⑧） |
-| 依赖 | 本批**零改动**（`astro 7.4.10` / `katex 0.18.11` / `vite 8.3.8`，天花板只剩 `typescript 6.0.3`） |
-| dev / preview server | 复验时起过 `npm run preview :4321`（PID 13088），**已按 `CommandLine -like '*astro*preview*'` 精确杀掉、复查计数 = 0** |
-| 服务器回滚资产 | `dist.old`（= V0.1.107）+ **117 个 `dist_backup_*`**（口径 `ls -d dist_backup_* \| wc -l`；`ls -d dist*` 共 119 = dist + dist.old + 117）。⚠️ **其中 `dist_backup_`（时间戳为空，357 文件 / 23M，10-14 生成）是个异常目录**，内容是真实备份、不是空壳，**保留不动**。**一律保留，删需用户明确同意**（旧文档写的 118 是错的，已按实测改正） |
-| 临时文件 | 本地 `tmp-*.mjs` / `tmp-*.png` 计数 0、`%TEMP%` 下 `online-*.html` 与 tar/sh 已清；服务器 `/tmp/chenblog_dist.tar.gz`、`/tmp/deploy.sh` 计数 0 |
-| 待用户拍板 | **第三批清单 C0~C6 新增待挑**（2026-11-15）：🟢 **C0 标题锚点 `scroll-margin-top`（浏览器探针实测外部 #hash 进站标题被 fixed 导航盖 56px，1 行 CSS 缺陷修复，建议无条件先做）** · C1 CJK `text-spacing-trim`/`text-autospace` · C2 打印/PDF 样式表 · C3 复制本节链接+`::target-text` · C4 阅读位置记忆 · C5 Markdown 原文直链+`llms.txt` · C6 `interpolate-size`。**第二批清单剩 B4 修订史（要改 schema 得他拍）/ B6（= C6）**，其余 B1~B3 已做、B5/B7 卡前提、余下带证据否决。**候选清单第一批 3~8 仍待挑**（3 写作热力图 / 4 `content-visibility` / 5 极光 / 6 逐字解码 / 7 渐变呼吸 / 8 命令面板 / 10 标题锚点复制 = C3）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32） |
-| 既有小坑 | ① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），读 computed style 要等 `load` + 800ms；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径**（磁盘是 Unicode 原名，编了就 404，曾 26/34 条中招）；④ **本机代理会拦裸 IP**：Playwright 要 `args: ['--no-proxy-server']`，HTTP 层 `Invoke-WebRequest` 不受影响；⑤ **1200px 下右栏 `display:none`** → 侧栏「博客版本」不在 `body.innerText` 里，验版本号要数 `outerHTML`；⑥ **`URL.pathname` 已完成百分号编码，再套 `encodeURI` = 双重编码**（`%` → `%25`）；⑦ **产物里文章 href 是原始中文**，测中文文章链接要用 `#swup-container a[href^="/posts/css100"]`；⑧ **终态 `translate` 计算值是 `0px` 不是 `none`**；⑨ **`grep -qF` 固定串大小写必须与产物逐字一致**（曾把 `css100` 写成 `CSS100` → `set -e` exit 1 无输出）。<br>🔴 **第 ⑩ 条（最贵的一条）**：**未分层的 `!important` 输给 `@layer` 内的 `!important`** —— Tailwind v4 的工具类（`.max-w-none\!`、`.w-full` 等）都编在 `@layer utilities` 里，组件里写「未分层 + `!important`」想压它们**会静默失效**（实测 `max-width` 读回 `none`、三档行宽全不生效、零报错）。正确做法：**换一个对手是 non-important 的属性**（本例 `max-width` → `width`），未分层赢分层、不必加 `!important`；真要改同一属性只能把规则塞进同一 layer 或用 `@layer` 顺序控制。⚠️ 配套判据：验证宽高必须读 `getBoundingClientRect()`，`getComputedStyle().maxWidth` 在 `max-width:none` 钉住时永远报 `none`，会给出假红。<br>🔴 **第 ⑪ 条**：`Invoke-WebRequest.RawContentLength` 是**字符数**、`curl -w %{size_download}` 是**字节数**，中文页差 1.9 万 → **核线上与本地一致要用 SHA256**。<br>🔴 **第 ⑫ 条**：`path.join` 在 Windows 给**反斜杠**（`replace(ROOT)` 静默失效 → 34 条假 404）+ **frontmatter 正则必须兼容 CRLF**；手机端触控口径是**与面板同类既有控件同档**（`dp-choice` 34px / `dp-reset` 24px），不是我自造的 36px。**报红前先跑控制组。** |
+| 本地 HEAD | `ffcf628`（第五十七批 C5+C6，V0.1.111 功能提交），**已推送、`HEAD == origin/main`、工作区计数 0**。本轮三次功能提交：`f1cd3d1`（五十五批 C0/C1/C2）→ `00f9e22`（五十六批 C3/C4）→ `ffcf628`（五十七批 C5/C6）；每批各自 +1 版本号 |
+| 工作区 | 三批共 16 个文件（含 4 个新文件：`SectionCopyLink.astro` / `ResumeReading.astro` / `llms.txt.ts` / `raw/[...slug].md.ts`），**全部已提交**；`git status` 0 项 |
+| 线上站点 | ✅ **2026-11-15 三次部署**（每批替换前断言全过 + 原子替换）。当前 `0.1.111` 4 处 / `0.1.110` 0 处；**SHA256 逐字节核对：首页、文章页、`/series/`、`/llms.txt`、中文 raw 文件 5/5 本地 = 线上**；`curl -I /raw/ccnewtools-manual.md` = 200 / 18713 B |
+| 服务器配置 | 三轮**均未动服务器配置**（只换 `dist`） |
+| 本地构建 | V0.1.111 = **585 个文件 / 54 个 html / 53 个 `index.html`**（+35：`llms.txt` 1 + `raw/*.md` 34）。`build` 0 error / 54 page(s) / pagefind 36 页 11195 词、`check` **0 error / 0 warning / 4 hint**（第 4 条是 `SectionCopyLink` 的 `execCommand` deprecated，与既有 `CopyShare`/`meCard` 同族，纯 HTTP 下无替代，五-38）、`tsc` 退出 0、`docs:check` **0 错 0 警** |
+| 验收 | 批次1 本地 **13/13** + 线上 **6/6**（含真实 `page.pdf()` 16 页 / 1.4MB + 打印态截图肉眼核对）· 批次2 本地 **19/19**（15 主 + 4 补：软导航/::target-text/回退）+ 线上 **8/8**（裸 IP 非安全上下文实测走 `execCommand`）· 批次3 本地 **19/19**（15 主 + 4 补，含强制 `CSS.supports=false` 的 C6 回退分支）+ 线上 **6/6 + 3/3 修正**。🔴 **最终全量线上复验 15/15**：C0~C6 桌面 + 移动 375px + 打印 + reduced-motion 一次打完，0 pageerror / 0 4xx |
+| 依赖 | 三轮**零改动**（`astro 7.4.10` / `typescript 6.0.3` 天花板未动） |
+| dev / preview server | 每批复验起过 `astro preview :4321`（3 次），**均按 `CommandLine -like '*astro\bin\astro.mjs*preview*'` 精确杀掉、复查计数 = 0** |
+| 服务器回滚资产 | `dist.old`（= V0.1.110）+ **120 个 `dist_backup_*`**（口径 `ls -d dist_backup_* \| wc -l`；本轮三次部署各 +1，从 117 → 120）。⚠️ **其中 `dist_backup_`（时间戳为空，357 文件 / 23M，10-14 生成）是异常目录**，内容是真实备份、不是空壳，**保留不动**。**一律保留，删需用户明确同意** |
+| 临时文件 | 本地 `tmp-*` 计数 0、`%TEMP%` 下 tar / curl html 已清；服务器 `/tmp/chenblog_dist.tar.gz`、`/tmp/deploy.sh` 计数 0 |
+| 待用户拍板 | **第二批清单剩 B4 修订史**（要改 `content.config.ts` schema + 补 34 篇数据，建议只先给 6 篇技术手册类做）。**候选清单第一批 3~8 仍待挑**（3 写作热力图 / 4 `content-visibility` / 5 极光 / 6 逐字解码 / 7 渐变呼吸 / 8 命令面板）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32）。⚠️ **C0~C6、第一批 #10、B6/B7 已全部做完，别再当待办重提** |
+| 既有小坑 | ① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），读 computed style 要等 `load` + 800ms；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径**（磁盘是 Unicode 原名，编了就 404，曾 26/34 条中招）；④ **本机代理会拦裸 IP**：Playwright 要 `args: ['--no-proxy-server']`，HTTP 层 `Invoke-WebRequest` 不受影响；⑤ **1200px 下右栏 `display:none`** → 侧栏「博客版本」不在 `body.innerText` 里，验版本号要数 `outerHTML`；⑥ **`URL.pathname` 已完成百分号编码，再套 `encodeURI` = 双重编码**（`%` → `%25`）；⑦ **产物里文章 href 是原始中文**，测中文文章链接要用 `#swup-container a[href^="/posts/css100"]`；⑧ **终态 `translate` 计算值是 `0px` 不是 `none`**；⑨ **`grep -qF` 固定串大小写必须与产物逐字一致**（曾把 `css100` 写成 `CSS100` → `set -e` exit 1 无输出）。<br>🔴 **第 ⑩ 条（最贵的一条）**：**未分层的 `!important` 输给 `@layer` 内的 `!important`** —— Tailwind v4 的工具类（`.max-w-none\!`、`.w-full` 等）都编在 `@layer utilities` 里，组件里写「未分层 + `!important`」想压它们**会静默失效**（实测 `max-width` 读回 `none`、三档行宽全不生效、零报错）。正确做法：**换一个对手是 non-important 的属性**（本例 `max-width` → `width`），未分层赢分层、不必加 `!important`；真要改同一属性只能把规则塞进同一 layer 或用 `@layer` 顺序控制。⚠️ 配套判据：验证宽高必须读 `getBoundingClientRect()`，`getComputedStyle().maxWidth` 在 `max-width:none` 钉住时永远报 `none`，会给出假红。<br>🔴 **第 ⑪ 条**：`Invoke-WebRequest.RawContentLength` 是**字符数**、`curl -w %{size_download}` 是**字节数**，中文页差 1.9 万 → **核线上与本地一致要用 SHA256**。<br>🔴 **第 ⑫ 条**：`path.join` 在 Windows 给**反斜杠**（`replace(ROOT)` 静默失效 → 34 条假 404）+ **frontmatter 正则必须兼容 CRLF**；手机端触控口径是**与面板同类既有控件同档**（`dp-choice` 34px / `dp-reset` 24px），不是我自造的 36px。**报红前先跑控制组。**<br>🔴 **第 ⑬ 条（C3 实测）**：**Astro `is:inline` 脚本原样输出在组件位置**，组件挂在正文之前时 `onReinit(immediate)` 那一拍 `querySelector('.custom-markdown')` 拿到 `null`，且首屏之后不会再有导航来补跑（`reinitRuns=1` 但 `btns=0`）→ **首屏注入一律加 `DOMContentLoaded` 兜底**，`onReinit` 只管软导航。⚠️ 挂 Layout 尾部的组件（正文之后）无此病，别一刀切。<br>🔴 **第 ⑭ 条（C3 实测）**：`navigator.clipboard.writeText()` 是 **Promise**，同步 `try/catch` 抓不到它的 `reject` → localhost / HTTPS 安全上下文下必抛未处理的 `NotAllowedError`（线上裸 IP 反而没病，因为走了 `execCommand`）。**两条复制分支都要失败可观测**：Promise 用 `.then/.catch`，`execCommand` 用同步 `try`。验复制内容要按环境选拦截点：localhost 授 `clipboard-read` 读回，裸 IP 拦 `execCommand` 读 `textarea`。<br>🔴 **第 ⑮ 条（C5 实测）**：**Astro 7 `glob()` loader 的 `CollectionEntry.body` 恒为空**（34 个 raw 文件全是 0 字节，构建退出码 0、零报错）→ 要出 Markdown 原文**必须从 `src/content/posts/<id>.md|.mdx` 读盘**，且读不到就抛错、绝不静默输出空文件。配套判据：**`fetch().text().length` 是 UTF-16 字符数、不是字节数**（中文 18713 B ≈ 8268 字符），别拿字节阈值判字符数（曾据此误报线上 raw「变短」）；核真身用 `curl -o` + SHA256。<br>🔴 **第 ⑯ 条（探针判据）**：Chromium 命中 Text Fragment 后会**主动把 `:~:text=` 从 `location.hash` 剥掉**（规范要求）→ 用「hash 里还有片段」当高亮判据必假红；正确判据是 `CSS.supports('selector(::target-text)')` + 页面确实滚到命中处。同理 `@media print` 下 `fullPage` 截图按打印布局排，别拿屏幕态的滚动量推断。 |
 
 ---
 ## 四、维护本文件的规矩

@@ -3,7 +3,7 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-15（用户「先修复吧，然后把推荐的都修复了，长时间干」→ C0~C6 三批全部实现、验证、提交、部署；线上 V0.1.111 = 本地 = 远端）**。
+> 最后更新：**2026-11-15（用户「全面验证下新的功能吧，性能也优化下」→ C0~C6 全维度 63/63 复验 + 首屏壁纸 preload 浪费修复；线上 V0.1.112 = 本地 = 远端）**。
 >
 > **📌 炫酷化候选清单（2026-11-13 搜 3 轮后定案，用户「记住这个列表」→ 常驻这里，别弄丢）**
 > 来源：现代博客动效 / Astro 生态 / 性能与无障碍三方向，已对照本站「已实现 / 已否决」去重。
@@ -21,7 +21,7 @@
 > | **1** | **站内链接悬停预览卡** | ✅ **本批已做** | 构建期 `linkPreview.json` + `LinkPreview.astro`；零依赖 |
 > | **2** | **键盘快捷键层**（`/` `j/k` `g` `?` + 帮助浮层） | ✅ **本批已做** | `KeyboardShortcuts.astro`；`/` 派发 `blog:focus-search` 由 `Search.svelte` 收口 |
 > | 3 | 写作热力图（GitHub 式贡献日历，放 `/archive/`） | ⬜ 未做 | 纯构建期 HTML+CSS 零 JS；⚠️ 本站仅 **34 篇**且高度集中 → 全年 52 周图几乎全空，建议改「近 12 周」当小组件 |
-> | 4 | `content-visibility: auto` 长文渲染优化 | ⬜ 未做 | 唯一有真实性能数字的方向；⚠️ 要单独一批，专测 `contain-intrinsic-size` 布局跳动 / `#anchor` 跳转 / `Ctrl+F` / 与 ScrollReveal 的 IO 共存 |
+> | 4 | `content-visibility: auto` 长文渲染优化 | ⛔ **实测证伪（第五十八批）** | 三种粒度 A/B（正文子块 / figure·code·table / 列表卡片）在长文手册、CSS100 大页、首页**均无收益**，「列表卡片」反使 CSS100 大页 Task 3455→3693ms、RecalcStyle 1752→2002ms。详见第二节第五十八批 ③，**别再当待办重提** |
 > | 5 | 极光 / mesh 渐变背景 | ⬜ 未做（原第二梯队） | 纯 CSS；与现有噪点+壁纸 Ken Burns+聚光层叠加容易糊，三类偏好设置下要整层关 |
 > | 6 | 逐字解码文字（scramble） | ⬜ 未做（原第二梯队） | ⚠️ 会改 DOM 文本 → Pagefind/SEO 取到乱码，必须 SSR 出真文字、JS 只做视觉覆盖 |
 > | 7 | 渐变呼吸文字 | ⬜ 未做（原第二梯队） | ⚠️ 与已做的「标题流光」直接打架（五-48 刻意不用 `background-clip:text`），要做只能改现有那条，别叠加 |
@@ -79,6 +79,35 @@
 > | — | Web Share API `navigator.share` / 聊天机器人 / 行为个性化推荐 | ⛔ 前提不成立 | `navigator.share` 与 SW/PWA 撞同一堵墙（纯 HTTP 裸 IP = 不安全上下文，线上访客拿不到）；后两者与个人静态博客定位不符 |
 >
 > **一句话**：第三批 **C0~C6 已于 2026-11-15 三批全部做完上线**（第五十五 / 五十六 / 五十七批，V0.1.109 / 110 / 111），详见第三节状态快照与第二节对应批次记录。所有带前提的否决项（`@starting-style` / Web Share / SW-PWA 等）结论不变。
+>
+> **🔧 2026-11-15（第五十八批：用户「全面验证下新的功能吧，性能也优化下」→ 全维度复验 + 性能优化，V0.1.112）**
+> 会话开始 `HEAD == origin/main == e6df62b`、线上 V0.1.111。一次部署、一个功能提交 `bb6d1f2`。
+> ① 🟢 **C0~C6 全维度复验 63/63**（本地 preview）：3 断点（1440/820/375）× 亮暗主题（6 组各 6 项）、阅读偏好三档联用、
+>    `prefers-reduced-transparency` / `forced-colors` / `reduced-motion` 三种偏好媒体、4 篇文章（含中文 slug 与 `.mdx` 源，标题 17/17/6/6）、
+>    C0 四条触发路径（外部 `#hash` / `scrollIntoView` / `:target` / TOC 点击，均 `top=84`）、软导航三跳（文章→文章→/series/→文章，C3 不叠加 / C6 重挂 / C4 不残留）、
+>    双文章真实 `page.pdf()`（1399485 B / 1585346 B）、`llms.txt` 34 条且 34 个 raw URL 全 200 非空、C6 强制 `CSS.supports=false` 回退分支。
+> ② 🔴 **性能剖析（CDP Profiler + Performance.getMetrics + Tracing）**：4× CPU 降速下 `ScriptDuration≈110ms`、
+>    `LayoutDuration=1133ms` / `RecalcStyleDuration=513ms` / `LayoutCount=120` / `scroll 事件=0`。
+>    Profiler 里 `updateReadingProgress` / `applyInitialKB` / `onScroll` 各约 6.4% 采样是**强制同步布局被归到触发它的 JS 帧**，不是脚本逻辑慢
+>    → 瓶颈是布局与样式重算（CSS100 大页 7455 DOM 节点、5882 个在正文、3513 个 `<span>` 来自 expressive-code 逐 token 高亮），**不是可低风险合并的 JS 读几何**。
+> ③ 🔴 **三条候选优化被真实数据证伪，全部撤销、源码零改动**：
+>    **`content-visibility:auto`**（第一批候选 #4，三种粒度 A/B）：长文手册 Task 2173→2203/2223/2284ms、CSS100 大页 3455→3408/3446/**3693**ms、首页 1942→1949/1912/1893ms
+>    → 基本无收益，「列表卡片」粒度反使 CSS100 大页 RecalcStyle 1752→2002ms，**证伪，别再当待办重提**。
+>    **模板轮播图 `loading=lazy`**：初测似省 131KB，10 次重复取分布后新旧完全同质（请求数 1~2、166.6~298.3KB 随机波动），
+>    真因是 `applyRandom()` 随机把模板图克隆进首屏，本就该下 → **误判，撤销**。
+>    **`compressHTML:true`**：首页 raw 258956→**261900 B（+2944）**、gzip(level9) 59636→**59949 B（+313）** → **负收益，撤销**。
+>    🔴 通用教训：**单次 A/B 的差值很可能是随机性**，性能结论必须 8~10 次冷加载取分布；「报红前先跑控制组」同样适用于「报绿」。
+> ④ 🟢 **真正落地的优化（P1）**：`inject-preload.mjs` 在 head 里 preload 的永远是**第 1 张**壁纸（170644 B / `fetchpriority=high`），
+>    但旧 `applyRandom()` 有 2/3 概率把首屏换成第 2/3 张 → 那张高优先级图根本不显示却已下载。
+>    实测确定性浪费：index=0 下载 166.6KB（0 浪费）/ index=1 下载 **298.3KB（白下 131.7KB）** / index=2 下载 190.5KB（白下 23.9KB），**期望 51.9KB/首屏**。
+>    修法：**首屏恒定帧 0（= preload 图）**，随机性改由「第一次 crossfade 随机跳到 1..count-1，之后严格顺序」承担（`firstHopUsed` 标记，避免回到帧 0 时重跳导致漏帧）。
+>    回退：恢复 `applyRandom(...)` 调用 + `__bannerCarouselIndex` 初值改回 `__bannerRandomIndex`。
+>    ⚠️ 视觉变化：首屏壁纸不再随机（统一第 1 张），5 秒后首次轮播才随机 —— 已在报告里明说。
+> ⑤ 验收：优化前/后同口径 8 次冷加载 → 首屏壁纸 **218.5KB（期望）→ 166.6KB（恒定），−51.9KB / −23.8%**；
+>    8/8「只下 1 张」「显示图 == preload 图」「naturalWidth=1440」「0 pageerror」；两种首跳（1/2）轮播 4 次都覆盖 3 帧不卡死；
+>    全量 C0~C6 回归 **63/63**；线上 **8/8**（3 次首屏 + C0/C1/C2/C3/C5/C6 + llms/raw + 0 4xx）。
+>    门禁 `build` 0 / `check` 0 error 4 hint / `tsc` 0 / `docs:check` 0 错 0 警；SHA256 首页、文章页、`/series/`、`/llms.txt` 4/4 本地 = 线上；
+>    `dist.old` + **121** 个 `dist_backup_*` 全保留；tmp / preview / 服务器 `/tmp` 残留全 0。
 >
 > **🔧 2026-11-15（第五十五~五十七批：用户「先修复吧，然后把推荐的都修复了，长时间干」→ 第三批 C0~C6 分三批全做完）**
 > 会话开始时 `HEAD == origin/main == 34a78e8`（第三批候选清单文档批）、线上 V0.1.108。三轮各「实现 → 真实命令/浏览器验 → 中文提交 → push → 部署 → 线上复验 → 版本号 +1」，**每批独立部署**，共 3 个功能提交 `f1cd3d1` → `00f9e22` → `ffcf628`。
@@ -2912,25 +2941,26 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-15 第五十五~五十七批：C0~C6 三批全做完；线上 = 本地 = 远端 = V0.1.111**，已部署）
+## 三、当前状态快照（**2026-11-15 第五十八批：C0~C6 全维度复验 + 首屏 preload 浪费修复；线上 = 本地 = 远端 = V0.1.112**，已部署）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
-> ⚠️ **炫酷化候选清单常驻在文件顶部（第一节之前那张表）**：第一批 1/2/10 已做、3~8 待选；第二批 B1/B2/B3/B6/B7 已做，B4 待拍；**第三批 C0~C6 全部已做**。
+> ⚠️ **炫酷化候选清单常驻在文件顶部（第一节之前那张表）**：第一批 1/2/10 已做、**4 已实测证伪**、3/5/6/7/8 待选；第二批 B1/B2/B3/B6/B7 已做，B4 待拍；**第三批 C0~C6 全部已做**。
 
 | 项 | 状态 |
 |---|---|
-| 本地 HEAD | `ffcf628`（第五十七批 C5+C6，V0.1.111 功能提交），**已推送、`HEAD == origin/main`、工作区计数 0**。本轮三次功能提交：`f1cd3d1`（五十五批 C0/C1/C2）→ `00f9e22`（五十六批 C3/C4）→ `ffcf628`（五十七批 C5/C6）；每批各自 +1 版本号 |
-| 工作区 | 三批共 16 个文件（含 4 个新文件：`SectionCopyLink.astro` / `ResumeReading.astro` / `llms.txt.ts` / `raw/[...slug].md.ts`），**全部已提交**；`git status` 0 项 |
-| 线上站点 | ✅ **2026-11-15 三次部署**（每批替换前断言全过 + 原子替换）。当前 `0.1.111` 4 处 / `0.1.110` 0 处；**SHA256 逐字节核对：首页、文章页、`/series/`、`/llms.txt`、中文 raw 文件 5/5 本地 = 线上**；`curl -I /raw/ccnewtools-manual.md` = 200 / 18713 B |
-| 服务器配置 | 三轮**均未动服务器配置**（只换 `dist`） |
-| 本地构建 | V0.1.111 = **585 个文件 / 54 个 html / 53 个 `index.html`**（+35：`llms.txt` 1 + `raw/*.md` 34）。`build` 0 error / 54 page(s) / pagefind 36 页 11195 词、`check` **0 error / 0 warning / 4 hint**（第 4 条是 `SectionCopyLink` 的 `execCommand` deprecated，与既有 `CopyShare`/`meCard` 同族，纯 HTTP 下无替代，五-38）、`tsc` 退出 0、`docs:check` **0 错 0 警** |
-| 验收 | 批次1 本地 **13/13** + 线上 **6/6**（含真实 `page.pdf()` 16 页 / 1.4MB + 打印态截图肉眼核对）· 批次2 本地 **19/19**（15 主 + 4 补：软导航/::target-text/回退）+ 线上 **8/8**（裸 IP 非安全上下文实测走 `execCommand`）· 批次3 本地 **19/19**（15 主 + 4 补，含强制 `CSS.supports=false` 的 C6 回退分支）+ 线上 **6/6 + 3/3 修正**。🔴 **最终全量线上复验 15/15**：C0~C6 桌面 + 移动 375px + 打印 + reduced-motion 一次打完，0 pageerror / 0 4xx |
-| 依赖 | 三轮**零改动**（`astro 7.4.10` / `typescript 6.0.3` 天花板未动） |
-| dev / preview server | 每批复验起过 `astro preview :4321`（3 次），**均按 `CommandLine -like '*astro\bin\astro.mjs*preview*'` 精确杀掉、复查计数 = 0** |
-| 服务器回滚资产 | `dist.old`（= V0.1.110）+ **120 个 `dist_backup_*`**（口径 `ls -d dist_backup_* \| wc -l`；本轮三次部署各 +1，从 117 → 120）。⚠️ **其中 `dist_backup_`（时间戳为空，357 文件 / 23M，10-14 生成）是异常目录**，内容是真实备份、不是空壳，**保留不动**。**一律保留，删需用户明确同意** |
+| 本地 HEAD | `bb6d1f2`（第五十八批 perf，V0.1.112 功能提交），**已推送、`HEAD == origin/main`、工作区计数 0**。上一功能提交 `ffcf628`（V0.1.111），文档批 `e6df62b`。本轮改 2 文件：`Cover.astro` +21-17 / `package.json` 版本号 |
+| 工作区 | `git status` **0 项**；三个候选优化（`content-visibility` / 模板 lazy / `compressHTML`）经实测证伪后**全部撤销，源码零残留** |
+| 线上站点 | ✅ **2026-11-15 部署 V0.1.112**（替换前断言：`0.1.112` 在 / `0.1.111` 不在 / `__bannerCarouselIndex = 0` 在 / raw 34 / llms 在，全过后原子替换）。`0.1.112` 4 处 / `0.1.111` 0 处；**SHA256 4/4 本地 = 线上**（首页、文章页、`/series/`、`/llms.txt`）；`/raw/ccnewtools-manual.md` 200 / 18713 B |
+| 服务器配置 | 本批**未动服务器配置**（只换 `dist`） |
+| 本地构建 | V0.1.112 = **585 个文件 / 54 个 html / 53 个 `index.html`**（与上批同量，只改脚本）。`build` 0 error / 54 page(s) / pagefind 36 页 11195 词、`check` **0 error / 0 warning / 4 hint**、`tsc` 退出 0、`docs:check` **0 错 0 警** |
+| 验收 | 🔴 **C0~C6 全维度复验 63/63**：3 断点 × 亮暗主题、阅读偏好三档联用、3 种偏好媒体、4 篇文章（含中文 slug / `.mdx`）、C0 四条触发路径、软导航三跳、双文章真实 PDF、34 个 raw URL、C6 回退分支。🔴 **优化后 6/6**（8 次冷加载首屏零浪费 + 两种首跳轮播覆盖 3 帧）+ **C0~C6 回归 63/63** + **线上 8/8**。三批旧验收：本地 13/19/19 + 线上 6/8/6+3、最终全量线上 15/15（详见第二节） |
+| 性能数字 | **首屏壁纸 218.5KB（旧期望）→ 166.6KB（新恒定），−51.9KB / −23.8%**；线上 HTML 无编码 258956 B / gzip 59353 B。剖析：4× 降速下 `ScriptDuration≈110ms` vs `LayoutDuration=1133ms` + `RecalcStyleDuration=513ms` → **瓶颈是布局/样式重算，不是 JS**。CDP Tracing 151 个 Layout 事件 / 1516ms，逐个禁用组件几何读取仅降 70~260ms（噪声内）→ 不做 JS 微优化 |
+| 依赖 | 本批**零改动**（`astro 7.4.10` / `typescript 6.0.3` 天花板未动），无新依赖 |
+| dev / preview server | 复验起过 `astro preview :4321`（本轮 4 次），**均按 `CommandLine -like '*astro\bin\astro.mjs*preview*'` 精确杀掉、复查计数 = 0** |
+| 服务器回滚资产 | `dist.old`（= V0.1.111）+ **121 个 `dist_backup_*`**（本轮 +1，从 120 → 121）。⚠️ **其中 `dist_backup_`（时间戳为空，357 文件 / 23M，10-14 生成）是异常目录**，内容是真实备份、不是空壳，**保留不动**。**一律保留，删需用户明确同意** |
 | 临时文件 | 本地 `tmp-*` 计数 0、`%TEMP%` 下 tar / curl html 已清；服务器 `/tmp/chenblog_dist.tar.gz`、`/tmp/deploy.sh` 计数 0 |
-| 待用户拍板 | **第二批清单剩 B4 修订史**（要改 `content.config.ts` schema + 补 34 篇数据，建议只先给 6 篇技术手册类做）。**候选清单第一批 3~8 仍待挑**（3 写作热力图 / 4 `content-visibility` / 5 极光 / 6 逐字解码 / 7 渐变呼吸 / 8 命令面板）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32）。⚠️ **C0~C6、第一批 #10、B6/B7 已全部做完，别再当待办重提** |
-| 既有小坑 | ① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），读 computed style 要等 `load` + 800ms；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径**（磁盘是 Unicode 原名，编了就 404，曾 26/34 条中招）；④ **本机代理会拦裸 IP**：Playwright 要 `args: ['--no-proxy-server']`，HTTP 层 `Invoke-WebRequest` 不受影响；⑤ **1200px 下右栏 `display:none`** → 侧栏「博客版本」不在 `body.innerText` 里，验版本号要数 `outerHTML`；⑥ **`URL.pathname` 已完成百分号编码，再套 `encodeURI` = 双重编码**（`%` → `%25`）；⑦ **产物里文章 href 是原始中文**，测中文文章链接要用 `#swup-container a[href^="/posts/css100"]`；⑧ **终态 `translate` 计算值是 `0px` 不是 `none`**；⑨ **`grep -qF` 固定串大小写必须与产物逐字一致**（曾把 `css100` 写成 `CSS100` → `set -e` exit 1 无输出）。<br>🔴 **第 ⑩ 条（最贵的一条）**：**未分层的 `!important` 输给 `@layer` 内的 `!important`** —— Tailwind v4 的工具类（`.max-w-none\!`、`.w-full` 等）都编在 `@layer utilities` 里，组件里写「未分层 + `!important`」想压它们**会静默失效**（实测 `max-width` 读回 `none`、三档行宽全不生效、零报错）。正确做法：**换一个对手是 non-important 的属性**（本例 `max-width` → `width`），未分层赢分层、不必加 `!important`；真要改同一属性只能把规则塞进同一 layer 或用 `@layer` 顺序控制。⚠️ 配套判据：验证宽高必须读 `getBoundingClientRect()`，`getComputedStyle().maxWidth` 在 `max-width:none` 钉住时永远报 `none`，会给出假红。<br>🔴 **第 ⑪ 条**：`Invoke-WebRequest.RawContentLength` 是**字符数**、`curl -w %{size_download}` 是**字节数**，中文页差 1.9 万 → **核线上与本地一致要用 SHA256**。<br>🔴 **第 ⑫ 条**：`path.join` 在 Windows 给**反斜杠**（`replace(ROOT)` 静默失效 → 34 条假 404）+ **frontmatter 正则必须兼容 CRLF**；手机端触控口径是**与面板同类既有控件同档**（`dp-choice` 34px / `dp-reset` 24px），不是我自造的 36px。**报红前先跑控制组。**<br>🔴 **第 ⑬ 条（C3 实测）**：**Astro `is:inline` 脚本原样输出在组件位置**，组件挂在正文之前时 `onReinit(immediate)` 那一拍 `querySelector('.custom-markdown')` 拿到 `null`，且首屏之后不会再有导航来补跑（`reinitRuns=1` 但 `btns=0`）→ **首屏注入一律加 `DOMContentLoaded` 兜底**，`onReinit` 只管软导航。⚠️ 挂 Layout 尾部的组件（正文之后）无此病，别一刀切。<br>🔴 **第 ⑭ 条（C3 实测）**：`navigator.clipboard.writeText()` 是 **Promise**，同步 `try/catch` 抓不到它的 `reject` → localhost / HTTPS 安全上下文下必抛未处理的 `NotAllowedError`（线上裸 IP 反而没病，因为走了 `execCommand`）。**两条复制分支都要失败可观测**：Promise 用 `.then/.catch`，`execCommand` 用同步 `try`。验复制内容要按环境选拦截点：localhost 授 `clipboard-read` 读回，裸 IP 拦 `execCommand` 读 `textarea`。<br>🔴 **第 ⑮ 条（C5 实测）**：**Astro 7 `glob()` loader 的 `CollectionEntry.body` 恒为空**（34 个 raw 文件全是 0 字节，构建退出码 0、零报错）→ 要出 Markdown 原文**必须从 `src/content/posts/<id>.md|.mdx` 读盘**，且读不到就抛错、绝不静默输出空文件。配套判据：**`fetch().text().length` 是 UTF-16 字符数、不是字节数**（中文 18713 B ≈ 8268 字符），别拿字节阈值判字符数（曾据此误报线上 raw「变短」）；核真身用 `curl -o` + SHA256。<br>🔴 **第 ⑯ 条（探针判据）**：Chromium 命中 Text Fragment 后会**主动把 `:~:text=` 从 `location.hash` 剥掉**（规范要求）→ 用「hash 里还有片段」当高亮判据必假红；正确判据是 `CSS.supports('selector(::target-text)')` + 页面确实滚到命中处。同理 `@media print` 下 `fullPage` 截图按打印布局排，别拿屏幕态的滚动量推断。 |
+| 待用户拍板 | **第二批清单剩 B4 修订史**（要改 `content.config.ts` schema + 补 34 篇数据，建议只先给 6 篇技术手册类做）。**候选清单第一批 3 / 5 / 6 / 7 / 8 仍待挑**（3 写作热力图 / 5 极光 / 6 逐字解码 / 7 渐变呼吸 / 8 命令面板；**4 `content-visibility` 已实测证伪，别再提**）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · 移动端触控目标（只剩 RSS 那个 24×32）。⚠️ **C0~C6、第一批 #10、B6/B7 已全部做完，别再当待办重提** |
+| 既有小坑 | ① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），读 computed style 要等 `load` + 800ms；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径**（磁盘是 Unicode 原名，编了就 404，曾 26/34 条中招）；④ **本机代理会拦裸 IP**：Playwright 要 `args: ['--no-proxy-server']`，HTTP 层 `Invoke-WebRequest` 不受影响；⑤ **1200px 下右栏 `display:none`** → 侧栏「博客版本」不在 `body.innerText` 里，验版本号要数 `outerHTML`；⑥ **`URL.pathname` 已完成百分号编码，再套 `encodeURI` = 双重编码**（`%` → `%25`）；⑦ **产物里文章 href 是原始中文**，测中文文章链接要用 `#swup-container a[href^="/posts/css100"]`；⑧ **终态 `translate` 计算值是 `0px` 不是 `none`**；⑨ **`grep -qF` 固定串大小写必须与产物逐字一致**（曾把 `css100` 写成 `CSS100` → `set -e` exit 1 无输出）。<br>🔴 **第 ⑩ 条（最贵的一条）**：**未分层的 `!important` 输给 `@layer` 内的 `!important`** —— Tailwind v4 的工具类（`.max-w-none\!`、`.w-full` 等）都编在 `@layer utilities` 里，组件里写「未分层 + `!important`」想压它们**会静默失效**（实测 `max-width` 读回 `none`、三档行宽全不生效、零报错）。正确做法：**换一个对手是 non-important 的属性**（本例 `max-width` → `width`），未分层赢分层、不必加 `!important`；真要改同一属性只能把规则塞进同一 layer 或用 `@layer` 顺序控制。⚠️ 配套判据：验证宽高必须读 `getBoundingClientRect()`，`getComputedStyle().maxWidth` 在 `max-width:none` 钉住时永远报 `none`，会给出假红。<br>🔴 **第 ⑪ 条**：`Invoke-WebRequest.RawContentLength` 是**字符数**、`curl -w %{size_download}` 是**字节数**，中文页差 1.9 万 → **核线上与本地一致要用 SHA256**。<br>🔴 **第 ⑫ 条**：`path.join` 在 Windows 给**反斜杠**（`replace(ROOT)` 静默失效 → 34 条假 404）+ **frontmatter 正则必须兼容 CRLF**；手机端触控口径是**与面板同类既有控件同档**（`dp-choice` 34px / `dp-reset` 24px），不是我自造的 36px。**报红前先跑控制组。**<br>🔴 **第 ⑬ 条（C3 实测）**：**Astro `is:inline` 脚本原样输出在组件位置**，组件挂在正文之前时 `onReinit(immediate)` 那一拍 `querySelector('.custom-markdown')` 拿到 `null`，且首屏之后不会再有导航来补跑（`reinitRuns=1` 但 `btns=0`）→ **首屏注入一律加 `DOMContentLoaded` 兜底**，`onReinit` 只管软导航。⚠️ 挂 Layout 尾部的组件（正文之后）无此病，别一刀切。<br>🔴 **第 ⑭ 条（C3 实测）**：`navigator.clipboard.writeText()` 是 **Promise**，同步 `try/catch` 抓不到它的 `reject` → localhost / HTTPS 安全上下文下必抛未处理的 `NotAllowedError`（线上裸 IP 反而没病，因为走了 `execCommand`）。**两条复制分支都要失败可观测**：Promise 用 `.then/.catch`，`execCommand` 用同步 `try`。验复制内容要按环境选拦截点：localhost 授 `clipboard-read` 读回，裸 IP 拦 `execCommand` 读 `textarea`。<br>🔴 **第 ⑮ 条（C5 实测）**：**Astro 7 `glob()` loader 的 `CollectionEntry.body` 恒为空**（34 个 raw 文件全是 0 字节，构建退出码 0、零报错）→ 要出 Markdown 原文**必须从 `src/content/posts/<id>.md|.mdx` 读盘**，且读不到就抛错、绝不静默输出空文件。配套判据：**`fetch().text().length` 是 UTF-16 字符数、不是字节数**（中文 18713 B ≈ 8268 字符），别拿字节阈值判字符数（曾据此误报线上 raw「变短」）；核真身用 `curl -o` + SHA256。<br>🔴 **第 ⑯ 条（探针判据）**：Chromium 命中 Text Fragment 后会**主动把 `:~:text=` 从 `location.hash` 剥掉**（规范要求）→ 用「hash 里还有片段」当高亮判据必假红；正确判据是 `CSS.supports('selector(::target-text)')` + 页面确实滚到命中处。同理 `@media print` 下 `fullPage` 截图按打印布局排，别拿屏幕态的滚动量推断。<br>🔴 **第 ⑰ 条（第五十八批，性能类通用）**：**单次 A/B 的差值极可能是随机性，不是优化效果** —— 本站首屏壁纸字节 10 次冷加载在 **166.6~298.3KB** 间随机波动（根因 `applyRandom()` 随机把模板图克隆进首屏），初测「lazy 省 131KB」与「旧线上 298.3 / 新本地 190.5」都是抽样假象，重复取分布后新旧完全同质。**性能结论必须 8~10 次冷加载取分布 / 中位，且新旧要在同一时刻用同一探针交替打**；「报红前先跑控制组」同样适用于「报绿」。配套：CDP Profiler 的高 self-time 可能只是**强制同步布局被归到触发它的 JS 帧**（本站 `ScriptDuration≈110ms` 而 `LayoutDuration=1133ms`），先读 `Performance.getMetrics` 再决定优化方向，别照着函数名改 JS。 |
 
 ---
 ## 四、维护本文件的规矩

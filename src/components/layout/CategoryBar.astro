@@ -107,11 +107,18 @@ const categoriesUrl = url("/categories/")
 			transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
 			width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
 			opacity 0.2s ease;
+		/* 🔴 亮度上限 0.52 是**对比度算出来的**，不能凭观感调回 0.62（第五十九批）：
+		   激活 pill 的文字是纯白 #fff（见下方 data-has-indicator 规则），压在
+		   这层渐变上。原 0.62/0.66/0.60 三色标配白字实测 3.31 / 2.95 / 4.15，
+		   全色相最差 3.16 —— 均低于 WCAG AA 正文所需的 4.5。
+		   --hue 可由「显示设置」调到 0~360，所以要按**全色相最差值**定档：
+		   0.54→4.28(不过) / 0.52→4.62(过) / 0.50→5.00 / 0.48→5.41。
+		   取 0.52（能过的最亮档，观感最接近原来），默认色相 175 下为 4.86/5.06/5.81。 */
 		background: linear-gradient(
 			100deg,
-			oklch(0.62 0.14 calc(var(--hue) + 0)),
-			oklch(0.66 0.15 calc(var(--hue) + 55)) 55%,
-			oklch(0.60 0.16 calc(var(--hue) + 110))
+			oklch(0.52 0.14 calc(var(--hue) + 0)),
+			oklch(0.52 0.15 calc(var(--hue) + 55)) 55%,
+			oklch(0.52 0.16 calc(var(--hue) + 110))
 		);
 		box-shadow: 0 4px 14px -6px color-mix(in oklch, var(--primary) 65%, transparent);
 	}

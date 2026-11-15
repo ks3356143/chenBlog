@@ -281,22 +281,16 @@ const randomSubtitle = getRandomSubtitle()
 			}
 		}
 		rememberInitialFrame("banner-image-slot")
-		// F5刷新重置，Swup切换保留
+		// F5刷新重置，Swup切换保留。
+		// 🔴 性能优化（第五十八批）：**首屏恒定显示 SSR 的第 1 张**，不再用 template 替换。
+		//   原因：inject-preload.mjs 在 head 里 preload 的永远是第 1 张（170644B, fetchpriority=high）；
+		//   旧逻辑随机把首屏换成第 2/3 张时，那张 preload 图根本不显示却已高优先级下载
+		//   —— 实测 index=1 白下 131.7KB、index=2 白下 23.9KB，期望浪费 51.9KB/首屏，还抢 LCP 带宽。
+		//   随机性改由「第一次 crossfade 随机跳到非首帧」承担（见下面 initBannerCarousel）。
+		//   回退：恢复 applyRandom(...) 调用 + 把 __bannerCarouselIndex 初值改回 __bannerRandomIndex。
 		if (typeof window.__bannerRandomIndex === "undefined") {
-			window.__bannerRandomIndex = count > 1 ? Math.floor(Math.random() * count) : 0
+			window.__bannerRandomIndex = count > 1 ? 1 + Math.floor(Math.random() * (count - 1)) : 0
 		}
-		// 从template替换默认图片（index 0 = 已渲染的默认图，>0 = template）
-		function applyRandom(slotClass, tplClass, randomIndex) {
-			if (randomIndex === 0) return
-			const slot = container.querySelector("." + slotClass)
-			const templates = container.querySelectorAll("." + tplClass)
-			if (!slot || !templates.length) return
-			const tpl = templates[randomIndex - 1]
-			if (!tpl) return
-			slot.innerHTML = ""
-			slot.appendChild(tpl.content.cloneNode(true))
-		}
-		applyRandom("banner-image-slot", "banner-tpl", window.__bannerRandomIndex)
 	})()
 </script>
 
@@ -333,9 +327,13 @@ const randomSubtitle = getRandomSubtitle()
 			window.__bannerCarouselFrames[slotClass] = frames
 		}
 		collectFrames("banner-image-slot", "banner-tpl")
+		// 首屏是帧 0（preload 的那张），所以轮播指针从 0 起；
+		// __bannerRandomIndex ∈ [1, count-1] 只决定「第一次切到哪张」，之后照常顺序轮播。
 		if (typeof window.__bannerCarouselIndex === "undefined") {
-			window.__bannerCarouselIndex = window.__bannerRandomIndex ? window.__bannerRandomIndex : 0
+			window.__bannerCarouselIndex = 0
 		}
+		const firstHop = window.__bannerRandomIndex || 1
+		let firstHopUsed = false
 		// 给首张图启动kenburns
 		function applyInitialKB(slotClass) {
 			const slot = container.querySelector("." + slotClass)
@@ -352,9 +350,15 @@ const randomSubtitle = getRandomSubtitle()
 
 			const oldSlot = container.querySelector("." + slotClass)
 			if (!oldSlot) return
-			// 计算下一个index
+			// 计算下一个index：首帧(0) 之后先随机跳一次，之后严格顺序轮播
 			const currentIndex = window.__bannerCarouselIndex || 0
-			const nextIndex = (currentIndex + 1) % frames.length
+			let nextIndex
+			if (!firstHopUsed) {
+				nextIndex = firstHop % frames.length
+				firstHopUsed = true
+			} else {
+				nextIndex = (currentIndex + 1) % frames.length
+			}
 			window.__bannerCarouselIndex = nextIndex
 			// 新层：叠在旧的上方
 			const newSlot = document.createElement("div")

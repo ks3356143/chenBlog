@@ -20,6 +20,9 @@
  * ⑤ Custom Highlight API 不支持就整条高亮按钮不出现（Chrome 105+/Safari 17.2+ 有，
  *    Firefox 到 2026 仍要靠 dom.createHighlight 旗标）→ 一律当渐进增强。
  * ⑥ 工具条自己不能被算进选区：pointerdown 里 preventDefault，否则点按钮瞬间选区就没了。
+ * ⑦ 复制的回执必须等**真的成功**才亮：copyText 返回 Promise<boolean>，
+ *    成功加 .is-done、失败加 .is-fail。原先是"发起复制就亮成功"，execCommand 返回 false 时
+ *    用户会以为复制上了（浏览器剪贴板权限被策略挡掉时真的会 false）。
  */
 
 import { Icon } from "astro-icon/components"
@@ -194,11 +197,27 @@ import { Icon } from "astro-icon/components"
         }
 
         // ---------- 三个动作 ----------
+        // ⑦ 返回值必须是"已经复制成功"，不能是"我开始复制了"：失败时按钮绝不能显示成功态。
+        //    clipboard 分支改回 Promise，由调用方 .then/.catch 决定反馈。
         function copyText(text) {
             if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text).then(null, function () {})
-                return true
+                try {
+                    return navigator.clipboard.writeText(text).then(
+                        function () {
+                            return true
+                        },
+                        function () {
+                            return copyByExecCommand(text)
+                        },
+                    )
+                } catch (e) {
+                    return Promise.resolve(copyByExecCommand(text))
+                }
             }
+            return Promise.resolve(copyByExecCommand(text))
+        }
+
+        function copyByExecCommand(text) {
             try {
                 var ta = document.createElement("textarea")
                 ta.value = text
@@ -214,10 +233,12 @@ import { Icon } from "astro-icon/components"
             }
         }
 
-        function flash(btn) {
-            btn.classList.add("is-done")
+        // ok 与 fail 用不同类，失败绝不冒充成功
+        function flash(btn, ok) {
+            var cls = ok ? "is-done" : "is-fail"
+            btn.classList.add(cls)
             window.setTimeout(function () {
-                btn.classList.remove("is-done")
+                btn.classList.remove(cls)
             }, 1200)
         }
 
@@ -235,8 +256,15 @@ import { Icon } from "astro-icon/components"
 
             if (act === "copy") {
                 if (!text) return
-                copyText(text)
-                flash(btn)
+                var copyBtn = btn
+                var p = copyText(text)
+                if (p && typeof p.then === "function") {
+                    p.then(function (ok) {
+                        flash(copyBtn, ok)
+                    })
+                } else {
+                    flash(copyBtn, !!p)
+                }
             } else if (act === "search") {
                 if (!text) return
                 hideToolbar()
@@ -377,6 +405,14 @@ import { Icon } from "astro-icon/components"
     .selection-toolbar-btn.is-done {
         color: var(--primary);
         background: color-mix(in oklch, var(--primary) 16%, transparent);
+    }
+
+    /* 复制失败的回执：必须是可辨的"没成功"，别让用户以为复制上了 */
+    .selection-toolbar-btn.is-fail {
+        color: var(--primary);
+        background: color-mix(in oklch, var(--primary) 10%, transparent);
+        text-decoration: line-through;
+        text-decoration-thickness: 1px;
     }
 
     /* 当前词已在「高亮」状态 → 按钮显示「取消」，给个持续可辨的态 */

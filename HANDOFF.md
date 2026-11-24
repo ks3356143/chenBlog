@@ -2051,7 +2051,7 @@
 |---|---|
 | 本地 HEAD | 见第三节快照（本批提交见第二节开头的第六十一批） |
 | 线上 | **V0.1.114**，http://47.108.230.220（首页/404/文章/api 全 200） |
-| 刚做完 | 第六十一批：Astro 7.4.10 → **7.4.13**；全站复验；修 **B3 搜索历史「点 × 删一条把整个面板关掉」** |
+| 刚做完 | 第六十一批：Astro 7.4.10 → **7.4.13**；**两轮**全站复验（54 路由逐字节 SHA256 + 108 项亮暗 + 54 项移动端）；修 **3 个真缺陷**：B3 搜索历史「点 × 删一条把整个面板关掉」· B1 划词点搜索「面板闪没」· B2 高亮「文本超 40 字不显示取消」 |
 | 门禁基线 | `build` 0 / `check` **0 error 0 warning 9 hint** / `tsc` 0 / `docs:check` 0 错 0 警 |
 | 回滚资产 | `dist.old` + **125** 个 `dist_backup_*`（**一律保留，删要用户点头**） |
 
@@ -2474,7 +2474,7 @@
 
 ## 二、历次会话做了什么
 
-### 2026-11-24 第六十一批：Astro 升到 7.4.13 + 全站复验 + **修 B3 搜索历史真缺陷**
+### 2026-11-24 第六十一批：Astro 升到 7.4.13 + 两轮全站复验 + **修掉 3 个真缺陷（B3 搜索历史 / B1 划词搜索 / B2 高亮取消态）**
 
 - **触发**：他说"全面验证下 今天就结束 整理下全部内容，还有Astro有更新就更新哈"。
 - **① Astro 7.4.10 → 7.4.13**（`package.json` 改一行、`package-lock.json` 重算）。
@@ -2510,6 +2510,40 @@
     得**先 `mouse.move` 到 `li` 上再点**，或直接按坐标点（`elementFromPoint` 已确认 `hitIsSelf:true`）。
   - **`astro preview` 7.4.13 新增了重复启动保护**（`Another astro preview server is already running.`）——
     这条 exit 1 **不是失败**，是老进程还在正常服务；别顺手当成回归。
+- **⑥ 他追问「全面检查完毕了吗，部署也部署好了吗」→ 又跑了一轮更硬的核验，又抓出 2 个真缺陷**：
+  - **覆盖面（这轮比上轮狠）**：54 个 HTML 路由**逐页** HTTP 状态码 + **逐页 SHA256** 与本地比对（54/54 逐字节一致）；
+    17 个 `_astro/*.css|js` chunk 逐个 SHA256（17/17 一致）；数据文件 `/api/*.json` `/rss.xml` `/llms.txt`
+    `/pagefind/*` `/sitemap-index.xml` 全 200；**故意不存在的路径必须 404**（`/posts/does-not-exist-12345/` → 404，`/nope/` → 404）；
+    浏览器侧 **54 路由 × 亮/暗 = 108 项** + **54 路由 × 390px 移动端** 全过（横向溢出 `scrollWidth-innerWidth` 全 ≤1px、`<h1>` 齐、零 JS 错误）。
+  - **缺陷 A（B1 划词→搜索，整条功能不可用）**：选中文字点「搜索」→ **搜索面板闪一下就没**。
+    根因与刚修的 B3 **同一族**：划词工具条是 `DIV#selection-toolbar`，**挂在 body 下、不在 `[data-search-root]` 里**；
+    点它的按钮 → `blog:search-with` 先打开面板 → **紧接着这次 click 冒泡到 document**，被 `onDocClick` 判成"点在搜索区外" → `closeAll()`。
+    铁证是**时序快照**：`search-with 同步时刻 → panel:false`；`microtask → panel:true`（Svelte 已渲染出来）；
+    `document click(bubble) → {inToolbar:true, inSearchRoot:false, panelNow:false}`；`setTimeout0 → panel:false`。
+    修法（`Search.svelte` `onDocClick`，在 isConnected 判定之后加一行）：
+    `if (t?.closest?.("#selection-toolbar")) return;`
+  - **缺陷 B（B2 高亮按钮不显示「取消」）**：高亮确实生效（`CSS.highlights` 里出现 `blog-selection-hit`），
+    但同一词再选中时按钮仍显示「高亮」、也不带 `is-on`。
+    根因：`applyHighlight` 存进 `activeWord` 的是 `text.slice(0,40)`，而回显比较用的是**完整** `info.text`
+    → 选区一超过 40 字**永不相等**，而三击选整段必然超 40 字。
+    修法（`SelectionToolbar.astro` `onSelectionSettled`）：比较前先按同样规则截到 40 字（`cmpWord`）。
+  - **复测（修后）**：划词 7 项 **7/7** —— 工具条弹出（非安全上下文 `isSecureContext:false / clipboard:false`）·
+    复制回执 `is-done` · **划词→搜索面板打开且输入框带上选中文字** · 高亮 `CSS.highlights` 命中 1 处 ·
+    **同词二次选中按钮变「取消」且 `is-on`** · 取消后 `CSS.highlights` 清空 · 零 JS 错误。
+    全站回归仍 108/108 + 54/54。
+  - **我自己在这轮踩的探测坑（关键，别再犯）**：
+    - **Playwright 合成 `mouse.down/move/up` 拖不出原生选区**（`getSelection()` 恒为空）→ 划词类断言**必须用三击选段**
+      （`mouse.click(x,y,{clickCount:3})`）或 `Range` API + 派发 `mouseup`，**不能用拖拽**。
+      上轮我因此差点把"功能全好"误报成"划词条坏了"。
+    - **划词工具条的按钮要用 `p.click()`**，不能 `mouse.down()/up()`：工具条在 `pointerdown` 上 `preventDefault()`
+      （防点按钮时选区塌掉），手搓 down/up 走不完 pointer 序列 → 事件不触发。
+    - **高亮用 CSS Custom Highlight API 实现，不产生 `<mark>`** → 检测要读 `CSS.highlights.keys()/get().size`，
+      数 `mark` 元素恒为 0，会假报"高亮失效"。
+    - **路由枚举别手工拼斜杠**：`"/" + rel` 对 `index.html` 会拼出 `//`，浏览器把它当协议相对 URL 解析
+      → `history.replaceState` 抛 `SecurityError: A history state object with URL 'http:...0.0.0.2' cannot be created`，
+      一次跑出 216 条假错误。正确写法见本批脚本（`index.html` → `/`，`*/index.html` → 去尾加 `/`）。
+    - **`index.html` 里查不到 `searchHistory` / `最近搜索` 属正常**：它们在 Svelte 岛运行时里；
+      而划词工具条是 `is:inline`，**内联在 index.html**（所以它的修复要 grep `index.html`，不是 grep chunk）。
 - **⑤ 未做**：B4 修订史等仍需他拍板（见第一节）。
 
 ### 2026-10-13 第三批：分页页 title 修复（**已上线 V0.1.42**）+ DSH 自身两个缺陷定位与修复（待重启）

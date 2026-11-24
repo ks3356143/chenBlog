@@ -26,7 +26,7 @@
     "@astrojs/svelte": "^9.0.0",
     "@fancyapps/ui": "^6.1.14",
     "@tailwindcss/vite": "^4.3.1",
-    "astro": "7.4.10",
+    "astro": "7.4.13",
     "astro-expressive-code": "^0.44.2",
     "astro-icon": "^1.1.5",
     "markdown-it": "^15.0.2",

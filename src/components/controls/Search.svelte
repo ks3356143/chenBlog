@@ -239,7 +239,13 @@
 		recent = readRecent();
 
 		const onDocClick = e => {
-			if (!/** @type {any} */(e.target)?.closest?.("[data-search-root]")) closeAll();
+			const t = /** @type {any} */ (e.target);
+			// ⚠️ 先判 isConnected：keyed {#each} 里「删掉当前项」的按钮点下去，
+			// 元素自身的 onclick 先把该项从 DOM 拔掉，冒泡到 document 时 e.target
+			// 已经脱离文档 → closest() 返回 null → 被误判成「点在搜索区外」而关面板。
+			// 表现为「点 × 删一条，整个搜索面板跟着消失」（2026-11-24 实测）。
+			if (t && !t.isConnected) return;
+			if (!t?.closest?.("[data-search-root]")) closeAll();
 		};
 		// Ctrl+K / ⌘K：全站唤起。用 reinitOnce 语义——Header 在 Swup 容器外，
 		// 搜索岛只在首屏挂一次，这个监听也就只该挂一次（onMount 已在岛内，天然只跑一次）。

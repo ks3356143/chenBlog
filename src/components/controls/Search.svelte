@@ -245,6 +245,12 @@
 			// 已经脱离文档 → closest() 返回 null → 被误判成「点在搜索区外」而关面板。
 			// 表现为「点 × 删一条，整个搜索面板跟着消失」（2026-11-24 实测）。
 			if (t && !t.isConnected) return;
+			// ⚠️ 划词工具条（#selection-toolbar）挂在 body 下、不在搜索区里。点它的「搜索」
+			// 按钮会派发 blog:search-with 把面板打开，紧接着这次 click 冒泡到 document，
+			// 就被判成「点在搜索区外」→ 当场关掉刚打开的面板。
+			// 实测时序：microtask 时 panel:true，冒泡 click 后 setTimeout0 时 panel:false。
+			// 表现为「划词点搜索，面板闪一下消失」（2026-11-24 实测）。
+			if (t?.closest?.("#selection-toolbar")) return;
 			if (!t?.closest?.("[data-search-root]")) closeAll();
 		};
 		// Ctrl+K / ⌘K：全站唤起。用 reinitOnce 语义——Header 在 Swup 容器外，

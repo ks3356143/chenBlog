@@ -129,8 +129,13 @@ import { Icon } from "astro-icon/components"
                 return
             }
             frozenText = info.text
-            // 同一个词的命中还在 → 按钮显示「取消」，让用户能一键收掉满屏底色
-            var isOn = activeWord && activeWord === info.text.toLowerCase()
+            // 同一个词的命中还在 → 按钮显示「取消」，让用户能一键收掉满屏底色。
+            // ⚠️ 必须跟 click 分支一样先截到 40 字：applyHighlight 存进 activeWord 的是
+            // text.slice(0,40)，这里若拿完整 info.text 去比，选区一超过 40 字就永不相等
+            // （三击选整段必然超）→ 按钮永远显示「高亮」、class 也永远不带 is-on。
+            // 表现为「高亮明明生效了，按钮却不显示取消」（2026-11-24 实测）。
+            var cmpWord = info.text.length > 40 ? info.text.slice(0, 40) : info.text
+            var isOn = activeWord && activeWord === cmpWord.toLowerCase()
             if (hlLabel) hlLabel.textContent = isOn ? "取消" : "高亮"
             if (hlBtn) hlBtn.classList.toggle("is-on", !!isOn)
             placeToolbar(info.rect)

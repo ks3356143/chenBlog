@@ -93,8 +93,20 @@
 		const applyTheme = () => {
 			const element = document.documentElement
 			const isDark = element.dataset.theme === "dark"
-			element.dataset.theme = isDark ? "light" : "dark"
-			localStorage.setItem("theme", isDark ? "light" : "dark")
+			const next = isDark ? "light" : "dark"
+			// 用户点选 = 显式选择：这里**必须**写存储（BaseLayout 只在"没存值"时跟随系统）。
+			// 写完之后交给 BaseLayout 那段统一落 DOM：它同时负责 data-theme 与
+			// <meta name="theme-color">（A2），避免两处各写一套色值。
+			try {
+				localStorage.setItem("theme", next)
+			} catch {
+				/* 隐私模式：存储写不进去就退化成只改本次会话的 DOM */
+			}
+			if (typeof window.__applyTheme === "function") {
+				window.__applyTheme()
+			} else {
+				element.dataset.theme = next
+			}
 		}
 
 		const handleToggleClick = () => {

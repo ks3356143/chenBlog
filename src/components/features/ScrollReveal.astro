@@ -34,6 +34,22 @@
 		});
 		if (!nodes.length) return;
 
+		// C1 交错入场（2026-11-24 第五十八批）：同一父容器内的兄弟依次错开 40ms。
+		// 为什么用 JS 写内联自定义属性、而不是 CSS 的 sibling-index() / attr(type(<number>))：
+		// 那两个到 2026-11 仍只在 Chrome 133+/138+ 可用（Firefox 未落地），不支持的浏览器
+		// 整排同时进场 —— 与"没有这条效果"没区别，却要多写特性查询。一个循环就够的事别赌浏览器。
+		// ⚠️ 只设**自定义属性**，不碰 transition 本身（五-22：内联 style 压过样式表，
+		//    这里恰好是用内联传值、由样式表决定怎么用，同 displaySettings 传色相的套路）。
+		// 封顶 5 档（200ms）：首页一次能出十几张卡，纯线性延迟会让最后一张晚 500ms 才出现，
+		// 滚得快的用户看到的是"一片空白慢慢填空"——不像节奏，像卡顿。
+		var counter = new Map();
+		nodes.forEach(function (el) {
+			var parent = el.parentElement;
+			var i = counter.get(parent) || 0;
+			counter.set(parent, i + 1);
+			el.style.setProperty("--reveal-delay", Math.min(i, 5) * 40 + "ms");
+		});
+
 		// reduced-motion：不 observe，直接判完成；<html> 上的门控类也不加 → 内容一直是可见的
 		if (reduce || !("IntersectionObserver" in window)) {
 			nodes.forEach(function (el) {
@@ -87,9 +103,17 @@
 		transform: translateY(14px);
 	}
 
+	/* C1 交错入场：延迟由 JS 写进 --reveal-delay（每个 40ms、封顶 200ms） */
+	html.reveal-ready [data-reveal]:not([data-reveal-done]) {
+		transition-delay: var(--reveal-delay, 0ms);
+	}
+
 	html.reveal-ready [data-reveal-done] {
 		opacity: 1;
 		transform: none;
+		/* 播完必须把延迟清掉：否则元素被 unobserve 后再有任何 transform/opacity 变化，
+		   都会先等这段 delay 才开始，表现为"hover 迟滞" */
+		transition-delay: 0ms;
 	}
 
 	/* 兜底：即使脚本还没跑到加类那一步，reduced-motion 用户也绝不看动画 */

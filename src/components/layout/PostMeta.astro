@@ -29,6 +29,9 @@ const {
 	pinned,
 } = Astro.props
 const className = Astro.props.className
+// ⚠️ 2026-11-24 核：字数与阅读时长**这篇详情页已经单独渲染了**
+//    （`posts/[...slug].astro` 标题上方那两格「N 字 / N 分钟」，读 remarkPluginFrontmatter）。
+//    所以本组件刻意不再加一份，否则同一屏出现两遍。B7 这条属"早已存在的功能"，不是待办。
 ---
 
 <div

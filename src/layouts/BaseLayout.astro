@@ -69,32 +69,84 @@ const reinitVersion = createHash("sha256")
         <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/site.webmanifest" />
+        <!-- A2：地址栏/状态栏取色（安卓 Chrome、Edge、部分桌面浏览器）。
+             ⚠️ 只能是**单值**、由下面那段脚本按 data-theme 改写 content——
+                写两条 media="(prefers-color-scheme: dark)" 的会被「跟随系统」之外的
+                手动切主题绕过去（用户选了暗色但系统是亮色 → 地址栏还是亮的）。
+                 初值取亮色，脚本同步执行会在首帧前改掉，不会闪。 -->
+        <meta name="theme-color" id="theme-color-meta" content="#e9f1ed" />
         <meta name="generator" content={Astro.generator} />
         <title>{documentTitle}</title>
         <SEO {...Astro.props} />
         <!-- 「导航后重 init」注册表：必须在 body 之前同步执行——容器内的 is:inline 脚本在解析期就要拿到 window.onReinit -->
         <script is:inline src={`/assets/js/reinit.js?v=${reinitVersion}`}></script>
         <script is:inline>
-            const setTheme = () => {
-                const theme = (() => {
-                    if (typeof localStorage != "undefined" && localStorage.getItem("theme")) {
-                        return localStorage.getItem("theme")
-                    }
-                    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-                        return "dark"
-                    }
-                    return "light"
-                })()
-                if (theme === "light") {
-                    document.documentElement.setAttribute("data-theme", "light")
-                } else {
-                    document.documentElement.setAttribute("data-theme", "dark")
-                }
-                window.localStorage.setItem("theme", theme || "light")
-            }
-            setTheme()
+            // 主题解析与落盘（2026-11-24 第五十八批 A1 修缺陷）。
+            //
+            // 🔴 改前两个真缺陷（实测取证，别再改回去）：
+            //   ① `localStorage.setItem("theme", theme)` 把**推导出来的值**也写回存储 →
+            //      首次访问时系统是暗色就被钉成 "dark"，之后系统切成亮色也永远不跟。
+            //      「跟随系统」实际只生效一次。现在**只在用户显式点选时写**，没存值 = 跟随系统。
+            //   ② 全站没有一处监听 `prefers-color-scheme` 变化 → 页面开着时切系统主题毫无反应。
+            //      现在挂一个 change 监听，且只在「没有显式选择」时才跟随（用户选过就别抢）。
+            //
+            // ⚠️ 整段包在 IIFE 里：is:inline 是经典脚本，顶层 const 会变成全局词法绑定，
+            //    与 ThemeIcon 那段的 `setToggleListener` 同族（十-11 抛过 setTheme 重复声明）。
+            // ⚠️ 仍然必须保持同步执行（head 里、body 之前）——晚一拍就是白屏闪烁。
+            ;(function () {
+                var KEY = "theme"
+                var COLOR = { light: "#e9f1ed", dark: "#080f0c" } // 与 global.css 的 --page-bg 同值
 
-            document.addEventListener("astro:after-swap", setTheme)
+                function readSaved() {
+                    try {
+                        var v = window.localStorage.getItem(KEY)
+                        return v === "light" || v === "dark" ? v : null
+                    } catch (e) {
+                        return null // 隐私模式 / 禁用存储：当没选过，跟随系统
+                    }
+                }
+
+                function prefersDark() {
+                    try {
+                        return window.matchMedia("(prefers-color-scheme: dark)").matches
+                    } catch (e) {
+                        return false
+                    }
+                }
+
+                // 显式选择优先，否则跟随系统
+                function resolveTheme() {
+                    return readSaved() || (prefersDark() ? "dark" : "light")
+                }
+
+                function applyTheme() {
+                    var theme = resolveTheme()
+                    document.documentElement.setAttribute("data-theme", theme)
+                    // A2：安卓 Chrome/Edge 的地址栏与状态栏读这个 meta，不补就永远是默认色
+                    var meta = document.getElementById("theme-color-meta")
+                    if (meta) meta.setAttribute("content", COLOR[theme] || COLOR.light)
+                    return theme
+                }
+
+                // 给 ThemeToggle / DisplaySettings 用：它们改完存储后调一次，避免各写一套
+                window.__applyTheme = applyTheme
+                window.__resolveTheme = resolveTheme
+
+                applyTheme()
+                document.addEventListener("astro:after-swap", applyTheme)
+
+                try {
+                    var mq = window.matchMedia("(prefers-color-scheme: dark)")
+                    var onSchemeChange = function () {
+                        // 用户显式选过亮/暗 → 不跟随系统，避免"我选了暗色它自己变亮"
+                        if (!readSaved()) applyTheme()
+                    }
+                    if (typeof mq.addEventListener === "function") mq.addEventListener("change", onSchemeChange)
+                    else if (typeof mq.addListener === "function") mq.addListener(onSchemeChange) // Safari < 14
+                } catch (e) {
+                    /* 没有 matchMedia 就停在首次解析的结果上，不影响可用性 */
+                }
+            })()
         </script>
         <!-- 插槽：katex选择性加载css -->
         <slot name="head" />

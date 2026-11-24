@@ -66,6 +66,28 @@ import { Icon } from "astro-icon/components"
 	<!-- ===== 外观 ===== -->
 	<div class="dp-panel is-active" data-dp-panel="appearance">
 		<div class="section-title">
+			明暗主题
+			<button type="button" class="dp-reset" data-dp-reset="theme" aria-label="重置明暗主题" title="重置">
+				<Icon name="material-symbols:restart-alt" aria-hidden="true" />
+			</button>
+		</div>
+		<div class="dp-row">
+			<button type="button" class="dp-choice" data-dp-theme="system">
+				<Icon name="material-symbols:brightness-auto" aria-hidden="true" />
+				<span>跟随系统</span>
+			</button>
+			<button type="button" class="dp-choice" data-dp-theme="light">
+				<Icon name="material-symbols:light-mode" aria-hidden="true" />
+				<span>亮色</span>
+			</button>
+			<button type="button" class="dp-choice" data-dp-theme="dark">
+				<Icon name="material-symbols:dark-mode" aria-hidden="true" />
+				<span>暗色</span>
+			</button>
+		</div>
+		<p class="dp-hint">跟随系统时会随设备的深色模式自动切换；选了亮/暗就固定下来。</p>
+
+		<div class="section-title">
 			主题色相
 			<button type="button" class="dp-reset" data-dp-reset="hue" aria-label="重置主题色相" title="重置">
 				<Icon name="material-symbols:restart-alt" aria-hidden="true" />
@@ -247,6 +269,7 @@ import { Icon } from "astro-icon/components"
 
 <script>
 	import { displaySettings, displaySettingsKeys as KEYS } from "@/config/displaySettings"
+	import type { ThemeMode } from "@/config/displaySettings"
 
 	type Layout = "list" | "grid"
 
@@ -287,6 +310,48 @@ import { Icon } from "astro-icon/components"
 		write(KEYS.hue, String(hue))
 		syncDirty()
 	})
+
+	// ---------- 明暗主题（A1，2026-11-24 第五十八批） ----------
+	// 🔴 与 ThemeIcon 分工：顶栏那枚按钮 = 亮 ↔ 暗直接切（写死值）；
+	//    这里是三态，多出来的一档「跟随系统」= **删掉存储键**。
+	//    两边都落到 window.__applyTheme()（BaseLayout head 里那段）去改 DOM + theme-color meta，
+	//    不各写一套色值 —— 否则地址栏颜色会和页面底色对不上。
+	const themeMode = (): ThemeMode => {
+		const saved = read(KEYS.themeMode, "")
+		return saved === "light" || saved === "dark" ? saved : displaySettings.themeMode
+	}
+
+	const setThemeMode = (mode: ThemeMode) => {
+		try {
+			if (mode === "system") localStorage.removeItem(KEYS.themeMode)
+			else localStorage.setItem(KEYS.themeMode, mode)
+		} catch {
+			/* 隐私模式：存储写不进去，本次会话仍按下面的 DOM 改动生效 */
+		}
+		const apply = (window as unknown as { __applyTheme?: () => void }).__applyTheme
+		if (typeof apply === "function") {
+			apply()
+		} else {
+			root.setAttribute("data-theme", mode === "system" ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : mode)
+		}
+		syncDirty()
+	}
+
+	document.querySelectorAll<HTMLButtonElement>("[data-dp-theme]").forEach(btn => {
+		btn.addEventListener("click", () => setThemeMode(btn.dataset.dpTheme as ThemeMode))
+	})
+
+	// 系统主题变化时，如果当前是「跟随系统」，面板里的选中态还在「跟随系统」不用动；
+	// 但顶栏那枚按钮的图标 / 页面已由 BaseLayout 的 change 监听改好了 —— 这里只补一次
+	// syncDirty，保证「系统切了但面板打开着」时选中的仍是正确那一档。
+	try {
+		const mqTheme = window.matchMedia("(prefers-color-scheme: dark)")
+		const onScheme = () => syncDirty()
+		if (typeof mqTheme.addEventListener === "function") mqTheme.addEventListener("change", onScheme)
+		else if (typeof mqTheme.addListener === "function") mqTheme.addListener(onScheme)
+	} catch {
+		/* 没有 matchMedia 就算了，不影响手动切换 */
+	}
 
 	// ---------- 文章布局 ----------
 	const listContainer = () => document.getElementById("post-list-container")
@@ -460,6 +525,9 @@ import { Icon } from "astro-icon/components"
 
 	// ---------- 重置（每个 section 右侧那枚按钮） ----------
 	const resets: Record<string, () => void> = {
+		theme: () => {
+			setThemeMode(displaySettings.themeMode)
+		},
 		hue: () => {
 			applyHue(displaySettings.hue)
 			try {
@@ -551,6 +619,13 @@ import { Icon } from "astro-icon/components"
 		panel.setAttribute("aria-hidden", open ? "false" : "true")
 		trigger?.setAttribute("aria-expanded", open ? "true" : "false")
 		document.body.classList.toggle("display-panel-open", open)
+		// 面板是「关着的时候也可能被别处改掉」的：顶栏那枚主题按钮会写同一个存储键，
+		// 但它在另一个组件里、改完不会通知这里 → 每次打开都从存储回读一遍选中态，
+		// 否则会出现「刚从顶栏切到暗色，打开面板还显示跟随系统」的错位。
+		if (open) {
+			syncSwitchStates()
+			syncDirty()
+		}
 	}
 
 	trigger?.addEventListener("click", e => {
@@ -594,6 +669,7 @@ import { Icon } from "astro-icon/components"
 	// 有改动过的项 → 它的重置按钮才亮（参考站同款：默认 opacity-0 pointer-events-none disabled）
 	function syncDirty() {
 		const dirty: Record<string, boolean> = {
+			theme: read(KEYS.themeMode, "") !== "",
 			hue: read(KEYS.hue, "") !== "",
 			layout: read(KEYS.postListLayout, "") !== "",
 			cardBorder: read(KEYS.cardBorderEnabled, "") !== "",
@@ -621,9 +697,14 @@ import { Icon } from "astro-icon/components"
 		document.querySelectorAll<HTMLButtonElement>("[data-dp-reader-width]").forEach(b => {
 			b.classList.toggle("is-active", b.dataset.dpReaderWidth === width)
 		})
-		const font = readerState(KEYS.readerFont)
+		const dial = readerState(KEYS.readerFont)
 		document.querySelectorAll<HTMLButtonElement>("[data-dp-reader-font]").forEach(b => {
-			b.classList.toggle("is-active", b.dataset.dpReaderFont === font)
+			b.classList.toggle("is-active", b.dataset.dpReaderFont === dial)
+		})
+		// 明暗三态的选中态（与上面同款：从存储回读，不缓存）
+		const mode = themeMode()
+		document.querySelectorAll<HTMLButtonElement>("[data-dp-theme]").forEach(b => {
+			b.classList.toggle("is-active", b.dataset.dpTheme === mode)
 		})
 	}
 

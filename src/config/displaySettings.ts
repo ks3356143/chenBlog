@@ -17,6 +17,13 @@ export type ReaderSize = "s" | "m" | "l"
 export type ReaderWidth = "narrow" | "mid" | "wide"
 export type ReaderFont = "sans" | "serif"
 
+// 明暗主题（2026-11-24 第五十八批 A1）。
+// 🔴 语义与别的项不同：**存储里没有 "theme" 这个键 = 跟随系统**，
+//    只有用户显式选了亮/暗才写值。所以这里的 `system` 不是一个存进 localStorage 的值，
+//    而是「删掉这个键」的别名 —— 面板上那枚「跟随系统」按钮做的就是 removeItem。
+//    BaseLayout head 里那段解析脚本按同一套语义读：有值就认、没值看 prefers-color-scheme。
+export type ThemeMode = "system" | "light" | "dark"
+
 export const displaySettings = {
     // 主题色相 0-360。175 = 本站原始品牌色 #00705c 的 oklch 色相，
     // 也就是「没动过」的状态；改它时 global.css 里那一族 oklch 变量整片跟着转。
@@ -43,6 +50,10 @@ export const displaySettings = {
     readerSize: "m" as ReaderSize,
     readerWidth: "wide" as ReaderWidth,
     readerFont: "sans" as ReaderFont,
+
+    // 主题模式。默认 system（= 不写 "theme" 键，跟随系统），与修复前的实际行为一致：
+    // 老访客即使存储里已经被钉成 light/dark，读出来也照旧，不需要迁移。
+    themeMode: "system" as ThemeMode,
 } as const
 
 export const displaySettingsKeys = {
@@ -55,4 +66,6 @@ export const displaySettingsKeys = {
     readerSize: "readerSize",
     readerWidth: "readerWidth",
     readerFont: "readerFont",
+    // ⚠️ 与 BaseLayout.astro head 里那段脚本的 KEY 必须逐字一致（那边是 is:inline 纯 JS，没法 import）
+    themeMode: "theme",
 } as const

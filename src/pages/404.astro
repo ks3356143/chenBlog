@@ -82,16 +82,122 @@ const links = [
 				}
 			</div>
 
+			<!-- B4（2026-11-24 第五十八批）：本页自带搜索框 + 随机一篇。
+			     改前这里只有一句「也可以在顶栏那排输入框里直接搜关键词」——让人自己去顶栏找，
+			     而访客正是在这页最需要搜索的时候。搜索走后端 Pagefind 索引，零新增依赖：
+			     输入框只负责收集关键词，提交后派发 blog:search-with，由 Search.svelte 统一
+			     打开结果面板（全站「打开搜索」只有那一处实现，别再写第二套）。
+			     ⚠️ 本页是 dist/404.html、不走 Swup，但按钮仍用事件委托 + 运行时读取，
+			        这样即使将来被当普通页软导航进来也不会重复绑监听。 -->
+			<div class="mb-7 border-t border-dashed border-(--line-divider) pt-6">
+				<form id="nf-search-form" class="flex items-stretch" role="search" autocomplete="off">
+					<label for="nf-search-input" class="sr-only">站内搜索</label>
+					<input
+						id="nf-search-input"
+						type="text"
+						inputmode="search"
+						placeholder="搜点别的？输入关键词，回车"
+						class="h-11 min-w-0 flex-1 border border-(--line-divider) bg-transparent px-3 text-sm outline-none placeholder:text-30 focus:border-(--primary)"
+					/>
+					<button
+						type="submit"
+						class="btn-regular h-11 shrink-0 cursor-pointer border border-(--line-divider) px-4 active:scale-[0.98]"
+					>
+						<Icon name="material-symbols:search" class="text-lg" />
+					</button>
+				</form>
+				<div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+					<button
+						type="button"
+						id="nf-random-post"
+						class="btn-plain h-9 cursor-pointer border border-(--line-divider) px-3 text-sm active:scale-[0.98]"
+					>
+						<Icon name="material-symbols:casino" class="mr-1 text-lg" />
+						<span>随便看一篇</span>
+					</button>
+					<span class="text-xs text-neutral-400 dark:text-neutral-500">从已发布文章里随机挑一篇</span>
+				</div>
+			</div>
+
 			<div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-neutral-500 dark:text-neutral-400">
-				<span>也可以在顶栏那排输入框里直接搜关键词。</span>
 				<button
 					type="button"
 					class="btn-regular cursor-pointer px-4 py-2 active:scale-[0.98]"
-					onclick="history.length > 1 ? history.back() : (location.href = '/')"
+					id="nf-back"
 				>
 					返回上一页
 				</button>
 			</div>
 		</div>
 	</div>
+
+	<!-- B4 交互（2026-11-24 第五十八批）。必须写在 <Layout> 里面：
+	     Layout 自己输出完整的 <html>…</html>，放它后面脚本会落到 </html> 之后（浏览器容忍但结构不合法）。
+	     两条都挂 document 上、用 reinitOnce 只挂一次；
+	     用事件委托而不是回到具体节点，这样即使将来被当普通页软导航进来也不会重复绑定。 -->
+	<script is:inline>
+		window.reinitOnce("nf-actions", function () {
+			// pickRandomPost 收在回调里，不往全局丢函数名（软导航重入时也不会重复声明）
+			function pickRandomPost(btn) {
+				function go(all) {
+					if (!all || !all.length) return
+					// 排除加密文章（纯静态站里 password 只隐藏评论区，但推荐位一贯排除它）
+					var pool = all.filter(function (p) {
+						return p && p.id && !p.password
+					})
+					if (!pool.length) pool = all
+					var pick = pool[Math.floor(Math.random() * pool.length)]
+					location.href = "/posts/" + pick.id + "/"
+				}
+				if (window.__allPostMetaCache) {
+					go(window.__allPostMetaCache)
+					return
+				}
+				btn.disabled = true
+				fetch("/api/allPostMeta.json")
+					.then(function (r) {
+						return r.json()
+					})
+					.then(function (data) {
+						window.__allPostMetaCache = data
+						go(data)
+					})
+					.catch(function () {
+						btn.disabled = false
+					})
+			}
+
+			document.addEventListener("submit", function (e) {
+				var form = e.target
+				if (!form || form.id !== "nf-search-form") return
+				e.preventDefault()
+				var input = document.getElementById("nf-search-input")
+				var word = input && input.value ? input.value.trim() : ""
+				if (!word) {
+					if (input) input.focus()
+					return
+				}
+				// 交给 Search.svelte 的收口：它会开面板、灌关键词并聚焦输入框
+				document.dispatchEvent(new CustomEvent("blog:search-with", { detail: { query: word } }))
+			})
+
+			document.addEventListener("click", function (e) {
+				var t = e.target
+				var btn = t && t.closest ? t.closest("#nf-random-post") : null
+				if (btn) {
+					e.preventDefault()
+					pickRandomPost(btn)
+					return
+				}
+				var back = t && t.closest ? t.closest("#nf-back") : null
+				if (back) {
+					e.preventDefault()
+					// 与改前的内联 onclick 行为一致：有历史就退，没有就回首页
+					if (history.length > 1) history.back()
+					else location.href = "/"
+				}
+			})
+			return true
+		})
+	</script>
 </Layout>

@@ -27,6 +27,7 @@ import FloatingControls from "@/components/controls/FloatingControls.astro"
 // 滚动渐入：放在 Layout 顶层（Swup 容器之外）→ 脚本只求值一次，
 // 靠 onReinit 在每趟软导航后重新标记新插入的列表项
 import ScrollReveal from "@/components/features/ScrollReveal.astro"
+import SelectionToolbar from "@/components/features/SelectionToolbar.astro"
 import CardSpotlight from "@/components/features/CardSpotlight.astro"
 import CopyRing from "@/components/features/CopyRing.astro"
 import MagneticButtons from "@/components/features/MagneticButtons.astro"
@@ -201,4 +202,6 @@ const isHomePage = pathname === "/" || /^\/\d+$/.test(pathname)
     <KeyboardShortcuts />
     <!-- C4 上次读到 N% · 继续阅读：只在文章页显示，跨软导航节点不替换 -->
     <ResumeReading />
+    <!-- B1+B2 划词工具条（复制/搜索/高亮）：fine pointer 才启用，节点常驻、只建一次 -->
+    <SelectionToolbar />
 </BaseLayout>

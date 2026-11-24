@@ -25,6 +25,58 @@
 	/** @type {any} */
 	let pf = null;
 
+	/**
+	 * B3 最近搜索（2026-11-24 第五十八批）。
+	 * 存的是**用户真用过**的词，不是"打过的每个前缀"——只在按 Enter 或点开某条结果时才落盘，
+	 * 否则边打字边存会把 `c` `cs` `css` 全塞进去，历史列表立刻变成噪声。
+	 * 上限 6 条，新的在前，重复词提到队首（不做去重合并出两条）。
+	 */
+	const RECENT_KEY = "searchHistory";
+	const RECENT_MAX = 6;
+	let recent = $state(/** @type {string[]} */ ([]));
+
+	function readRecent() {
+		try {
+			const raw = localStorage.getItem(RECENT_KEY);
+			if (!raw) return [];
+			const list = JSON.parse(raw);
+			if (!Array.isArray(list)) return [];
+			return list.filter(x => typeof x === "string" && x.trim()).slice(0, RECENT_MAX);
+		} catch {
+			return [];
+		}
+	}
+
+	function writeRecent(list) {
+		recent = list.slice(0, RECENT_MAX);
+		try {
+			localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
+		} catch {
+			/* 隐私模式写不进去：本次会话内存里还有，刷新就没了，可接受 */
+		}
+	}
+
+	/** @param {string} q */
+	function pushRecent(q) {
+		const word = String(q || "").trim();
+		if (!word) return;
+		const rest = recent.filter(x => x !== word);
+		writeRecent([word, ...rest]);
+	}
+
+	function removeRecent(word) {
+		writeRecent(recent.filter(x => x !== word));
+	}
+
+	function clearRecent() {
+		recent = [];
+		try {
+			localStorage.removeItem(RECENT_KEY);
+		} catch {
+			/* ignore */
+		}
+	}
+
 	const RESULT_LIMIT = 12;
 	/** 平台快捷键前缀：macOS 显示 ⌘K，其余显示 Ctrl K */
 	let modKey = $state("Ctrl");
@@ -165,6 +217,12 @@
 			desktopInput?.blur();
 			return;
 		}
+		// B3：Enter = 明确认可这个词 → 落进历史（只打不确认的中间态不存）
+		if (e.key === "Enter") {
+			const word = query.trim();
+			if (word) pushRecent(word);
+			return;
+		}
 		if (e.key === "ArrowDown" || e.key === "ArrowUp") {
 			const links = Array.from(document.querySelectorAll("[data-search-result]"));
 			if (!links.length) return;
@@ -177,6 +235,8 @@
 
 	onMount(() => {
 		if (/Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent)) modKey = "⌘";
+		// B3：首屏回读一次历史（岛只挂一次，不用在切页时重读）
+		recent = readRecent();
 
 		const onDocClick = e => {
 			if (!/** @type {any} */(e.target)?.closest?.("[data-search-root]")) closeAll();
@@ -193,14 +253,31 @@
 		// 全站「打开并聚焦搜索」只有 focusSearch 一处实现，Ctrl+K 与 / 完全同行为
 		// （含移动端开面板、已有内容全选）。Header 在 Swup 容器外，本监听天然只挂一次。
 		const onFocusSearchEvent = () => focusSearch();
+		// B1 划词工具条的「搜索」：带着选中文字直接搜。
+		// 不复用 focusSearch 是因为它只聚焦不清空——用户选了一段话点搜索，
+		// 期望的是"立刻看到这段文字的搜索结果"，而不是光标停在旧关键词上。
+		const onSearchWith = e => {
+			const word = String(e?.detail?.query || "").trim();
+			if (!word) return;
+			ensureIndex();
+			mobileOpen = true;
+			query = word;
+			pushRecent(word);
+			tick().then(() => {
+				const el = window.innerWidth >= 1024 ? desktopInput : mobileInput;
+				(el || desktopInput || mobileInput)?.focus();
+			});
+		};
 		document.addEventListener("keydown", onShortcut);
 		document.addEventListener("blog:focus-search", onFocusSearchEvent);
+		document.addEventListener("blog:search-with", onSearchWith);
 		document.addEventListener("click", onDocClick);
 		// Header 在 Swup 容器外不会被替换，切页后手动收一次
 		document.addEventListener("swup:contentReplaced", closeAll);
 		return () => {
 			document.removeEventListener("keydown", onShortcut);
 			document.removeEventListener("blog:focus-search", onFocusSearchEvent);
+			document.removeEventListener("blog:search-with", onSearchWith);
 			document.removeEventListener("click", onDocClick);
 			document.removeEventListener("swup:contentReplaced", closeAll);
 		};
@@ -319,10 +396,42 @@
 					{:else if loading}
 						<p class="px-3 py-6 text-center text-sm text-30">搜索中…</p>
 					{:else if !query.trim()}
-						<p class="px-3 py-6 text-center text-sm text-30">
-							输入关键词开始搜索，↑↓ 选择、Esc 关闭
-							<span class="mt-1 block text-xs text-30/80">快捷键 {modKey}+K 随时唤起</span>
-						</p>
+						{#if recent.length}
+							<!-- B3 最近搜索：只有「词为空」这一态才出现，不跟结果列表抢空间 -->
+							<div class="px-3 py-2">
+								<div class="mb-1.5 flex items-center justify-between">
+									<span class="text-xs font-bold text-30">最近搜索</span>
+									<button
+										type="button"
+										class="text-xs text-30 transition-colors hover:text-(--primary)"
+										onclick={clearRecent}
+									>清空</button>
+								</div>
+								<ul class="flex flex-wrap gap-1.5">
+									{#each recent as word (word)}
+										<li class="group/recent relative flex items-center">
+											<button
+												type="button"
+												class="recent-chip"
+												onclick={() => { query = word; pushRecent(word); }}
+											>{word}</button>
+											<button
+												type="button"
+												class="recent-chip-x"
+												aria-label={`移除 ${word}`}
+												onclick={() => removeRecent(word)}
+											>×</button>
+										</li>
+									{/each}
+								</ul>
+							</div>
+							<p class="px-3 pb-3 text-center text-xs text-30/80">↑↓ 选择、Esc 关闭 · {modKey}+K 随时唤起</p>
+						{:else}
+							<p class="px-3 py-6 text-center text-sm text-30">
+								输入关键词开始搜索，↑↓ 选择、Esc 关闭
+								<span class="mt-1 block text-xs text-30/80">快捷键 {modKey}+K 随时唤起</span>
+							</p>
+						{/if}
 					{:else if !results.length}
 						<p class="px-3 py-6 text-center text-sm text-30">没有找到「{query.trim()}」相关内容</p>
 					{:else}
@@ -333,7 +442,7 @@
 										href={r.url}
 										data-search-result
 										class="group flex flex-col gap-0.5 px-3 py-2.5 transition-colors hover:bg-(--btn-plain-bg-hover) focus:bg-(--btn-plain-bg-hover)"
-										onclick={closeAll}
+										onclick={() => { pushRecent(query); closeAll(); }}
 									>
 										<span class="truncate text-sm font-bold text-90 group-hover:text-(--primary)">
 											{@html highlightTitle(r.meta?.title || r.url, query)}
@@ -511,5 +620,67 @@
 		background-color: color-mix(in oklch, var(--primary) 12%, transparent);
 		border-radius: 2px;
 		padding: 0 1px;
+	}
+
+	/* ══ B3 最近搜索词条（2026-11-24 第五十八批）══════════════════════════
+	   形态对齐全站：直角、1px --line-divider 描边、hover 转品牌色。
+	   ⚠️ 不用 rounded-full 药丸（与面板直角语言冲突，AGENTS 五-16③）。
+	   ⚠️ × 按钮默认 opacity-0、hover 词条才出现，但**键盘 focus 也要能出现**（无障碍），
+	      所以选择器里同时带 :focus-visible —— 别只写 group-hover。 */
+	.recent-chip {
+		padding: 0.25rem 0.5rem;
+		border: 1px solid var(--line-divider);
+		background: transparent;
+		color: var(--text-color);
+		font-size: 0.75rem;
+		line-height: 1.4;
+		cursor: pointer;
+		transition:
+			color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+			border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+			background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.recent-chip:hover,
+	.recent-chip:focus-visible {
+		color: var(--primary);
+		border-color: color-mix(in oklch, var(--primary) 45%, var(--line-divider));
+		background: var(--btn-plain-bg-hover);
+		outline: none;
+	}
+
+	.recent-chip-x {
+		position: absolute;
+		top: -0.35rem;
+		right: -0.35rem;
+		width: 1rem;
+		height: 1rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid var(--line-divider);
+		background: var(--card-bg);
+		color: var(--text-color-secondary);
+		font-size: 0.75rem;
+		line-height: 1;
+		cursor: pointer;
+		opacity: 0;
+		transition: opacity 0.15s ease, color 0.15s ease;
+	}
+
+	li:hover > .recent-chip-x,
+	.recent-chip-x:focus-visible {
+		opacity: 1;
+	}
+
+	.recent-chip-x:hover {
+		color: var(--primary);
+	}
+
+	/* 触屏没有 hover：× 一直显示（否则永远删不掉） */
+	@media (hover: none) {
+		.recent-chip-x {
+			opacity: 1;
+		}
 	}
 </style>

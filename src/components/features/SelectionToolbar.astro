@@ -1,0 +1,402 @@
+---
+/**
+ * B1 划词工具条 + B2 命中高亮（2026-11-24 第五十八批）。
+ *
+ * 做什么：在正文里选中一段文字 → 选区上方浮出一条直角小工具条，三个动作：
+ *   ① 复制      复制选中文字（纯 HTTP 裸 IP 下没有 navigator.clipboard → 走 execCommand，五-38）
+ *   ② 搜索      把选中文字直接灌进顶栏搜索框并聚焦（派发 blog:search-with，Search.svelte 收口）
+ *   ③ 高亮/取消  用 **CSS Custom Highlight API** 把「选中词」在全文里的每一处命中都标出来，
+ *                不插 DOM 节点、不改 innerHTML → 不会被 Swup 冲掉、也不会污染 Pagefind 索引。
+ *
+ * 🔴 六条实现约束（都是本站踩过的）：
+ * ① 面板语言是**直角**（五-16③）、颜色走 --primary / --card-bg / --line-divider，
+ *    样式必须写在 global.css（本组件挂在 Swup 容器外，但只有渲染了它的页面才带 scoped
+ *    <style>，而 Swup 不换 head → 视觉规则进全局，十-2）。
+ * ② is:inline 不转译 → 只能写纯 JS，不能写 TS 断言（五-39）。
+ * ③ document / window 级监听只挂一次（reinitOnce，十-14）；本组件节点本身永不随导航替换
+ *    （挂在 Layout 最外层），所以工具条 DOM 也只建一次。
+ * ④ **只在 (hover: hover) and (pointer: fine) 上启用**：触屏浏览器自带选区菜单，
+ *    再叠一条自绘的会互相打架（安卓上尤其明显）。窄屏不启用是设计，不是缺陷。
+ * ⑤ Custom Highlight API 不支持就整条高亮按钮不出现（Chrome 105+/Safari 17.2+ 有，
+ *    Firefox 到 2026 仍要靠 dom.createHighlight 旗标）→ 一律当渐进增强。
+ * ⑥ 工具条自己不能被算进选区：pointerdown 里 preventDefault，否则点按钮瞬间选区就没了。
+ */
+
+import { Icon } from "astro-icon/components"
+---
+
+<div id="selection-toolbar" class="selection-toolbar" role="toolbar" aria-label="选中文字操作" hidden>
+    <button type="button" class="selection-toolbar-btn" data-sel-act="copy" aria-label="复制选中文字">
+        <Icon name="material-symbols:content-copy" aria-hidden="true" />
+        <span>复制</span>
+    </button>
+    <button type="button" class="selection-toolbar-btn" data-sel-act="search" aria-label="用选中文字站内搜索">
+        <Icon name="material-symbols:search" aria-hidden="true" />
+        <span>搜索</span>
+    </button>
+    <button
+        type="button"
+        class="selection-toolbar-btn"
+        data-sel-act="highlight"
+        aria-label="在全文高亮这个词"
+        data-sel-highlight-btn
+    >
+        <Icon name="material-symbols:format-ink-highlighter" aria-hidden="true" />
+        <span data-sel-highlight-label>高亮</span>
+    </button>
+</div>
+
+<script is:inline>
+    ;(function () {
+        // 触屏 / 粗指针：直接用系统自带的选区菜单，不自绘（见文件头 ④）
+        var finePointer = false
+        try {
+            finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches
+        } catch (e) {
+            finePointer = true
+        }
+        if (!finePointer) return
+
+        var bar = document.getElementById("selection-toolbar")
+        if (!bar) return
+
+        var supportsHighlight =
+            typeof window.Highlight === "function" &&
+            typeof CSS !== "undefined" &&
+            CSS.highlights &&
+            typeof CSS.highlights.set === "function"
+        var hlBtn = bar.querySelector("[data-sel-highlight-btn]")
+        var hlLabel = bar.querySelector("[data-sel-highlight-label]")
+        if (!supportsHighlight && hlBtn) hlBtn.remove() // 不支持就干脆不出现，别做死按钮
+
+        var HL_NAME = "blog-selection-hit"
+        /** 当前工具条作用的选区快照（点按钮时 real selection 可能已经被清掉了） */
+        var frozenText = ""
+        /** 当前已高亮的词（空串 = 没有高亮） */
+        var activeWord = ""
+        var hideTimer = 0
+
+        function articleRoot() {
+            return document.querySelector(".custom-markdown")
+        }
+
+        function hideToolbar() {
+            if (bar.hidden) return
+            bar.classList.remove("is-visible")
+            bar.hidden = true
+        }
+
+        function placeToolbar(rect) {
+            bar.hidden = false
+            bar.classList.add("is-visible")
+            // 先摆到选区上方居中，量出真实宽度后再夹进视口，避免窄屏被切掉一半
+            var w = bar.offsetWidth
+            var h = bar.offsetHeight
+            var gap = 10
+            var vw = window.innerWidth
+            var left = rect.left + rect.width / 2
+            var half = w / 2
+            left = Math.max(8 + half, Math.min(vw - 8 - half, left))
+            var top = rect.top - h - gap
+            // 上方顶出去了就翻到下面（选区顶部贴到视口上沿的情形）
+            if (top < 8) top = rect.bottom + gap
+            bar.style.left = Math.round(left) + "px"
+            bar.style.top = Math.round(top) + "px"
+        }
+
+        /** 选区是否落在正文里，且不是空白 / 单字 */
+        function readSelection() {
+            var sel = window.getSelection()
+            if (!sel || sel.isCollapsed || sel.rangeCount === 0) return null
+            var text = (sel.toString() || "").replace(/\s+/g, " ").trim()
+            if (text.length < 2) return null
+            var root = articleRoot()
+            if (!root) return null
+            var range = sel.getRangeAt(0)
+            if (!root.contains(range.commonAncestorContainer)) return null
+            var rect = range.getBoundingClientRect()
+            if (!rect || (!rect.width && !rect.height)) return null
+            return { text: text, range: range, rect: rect }
+        }
+
+        function onSelectionSettled() {
+            var info = readSelection()
+            if (!info) {
+                hideToolbar()
+                return
+            }
+            frozenText = info.text
+            // 同一个词的命中还在 → 按钮显示「取消」，让用户能一键收掉满屏底色
+            var isOn = activeWord && activeWord === info.text.toLowerCase()
+            if (hlLabel) hlLabel.textContent = isOn ? "取消" : "高亮"
+            if (hlBtn) hlBtn.classList.toggle("is-on", !!isOn)
+            placeToolbar(info.rect)
+        }
+
+        // ---------- B2 命中高亮 ----------
+        /** 在正文里找出 needle 的每一处命中，返回 Range 数组（跨标签的命中跳过，算法保持简单） */
+        function collectRanges(root, needle) {
+            var out = []
+            var lower = needle.toLowerCase()
+            var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+                acceptNode: function (node) {
+                    if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT
+                    var p = node.parentNode
+                    if (!p) return NodeFilter.FILTER_REJECT
+                    var tag = (p.nodeName || "").toLowerCase()
+                    // 别把按钮文字 / 代码高亮行号 也算进去
+                    if (tag === "script" || tag === "style" || tag === "mark") return NodeFilter.FILTER_REJECT
+                    if (p.closest && p.closest(".section-copy-btn, .anchor, .expressive-code .frame .header"))
+                        return NodeFilter.FILTER_REJECT
+                    return NodeFilter.FILTER_ACCEPT
+                },
+            })
+            var node = walker.nextNode()
+            while (node) {
+                var hay = node.nodeValue.toLowerCase()
+                var from = 0
+                var at = hay.indexOf(lower, from)
+                while (at !== -1) {
+                    var r = document.createRange()
+                    r.setStart(node, at)
+                    r.setEnd(node, at + lower.length)
+                    out.push(r)
+                    from = at + lower.length
+                    at = hay.indexOf(lower, from)
+                }
+                node = walker.nextNode()
+            }
+            return out
+        }
+
+        function clearHighlight() {
+            activeWord = ""
+            try {
+                if (CSS.highlights) CSS.highlights.delete(HL_NAME)
+            } catch (e) {
+                /* ignore */
+            }
+        }
+
+        function applyHighlight(word) {
+            var root = articleRoot()
+            if (!root) return false
+            var ranges = collectRanges(root, word)
+            // 只命中当前选中的那一处也算成功（词只在选区里出现一次）
+            if (!ranges.length) return false
+            try {
+                CSS.highlights.set(HL_NAME, new Highlight(...ranges))
+            } catch (e) {
+                return false
+            }
+            activeWord = word.toLowerCase()
+            return true
+        }
+
+        // ---------- 三个动作 ----------
+        function copyText(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(null, function () {})
+                return true
+            }
+            try {
+                var ta = document.createElement("textarea")
+                ta.value = text
+                ta.setAttribute("readonly", "")
+                ta.style.cssText = "position:fixed;top:-9999px;opacity:0"
+                document.body.appendChild(ta)
+                ta.select()
+                var done = document.execCommand("copy")
+                document.body.removeChild(ta)
+                return done
+            } catch (e) {
+                return false
+            }
+        }
+
+        function flash(btn) {
+            btn.classList.add("is-done")
+            window.setTimeout(function () {
+                btn.classList.remove("is-done")
+            }, 1200)
+        }
+
+        bar.addEventListener("pointerdown", function (e) {
+            // ⑥ 不让点按钮时把选区塌掉
+            e.preventDefault()
+        })
+
+        bar.addEventListener("click", function (e) {
+            var t = e.target
+            var btn = t && t.closest ? t.closest("[data-sel-act]") : null
+            if (!btn) return
+            var act = btn.getAttribute("data-sel-act")
+            var text = frozenText
+
+            if (act === "copy") {
+                if (!text) return
+                copyText(text)
+                flash(btn)
+            } else if (act === "search") {
+                if (!text) return
+                hideToolbar()
+                document.dispatchEvent(
+                    new CustomEvent("blog:search-with", { detail: { query: text.slice(0, 40) } }),
+                )
+            } else if (act === "highlight") {
+                if (!text) return
+                var word = text.length > 40 ? text.slice(0, 40) : text
+                if (activeWord && activeWord === word.toLowerCase()) {
+                    clearHighlight()
+                } else {
+                    clearHighlight()
+                    applyHighlight(word)
+                }
+                hideToolbar()
+                var sel0 = window.getSelection()
+                if (sel0) sel0.removeAllRanges()
+            }
+        })
+
+        // Esc 收掉高亮（与别处的 Esc 习惯一致），也让用户能从满屏底色里退出来
+        document.addEventListener(
+            "keydown",
+            function (e) {
+                if (e.key !== "Escape" || !activeWord) return
+                clearHighlight()
+            },
+            true,
+        )
+
+        // ---------- 选区侦测 ----------
+        // mouseup 覆盖绝大多数情形；keyup 兜住「键盘 Shift + 方向键」选词
+        document.addEventListener("mouseup", function (e) {
+            if (bar.contains(e.target)) return
+            window.clearTimeout(hideTimer)
+            // 延一拍：mouseup 之后浏览器才把选区定下来（尤其双击选词）
+            hideTimer = window.setTimeout(onSelectionSettled, 10)
+        })
+
+        document.addEventListener("keyup", function (e) {
+            if (!e.shiftKey) return
+            window.clearTimeout(hideTimer)
+            hideTimer = window.setTimeout(onSelectionSettled, 10)
+        })
+
+        document.addEventListener("mousedown", function (e) {
+            if (bar.contains(e.target)) return
+            hideToolbar()
+        })
+
+        document.addEventListener("selectionchange", function () {
+            var sel = window.getSelection()
+            if (!sel || sel.isCollapsed) hideToolbar()
+        })
+
+        // 滚动时工具条位置会跟选区脱节 → 直接收起来（比追着动更干净）
+        window.addEventListener(
+            "scroll",
+            function () {
+                hideToolbar()
+            },
+            { passive: true },
+        )
+
+        // 软导航换页 → 上一页的选区 / 高亮都作废
+        window.onReinit("selection-toolbar-reset", function () {
+            hideToolbar()
+            clearHighlight()
+            frozenText = ""
+        })
+    })()
+</script>
+
+<style is:global>
+    /* 划词工具条（B1）。直角 + 1px 描边 + 毛玻璃，与 .search-panel / .link-preview-card 同一套语言。
+       ⚠️ 靠 opacity/translate 过渡而不是 display 切换（五-41），但外层仍用 hidden 做「彻底不参与命中」
+           —— 因为它 fixed 定位且带 pointer-events，留在布局里会挡住正文点击。 */
+    .selection-toolbar {
+        position: fixed;
+        z-index: 1150;
+        display: flex;
+        align-items: stretch;
+        transform: translate(-50%, 0);
+        border: 1px solid var(--line-divider);
+        background: color-mix(in srgb, var(--card-bg) 94%, transparent);
+        backdrop-filter: blur(12px);
+        box-shadow: 0 6px 18px -8px color-mix(in oklch, var(--primary) 55%, transparent),
+            0 14px 34px -14px rgb(0 0 0 / 0.3);
+        opacity: 0;
+        translate: 0 4px;
+        transition: opacity 0.16s cubic-bezier(0.4, 0, 0.2, 1), translate 0.16s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .selection-toolbar[hidden] {
+        display: none;
+    }
+
+    .selection-toolbar.is-visible {
+        opacity: 1;
+        translate: 0 0;
+    }
+
+    .selection-toolbar-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.375rem 0.625rem;
+        border: 0;
+        background: transparent;
+        color: var(--text-color);
+        font-size: 0.8125rem;
+        font-weight: 700;
+        line-height: 1;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: color 0.15s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .selection-toolbar-btn + .selection-toolbar-btn {
+        border-left: 1px solid var(--line-divider);
+    }
+
+    .selection-toolbar-btn svg {
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
+    }
+
+    .selection-toolbar-btn:hover,
+    .selection-toolbar-btn:focus-visible {
+        color: var(--primary);
+        background: var(--btn-plain-bg-hover);
+        outline: none;
+    }
+
+    /* 已复制的短暂回执：底色转品牌色，不用额外弹 toast */
+    .selection-toolbar-btn.is-done {
+        color: var(--primary);
+        background: color-mix(in oklch, var(--primary) 16%, transparent);
+    }
+
+    /* 当前词已在「高亮」状态 → 按钮显示「取消」，给个持续可辨的态 */
+    .selection-toolbar-btn.is-on {
+        color: var(--primary);
+    }
+
+    /* B2 命中高亮：Custom Highlight API 的伪元素，样式只能写在全局 */
+    ::highlight(blog-selection-hit) {
+        background-color: color-mix(in oklch, var(--primary) 30%, transparent);
+        color: inherit;
+        text-decoration: underline;
+        text-decoration-color: color-mix(in oklch, var(--primary) 70%, transparent);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .selection-toolbar {
+            transition: none;
+        }
+    }
+</style>

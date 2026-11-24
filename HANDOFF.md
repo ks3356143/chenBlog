@@ -3,7 +3,7 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-24（用户「你看下博客还有什么可以炫酷化和实用功能，全网搜索」→ 第四批候选定案 + 四组全做上线；线上 V0.1.114 = 本地 = 远端）**。
+> 最后更新：**2026-11-25（用户「今天就结束吧」→ 收尾；线上 V0.1.114 = 本地 = 远端 = `d0c2481`）**。
 >
 > **📌 炫酷化候选清单（2026-11-13 搜 3 轮后定案，用户「记住这个列表」→ 常驻这里，别弄丢）**
 > 来源：现代博客动效 / Astro 生态 / 性能与无障碍三方向，已对照本站「已实现 / 已否决」去重。
@@ -2049,11 +2049,11 @@
 
 | 项 | 值 |
 |---|---|
-| 本地 HEAD | 见第三节快照（本批提交见第二节开头的第六十一批） |
+| 本地 HEAD | **`d0c2481`**（`HEAD == origin/main`，工作区 0 项） |
 | 线上 | **V0.1.114**，http://47.108.230.220（首页/404/文章/api 全 200） |
-| 刚做完 | 第六十一批：Astro 7.4.10 → **7.4.13**；**两轮**全站复验（54 路由逐字节 SHA256 + 108 项亮暗 + 54 项移动端）；修 **3 个真缺陷**：B3 搜索历史「点 × 删一条把整个面板关掉」· B1 划词点搜索「面板闪没」· B2 高亮「文本超 40 字不显示取消」 |
+| 刚做完 | 第六十一批：Astro 7.4.10 → **7.4.13**；**两轮**全站复验（54 路由逐字节 SHA256 + 108 项亮暗 + 54 项移动端）；修 **3 个真缺陷**：B3 搜索历史「点 × 删一条把整个面板关掉」· B1 划词点搜索「面板闪没」· B2 高亮「文本超 40 字不显示取消」。**已部署上线，线上 54/54 逐字节核过** |
 | 门禁基线 | `build` 0 / `check` **0 error 0 warning 9 hint** / `tsc` 0 / `docs:check` 0 错 0 警 |
-| 回滚资产 | `dist.old` + **125** 个 `dist_backup_*`（**一律保留，删要用户点头**） |
+| 回滚资产 | `dist.old` + **126** 个 `dist_backup_*`（**一律保留，删要用户点头**） |
 
 **下一批可以做的（按优先级，都有据可查）**：
 
@@ -3116,7 +3116,7 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-24 第六十一批：Astro 升 7.4.13 + 全站复验 + 修 B3 搜索历史**；线上 = 本地 = 远端 = **V0.1.114**，已部署）
+## 三、当前状态快照（**2026-11-24 第六十一批：Astro 升 7.4.13 + 两轮全站复验 + 修 3 个真缺陷**；线上 = 本地 = 远端 = `d0c2481` = **V0.1.114**，已部署）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
 > ⚠️ **炫酷化候选清单常驻在文件顶部**：第一批 1/2/10 已做、**4 已实测证伪**、3/5/6/7/8 待选；第二批 B1/B2/B3/B6/B7 已做，B4 待拍；第三批 C0~C6 全部已做；**第四批 A1~C1 全部已做（B7 核实为站内早已有）**。
@@ -3125,13 +3125,13 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 |---|---|
 | 依赖升级 | **Astro 7.4.10 → 7.4.13**（`package.json:29` 一行 + `package-lock.json` 重算）。lock diff = **4 版本变更 + 25 新增 + 0 删除**，全是 astro 内部平台绑定（`@rolldown/binding-*@1.3.3` 等）。干净 `npm ci` **596 packages / 24s / exit 0**。**本批零新增依赖**，ts/node/svelte/tailwind 全未动 |
 | 本地构建 | **585 files / 54 html / 53 index.html / 34 raw md / pagefind ✓ / llms.txt ✓ / og 35 张** —— 与升级前**逐项相同**。`build` exit 0（54 page(s)、pagefind 36 页 11195 词，日志 warn/error **0 条**）；`tsc` exit 0；`check` **0 error / 0 warning / 9 hint**（与基线同为 9 条，无新增）；`docs:check` **0 错 0 警**（9 份文件 / 82 个路径引用） |
-| 本批修的缺陷 | **B3 搜索历史「点 × 移除一条 → 整个搜索面板跟着关掉」**。根因：keyed `{#each}` 里元素 `onclick` 先把该项拔出 DOM → 冒泡到 `document` 时 `e.target.isConnected === false` → `closest("[data-search-root]")` 返回 null → 误判为点击外部 → `closeAll()`。修法：`Search.svelte` 的 `onDocClick` 先判 `!t.isConnected` 直接 return。**B3 断言复测 5/5 全过** |
-| 浏览器回归 | 7 项断言 6 PASS（第 7 项「404 页搜索历史」是**测试时序问题**：`recent` 只在 `onMount` 读一次，`page.evaluate` 写完未 `reload`；已由 B3 专项 5/5 完整覆盖）。<br>通过项：首页渲染（`h1:1` / 卡片 10 / `[data-reveal]` 10 / `#selection-toolbar` 1 / `theme-color` 1 / 三态按钮 3）· 零 JS 错误 · 划词工具条弹三个动作（copy/search/highlight）· 系统转暗自动跟随（`dark` + `#080f0c` + `stored:null`）· 系统转亮跟回 · 软导航两趟后 `#selection-toolbar` 与 `#theme-color-meta` 各仍只有 1 个 |
-| 线上站点 | **V0.1.114**，http://47.108.230.220 。本批**部署时需复验**：`V0.1.114` 在 / `isConnected` 修复在 / api+pagefind 存在，**断言全过才切 dist** |
+| 本批修的缺陷（**3 个**） | **① B3 搜索历史「点 × 移除一条 → 面板跟着关掉」**：keyed `{#each}` 里按钮 `onclick` 先把该项拔出 DOM → 冒泡到 `document` 时 `e.target.isConnected === false` → `closest("[data-search-root]")` 返回 null → 误判点击外部 → `closeAll()`。修法：`onDocClick` 先判 `!t.isConnected` 直接 return。<br>**② B1 划词点「搜索」面板闪没**（整条功能不可用）：工具条是 `DIV#selection-toolbar`，**挂在 body 下、不在 `[data-search-root]` 里** → `blog:search-with` 先开面板，紧接着同一记 click 冒泡到 `document` 被判成点击外部 → 当场关掉。修法：`onDocClick` 加 `if (t?.closest?.("#selection-toolbar")) return;`。铁证是时序快照：`search-with 同步 panel:false` → `microtask panel:true` → `document click(bubble) {inToolbar:true, inSearchRoot:false}` → `setTimeout0 panel:false`。<br>**③ B2 高亮按钮超 40 字不显示「取消」**：`applyHighlight` 存 `text.slice(0,40)`，回显比较用**完整** `info.text` → 选区一超 40 字永不相等（三击选整段必超）。修法：比较前按同样规则截到 40 字（`cmpWord`）。<br>**复测**：B3 断言 5/5；划词 7 项 **7/7**（工具条弹出 · 复制回执 `is-done` · **划词→搜索面板开且输入框带上选中文字** · 高亮 `CSS.highlights` 命中 1 处 · **同词二次选中按钮变「取消」带 `is-on`** · 取消后清空 · 零 JS 错误） |
+| 浏览器回归 | **两轮**，均在 `astro preview :4322`（真实非安全上下文 `isSecureContext:false / clipboard:false`）。<br>**第一轮**：**54 路由 × 亮/暗 = 108/108** · **移动端 390px × 54 路由 = 54/54**（横向溢出 `scrollWidth-innerWidth` 全 ≤1px）· **零 JS 错误** · B3 专项 3/3（历史最新在前 · 单删后 `panel:true` + `stored:["Selector"]` · 清空后 `stored:null`）。<br>**第二轮**：划词 7/7（见上「本批修的缺陷」）。<br>⚠️ 唯一稳定 FAIL 的是「用 Playwright 合成 `mouse.down/move/up` 拖选」——**合成拖拽产生不了原生选区**（`getSelection()` 恒空），属探测手法限制、**不是缺陷**；划词类断言必须用三击选段 |
+| 线上站点 | **V0.1.114**，http://47.108.230.220 。**本批已部署并逐页核过**：**54/54 页 HTTP 200 且 SHA256 与本地逐字节一致** · **17/17 `_astro` chunk SHA256 一致** · `Search.C7m_tXqe.js` 含修复②且一致 · 三个修复串都在线上产物里（`isConnected` / `#selection-toolbar` / `cmpWord`；**注意划词条是 `is:inline`，它的修复在 `index.html` 里，不在 chunk**）· 数据文件 `/api/*.json` `/rss.xml` `/llms.txt` `/pagefind/*` `/sitemap-index.xml` 全 200 · 故意不存在的路径正确 404 |
 | 服务器配置 | 本批**未动服务器配置**（只换 `dist`） |
 | dev / preview server | 复验用 `astro preview :4322`（Astro 7.4.13 **新增重复启动保护**：`Another astro preview server is already running.` 的 exit 1 **不是失败**）。收尾时按 `CommandLine -like '*astro*preview*'` 精确杀掉、复查计数 = 0 |
-| 服务器回滚资产 | `dist.old` + **125 个 `dist_backup_*`**（本批部署 +1）。⚠️ **其中 `dist_backup_`（时间戳为空，357 文件 / 23M，10-14 生成）是异常目录**，内容是真实备份、不是空壳，**保留不动**。**一律保留，删需用户明确同意** |
-| 临时文件 | 本地本轮 13 个 `.vs*.cjs` 浏览器脚本**收尾时全部删除**；`%TEMP%` 下的 `fix_build.log` / `f_tsc.log` / `f_check.log` / `f_docs.log` / `lock_old.json` 已清；服务器 `/tmp` 残留计数 0 |
+| 服务器回滚资产 | `dist.old` + **126 个 `dist_backup_*`**（本批部署 +1）。⚠️ **其中 `dist_backup_`（时间戳为空，357 文件 / 23M，10-14 生成）是异常目录**，内容是真实备份、不是空壳，**保留不动**。**一律保留，删需用户明确同意** |
+| 临时文件 | 本地本轮共 11 个探测脚本（`.full*.cjs` / `.sel*.cjs` / `.h.cjs` / `.fixcnt.cjs` / `.deploy.sh`）**收尾时全部删除，根目录隐蔽脚本计数 0**；`%TEMP%` 下日志已清；**服务器 `/tmp` 残留 0**（`rm -f /tmp/cb_dep.sh` 后复测）；**preview 进程 0** |
 | 待用户拍板 | **第二批清单剩 B4 修订史**（要改 `content.config.ts` schema + 补 34 篇数据，建议只先给 6 篇技术手册类做）。**候选清单第一批 3 / 5 / 6 / 7 / 8 仍待挑**（3 写作热力图 / 5 极光 / 6 逐字解码 / 7 渐变呼吸 / 8 命令面板；**4 `content-visibility` 已实测证伪，别再提**）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · `AGENTS.local.md` 里那条指向不存在目录的 `qoder-memories-backup` 句子。⚠️ **C0~C6、第一批 #10、B6、第四批 A1~C1 与 B7 已全部做完，别再当待办重提** |
 | 既有小坑 | ① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），读 computed style 要等 `load` + 800ms；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径**（磁盘是 Unicode 原名，编了就 404）；④ **本机代理会拦裸 IP**：Playwright 要 `args: ['--no-proxy-server']`；⑤ **1200px 下右栏 `display:none`** → 验版本号要数 `outerHTML`；⑥ **`URL.pathname` 已完成百分号编码，再套 `encodeURI` = 双重编码**；⑦ **产物里文章 href 是原始中文**；⑧ **终态 `translate` 计算值是 `0px` 不是 `none`**；⑨ **`grep -qF` 固定串大小写必须与产物逐字一致**。<br>🔴 **第 ⑩ 条（最贵）**：**未分层的 `!important` 输给 `@layer` 内的 `!important`** —— Tailwind v4 工具类都编在 `@layer utilities` 里，组件写「未分层 + `!important`」想压它们**会静默失效**。正确做法：换一个对手是 non-important 的属性。配套判据：验证宽高读 `getBoundingClientRect()`。<br>🔴 **第 ⑪ 条**：`Invoke-WebRequest.RawContentLength` 是**字符数**、`curl -w %{size_download}` 是**字节数** → **核线上与本地一致要用 SHA256**。<br>🔴 **第 ⑫ 条**：`path.join` 在 Windows 给**反斜杠** + **frontmatter 正则必须兼容 CRLF**；**报红前先跑控制组**。<br>🔴 **第 ⑬ 条**：**Astro `is:inline` 脚本原样输出在组件位置**，组件挂在正文之前时 `onReinit(immediate)` 那一拍 `querySelector('.custom-markdown')` 拿到 null → **首屏注入一律加 `DOMContentLoaded` 兜底**。<br>🔴 **第 ⑭ 条**：`navigator.clipboard.writeText()` 是 **Promise**，同步 `try/catch` 抓不到 `reject` → **两条复制分支都要失败可观测**。<br>🆕 **第 ⑮ 条**：给 `agent-browser eval` 传 JS 在 PowerShell 里会吃掉内层转义引号 → **统一用 here-string（`@' … '@`）**。<br>🆕 **第 ⑯ 条**：**无头模式剪贴板必被拒** → 别用「读剪贴板」当复制成功判据，看按钮状态类或打桩。<br>🆕 **第 ⑰ 条**：**`.custom-markdown` 的直接子元素是 `<section>` 不是 `<p>`** → `:scope > p` 恒 0。<br>🆕 **第 ⑱ 条（本批新增）**：**keyed `{#each}` 里「删掉当前项」的按钮，其 `onclick` 执行后该元素即脱离文档** → 任何在 `document` 上做 `closest()` 判断的「点击外部关闭」逻辑都会误判成点击外部。判据 = 冒泡阶段读 `e.target.isConnected`（**捕获阶段读仍是 true，两阶段结论相反就是它**）。<br>🆕 **第 ⑲ 条（本批新增）**：**`recent` 这类「只在 `onMount` 读一次」的状态，用 `page.evaluate` 写 `localStorage` 后必须 `reload()` 才生效**；且历史只在**空查询空态**渲染（`{:else if !query.trim()}`），带词查必然 0 条 —— 别当缺陷。<br>🆕 **第 ⑳ 条（本批新增）**：**`opacity:0` 靠 `:hover` 显形的按钮**，Playwright 无障碍检查会误判不可点 → 先 `mouse.move` 到父 `li` 上再点；`elementFromPoint` 报 `hitIsSelf:true` 可证按钮本身没问题。 |
 

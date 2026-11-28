@@ -3,7 +3,7 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-25（用户「今天就结束吧」→ 收尾；线上 V0.1.114 = 本地 = 远端 = `d0c2481`）**。
+> 最后更新：**2026-11-28（第六十二批：依赖全量升级 + 修 SiteStatus 双份内联；线上 V0.1.115 = 本地 = 远端 = `4e811da`）**。
 >
 > **📌 炫酷化候选清单（2026-11-13 搜 3 轮后定案，用户「记住这个列表」→ 常驻这里，别弄丢）**
 > 来源：现代博客动效 / Astro 生态 / 性能与无障碍三方向，已对照本站「已实现 / 已否决」去重。
@@ -2042,27 +2042,28 @@
 
 ## 一、下次会话第一件事
 
-### 🚩 当前起点（2026-11-24 第六十一批收尾时写；**新会话只需读这一块 + 第三节快照就能开工**）
+### 🚩 当前起点（2026-11-28 第六十二批收尾时写；**新会话只需读这一块 + 第三节快照就能开工**）
 
 本节后半段（从下面那条 ⚠️ 开始）是 **2026-10 的历史记录**，都已完成、留着备查，**别当待办**。
 **最新状态在第三节快照，最新批次记录在第二节开头。**
 
 | 项 | 值 |
 |---|---|
-| 本地 HEAD | **`d0c2481`**（`HEAD == origin/main`，工作区 0 项） |
-| 线上 | **V0.1.114**，http://47.108.230.220（首页/404/文章/api 全 200） |
-| 刚做完 | 第六十一批：Astro 7.4.10 → **7.4.13**；**两轮**全站复验（54 路由逐字节 SHA256 + 108 项亮暗 + 54 项移动端）；修 **3 个真缺陷**：B3 搜索历史「点 × 删一条把整个面板关掉」· B1 划词点搜索「面板闪没」· B2 高亮「文本超 40 字不显示取消」。**已部署上线，线上 54/54 逐字节核过** |
-| 门禁基线 | `build` 0 / `check` **0 error 0 warning 9 hint** / `tsc` 0 / `docs:check` 0 错 0 警 |
-| 回滚资产 | `dist.old` + **126** 个 `dist_backup_*`（**一律保留，删要用户点头**） |
+| 本地 HEAD | **`4e811da`**（`HEAD == origin/main`，工作区 0 项） |
+| 线上 | **V0.1.115**，http://47.108.230.220（54/54 页逐字节 SHA256 与本地相同） |
+| 刚做完 | 第六十二批：**11 个依赖升到最新**（katex 0.18.11→0.19.1、@astrojs/{markdown-remark,mdx,sitemap,svelte}、expressive-code 0.44.4、svelte 5.59.2、sanitize-html 2.18.2 等），**`npm audit` 9 条漏洞 → 0**（新增 overrides）；修 **1 个真缺陷**：SiteStatus 用 `define:vars` 导致脚本体每页内联两遍。**已部署，线上 54/54 逐字节核过** |
+| 门禁基线 | `build` 0 / `check` **0 error 0 warning 8 hint** / `tsc` 0 |
+| 回滚资产 | `dist.old` + **128** 个 `dist_backup_*`（**一律保留，删要用户点头**） |
 
 **下一批可以做的（按优先级，都有据可查）**：
 
 1. **B4 修订史**（`revisions: [{date,note}]`）—— 唯一的「待拍板」功能项，**要先改 `content.config.ts` schema**（数据建模，得他点头），建议只先给 6 篇技术手册类做。
 2. 候选清单第一批 **3 / 5 / 6 / 7 / 8** 待他挑（写作热力图 / 极光渐变 / 逐字解码 / 渐变呼吸 / 命令面板），各自前提与坑见本文件顶部那张表。
-3. 等他回话的：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· Twikoo 裸 `envId` 同域反代（服务器改动，要点他点头）。
-4. ⚠️ `AGENTS.local.md` 里「原件备份在 `C:\Users\31429\.dsh\qoder-memories-backup\`」这句**指向的目录不存在**（真实记忆在 `C:\Users\31429\.qoder-cn\memory\`）→ 等他点头再改。
+3. **Nginx 开 brotli**（服务器改动，要点他点头）—— 实测线上只有 gzip；HTML 类换成 brotli 可省 **0.84MB**（2.70MB vs 3.54MB）。
+4. 等他回话的：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· Twikoo 裸 `envId` 同域反代（服务器改动，要点他点头）。
+5. ⚠️ `AGENTS.local.md` 里「原件备份在 `C:\Users\31429\.dsh\qoder-memories-backup\`」这句**指向的目录不存在**（真实记忆在 `C:\Users\31429\.qoder-cn\memory\`）→ 等他点头再改。
 
-⛔ **别再当待办重提**：`content-visibility`（第五十八批三种粒度实测证伪）、C0~C6（全做完）、第一批 #10、B6、第二批 B7（= 第三批 C3 的 `::target-text`，已做）、**第四批 A1~C1 与 B7**（已完成，B7 经核实站内早已有），以及本文件各处标「⛔ 已否决 / 已证伪」的条目。
+⛔ **别再当待办重提**：`content-visibility`（第五十八批三种粒度实测证伪）、C0~C6（全做完）、第一批 #10、B6、第二批 B7（= 第三批 C3 的 `::target-text`，已做）、**第四批 A1~C1 与 B7**（已完成，B7 经核实站内早已有）、**共享内联脚本抽取**（第六十二批实测：内联随整页压缩，抽出成独立 chunk 后每页反而**多 0.88KB gzip**），以及本文件各处标「⛔ 已否决 / 已证伪」的条目。
 
 ### ⚠️ 以下为 2026-10 历史记录（已完成，备查）
 
@@ -2473,6 +2474,47 @@
 ---
 
 ## 二、历次会话做了什么
+
+### 2026-11-28 第六十二批：依赖全量升级（audit 归零）+ **修掉 SiteStatus 双份内联（十-3）** + 全站检查
+
+- **触发**：他说"继续优化吧 全检查下优化，以及astro等依赖的更新，更新后全面检查验证"。
+- **① 依赖升级**（11 个包，全部到 Latest）：`katex` 0.18.11→**0.19.1** · `@astrojs/markdown-remark`→7.3.10 ·
+  `@astrojs/mdx`→8.1.6 · `@astrojs/sitemap`→3.7.6 · `@astrojs/svelte`→9.1.6 · `astro-expressive-code` 0.44.4 ·
+  `@expressive-code/plugin-{collapsible-sections,line-numbers}` 0.44.4 · `svelte`→5.59.2 · `sanitize-html`→2.18.2 · `prettier`→3.10.1。
+  - **`typescript` 7.0.2 故意不升**（`@astrojs/svelte` peer 只允许 `^5.3.3||^6.0.0`，撞第九节天花板）；**`mermaid` 11.17.2 已是天花板**。
+  - `astro` 已是 **7.4.13**（`npm view astro version` 实测 = 7.4.13），无新版。
+- **② 新增 `overrides` 消漏洞**：`npm audit --registry=https://registry.npmjs.org` 从 **9 条（4 low / 5 moderate）→ 0 条**。
+  - `"katex": "$katex"` —— **直接依赖必须用 `$pkg` 引用语法**，写字面版本号会 `EOVERRIDE`。
+  - `"@tailwindcss/typography": { "postcss-selector-parser": "6.1.6" }` —— **必须父级作用域嵌套**：
+    写成全局 `"postcss-selector-parser": "6.1.6"` 会把 `postcss-nested@7.2.0` 的 7.2.0 压下去 → `npm ls` 报 `invalid`。
+  - `glob` 14.0.6 / `minimatch` 11.0.9 修 `stylus` 传递依赖。
+  - 组合验证：`npm ls katex postcss-selector-parser glob minimatch` 退出 0；`rm -rf node_modules` + 干净 `npm ci`（555 packages / 21s）→ `build` 0。
+- **③ 修缺陷（十-3 违规）**：`SiteStatus.astro` 用 `define:vars` 传配置，而该组件在 `Layout.astro:182` 与
+  `RightSideBar.astro:24` **各挂一次** → **脚本体被内联两遍**（实测首页两份 1523B、哈希完全相同）。
+  - 改法：配置改走根节点 `data-*`（`data-site-status` / `data-start-date` / `data-last-post` / `data-today-text`），
+    脚本改成普通 `<script>`（去掉 `is:inline` 与 `define:vars`），用 `document.querySelectorAll("[data-site-status]")` 逐实例读自己的 dataset。
+  - 效果：首页内联块 **34 → 33**、内联字节 **77.0KB → 74.8KB**、`siteStartDate` 残留 **0**、**页内重复内联块归零**（54 页全量扫）。
+  - ⚠️ 踩坑：模板注释里写了**字面的 script 开标签**，Astro 把它当真标签解析、吞掉后续模板内容 → 内联总量暴涨到 94.7KB。
+    改写措辞（"script 开标签字样"）后恢复。**这条已记进 `config.md` 类经验：注释里永远别出现裸 script 开标签。**
+  - 另修 `ts(2339)`：`querySelectorAll` 返回 `Element`，要写 `querySelectorAll<HTMLElement>(…)`。
+- **④ 共享内联脚本抽取 —— 实测证伪，不采纳**（用户原选 A 方案，数据推翻后如实报告）：
+  - 严格筛（IIFE 包围 ∩ 非首帧关键 ∩ 全在 body ∩ ≥53 页）只剩 **6 块 / 20.39KB**；其中 babel polyfill 是
+    Astro 的 `<astro-island>` 水合器（**框架必需**）→ 真正可抽 **5 块 / 15.59KB/页**。
+  - **线上实测开了 gzip**（`Content-Encoding: gzip`，无 brotli）。按真实压缩算：
+    HTML 侧每页省 **4.54KB gzip / 3.78KB brotli**，而抽出的 chunk 自身 **5.42KB gzip / 4.44KB brotli**
+    → **每页净 −0.88KB gzip / −0.66KB brotli（反而变大）**，还多一个 HTTP 请求。
+  - 根因：内联内容跟整页共享压缩字典，压缩率高于独立 chunk。**除非线上关掉压缩，否则抽取恒为负收益。**
+- **⑤ 全站其余优化点排查（均无问题或无收益）**：dist 32.43MB / 585 文件（`.webp` 13.6MB 40.8% · `.html` 14.9MB 44.9%）。
+  - SVG 架构正确：66 个 `<symbol>` 定义、**重复 id 0 个**，其余走 `<use href>`（此前"重复定义"是误报，哈希把 class 拼进去了）。
+  - 最大页 `css100天-第9天` 496KB：**多出的 127KB 全是文章正文自带的 CSS**（10.31KB 内联 style），不是框架开销。
+  - `define:vars` 剩 7 处（CopyShare / BackToHome×2 / Calender / Category style / Twikoo）**各只出现一次，非同页重复**，改动风险 > 收益。
+  - head 干净：1 个样式表 + 1 个 preload + 带内容哈希的 `reinit.js`。缺宽高的唯一 `<img>` 是链接预览卡占位图（src 由 JS 设、CSS 定尺寸）。
+- **⑥ 版本号 0.1.114 → 0.1.115**，提交 `4e811da`、推送、部署；**线上 54/54 页 SHA256 与本地逐字节相同**。
+  - ⚠️ 踩坑一：`tar -czf "$env:TEMP\x.tar.gz"` → **GNU tar 把 `C:` 当成远程主机**（`Cannot connect to C:`）→ 必须 `tar --force-local` + 相对路径。
+  - ⚠️ 踩坑二：`Out-File -Encoding utf8` 写部署脚本带 CRLF → `bash -s` 报 `set: -: invalid option` / `cd: $'...\r'`
+    → 必须 `-replace "\`r\`n","\`n"` + `UTF8Encoding($false)`，写完数字 `CRLF=0`。
+  - ⚠️ 踩坑三：Playwright msedge **全域拒绝直连裸 IP**（`ERR_BLOCKED_BY_CLIENT`，连 404 页也拦）→
+    线上浏览器验证不可用，改由 curl 全量 SHA256 + 本地 preview 浏览器双向覆盖。
 
 ### 2026-11-24 第六十一批：Astro 升到 7.4.13 + 两轮全站复验 + **修掉 3 个真缺陷（B3 搜索历史 / B1 划词搜索 / B2 高亮取消态）**
 
@@ -3116,24 +3158,26 @@ about 死链、邮箱 mailto 与文本不一致、空 h1 兜底、`/about/` 重�
 
 ---
 
-## 三、当前状态快照（**2026-11-24 第六十一批：Astro 升 7.4.13 + 两轮全站复验 + 修 3 个真缺陷**；线上 = 本地 = 远端 = `d0c2481` = **V0.1.114**，已部署）
+## 三、当前状态快照（**2026-11-28 第六十二批：依赖全量升级 + audit 归零 + 修 SiteStatus 双份内联**；线上 = 本地 = 远端 = `4e811da` = **V0.1.115**，已部署）
 
 > ⚠️ 本节每次只保留**最新一批**那一张表；旧批的表已合并进第二节。查哪个数字都**现跑命令**，别信文档里的 SHA / 资产个数。
 > ⚠️ **炫酷化候选清单常驻在文件顶部**：第一批 1/2/10 已做、**4 已实测证伪**、3/5/6/7/8 待选；第二批 B1/B2/B3/B6/B7 已做，B4 待拍；第三批 C0~C6 全部已做；**第四批 A1~C1 全部已做（B7 核实为站内早已有）**。
 
 | 项 | 状态 |
 |---|---|
-| 依赖升级 | **Astro 7.4.10 → 7.4.13**（`package.json:29` 一行 + `package-lock.json` 重算）。lock diff = **4 版本变更 + 25 新增 + 0 删除**，全是 astro 内部平台绑定（`@rolldown/binding-*@1.3.3` 等）。干净 `npm ci` **596 packages / 24s / exit 0**。**本批零新增依赖**，ts/node/svelte/tailwind 全未动 |
-| 本地构建 | **585 files / 54 html / 53 index.html / 34 raw md / pagefind ✓ / llms.txt ✓ / og 35 张** —— 与升级前**逐项相同**。`build` exit 0（54 page(s)、pagefind 36 页 11195 词，日志 warn/error **0 条**）；`tsc` exit 0；`check` **0 error / 0 warning / 9 hint**（与基线同为 9 条，无新增）；`docs:check` **0 错 0 警**（9 份文件 / 82 个路径引用） |
-| 本批修的缺陷（**3 个**） | **① B3 搜索历史「点 × 移除一条 → 面板跟着关掉」**：keyed `{#each}` 里按钮 `onclick` 先把该项拔出 DOM → 冒泡到 `document` 时 `e.target.isConnected === false` → `closest("[data-search-root]")` 返回 null → 误判点击外部 → `closeAll()`。修法：`onDocClick` 先判 `!t.isConnected` 直接 return。<br>**② B1 划词点「搜索」面板闪没**（整条功能不可用）：工具条是 `DIV#selection-toolbar`，**挂在 body 下、不在 `[data-search-root]` 里** → `blog:search-with` 先开面板，紧接着同一记 click 冒泡到 `document` 被判成点击外部 → 当场关掉。修法：`onDocClick` 加 `if (t?.closest?.("#selection-toolbar")) return;`。铁证是时序快照：`search-with 同步 panel:false` → `microtask panel:true` → `document click(bubble) {inToolbar:true, inSearchRoot:false}` → `setTimeout0 panel:false`。<br>**③ B2 高亮按钮超 40 字不显示「取消」**：`applyHighlight` 存 `text.slice(0,40)`，回显比较用**完整** `info.text` → 选区一超 40 字永不相等（三击选整段必超）。修法：比较前按同样规则截到 40 字（`cmpWord`）。<br>**复测**：B3 断言 5/5；划词 7 项 **7/7**（工具条弹出 · 复制回执 `is-done` · **划词→搜索面板开且输入框带上选中文字** · 高亮 `CSS.highlights` 命中 1 处 · **同词二次选中按钮变「取消」带 `is-on`** · 取消后清空 · 零 JS 错误） |
-| 浏览器回归 | **两轮**，均在 `astro preview :4322`（真实非安全上下文 `isSecureContext:false / clipboard:false`）。<br>**第一轮**：**54 路由 × 亮/暗 = 108/108** · **移动端 390px × 54 路由 = 54/54**（横向溢出 `scrollWidth-innerWidth` 全 ≤1px）· **零 JS 错误** · B3 专项 3/3（历史最新在前 · 单删后 `panel:true` + `stored:["Selector"]` · 清空后 `stored:null`）。<br>**第二轮**：划词 7/7（见上「本批修的缺陷」）。<br>⚠️ 唯一稳定 FAIL 的是「用 Playwright 合成 `mouse.down/move/up` 拖选」——**合成拖拽产生不了原生选区**（`getSelection()` 恒空），属探测手法限制、**不是缺陷**；划词类断言必须用三击选段 |
-| 线上站点 | **V0.1.114**，http://47.108.230.220 。**本批已部署并逐页核过**：**54/54 页 HTTP 200 且 SHA256 与本地逐字节一致** · **17/17 `_astro` chunk SHA256 一致** · `Search.C7m_tXqe.js` 含修复②且一致 · 三个修复串都在线上产物里（`isConnected` / `#selection-toolbar` / `cmpWord`；**注意划词条是 `is:inline`，它的修复在 `index.html` 里，不在 chunk**）· 数据文件 `/api/*.json` `/rss.xml` `/llms.txt` `/pagefind/*` `/sitemap-index.xml` 全 200 · 故意不存在的路径正确 404 |
-| 服务器配置 | 本批**未动服务器配置**（只换 `dist`） |
+| 依赖升级 | **11 个包升到 Latest**：katex 0.18.11→**0.19.1** · @astrojs/markdown-remark→7.3.10 · @astrojs/mdx→8.1.6 · @astrojs/sitemap→3.7.6 · @astrojs/svelte→9.1.6 · astro-expressive-code 0.44.4 · @expressive-code/plugin-{collapsible-sections,line-numbers} 0.44.4 · svelte→5.59.2 · sanitize-html→2.18.2 · prettier→3.10.1。**`astro` 已是 7.4.13**（`npm view astro version` 实测 = 7.4.13），无新版。**`typescript` 7.0.2 故意不升**（天花板）；`mermaid` 11.17.2 已是天花板。新增 `overrides`（`katex:"$katex"` / 父级作用域 `@tailwindcss/typography.postcss-selector-parser:6.1.6` / `glob:14.0.6` / `minimatch:11.0.9`）。干净 `rm -rf node_modules` + `npm ci` **555 packages / 21s / exit 0**；`npm audit --registry=https://registry.npmjs.org` **found 0 vulnerabilities** |
+| 本地构建 | **585 files / 54 html / 53 index.html / 34 raw md / pagefind ✓ / llms.txt ✓ / og 35 张** —— 与上批**逐项相同**。`build` exit 0（54 page(s)、pagefind 36 页 11195 词）；`tsc` exit 0；`check` **0 error / 0 warning / 8 hint**（比上批基线 9 条**少 1 条**，因为删掉了 SiteStatus 的 `define:vars` hint） |
+| 实测证伪（**不采纳**） | **共享内联脚本抽取**：严格筛（IIFE 包围 ∩ 非首帧关键 ∩ 全在 body ∩ ≥53 页）后只剩 6 块，其中 babel polyfill 是 Astro 的 `<astro-island>` 水合器（**框架必需**）→ 真可抽 **5 块 / 15.59KB/页**。线上实测**只开 gzip**；按真实压缩算 HTML 侧每页省 **4.54KB gzip / 3.78KB brotli**，而抽出的 chunk 自身 **5.42KB gzip / 4.44KB brotli** → **每页净 −0.88KB gzip / −0.66KB brotli（反而变大）**，还多一个 HTTP 请求。根因：内联内容与整页共享压缩字典，压缩率高于独立 chunk。**除非线上关掉压缩，否则抽取恒为负收益** |
+| 其他排查（**均无问题**） | **SVG 架构正确**：66 个 `<symbol>` 定义、**重复 id 0 个**，其余全走 `<use href="#id">`（此前"重复定义"是误报——哈希把 `class`/`data-astro-cid` 属性也算进去了）。**最大页 `css100天-第9天` 496KB 无框架浪费**：多出的 127KB 全是文章正文自带的 CSS100Day 演示 CSS（内联 style 10.31KB，对比第16天 4.09KB、第7天 2.88KB），head 侧与常规页一致。**`define:vars` 剩 7 处**（CopyShare/BackToHome×2/Calender/Category/Twikoo）**各只出现一次、非同页重复** → 纯 style 违规，改动风险 > 收益。**head 干净**：1 个样式表 + 1 个 image preload + 带内容哈希的 `reinit.js`；28 张图全带 `loading`，唯一缺宽高的是链接预览卡占位图（src 由 JS 设、尺寸由 CSS 定） |
+| 本批修的缺陷（**1 个**） | **SiteStatus 双份内联**（十-3 违规）：用 `define:vars` 传配置，而该组件在 `Layout.astro:182` 与 `RightSideBar.astro:24` **各挂一次** → 脚本体每页内联两遍（实测两份 1523B、哈希相同）。修法：配置改走根节点 `data-*`（`data-site-status`/`data-start-date`/`data-last-post`/`data-today-text`），脚本去 `is:inline` 去 `define:vars`，`querySelectorAll("[data-site-status]")` 逐实例读 dataset。**效果：首页内联块 34→33、77.0KB→74.8KB、`siteStartDate` 残留 0、54 页页内重复内联块归零**。⚠️ 踩坑：模板注释里写了字面的 script 开标签，Astro 当真标签解析、吞掉后续模板内容（内联量暴涨到 94.7KB）→ 改写措辞后恢复 |
+| 浏览器回归 | `astro preview`（真实非安全上下文 `isSecureContext:false / clipboard:false`）**13 路由全绿**：每页恰 1 个非空 h1、两处 `[data-site-status]` 均更新为 `332/16`、图片零坏图、**零 JS 错误**（`/friend-links/` 404 是预期的未建页）。软导航链 `/archive/ → /posts/chen-knowledge-base/ → /`：`reinitRuns("site-status")` **1→2→3→4 每次 +1 无累加**，两实例值恒 `["332","332"]`，无残留 `.is-animating/.is-changing/.is-rendering`。Pagefind 搜 `CSS` 返回 **12 条真实 /posts/ 结果**；划词工具条三按钮 `copy/search/highlight` 正常弹出 |
+| 线上站点 | **V0.1.115**，http://47.108.230.220 。**本批已部署，7 条替换前断言全过**（`V0.1.115` 在 / `V0.1.114` 不在 / `data-site-status` / `data-start-date` / `siteStartDate` 不在 / `selection-toolbar` / `cmpWord`）。**54/54 页 SHA256 与本地逐字节一致**（中文 URL 必须逐段 `encodeURIComponent`）。响应头 `Content-Encoding: gzip`（**无 brotli**，见下行）。⚠️ Playwright msedge **全域拒绝直连裸 IP**（`ERR_BLOCKED_BY_CLIENT`，连 `/404.html` 都拦）→ 线上只做 curl+SHA256，浏览器行为验证在 preview 做 |
+| 服务器配置 | 本批**未动服务器配置**（只换 `dist`）。**待拍板**：Nginx 开 brotli 可再省 HTML 类 **0.84MB**（实测 brotli 2.70MB vs 现用 gzip 3.54MB） |
 | dev / preview server | 复验用 `astro preview :4322`（Astro 7.4.13 **新增重复启动保护**：`Another astro preview server is already running.` 的 exit 1 **不是失败**）。收尾时按 `CommandLine -like '*astro*preview*'` 精确杀掉、复查计数 = 0 |
-| 服务器回滚资产 | `dist.old` + **127 个 `dist_backup_*`**（本批部署 +1）。⚠️ **其中 `dist_backup_`（时间戳为空，357 文件 / 23M，10-14 生成）是异常目录**，内容是真实备份、不是空壳，**保留不动**。**一律保留，删需用户明确同意** |
-| 临时文件 | 本地本轮共 11 个探测脚本（`.full*.cjs` / `.sel*.cjs` / `.h.cjs` / `.fixcnt.cjs` / `.deploy.sh`）**收尾时全部删除，根目录隐蔽脚本计数 0**；`%TEMP%` 下日志已清；**服务器 `/tmp` 残留 0**（`rm -f /tmp/cb_dep.sh` 后复测）；**preview 进程 0** |
-| 待用户拍板 | **第二批清单剩 B4 修订史**（要改 `content.config.ts` schema + 补 34 篇数据，建议只先给 6 篇技术手册类做）。**候选清单第一批 3 / 5 / 6 / 7 / 8 仍待挑**（3 写作热力图 / 5 极光 / 6 逐字解码 / 7 渐变呼吸 / 8 命令面板；**4 `content-visibility` 已实测证伪，别再提**）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · `AGENTS.local.md` 里那条指向不存在目录的 `qoder-memories-backup` 句子。⚠️ **C0~C6、第一批 #10、B6、第四批 A1~C1 与 B7 已全部做完，别再当待办重提** |
-| 既有小坑 | ① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），读 computed style 要等 `load` + 800ms；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径**（磁盘是 Unicode 原名，编了就 404）；④ **本机代理会拦裸 IP**：Playwright 要 `args: ['--no-proxy-server']`；⑤ **1200px 下右栏 `display:none`** → 验版本号要数 `outerHTML`；⑥ **`URL.pathname` 已完成百分号编码，再套 `encodeURI` = 双重编码**；⑦ **产物里文章 href 是原始中文**；⑧ **终态 `translate` 计算值是 `0px` 不是 `none`**；⑨ **`grep -qF` 固定串大小写必须与产物逐字一致**。<br>🔴 **第 ⑩ 条（最贵）**：**未分层的 `!important` 输给 `@layer` 内的 `!important`** —— Tailwind v4 工具类都编在 `@layer utilities` 里，组件写「未分层 + `!important`」想压它们**会静默失效**。正确做法：换一个对手是 non-important 的属性。配套判据：验证宽高读 `getBoundingClientRect()`。<br>🔴 **第 ⑪ 条**：`Invoke-WebRequest.RawContentLength` 是**字符数**、`curl -w %{size_download}` 是**字节数** → **核线上与本地一致要用 SHA256**。<br>🔴 **第 ⑫ 条**：`path.join` 在 Windows 给**反斜杠** + **frontmatter 正则必须兼容 CRLF**；**报红前先跑控制组**。<br>🔴 **第 ⑬ 条**：**Astro `is:inline` 脚本原样输出在组件位置**，组件挂在正文之前时 `onReinit(immediate)` 那一拍 `querySelector('.custom-markdown')` 拿到 null → **首屏注入一律加 `DOMContentLoaded` 兜底**。<br>🔴 **第 ⑭ 条**：`navigator.clipboard.writeText()` 是 **Promise**，同步 `try/catch` 抓不到 `reject` → **两条复制分支都要失败可观测**。<br>🆕 **第 ⑮ 条**：给 `agent-browser eval` 传 JS 在 PowerShell 里会吃掉内层转义引号 → **统一用 here-string（`@' … '@`）**。<br>🆕 **第 ⑯ 条**：**无头模式剪贴板必被拒** → 别用「读剪贴板」当复制成功判据，看按钮状态类或打桩。<br>🆕 **第 ⑰ 条**：**`.custom-markdown` 的直接子元素是 `<section>` 不是 `<p>`** → `:scope > p` 恒 0。<br>🆕 **第 ⑱ 条（本批新增）**：**keyed `{#each}` 里「删掉当前项」的按钮，其 `onclick` 执行后该元素即脱离文档** → 任何在 `document` 上做 `closest()` 判断的「点击外部关闭」逻辑都会误判成点击外部。判据 = 冒泡阶段读 `e.target.isConnected`（**捕获阶段读仍是 true，两阶段结论相反就是它**）。<br>🆕 **第 ⑲ 条（本批新增）**：**`recent` 这类「只在 `onMount` 读一次」的状态，用 `page.evaluate` 写 `localStorage` 后必须 `reload()` 才生效**；且历史只在**空查询空态**渲染（`{:else if !query.trim()}`），带词查必然 0 条 —— 别当缺陷。<br>🆕 **第 ⑳ 条（本批新增）**：**`opacity:0` 靠 `:hover` 显形的按钮**，Playwright 无障碍检查会误判不可点 → 先 `mouse.move` 到父 `li` 上再点；`elementFromPoint` 报 `hitIsSelf:true` 可证按钮本身没问题。 |
+| 服务器回滚资产 | `dist.old` + **128 个 `dist_backup_*`**（本批部署 +1）。⚠️ 其中 `dist_backup_`（时间戳为空，357 文件 / 23M，10-14 生成）是异常目录、内容是真实备份，**保留不动**。**一律保留，删需用户明确同意** |
+| 临时文件 | 本地本批探测脚本（`.cls2/.insp/.gain/.real/.dup2/.size/.anom/.svg/.sym/.chk/.perf2/.two/.ctx/.css9/.reg/.int/.bump/.diag/.cmp/.cmp2/.live/.live2.cjs`）**收尾时全部删除**；`%TEMP%` 日志已清；**服务器 `/tmp` 残留 0**；**preview 进程 0** |
+| 待用户拍板 | **第二批清单剩 B4 修订史**（要改 `content.config.ts` schema + 补 34 篇数据，建议只先给 6 篇技术手册类做）。**本批新增一条：Nginx 开 brotli**（服务器改动，要当次点头）。**候选清单第一批 3 / 5 / 6 / 7 / 8 仍待挑**（3 写作热力图 / 5 极光 / 6 逐字解码 / 7 渐变呼吸 / 8 命令面板；**4 `content-visibility` 已实测证伪，别再提**）。**仍沿上批未答**：相册逐张文案 · `/friends/`（要名单）· `/sponsor/`（要收款码）· `/booknav/`（要书签）· 番组/B站/VNDB/MAL（要外部账号）· Twikoo 裸 `envId` 同域反代 · `AGENTS.local.md` 里那条指向不存在目录的 `qoder-memories-backup` 句子。⚠️ **C0~C6、第一批 #10、B6、第四批 A1~C1 与 B7 已全部做完，别再当待办重提** |
+| 既有小坑 | ① **`window.reinitRuns(key)` 对 `reinitOnce` 注册的 key 恒 -1**（onceDone 不在 entries 里）→ 验「只挂一次」要数 DOM 节点数或查行为；② **无 JS 的 context 下 module chunk 必然 `requestfailed`**（有 JS 控制组 0 条），读 computed style 要等 `load` + 800ms；③ **中文文件名别手工 `encodeURIComponent` 再拼静态资源路径**（磁盘是 Unicode 原名，编了就 404）；④ **本机代理会拦裸 IP**：Playwright 要 `args: ['--no-proxy-server']`；⑤ **1200px 下右栏 `display:none`** → 验版本号要数 `outerHTML`；⑥ **`URL.pathname` 已完成百分号编码，再套 `encodeURI` = 双重编码**；⑦ **产物里文章 href 是原始中文**；⑧ **终态 `translate` 计算值是 `0px` 不是 `none`**；⑨ **`grep -qF` 固定串大小写必须与产物逐字一致**。<br>🔴 **第 ⑩ 条（最贵）**：**未分层的 `!important` 输给 `@layer` 内的 `!important`** —— Tailwind v4 工具类都编在 `@layer utilities` 里，组件写「未分层 + `!important`」想压它们**会静默失效**。正确做法：换一个对手是 non-important 的属性。配套判据：验证宽高读 `getBoundingClientRect()`。<br>🔴 **第 ⑪ 条**：`Invoke-WebRequest.RawContentLength` 是**字符数**、`curl -w %{size_download}` 是**字节数** → **核线上与本地一致要用 SHA256**。<br>🔴 **第 ⑫ 条**：`path.join` 在 Windows 给**反斜杠** + **frontmatter 正则必须兼容 CRLF**；**报红前先跑控制组**。<br>🔴 **第 ⑬ 条**：**Astro `is:inline` 脚本原样输出在组件位置**，组件挂在正文之前时 `onReinit(immediate)` 那一拍 `querySelector('.custom-markdown')` 拿到 null → **首屏注入一律加 `DOMContentLoaded` 兜底**。<br>🔴 **第 ⑭ 条**：`navigator.clipboard.writeText()` 是 **Promise**，同步 `try/catch` 抓不到 `reject` → **两条复制分支都要失败可观测**。<br>🆕 **第 ⑮ 条**：给 `agent-browser eval` 传 JS 在 PowerShell 里会吃掉内层转义引号 → **统一用 here-string（`@' … '@`）**。<br>🆕 **第 ⑯ 条**：**无头模式剪贴板必被拒** → 别用「读剪贴板」当复制成功判据，看按钮状态类或打桩。<br>🆕 **第 ⑰ 条**：**`.custom-markdown` 的直接子元素是 `<section>` 不是 `<p>`** → `:scope > p` 恒 0。<br>🆕 **第 ⑱ 条（本批新增）**：**keyed `{#each}` 里「删掉当前项」的按钮，其 `onclick` 执行后该元素即脱离文档** → 任何在 `document` 上做 `closest()` 判断的「点击外部关闭」逻辑都会误判成点击外部。判据 = 冒泡阶段读 `e.target.isConnected`（**捕获阶段读仍是 true，两阶段结论相反就是它**）。<br>🆕 **第 ⑲ 条（本批新增）**：**`recent` 这类「只在 `onMount` 读一次」的状态，用 `page.evaluate` 写 `localStorage` 后必须 `reload()` 才生效**；且历史只在**空查询空态**渲染（`{:else if !query.trim()}`），带词查必然 0 条 —— 别当缺陷。<br>🆕 **第 ⑳ 条（本批新增）**：**`opacity:0` 靠 `:hover` 显形的按钮**，Playwright 无障碍检查会误判不可点 → 先 `mouse.move` 到父 `li` 上再点；`elementFromPoint` 报 `hitIsSelf:true` 可证按钮本身没问题。 |<br>🆕 **第 ㉑ 条（本批新增）**：**模板注释里绝不能出现裸的 script 开标签** —— Astro 会把它当真标签解析，把后续模板内容吞进伪 script 块（实测首页内联总量 76.6KB→94.7KB，凭空多出 12.2KB + 6.8KB 两块）。要提就在文字里写「script 开标签字样」。<br>🆕 **第 ㉒ 条（本批新增）**：**GNU tar 把 Windows 盘符 `C:` 当远程主机** → `tar -czf "C:\…\x.tar.gz"` 报 `Cannot connect to C: resolve failed`，产物 0 字节。修法：先 `cd` 到项目、用**相对路径** + `--force-local`。<br>🆕 **第 ㉓ 条（本批新增）**：**`Out-File -Encoding utf8` 写出的 `.sh` 带 CRLF** → `ssh … "bash -s"` 报 `set: -: invalid option` 与 `cd: $'/www/…\r': No such file or directory`，`set -e` 完全失效、断言一条都跑不到。修法：`-replace "`r`n","`n"` 后 `[System.IO.File]::WriteAllText(…, UTF8Encoding($false))`，写完先数字 `CRLF=0`。<br>🆕 **第 ㉔ 条（本批新增）**：**Playwright msedge 会全域拒绝直连裸 IP**（`ERR_BLOCKED_BY_CLIENT`，连 `/404.html` 都拦；`--no-proxy-server` 与 `--disable-features=BlockInsecurePrivateNetworkRequests` 均无效）→ **线上浏览器验证不可用**，线上核验只能靠 `curl` + SHA256；浏览器行为验证在 `astro preview` 做。
 
 ---
 ## 四、维护本文件的规矩

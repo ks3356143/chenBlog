@@ -41,6 +41,13 @@
 
     /* TOC相关变量 */
     --toc-badge-bg: oklch(0.9 0.045 var(--hue));
+    /* ⚠️ 2026-11-28（V0.1.117）：徽章数字此前直接复用 --btn-content（L0.515），
+       压在 --toc-badge-bg（L0.9）上实测只有 **4.02:1**，低于 WCAG AA 小字 4.5
+       （10.9px/700 属小字；像素级采样复核过，不是探测误报）。
+       单独开变量把亮度压到 0.47（色相、彩度保持 --btn-content 同一支），
+       实测 4.89:1，留出余量；**不要**去改 --btn-content —— 行内代码、表头
+       等处都靠它，且那几处已按各自底色调平（见下方 --btn-content 注释）。 */
+    --toc-badge-fg: oklch(0.47 0.104 calc(var(--hue) - 6.83));
     --toc-btn-hover: oklch(0.92 0.015 var(--hue));
     --toc-btn-active: oklch(0.9 0.015 var(--hue));
     --toc-width: calc((100vw - var(--page-width)) / 2 - 1rem);
@@ -147,6 +154,9 @@
 
     /* TOC相关变量 - 暗色主题 */
     --toc-badge-bg: var(--btn-regular-bg);
+    /* 暗色底是 --btn-regular-bg（L0.33），配 --btn-content（L0.75）实测 5.61:1 已达标
+       → 这里把亮色那份压暗的 --toc-badge-fg 覆盖回来，别让亮色值漏进暗色。 */
+    --toc-badge-fg: var(--btn-content);
     --toc-btn-hover: oklch(0.28 0.04 var(--hue));
     --toc-btn-active: oklch(0.32 0.05 var(--hue));
     --toc-item-active: oklch(0.35 0.07 var(--hue));

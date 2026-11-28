@@ -99,7 +99,7 @@
 
 .toc-badge-index {
     background: var(--toc-badge-bg);
-    color: var(--btn-content);
+    color: var(--toc-badge-fg);
 }
 
 .toc-badge-dot {

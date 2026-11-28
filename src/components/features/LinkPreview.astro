@@ -155,13 +155,19 @@
                 position(link)
                 card!.setAttribute("data-visible", "")
                 card!.setAttribute("data-loaded", "")
+                // aria-hidden 必须跟着显隐走：卡片是视觉浮层、内容对读屏无意义，
+                // 但「看得见却 aria-hidden="true"」是矛盾状态 → 显示时同步成 false。
+                card!.setAttribute("aria-hidden", "false")
             }, reduce ? 0 : 120)
         }
 
         function hide() {
             clearTimeout(showTimer)
             current = null
-            hideTimer = window.setTimeout(() => card!.removeAttribute("data-visible"), reduce ? 0 : 80)
+            hideTimer = window.setTimeout(() => {
+                card!.removeAttribute("data-visible")
+                card!.setAttribute("aria-hidden", "true")
+            }, reduce ? 0 : 80)
         }
 
         /** 浮层当前是否真的显示着（用于滚动时决定是否跟随） */

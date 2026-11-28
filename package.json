@@ -1,12 +1,13 @@
 {
   "name": "chenblog",
   "type": "module",
-  "version": "0.1.115",
+  "version": "0.1.116",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && node scripts/inject-preload.mjs && node scripts/inject-modulepreload.mjs && pagefind --site dist",
+    "build": "node scripts/build-katex-assets.mjs && astro build && node scripts/inject-preload.mjs && node scripts/inject-modulepreload.mjs && pagefind --site dist",
     "preview": "astro preview",
     "check": "astro check",
+    "katex": "node scripts/build-katex-assets.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "covers": "node scripts/generate-covers.mjs",
     "thumbs": "node scripts/generate-thumbs.mjs",

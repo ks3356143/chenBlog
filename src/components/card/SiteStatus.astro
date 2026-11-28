@@ -84,7 +84,22 @@ const stats = [
 ]
 ---
 
-<div class="card-base pb-4">
+<!--
+	⚠️ 配置值走 data- 属性，不用 `define:vars`（十-3）：
+	本组件在 Layout.astro:182 与 RightSideBar.astro:24 **各挂一次**，而 `define:vars` 会把整段
+	脚本体跟着组件**内联两遍**（实测首页两份 1523 字节、哈希完全相同）—— 白多 1.5KB/页，
+	且两份脚本各自注册 onReinit 同一 key。改挂 data- 后脚本体不再是内联脚本，
+	Astro 只收一次；两个实例各自把自己的值带在根节点上，脚本按 closest 找。
+	⚠️ 这段注释里**不能出现 script 开标签字样**：Astro 的解析器会把注释里的它当真标签，
+	把后面整段模板当脚本吞进去（实测首页内联块从 11.8KB 膨胀到 12.2KB + 6.8KB 两块）。
+-->
+<div
+	class="card-base pb-4"
+	data-site-status
+	data-start-date={siteStartDate}
+	data-last-post={lastPostDate || ""}
+	data-today-text={todayText}
+>
 	<div class="card-title">站点统计</div>
 	<div class="overflow-hidden px-4">
 		<div class="flex flex-col gap-2">
@@ -115,43 +130,45 @@ const stats = [
 	</div>
 </div>
 
-<script is:inline define:vars={{ siteStartDate, lastPostDate, todayText }}>
+<script>
+	// 配置从根节点的 data- 属性读（见模板顶部注释：本组件一页挂两处，define:vars 会内联两遍）。
+	// 每次调用都重新查 DOM（容器会被 Swup 整片换掉，闭包里抓旧节点会指到已移除的元素）。
 	function updateDynamicStats() {
+		const roots = document.querySelectorAll<HTMLElement>("[data-site-status]")
+		if (!roots.length) return
+
 		const today = new Date()
 
-		// 更新运行天数
-		const startDate = new Date(siteStartDate)
-		const diffTime = Math.abs(today.getTime() - startDate.getTime())
-		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+		// 更新运行天数：每处实例用自己的 data-start-date（两处值本来相同，但别假设）
+		roots.forEach(root => {
+			const startRaw = root.dataset.startDate || "2026-01-01"
+			const startDate = new Date(startRaw)
+			const diffTime = Math.abs(today.getTime() - startDate.getTime())
+			const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+			root.querySelectorAll<HTMLElement>('[data-stat-id="running-days"]').forEach(el => {
+				el.textContent = diffDays.toString()
+			})
 
-		const runningDaysElements = document.querySelectorAll('[data-stat-id="running-days"]')
-		runningDaysElements.forEach(element => {
-			element.textContent = diffDays.toString()
-		})
-
-		// 更新最后活动时间
-		if (lastPostDate) {
-			const lastPost = new Date(lastPostDate)
+			const lastRaw = root.dataset.lastPost
+			if (!lastRaw) return
+			const todayText = root.dataset.todayText || "今日"
+			const lastPost = new Date(lastRaw)
 			const timeSinceLastPost = Math.abs(today.getTime() - lastPost.getTime())
 			const daysSinceLastUpdate = Math.floor(timeSinceLastPost / (1000 * 60 * 60 * 24))
-
-			const lastUpdateElements = document.querySelectorAll('[data-stat-id="last-update"]')
-			lastUpdateElements.forEach(element => {
+			root.querySelectorAll<HTMLElement>('[data-stat-id="last-update"]').forEach(el => {
 				if (daysSinceLastUpdate === 0) {
-					element.textContent = todayText
-					if (element.nextElementSibling) {
-						element.nextElementSibling.style.display = "none"
-					}
+					el.textContent = todayText
+					const sib = el.nextElementSibling as HTMLElement | null
+					if (sib) sib.style.display = "none"
 				} else {
-					element.textContent = daysSinceLastUpdate.toString()
-					if (element.nextElementSibling) {
-						element.nextElementSibling.style.display = ""
-					}
+					el.textContent = daysSinceLastUpdate.toString()
+					const sib = el.nextElementSibling as HTMLElement | null
+					if (sib) sib.style.display = ""
 				}
 			})
-		}
+		})
 	}
 
-	// 首次 + 每次导航后重算（函数内部按 data-stat-id 全量查， xl 右栏与移动底部堆两处一起更新）
+	// 首次 + 每次导航后重算
 	window.onReinit("site-status", updateDynamicStats, { delay: 100 })
 </script>

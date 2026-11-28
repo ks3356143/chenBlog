@@ -3,7 +3,7 @@
 > **分工**：`AGENTS.md` 存长期不变的规则与事实；本文件存**会变的状态**与**下一步该做什么**。
 > 本文件不重复 AGENTS.md 的内容，只引用。每次会话结束前必须更新本文件。
 >
-> 最后更新：**2026-11-28（第六十二批：依赖全量升级 + 修 SiteStatus 双份内联；线上 V0.1.115 = 本地 = 远端 = `4e811da`）**。
+> 最后更新：**2026-11-28（第六十三批：复验 + 修 katex 静态资源过期 + 修链接预览卡 aria-hidden；线上 V0.1.116 = 本地 = 远端 = `cb0f1ac`）**。
 >
 > **📌 炫酷化候选清单（2026-11-13 搜 3 轮后定案，用户「记住这个列表」→ 常驻这里，别弄丢）**
 > 来源：现代博客动效 / Astro 生态 / 性能与无障碍三方向，已对照本站「已实现 / 已否决」去重。
@@ -2042,18 +2042,18 @@
 
 ## 一、下次会话第一件事
 
-### 🚩 当前起点（2026-11-28 第六十二批收尾时写；**新会话只需读这一块 + 第三节快照就能开工**）
+### 🚩 当前起点（2026-11-28 第六十三批收尾时写；**新会话只需读这一块 + 第三节快照就能开工**）
 
 本节后半段（从下面那条 ⚠️ 开始）是 **2026-10 的历史记录**，都已完成、留着备查，**别当待办**。
 **最新状态在第三节快照，最新批次记录在第二节开头。**
 
 | 项 | 值 |
 |---|---|
-| 本地 HEAD | **`4e811da`**（`HEAD == origin/main`，工作区 0 项） |
-| 线上 | **V0.1.115**，http://47.108.230.220（54/54 页逐字节 SHA256 与本地相同） |
-| 刚做完 | 第六十二批：**11 个依赖升到最新**（katex 0.18.11→0.19.1、@astrojs/{markdown-remark,mdx,sitemap,svelte}、expressive-code 0.44.4、svelte 5.59.2、sanitize-html 2.18.2 等），**`npm audit` 9 条漏洞 → 0**（新增 overrides）；修 **1 个真缺陷**：SiteStatus 用 `define:vars` 导致脚本体每页内联两遍。**已部署，线上 54/54 逐字节核过** |
+| 本地 HEAD | **`cb0f1ac`**（`HEAD == origin/main`，工作区 0 项） |
+| 线上 | **V0.1.116**，http://47.108.230.220（54/54 页逐字节 SHA256 与本地相同） |
+| 刚做完 | 第六十三批：**复验 + 2 个修复**。① `public/vendor/katex/katex.css` 停在 katex 0.18.11（依赖升到 0.19.1 后漏重生成）→ 重生成 + **生成脚本并入 `build` 链**；② 链接预览卡 `aria-hidden` 不同步（显示时仍为 `true`）→ 随显隐同步。上一轮报的 5 项“交互失败”**全是探测选择器错误**，改写后全绿 |
 | 门禁基线 | `build` 0 / `check` **0 error 0 warning 8 hint** / `tsc` 0 |
-| 回滚资产 | `dist.old` + **128** 个 `dist_backup_*`（**一律保留，删要用户点头**） |
+| 回滚资产 | `dist.old` + **129** 个 `dist_backup_*`（**一律保留，删要用户点头**） |
 
 **下一批可以做的（按优先级，都有据可查）**：
 
@@ -2064,6 +2064,8 @@
 5. ⚠️ `AGENTS.local.md` 里「原件备份在 `C:\Users\31429\.dsh\qoder-memories-backup\`」这句**指向的目录不存在**（真实记忆在 `C:\Users\31429\.qoder-cn\memory\`）→ 等他点头再改。
 
 ⛔ **别再当待办重提**：`content-visibility`（第五十八批三种粒度实测证伪）、C0~C6（全做完）、第一批 #10、B6、第二批 B7（= 第三批 C3 的 `::target-text`，已做）、**第四批 A1~C1 与 B7**（已完成，B7 经核实站内早已有）、**共享内联脚本抽取**（第六十二批实测：内联随整页压缩，抽出成独立 chunk 后每页反而**多 0.88KB gzip**），以及本文件各处标「⛔ 已否决 / 已证伪」的条目。
+
+⛔ **探测端假缺陷**（2026-11-28 第六十三批复核，这些组件都是好的、别再报“失效”）：`isSecureContext`/剪贴板（localhost 是安全上下文、测不出裸 IP 的病）· `#reading-progress` + `#reading-progress-fill` · `#back-to-top-btn` · `#themeToggle`（驼峰）· `#sidebar-toc` · `#shortcut-help`（派发 `keydown` 带 `shiftKey` 会被代码主动 return）· 链接预览卡（**只对 `/posts/` 站内链接生效**）。
 
 ### ⚠️ 以下为 2026-10 历史记录（已完成，备查）
 
@@ -2474,6 +2476,51 @@
 ---
 
 ## 二、历次会话做了什么
+
+### 2026-11-28 第六十三批：**修 katex 静态资源随依赖升级过期**（真缺陷）+ 生成脚本并入 build 链 + 修链接预览卡 `aria-hidden` 不同步
+
+- **触发**：他说“完成了？继续全面验证下呢”。本批**没有新功能**，纯复验 + 两个修复。
+- **① 真缺陷：`public/vendor/katex/katex.css` 停留在 katex 0.18.11**（第六十二批把 `katex` 升到 0.19.1 之后漏了重生成）。
+  - 判据：文件里写着 `content:"0.18.11"`，而 `node_modules/katex/package.json` 是 `0.19.1`。
+  - 根因：`scripts/build-katex-assets.mjs` **从来不在 `build` 链里、也没有 npm script** → 依赖一升级它就悄悄过期，
+    而且 **退出码 0、无任何报错**。当前因零篇文章用 KaTeX（`vendor/katex/katex.css` 被 **0** 个页面引用）所以线上没暴露。
+  - 修法两条：先 `node scripts/build-katex-assets.mjs` 重生成（300ms、幂等，连跑两次 SHA256 相同）→ 变成 `0.19.1`；
+    再把脚本**前置进 `build` 链**（`node scripts/build-katex-assets.mjs && astro build && …`）+ 加 `katex` npm script，
+    以后不可能再漂。
+  - 核验：`public/vendor/katex/katex.css` 与 `node_modules/katex/dist/katex.min.css` 剥掉生成头注释、把 `src:` 归一到 woff2 后**逐字节相同**
+    （各 22219 字符、20 个 `@font-face`、550 个 `.katex`）；20 个 `fonts/*.woff2` 与 `node_modules/katex/dist/fonts/` **SHA256 20/20 全同**
+    （字体本来就对，只有 CSS 过期）。
+- **② 真缺陷（本批复验新发现）：链接预览卡 `aria-hidden` 不同步**。`LinkPreview.astro` 的 `show()` 只加 `data-visible`、
+  `hide()` 只摘 `data-visible`，**从不动 `aria-hidden`** → 卡片明明显示着（`opacity:1`、352×140、标题摘要缩略图齐全），
+  但属性仍是 `aria-hidden` 的 `true`，对读屏是“看得见却宣布不存在”的矛盾态。
+  - 修法：`show()` 加 `aria-hidden` 置 `false`、`hide()` 置 `true`（各一行，与 `data-visible` 同处）。
+  - ⚠️ 这是**上一批我自己写的组件**，说明当初只按“视觉可见”验收、漏了无障碍状态一致性。
+- **③ 上一轮报的 5 项“交互失败”全部是探测端错误，不是缺陷**（逐条查实，避免误修）：
+  - **A 剪贴板**：断言 `isSecureContext === false`，但探针跑的是 `http://localhost:4321` —— **localhost 本身就是安全上下文**
+    （实测 `{secure:true,clip:true}`），裸 IP 线上才是非安全上下文。**本地 preview 永远测不出这个病**（呼应五-38）。
+    真机重测：划词 → 点“复制” → `class` 变成 `is-done`、`navigator.clipboard.readText()` **真读回 25 个字符**，功能正常。
+  - **F 阅读辅助**：选择器写错（我用了 `#reading-progress-bar` / `#back-to-top` / `#toc`）。真实是 `#reading-progress` + `#reading-progress-fill`、
+    `#back-to-top-btn`、`#sidebar-toc`。改对后：进度条 **0 → 301px（20.9%）**、回顶按钮 `opacity 0 → 1` 且点击后 `scrollY=0`、TOC **11 条链接**。
+  - **H 主题切换**：id 是 **`#themeToggle`**（驼峰），我猜的 `#theme-toggle` 不存在。改对后 `light → dark`、`localStorage=dark`、**刷新后仍 dark**。
+  - **快捷键面板**：代码里 `if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return`，我派发的 `keydown` 带了 `shiftKey:true` → 被这一行吃掉。
+    去掉修饰键后全通：`?` 打开（`opacity 0→1`、`aria-hidden` 由 `true` 转 `false`）、`Esc` 关闭、`/` 聚焦搜索框、`j` 下滚 0→720 / `k` 回 0。
+  - **链接预览卡**：`match()` 里 `if (!raw.startsWith("/posts/")) return null` → **只对站内文章链接生效**，我拿外链测，本就不该弹。
+    换成站内链接（`/posts/css100天-第8天/`，页内 38 条可见 `/posts/` 链接）后正常显示，且**键盘 focus 分支也能显示**。
+- **④ 全站回归（本轮重跑，全绿）**：
+  - `tsc` 退出 0；`npm run check` **0 error / 0 warning / 8 hint**（基线未变，8 条 hint 是既有的，别追）。
+  - `npm run build` 退出 0，`54 page(s) built`，产物 **585 文件 / 54 html / 53 index.html**（与基线一致）。
+  - **三向路由扫描 162/162 PASS、0 JS 错误**：54 路由亮色（`h1=1`、`[data-site-status]=2`、版本号 `V0.1.116`、横向溢出 ≤1px、无坏图）
+    + 54 路由暗色（`data-theme=dark`）+ 54 路由移动端 390px。
+  - 交互级：上一轮 5 项“失败”改写选择器后**全部通过**（明细见上条），连同原有 7 项 = **12/12 真断言全绿**。
+  - Swup 软导航链 `/archive/ → /tags/ → /posts/chen-knowledge-base/ → /`：`reinitRuns("site-status")` **2→3→4→5** 严格 +1，无重复绑定。
+    `CSS.highlights` = `["blog-selection-hit"]` size 1；搜索、划词工具条（复制/搜索/高亮）、404 页四件套均正常。
+  - **线上核验（部署后）**：**54/54 路由 SHA256 与本地逐字节相同**；首页 `V0.1.116` 出现 4 次 / `V0.1.115` 0 次；
+    线上 `vendor/katex/katex.css` 与本地 **SHA256 完全一致**（`87D3AE5B…`）、版本标记已到 `0.19.1`。
+- **⑤ 版本号 0.1.115 → 0.1.116**，提交 `cb0f1ac`、推送、部署，**断言全过才切 `dist`**。
+  - ⚠️ 踩坑复现：部署脚本尾部又出现 `$'\r': command not found`（exit 127）——**`DEPLOY_OK` 已打印、`mv` 已完成**，
+    是 CR 落在脚本末尾空行导致的收尾噪声。**判据要认 `DEPLOY_OK` + 事后的全量 SHA256 比对，不能只看 ssh 退出码。**
+- **⑥ 一条新教训（已记进 AGENTS.local / 本文件“别再当待办重提”段）**：**构建管线里“生成静态资源”的脚本必须并入 `build` 链**，
+  否则依赖升级后产物静默过期、退出码还是 0 —— 本批的 katex 就是这么漂了一个大版本。
 
 ### 2026-11-28 第六十二批：依赖全量升级（audit 归零）+ **修掉 SiteStatus 双份内联（十-3）** + 全站检查
 
